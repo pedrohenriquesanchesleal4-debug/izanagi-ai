@@ -1,0 +1,67 @@
+{
+  "name": "nexusai",
+  "version": "2.0.0",
+  "description": "Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "nexus": "./bin/nexus.js",
+    "nexusai": "./bin/nexus.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "agents",
+    "architecture",
+    "backend",
+    "core",
+    "database",
+    "devops",
+    "frontend",
+    "memory",
+    "optimization",
+    "security",
+    "skills",
+    "teaching",
+    "testing",
+    "SYSTEM.md",
+    "RULES.md",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "ROADMAP.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "postinstall": "node dist/postinstall.js",
+    "start": "node bin/nexus.js",
+    "doctor": "node bin/nexus.js doctor",
+    "list": "node bin/nexus.js list"
+  },
+  "keywords": [
+    "nexusai",
+    "ai",
+    "agents",
+    "prompt-engineering",
+    "skills",
+    "cli",
+    "llm",
+    "code-generation",
+    "autonomous-agents"
+  ],
+  "author": "Pedro Henrique Sanches Leal",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedrohenriquesanchesleal4-debug/NexusAi.git"
+  }
+}
