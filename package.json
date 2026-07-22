@@ -41,7 +41,7 @@
     "release:minor": "node dist/scripts/release.js minor",
     "release:major": "node dist/scripts/release.js major",
     "prepublishOnly": "npm run build",
-    "postinstall": "node dist/postinstall.js",
+    "postinstall": "node bin/postinstall.cjs",
     "start": "node bin/nexus.js",
     "doctor": "node bin/nexus.js doctor",
     "list": "node bin/nexus.js list"
