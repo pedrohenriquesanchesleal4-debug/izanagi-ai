@@ -40,7 +40,7 @@
     "release:patch": "node dist/scripts/release.js patch",
     "release:minor": "node dist/scripts/release.js minor",
     "release:major": "node dist/scripts/release.js major",
-    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "postinstall": "node dist/postinstall.js",
     "start": "node bin/nexus.js",
     "doctor": "node bin/nexus.js doctor",
