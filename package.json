@@ -1,6 +1,6 @@
 {
   "name": "izanagi-ai",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -40,6 +40,10 @@
     "release:patch": "node dist/scripts/release.js patch",
     "release:minor": "node dist/scripts/release.js minor",
     "release:major": "node dist/scripts/release.js major",
+    "bump": "node dist/scripts/bump.js",
+    "bump:patch": "node dist/scripts/bump.js patch",
+    "bump:minor": "node dist/scripts/bump.js minor",
+    "bump:major": "node dist/scripts/bump.js major",
     "prepublishOnly": "npm run build",
     "postinstall": "node bin/postinstall.cjs",
     "start": "node bin/nexus.js",
