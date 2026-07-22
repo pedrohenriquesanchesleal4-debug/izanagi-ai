@@ -4,10 +4,12 @@ export function runCommand(baseDir: string, taskDescription?: string): void {
     process.exit(1);
   }
 
-  console.log('\n\x1b[36m=== NexusAI Decision Engine ===\x1b[0m');
-  console.log(`\x1b[1mTask:\x1b[0m "${taskDescription}"\n`);
+  const desc: string = taskDescription;
 
-  const lower = taskDescription.toLowerCase();
+  console.log('\n\x1b[36m=== NexusAI Decision Engine ===\x1b[0m');
+  console.log(`\x1b[1mTask:\x1b[0m "${desc}"\n`);
+
+  const lower = desc.toLowerCase();
 
   // Basic classification heuristics
   let agentName = 'senior-engineer';

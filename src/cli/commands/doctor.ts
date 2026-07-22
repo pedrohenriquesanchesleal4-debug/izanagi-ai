@@ -31,7 +31,7 @@ export function doctorCommand(baseDir: string): boolean {
     console.log(' \x1b[31m✖\x1b[0m agents directory missing!');
     errors++;
   } else {
-    const agentFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.json'));
+    const agentFiles = fs.readdirSync(agentsDir).filter((f: string) => f.endsWith('.json'));
     console.log(` \x1b[32m✔\x1b[0m Found ${agentFiles.length} agent JSON definitions`);
     for (const f of agentFiles) {
       try {

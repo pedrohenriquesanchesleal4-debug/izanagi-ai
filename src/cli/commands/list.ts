@@ -8,7 +8,7 @@ export function listCommand(baseDir: string, filter?: string): void {
     console.log('\n\x1b[35m=== NexusAI Agents ===\x1b[0m\n');
     const agentsDir = path.join(baseDir, 'agents');
     if (fs.existsSync(agentsDir)) {
-      const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.json'));
+      const files = fs.readdirSync(agentsDir).filter((f: string) => f.endsWith('.json'));
       for (const f of files) {
         try {
           const agent = JSON.parse(fs.readFileSync(path.join(agentsDir, f), 'utf-8'));

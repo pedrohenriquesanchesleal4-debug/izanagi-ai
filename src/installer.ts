@@ -41,7 +41,7 @@ function copyRecursiveSync(src: string, dest: string): void {
     if (!fs.existsSync(dest)) {
       fs.mkdirSync(dest, { recursive: true });
     }
-    fs.readdirSync(src).forEach((childItemName) => {
+    fs.readdirSync(src).forEach((childItemName: string) => {
       copyRecursiveSync(
         path.join(src, childItemName),
         path.join(dest, childItemName)
