@@ -1,6 +1,6 @@
 {
-  "name": "nexusai",
-  "version": "2.0.0",
+  "name": "izanagi-ai",
+  "version": "2.0.1",
   "description": "Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -34,6 +34,12 @@
   ],
   "scripts": {
     "build": "tsc",
+    "build:clean": "node dist/scripts/build-clean.js",
+    "verify": "node dist/scripts/verify-build.js",
+    "release": "node dist/scripts/release.js",
+    "release:patch": "node dist/scripts/release.js patch",
+    "release:minor": "node dist/scripts/release.js minor",
+    "release:major": "node dist/scripts/release.js major",
     "prepare": "npm run build",
     "postinstall": "node dist/postinstall.js",
     "start": "node bin/nexus.js",
@@ -62,6 +68,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pedrohenriquesanchesleal4-debug/NexusAi.git"
+    "url": "git+https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai"
   }
 }
