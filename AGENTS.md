@@ -44,7 +44,20 @@ NexusAI é um **framework meta** (instruções para agentes de IA), não um proj
 - **Versão atual**: v2.0.0 (SemVer). CHANGELOG.md e ROADMAP.md mostram o plano até v3.0.0
 - **Idioma**: maior parte em português (descrições de agentes, READMEs); conteúdo técnico em inglês
 - **Filosofia**: "Architecture first. Code second." — nunca pular planejamento
-- O framework é **carregado** via `load NexusAI/SYSTEM.md`, não via runtime
+- O framework é **carregado automaticamente** via `opencode.json` (`instructions: ["AGENTS.md", "SYSTEM.md"]`) ao iniciar o opencode na raiz do projeto
+
+## Skills (Economia de Tokens)
+
+Skills nicho foram **desativadas** por padrão para reduzir o system prompt (~50% menos skills carregadas).
+
+**Ativas:** `ai-agent`, `ai-agent-dev`, `architecture-patterns`, `economia-tokens`, `frontend`, `frontend-dev`, `handoff-sessao`, `memoria-projeto`, `professor-modo`, `qa`, `qa-engineer`, `security-privacy`, `web-perf-seo`
+
+**Desativadas (renomeadas para `SKILL.md.disabled`):** `chaos-engineering`, `cloud-architect`, `cloud-infra`, `data-engineer`, `data-engineering`, `feature-flags`, `graphql`, `i18n-l10n`, `iac-terraform`, `legacy-migration`, `mobile-dev`, `mobile-engineer`, `privacy-engineer`, `serverless-edge`, `sre-reliability`, `wasm`, `web-perf-engineer`, `websocket-realtime`
+
+**Ativação automática:** Ao receber um pedido cujo contexto indica que uma skill desativada é necessária (ex: "criar app mobile" → `mobile-dev`, "deploy na AWS" → `cloud-infra`), o agente DEVE:
+1. Renomear `SKILL.md.disabled` → `SKILL.md` na pasta correspondente
+2. Informar o usuário que a skill foi ativada e é preciso reiniciar o opencode
+3. Não prosseguir com a tarefa até o reinício — o usuário precisa reiniciar para a skill carregar
 
 ## Design Preference (Default)
 
