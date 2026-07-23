@@ -4,6 +4,21 @@
 
 ---
 
+## [2.0.7] — 2026-07-23
+
+### Changed
+- Bump version to 2.0.7
+
+### Fixed
+- `bin/nexus.js` import path: changed `../src/cli/index.js` → `../dist/cli/index.js` to fix `ERR_MODULE_NOT_FOUND` on published package
+
+## [2.0.6] — 2026-07-23
+
+- Bump version to 2.0.6
+
+### Fixed
+- `bin/nexus.js` import path: changed `../src/cli/index.js` → `../dist/cli/index.js` to fix `ERR_MODULE_NOT_FOUND` on published package
+
 ## [2.0.0] — 2026-07-22
 
 ### Changed
