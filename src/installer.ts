@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 const ITEMS_TO_COPY = [
   'agents',
   'architecture',
+  'coding',
   'backend',
   'core',
   'database',

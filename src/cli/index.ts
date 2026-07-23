@@ -7,6 +7,7 @@ import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
 import { compileCommand } from './commands/compile.js';
 import { runCommand } from './commands/run.js';
+import { createCommand } from './commands/create.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,10 @@ export async function runCLI(args: string[]): Promise<void> {
     case 'run':
     case 'resolve':
       runCommand(baseDir, args.slice(1).join(' '));
+      break;
+
+    case 'create':
+      createCommand(baseDir, args[1], args[2]);
       break;
 
     case 'compile':
@@ -69,6 +74,7 @@ function showHelp(): void {
   \x1b[32mrun "<task>"\x1b[0m           Analyzes task, selects optimal Agent and Skill Chain.
   \x1b[32mcompile <agent> [file]\x1b[0m  Compiles ready-to-use prompt for an Agent (e.g. architect, security).
   \x1b[32minit [dir]\x1b[0m             Initializes NexusAI rules & assets (.agents) in target directory.
+  \x1b[32mcreate <agent|skill> <name>\x1b[0m  Creates a new agent or skill scaffold.
   \x1b[32mlist [skills|agents]\x1b[0m    Lists all registered skills and agents.
   \x1b[32mdoctor\x1b[0m                 Validates framework integrity, JSONs, and alias links.
   \x1b[32mversion\x1b[0m                Displays NexusAI version.

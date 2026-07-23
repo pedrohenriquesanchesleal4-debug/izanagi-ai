@@ -4,13 +4,22 @@
 
 ---
 
+## [2.0.8] — 2026-07-23
+
+### Added
+- `nexusai create <agent|skill> <name>` command to scaffold new agents and skills
+- `coding/` directory (13 language/framework skills) to npm package and `nexusai init`
+
+### Fixed
+- `bin/nexus.js` import path: changed `../src/cli/index.js` → `../dist/cli/index.js` to fix `ERR_MODULE_NOT_FOUND` on published package
+
 ## [2.0.7] — 2026-07-23
 
 ### Changed
 - Bump version to 2.0.7
 
 ### Fixed
-- `bin/nexus.js` import path: changed `../src/cli/index.js` → `../dist/cli/index.js` to fix `ERR_MODULE_NOT_FOUND` on published package
+- `bin/nexus.js` import path fix (previously attempted, incomplete)
 
 ## [2.0.6] — 2026-07-23
 
