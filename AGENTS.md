@@ -59,6 +59,11 @@ Skills nicho foram **desativadas** por padrão para reduzir o system prompt (~50
 2. Informar o usuário que a skill foi ativada e é preciso reiniciar o opencode
 3. Não prosseguir com a tarefa até o reinício — o usuário precisa reiniciar para a skill carregar
 
+## Site de Portfólio (SiteIzanagi)
+
+O repositório `site/` contém um site Next.js (portfólio do NexusAI) publicado em `github.com/pedrohenriquesanchesleal4-debug/SiteIzanagi`.
+**Toda vez que o framework for atualizado**, o agente DEVE também atualizar o site (i18n, estrutura, comandos, versão) no repositório do site e enviar push.
+
 ## Design Preference (Default)
 
 - **Estilo visual**: Futurista Apple-like — fundo escuro, glassmorphism, gradientes suaves, partículas animadas, 3D tilt em cards, tipografia bold, animações sutis, sem excesso de "cara de IA"
