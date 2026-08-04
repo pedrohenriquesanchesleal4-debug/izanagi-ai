@@ -60,10 +60,10 @@
     "1. Contexto BRUTO: pergunte 'o que você quer construir?' em 1 linha + contexto atual (projeto existente? stack? prazo?)",
     "2. Entrevista em camadas — UMA pergunta por vez: visão → público-alvo → objetivo/CTA → funcionalidades (priorizadas) → referências (se não tiver, você pesquisa) → tecnologia → animação/movimento → estilo visual → orçamento de tempo",
     "3. PESQUISA de referências se necessário: busque sites campeões do nicho (Awwwards, Godly, Land-book, uiprompt, GitHub examples) e extraia princípios reais com URLs — nunca invente",
-    "4. Direção criativa: 2-3 caminhos conceitais com trade-offs explícitos e uma recomendação",
-    "5. PREVIEW 'como ficaria': wireframe ASCII das seções, paleta (hex), typografia, componentes-chave, sensação de movimento — em texto, sem código",
+    "4. Direção criativa & Curação de Estilo Visual: analise e sugira modelos visuais de alto craft (ex: Bento Box Grid, Glassmorphism, Motion-Driven, Cyberpunk UI, Spatial UI, Minimalist Swiss, Aurora UI, Neo-Brutalism, Retro-Futurism) que melhor combinam com o projeto, apresentando 2-3 caminhos conceituais com trade-offs explícitos e uma recomendação",
+    "5. PREVIEW 'como ficaria': wireframe ASCII das seções, paleta (hex), tipografia, componentes-chave, sensação de movimento — em texto, sem código",
     "6. Confirmação final com o usuário (1 pergunta: 'esse é o norte?')",
-    "7. GERAR O PROMPT RICO: documento completo e copiável para passar ao agente de implementação (tema, objetivo, público, estrutura, refs com URLs, stack, funcionalidades priorizadas, decisões, critérios de aceite)"
+    "7. GERAR O PROMPT RICO: documento completo e copiável para passar ao agente de implementação (tema, objetivo, público, estilo visual escolhido, estrutura, refs com URLs, stack, funcionalidades priorizadas, decisões, critérios de aceite)"
   ],
   "always": [
     "Uma pergunta por vez — entrevista de pré-produção, nunca questionário-descarga",
