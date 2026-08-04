@@ -81,20 +81,35 @@ Antes de criar qualquer estilização, **consulte os tokens abaixo**. Priorize S
 
 ---
 
-## 📐 Padrões de Design Identificados
+## 📐 Padrões de Design de Alto Craft (Anti-Generic AI Mandate)
 
-### Layout de Página Pública
+> ⛔ **PROIBIDO LAYOUT "CARA DE IA"**: Nunca gere sites monótonos com fundos cinzas chapados (`bg-gray-50`), cards brancos genéricos idênticos em grid simétrico, blocos de texto chatos sem ritmo visual ou ausência total de animações.
+> ✅ **OBRIGATÓRIO (High-Craft & Cinematic UI)**:
+> - **Estética Apple-Futurista / Awwwards**: Fundos imersivos (`bg-zinc-950`), gradientes radiais sutis (`bg-gradient-to-tr from-indigo-950/40 via-zinc-950 to-zinc-950`), e efeitos de luz/foco.
+> - **Glassmorphism & Bordas Brilhantes**: `backdrop-blur-xl bg-zinc-900/60 border border-zinc-800/80 shadow-2xl` com glow sutil no hover (`hover:border-indigo-500/50 hover:shadow-indigo-500/10`).
+> - **Layouts Dinâmicos (Bento Grids & Asimetria)**: Grids variados (Bento UI), seções com contraste visual marcante, espaçamento generoso (`py-24` ou `py-32`), tipografia precisa (`tracking-tight font-sans`).
+> - **Motion & Micro-interações**: Transições fluidas (`transition-all duration-300 hover:scale-[1.02]`), suporte a animações de scroll, stagger entry e feedback visual em cada elemento interativo.
 
-Toda page pública segue exatamente esta estrutura:
+### Layout de Página Moderna / Cinematográfica
+
+Toda página pública deve seguir um padrão imersivo e sofisticado:
 
 ```tsx
-<main>
+<main className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-indigo-500 selection:text-white">
   <Header />
-  <PageHeader title="..." subtitle="..." breadcrumb={[...]} />
   
-  <section className="py-16 bg-gray-50">
+  {/* Hero Cinematográfico com Radial Glow */}
+  <section className="relative overflow-hidden py-28 md:py-36">
+    <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
+    <div className="container mx-auto px-4 relative z-10">
+      {/* Título com tracking-tight e subtítulo refinado */}
+    </div>
+  </section>
+
+  {/* Seção Bento Grid / Conteúdo Dinâmico */}
+  <section className="py-20 border-t border-zinc-900/80">
     <div className="container mx-auto px-4">
-      {/* conteúdo */}
+      {/* Grid assimétrico / bento cards */}
     </div>
   </section>
 
@@ -102,17 +117,14 @@ Toda page pública segue exatamente esta estrutura:
 </main>
 ```
 
-### Cards e Containers
+### Cards e Containers de Alto Padrão
 
 ```tsx
-// Card principal
-<div className="bg-white rounded-lg shadow-lg p-8">
-
-// Card compacto
-<div className="bg-white shadow-lg rounded-2xl p-6">
-
-// Container de seção
-<div className="container mx-auto px-4">
+// Card Bento com Glassmorphism e Glow no Hover
+<div className="group relative rounded-2xl bg-zinc-900/60 p-8 backdrop-blur-xl border border-zinc-800/80 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10">
+  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent rounded-2xl pointer-events-none" />
+  {/* conteúdo */}
+</div>
 ```
 
 ### Formulários

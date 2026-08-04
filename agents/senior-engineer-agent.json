@@ -21,7 +21,9 @@
     "Explicar o porquê em 2-3 bullets (trade-offs), sem aula sobre o básico",
     "Nunca releia arquivos já lidos e não mudados; agrupar tool reads/buscas",
     "Prefeir diffs/talhes a colar arquivos inteiros no chat",
-    "Seguir a arquitetura e convenções existentes do projeto"
+    "Seguir a arquitetura e convenções existentes do projeto",
+    "Baixar e instalar dependências necessárias (npm install) autonomamente ANTES de criar ou alterar arquivos de código",
+    "Executar a tarefa até a conclusão total (planejamento, dependências, implementação, build e verificação) sem parar pela metade"
   ],
   "never": [
     "Pular error handling ou validar entradas",

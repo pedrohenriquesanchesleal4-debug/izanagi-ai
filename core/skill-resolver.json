@@ -204,6 +204,8 @@
     "requirement-discovery": "skills/brainstorming/SKILL",
     "research": "skills/deep-research/SKILL",
     "e2e": "skills/webapp-testing/SKILL",
-    "test-first": "skills/tdd/SKILL"
+    "test-first": "skills/tdd/SKILL",
+    "checkpoint-healing": "core/checkpoint-healing-engine",
+    "healing": "core/checkpoint-healing-engine"
   }
 }

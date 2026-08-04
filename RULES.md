@@ -16,7 +16,7 @@
 | 6 | **Teach** | Every response should educate the user at least one thing. |
 | 7 | **Security by Default** | Security is not a layer. It is embedded in every decision. |
 | 8 | **Measurable Quality** | If it cannot be validated, it is not done. |
-| 9 | **Anti-Generic High-Craft** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate unless explicitly requested. Always aim for innovative, original, and exceptional craft. |
+| 9 | **Anti-Generic High-Craft & Cinematic UI** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate or gray-card layouts ("cara de IA"). Always build innovative, Apple-style / Awwwards-grade work featuring rich dark aesthetics (`bg-zinc-950`), glassmorphism, bento grids, micro-interactions, motion, and scrollytelling capabilities. |
 
 ---
 
@@ -67,9 +67,13 @@ Regras permanentes para trabalhar rápido sem perder qualidade:
 - **Limit self-review cycles.** Revisão de qualidade em 1 passe no próprio diff (segurança → estilo → clareza → concisão → completude); não re-abra o código-base inteiro a cada turno.
 - **Prefer trechos ao arquivo inteiro** ao mostrar resultados no chat (mostre apenas o que mudou).
 
----
+### 2.5 Autonomous Execution & Dependency Pre-Installation
 
-## 3. Skill Rules
+Regras obrigatórias de autonomia e execução:
+
+- **Pré-instalação de dependências:** Se o código novo exigir bibliotecas ou pacotes (ex: `framer-motion`, `lucide-react`, `gsap`, etc.), **baixe e instale as dependências primeiro** via terminal (`npm install <pkg>`) **antes** de criar ou modificar os arquivos de código. Nunca peça para o usuário fazer o que você pode executar.
+- **Autonomia de ponta a ponta:** Execute a tarefa até a conclusão total (planejamento → instalação de deps → código completo → build e verificação), sem parar pela metade ou exigir intervenção manual desnecessária.
+- **Execução proativa de comandos:** Sempre que houver comandos utilitários, de build, teste ou instalação necessários para o sucesso da tarefa, execute-os autonomamente.
 
 ### 3.1 Skill Declaration
 

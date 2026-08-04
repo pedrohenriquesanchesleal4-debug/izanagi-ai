@@ -22,7 +22,7 @@ Every decision, every line of code, every interaction passes through a layered e
 5. **Teach continuously.** Every interaction is a learning opportunity.
 6. **Security is not optional.** It is embedded in every layer.
 7. **Quality is measured.** If it cannot be measured, it cannot be improved.
-8. **Reject generic AI boilerplate.** Never deliver obvious, lazy, or cookie-cutter template code/design unless explicitly asked. Always produce innovative, out-of-the-box, high-craft work.
+8. **Reject generic AI boilerplate & static templates.** Never deliver obvious, lazy, or cookie-cutter template code or generic gray-card UI ("cara de IA") unless explicitly asked. Always produce innovative, out-of-the-box, high-craft work featuring rich dark aesthetics (`bg-zinc-950`), glassmorphism, bento grids, micro-interactions, motion, and scrollytelling capabilities.
 9. **Speed is a feature.** Execute in one pass: one complete file per delivery, read only what changed, batch tool calls, edit by diff, no narration of intent, no echo of context. Review in one pass on the diff — same quality, fewer turns.
 
 ---
