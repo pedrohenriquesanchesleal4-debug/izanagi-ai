@@ -1,13 +1,13 @@
 # AGENTS.md — Izanagi AI Framework Reference
 
-> Version 2.3.4
+> Version 2.3.5
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
 
 ---
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Decision → Context → Skill → Quality → Reflection → Memory), biblioteca de skills especializadas, 12 agentes pré-definidos e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Decision → Context → Skill → Quality → Reflection → Memory), biblioteca de skills especializadas, 12 agentes pré-definidos, **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
 
 ---
 
@@ -17,8 +17,8 @@ Izanagi AI é um **framework meta** para engenharia de software autônoma orient
 
 | Comando | Arquivo | Papel |
 |---|---|---|
-| `/agents` | `.opencode/agent/agents.md` | Orquestrador Multi-Agente (single/multi/auto/swarm) |
-| `/discovery` | `agents/discovery-agent.json` | Pré-produção: entrevista, pesquisa web, preview, prompt rico ⭐ começo de projeto novo |
+| `/agents` | `.opencode/agent/agents.md` | Orquestrador Multi-Agente (Concorrente / Swarm / Paralelo) |
+| `/discovery` | `agents/discovery-agent.json` | Pré-produção: entrevista, pesquisa web, preview, prompt rico ⭐ |
 | `/animation` | `agents/animation-agent.json` | Scrollytelling, 3D WebGL, motion signature |
 | `/architect` | `agents/architect-agent.json` | System design, Clean Arch, DDD, CQRS, ADRs |
 | `/senior-engineer` | `agents/senior-engineer-agent.json` | Full-stack, refactoring, código limpo/testável |
@@ -36,7 +36,7 @@ Izanagi AI é um **framework meta** para engenharia de software autônoma orient
 ## 3. Comandos de Desenvolvimento (ordem importa)
 
 ```
-npm install          # instala deps (self-dependency: package.json depende de "izanagi-ai": "^2.2.7" — não remover)
+npm install          # instala deps (self-dependency: package.json depende de "izanagi-ai")
 npm run build        # tsc && node dist/scripts/generate-manifest.js
 npm run verify       # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor       # node bin/izanagi.js doctor — auditoria de integridade
@@ -46,62 +46,41 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 **Gotchas críticos:**
 - `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js` — **rode `npm run build` antes de qualquer comando CLI local**, senão roda código obsoleto ou quebra.
-- `doctor` só valida: SYSTEM.md/RULES.md, JSONs de agentes e aliases do resolver → targets. Não valida chains dos agentes nem o conteúdo de `.manifest`.
+- `doctor` valida: SYSTEM.md/RULES.md, JSONs de agentes e aliases do resolver → targets.
 - Não há test runner (sem `npm test`). Verificação = `npm run build` + `npm run verify` + `npm run doctor`.
-- CI (`.github/workflows/publish.yml`): roda `build` + `verify` em push/PR; publica no npm em tags `v*`/release (precisa do secret `NPM_TOKEN`).
 - Padrão de commit do repo: `chore: bump to vX.Y.Z` para bumps e `feat:`/`fix:`/`docs:` descritivos em PT-BR para mudanças.
 
 ---
 
 ## 4. Estrutura do Framework
 
-- `core/` — 8 engines (.md) + **`skill-resolver.json`** (mapa alias → target; NÃO editar à mão sem validar targets)
+- `core/` — 9 engines (.md, incluindo `checkpoint-healing-engine.md`) + **`skill-resolver.json`** (mapa alias → target)
 - `agents/` — 12 definições de agentes em JSON (fonte da verdade para o `/agents`)
 - `skills/` — 79+ skills em `skills/<name>/SKILL.md` (+ `references.md` opcional)
-- `architecture/ coding/ database/ devops/ memory/ optimization/ security/ teaching/ testing/` — skills legadas em arquivo único `.md`
 - `.opencode/agent/` — comandos slash do Opencode
-- `src/` — CLI TypeScript (entrypoint: `src/cli/index.ts` → `runCLI`); scripts de release em `src/scripts/`
-- `SYSTEM.md` & `RULES.md` — fundação e regras operacionais (carregados via `opencode.json` → instructions)
+- `src/` — CLI TypeScript (entrypoint: `src/cli/index.ts` → `runCLI`)
+- `SYSTEM.md` & `RULES.md` — fundação e regras operacionais (Anti-Generic High-Craft & Cinematic UI)
 
 ---
 
-## 5. Skill Resolver — como aliases resolvem
+## 5. Regras de Execução & Autonomia
 
-`core/skill-resolver.json` → `aliases: { alias: "categoria/nome" }` (204 aliases). A resolução de um target tenta, em ordem:
-1. arquivo direto (`skills/foo`)
-2. `skills/foo.md`
-3. `skills/foo/SKILL.md`
-
-**Ao adicionar/remover skill:** edite o resolver (ou rode `node dist/scripts/update-resolver.js` para regenerar aliases de `skills/*`), depois valide com `npm run doctor` — ele acusa alias → target inexistente como warning.
+- **Execução Paralela Concorrente:** Ative múltiplos agentes especializados simultaneamente para frentes distintas (ex: Database + Senior Engineer + Security + Animation em paralelo).
+- **Pré-instalação de Dependências:** Baixe e instale pacotes necessários (`npm install`) **antes** de criar ou alterar arquivos de código. Nunca espere o usuário fazer.
+- **Ponta a Ponta Autónomo:** Execute tarefas até a conclusão total (planejamento → instalação de deps → código → build/teste) sem pausas desnecessárias.
 
 ---
 
-## 6. Gotcha `.agents/` (mascarador de bugs)
+## 6. Padrão Anti-Generic / High-Craft & Cinematic UI
 
-Este repo tem uma pasta `.agents/` (gitignored) que é a instalação local do framework — o CLI (doctor/list/run) **prioriza `.agents/` do cwd** sobre a raiz do repo (`resolveFrameworkRoot`). Consequência prática:
-- Se `.agents/` ficar desatualizado em relação à raiz, o `doctor` valida contra o espelho velho e **mascara bugs reais** (ex.: aliases quebrados resolviam só porque o `.agents` tinha arquivos antigos).
-- **Sincronize manualmente** mudanças de `skills/`, `core/`, `agents/`, `SYSTEM.md`/`RULES.md` para `.agents/` (não há script de sync — apenas copie os arquivos alterados). Manter raiz e `.agents` idênticos (compare com: `Get-ChildItem -Recurse` e `Compare-Object`).
-- `my-project/` na raiz é lixo de teste do instalador (snapshot antigo) — ignorar, não editar.
+Proibido entregar código/design genérico "cara de IA" (templates óbvios, fundos cinzas chapados, cards repetitivos, sem animação).
+- **Obrigatório:** Estética Apple-like / Awwwards-grade (`bg-zinc-950`, glassmorphism, bento grids, tipografia precisa, scrollytelling e micro-interações).
 
 ---
 
-## 7. `.manifest` (catálogo gerado)
+## 7. Release Flow (resumo)
 
-`.manifest` é **gerado no build** por `src/scripts/generate-manifest.ts` (versão do package.json + 12 agents + 188 skills do resolver, com validação de paths — 0 quebrados ou o build falha). **Não editar à mão**; rodar `npm run build` para regenerar. Incluído no pacote npm como catálogo de consulta.
-
----
-
-## 8. Padrão Anti-Generic / High-Craft (Regra de Ouro)
-
-Proibido entregar código/design genérico "cara de IA" (templates óbvios, gradientes repetitivos sem propósito, boilerplate), **a menos que o usuário peça explicitamente**.
-- Padrão obrigatório: inovação, sofisticação técnica, código limpo, arquitetura refinada.
-- Design padrão (quando aplicável): estilo Apple-like futurista, glassmorphism sutil, tipografia precisa, 60fps, micro-interações intencionais.
-
----
-
-## 9. Release Flow (resumo)
-
-1. `npm run bump:patch` (ou minor/major) — bumpa `package.json`/`package-lock.json` sem tag
-2. `npm run build` — recompila + regenera `.manifest` com a nova versão
-3. Commit (`chore: bump to vX.Y.Z`) + `npm publish` (build roda de novo via prepublishOnly)
-4. `git push` (CI roda build+verify; publish automático via tag/release se configurado)
+1. `npm run bump:patch` (ou minor/major) — bumpa `package.json`/`package-lock.json`
+2. `npm run build` — recompila + regenera `.manifest`
+3. Commit (`chore: bump to vX.Y.Z`) + `npm publish` (build roda via prepublishOnly)
+4. `git push`
