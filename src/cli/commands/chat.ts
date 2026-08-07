@@ -32,6 +32,15 @@ function classifyTask(desc: string) {
   if (lower.includes('docker') || lower.includes('ci/cd') || lower.includes('pipeline') || lower.includes('deploy') || lower.includes('k8s') || lower.includes('kubernetes')) {
     return { category: 'devops_infra', agent: 'devops' };
   }
+  if (
+    lower.includes('automation') || lower.includes('automa') || lower.includes('automatiz') ||
+    lower.includes('planilha') || lower.includes('spreadsheet') || lower.includes('excel') ||
+    lower.includes('scrap') || lower.includes('etl') || lower.includes('playwright') ||
+    lower.includes('selenium') || lower.includes('robô') || lower.includes('em massa') ||
+    lower.includes('preencher formulário') || lower.includes('webhook')
+  ) {
+    return { category: 'automacao', agent: 'automation-engineer' };
+  }
   if (lower.includes('test') || lower.includes('qa')) {
     return { category: 'testing', agent: 'qa' };
   }
