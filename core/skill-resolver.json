@@ -206,67 +206,261 @@
     "e2e": "skills/webapp-testing/SKILL",
     "test-first": "skills/tdd/SKILL",
     "checkpoint-healing": "core/checkpoint-healing-engine",
-    "healing": "core/checkpoint-healing-engine"
+    "healing": "core/checkpoint-healing-engine",
+    "automation-engineer": "skills/automation-engineer/SKILL",
+    "automation-planning": "skills/automation-planning/SKILL",
+    "automation-research": "skills/automation-research/SKILL",
+    "technology-selection": "skills/technology-selection/SKILL",
+    "spreadsheet-automation": "skills/spreadsheet-automation/SKILL",
+    "browser-automation": "skills/browser-automation/SKILL",
+    "api-automation": "skills/api-automation/SKILL",
+    "data-validation": "skills/data-validation/SKILL",
+    "error-recovery": "skills/error-recovery/SKILL",
+    "testing-automation": "skills/testing-automation/SKILL",
+    "automation-security": "skills/automation-security/SKILL",
+    "automation-optimization": "skills/automation-optimization/SKILL",
+    "automation-documentation": "skills/automation-documentation/SKILL"
   },
   "compositions": {
     "web_cinematic": {
-      "triggers": ["site animado", "landing", "scrollytelling", "site estilo video", "apple-style", "cinematic website"],
-      "chain": ["ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "web-perf-seo", "a11y", "qa"],
+      "triggers": [
+        "site animado",
+        "landing",
+        "scrollytelling",
+        "site estilo video",
+        "apple-style",
+        "cinematic website"
+      ],
+      "chain": [
+        "ui-ux-pro-max",
+        "frontend",
+        "motion-design",
+        "animation-web",
+        "webgl-3d",
+        "web-perf-seo",
+        "a11y",
+        "qa"
+      ],
       "artifact": "landing cinematografica completa"
     },
     "webgl_experience": {
-      "triggers": ["site 3d", "three.js", "webgl", "cena 3d", "shader", "particulas", "react three fiber"],
-      "chain": ["ui-ux-pro-max", "webgl-3d", "animation-web", "motion-design", "frontend", "web-perf-seo"],
+      "triggers": [
+        "site 3d",
+        "three.js",
+        "webgl",
+        "cena 3d",
+        "shader",
+        "particulas",
+        "react three fiber"
+      ],
+      "chain": [
+        "ui-ux-pro-max",
+        "webgl-3d",
+        "animation-web",
+        "motion-design",
+        "frontend",
+        "web-perf-seo"
+      ],
       "artifact": "cena 3D com scroll"
     },
     "api_backend": {
-      "triggers": ["api", "rest", "endpoint", "graphql", "backend", "schema de api"],
-      "chain": ["architect", "backend", "db", "security", "graphql", "logging", "qa"],
+      "triggers": [
+        "api",
+        "rest",
+        "endpoint",
+        "graphql",
+        "backend",
+        "schema de api"
+      ],
+      "chain": [
+        "architect",
+        "backend",
+        "db",
+        "security",
+        "graphql",
+        "logging",
+        "qa"
+      ],
       "artifact": "API segura com schema validado"
     },
     "data_system": {
-      "triggers": ["modelagem", "schema", "etl", "pipeline", "data warehouse", "migracao", "dados"],
-      "chain": ["data-engineering", "db", "backend", "iac-terraform", "observability"],
+      "triggers": [
+        "modelagem",
+        "schema",
+        "etl",
+        "pipeline",
+        "data warehouse",
+        "migracao",
+        "dados"
+      ],
+      "chain": [
+        "data-engineering",
+        "db",
+        "backend",
+        "iac-terraform",
+        "observability"
+      ],
       "artifact": "schema + migrations + pipeline"
     },
     "security_audit": {
-      "triggers": ["auditoria", "vulnerabilidade", "owasp", "pentest", "lgpd", "audit", "seguranca"],
-      "chain": ["security-privacy", "bug-hunter", "code-auditor", "qa"],
+      "triggers": [
+        "auditoria",
+        "vulnerabilidade",
+        "owasp",
+        "pentest",
+        "lgpd",
+        "audit",
+        "seguranca"
+      ],
+      "chain": [
+        "security-privacy",
+        "bug-hunter",
+        "code-auditor",
+        "qa"
+      ],
       "artifact": "relatorio OWASP + fixes"
     },
     "devops_delivery": {
-      "triggers": ["deploy", "ci/cd", "infra", "terraform", "docker", "kubernetes", "slo", "serverless"],
-      "chain": ["cloud-infra", "iac-terraform", "serverless-edge", "sre-reliability", "logging", "observability"],
+      "triggers": [
+        "deploy",
+        "ci/cd",
+        "infra",
+        "terraform",
+        "docker",
+        "kubernetes",
+        "slo",
+        "serverless"
+      ],
+      "chain": [
+        "cloud-infra",
+        "iac-terraform",
+        "serverless-edge",
+        "sre-reliability",
+        "logging",
+        "observability"
+      ],
       "artifact": "infra IaC + SLOs"
     },
     "debug_session": {
-      "triggers": ["bug", "erro", "crash", "stack trace", "null", "500", "quebrou", "exception"],
-      "chain": ["root-cause", "bug", "tdd", "self-fix", "memoria-projeto"],
+      "triggers": [
+        "bug",
+        "erro",
+        "crash",
+        "stack trace",
+        "null",
+        "500",
+        "quebrou",
+        "exception"
+      ],
+      "chain": [
+        "root-cause",
+        "bug",
+        "tdd",
+        "self-fix",
+        "memoria-projeto"
+      ],
       "artifact": "correcao com teste de regressao"
     },
     "refactor_safe": {
-      "triggers": ["refactor", "limpar", "extrair", "melhorar", "restruturar", "divida tecnica"],
-      "chain": ["architect", "complexity", "refactor", "tdd", "breaking-change", "solid", "clean-code"],
+      "triggers": [
+        "refactor",
+        "limpar",
+        "extrair",
+        "melhorar",
+        "restruturar",
+        "divida tecnica"
+      ],
+      "chain": [
+        "architect",
+        "complexity",
+        "refactor",
+        "tdd",
+        "breaking-change",
+        "solid",
+        "clean-code"
+      ],
       "artifact": "refactor sem breaking changes"
     },
     "new_project_discovery": {
-      "triggers": ["novo projeto", "ideia", "comecar do zero", "brainstorm", "viabilidade", "descoberta"],
-      "chain": ["brainstorming", "deep-research", "ui-ux-pro-max", "requirement-analyzer", "tradeoff", "risk", "task-planner"],
+      "triggers": [
+        "novo projeto",
+        "ideia",
+        "comecar do zero",
+        "brainstorm",
+        "viabilidade",
+        "descoberta"
+      ],
+      "chain": [
+        "brainstorming",
+        "deep-research",
+        "ui-ux-pro-max",
+        "requirement-analyzer",
+        "tradeoff",
+        "risk",
+        "task-planner"
+      ],
       "artifact": "prompt rico aprovado (nunca codigo)"
     },
     "fullstack_crud": {
-      "triggers": ["app completo", "crud", "fullstack", "sistema", "dashboard com backend", "saas"],
-      "chain": ["architect", "db", "backend", "frontend", "security", "ui-ux-pro-max", "qa", "memoria-projeto"],
+      "triggers": [
+        "app completo",
+        "crud",
+        "fullstack",
+        "sistema",
+        "dashboard com backend",
+        "saas"
+      ],
+      "chain": [
+        "architect",
+        "db",
+        "backend",
+        "frontend",
+        "security",
+        "ui-ux-pro-max",
+        "qa",
+        "memoria-projeto"
+      ],
       "artifact": "app fullstack completo"
     },
     "mobile_app": {
-      "triggers": ["mobile", "react native", "expo", "flutter", "app ios", "app android", "pwa"],
-      "chain": ["mobile-dev", "frontend", "ui-ux-pro-max", "graphql", "web-perf-seo", "qa"],
+      "triggers": [
+        "mobile",
+        "react native",
+        "expo",
+        "flutter",
+        "app ios",
+        "app android",
+        "pwa"
+      ],
+      "chain": [
+        "mobile-dev",
+        "frontend",
+        "ui-ux-pro-max",
+        "graphql",
+        "web-perf-seo",
+        "qa"
+      ],
       "artifact": "app mobile com UI de alto craft"
     },
     "ai_ml_feature": {
-      "triggers": ["ia", "llm", "rag", "agente", "prompt", "chatbot", "embedding", "mcp"],
-      "chain": ["ai-agent", "prompt-eng", "backend", "db", "security", "observability"],
+      "triggers": [
+        "ia",
+        "llm",
+        "rag",
+        "agente",
+        "prompt",
+        "chatbot",
+        "embedding",
+        "mcp"
+      ],
+      "chain": [
+        "ai-agent",
+        "prompt-eng",
+        "backend",
+        "db",
+        "security",
+        "observability"
+      ],
       "artifact": "feature com LLM/RAG"
     }
   }

@@ -5,7 +5,7 @@
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-07T14:03:32.243Z",
+  "generatedAt": "2026-08-07T14:16:51.410Z",
   "agents": [
     {
       "id": "animation",
@@ -66,6 +66,36 @@
         "refactor",
         "review",
         "system_design"
+      ]
+    },
+    {
+      "id": "automation-engineer",
+      "name": "Automation Engineer",
+      "version": "1.0.0",
+      "file": "agents/automation-engineer-agent.json",
+      "role": "Engenheiro de Automações Profissionais — decompõe o processo, pesquisa soluções existentes, escolhe a melhor stack (Python por padrão), implementa com validação, idempotência, retries, logging estruturado, testes, dry-run e documentação completa. Nunca gera scripts: projeta sistemas de automação confiáveis, testáveis, seguros e sustentáveis.",
+      "skills": [
+        "automation-engineer",
+        "automation-planning",
+        "automation-research",
+        "technology-selection",
+        "spreadsheet-automation",
+        "browser-automation",
+        "api-automation",
+        "data-validation",
+        "error-recovery",
+        "testing-automation",
+        "automation-security",
+        "automation-optimization",
+        "automation-documentation"
+      ],
+      "chains": [
+        "automacao",
+        "planilha",
+        "browser",
+        "api_integration",
+        "etl",
+        "otimizacao"
       ]
     },
     {
@@ -364,7 +394,7 @@
   "skills": [
     {
       "name": "Skill Library",
-      "count": 123,
+      "count": 136,
       "skills": [
         {
           "id": "a11y",
@@ -409,6 +439,12 @@
           "path": "skills/animation-web/SKILL.md"
         },
         {
+          "id": "api-automation",
+          "name": "API Automation — Integração de Serviços Confiável",
+          "version": "1.0.0",
+          "path": "skills/api-automation/SKILL.md"
+        },
+        {
           "id": "architect",
           "name": "Software Architect",
           "version": "1.0.0",
@@ -419,6 +455,42 @@
           "name": "Skill Architecture Patterns — Izanagi",
           "version": "1.0.0",
           "path": "skills/architecture-patterns/SKILL.md"
+        },
+        {
+          "id": "automation-documentation",
+          "name": "Automation Documentation — Entregável Usável por Humanos",
+          "version": "1.0.0",
+          "path": "skills/automation-documentation/SKILL.md"
+        },
+        {
+          "id": "automation-engineer",
+          "name": "automation-engineer",
+          "version": "1.0.0",
+          "path": "skills/automation-engineer/SKILL.md"
+        },
+        {
+          "id": "automation-optimization",
+          "name": "Automation Optimization — Rápido Sem Quebrar",
+          "version": "1.0.0",
+          "path": "skills/automation-optimization/SKILL.md"
+        },
+        {
+          "id": "automation-planning",
+          "name": "Automation Planning — Projetar Antes de Automatizar",
+          "version": "1.0.0",
+          "path": "skills/automation-planning/SKILL.md"
+        },
+        {
+          "id": "automation-research",
+          "name": "Automation Research — Pesquisar Antes de Reinventar",
+          "version": "1.0.0",
+          "path": "skills/automation-research/SKILL.md"
+        },
+        {
+          "id": "automation-security",
+          "name": "Automation Security — Credenciais e Dados Protegidos",
+          "version": "1.0.0",
+          "path": "skills/automation-security/SKILL.md"
         },
         {
           "id": "brainstorming",
@@ -437,6 +509,12 @@
           "name": "Breaking Change Detector",
           "version": "1.0.0",
           "path": "skills/breaking-change-detector/SKILL.md"
+        },
+        {
+          "id": "browser-automation",
+          "name": "Browser Automation — Automação de Interface Resiliente",
+          "version": "1.0.0",
+          "path": "skills/browser-automation/SKILL.md"
         },
         {
           "id": "bug",
@@ -535,6 +613,12 @@
           "path": "skills/data-engineering/SKILL.md"
         },
         {
+          "id": "data-validation",
+          "name": "Data Validation — Nunca Confie em Dados de Entrada",
+          "version": "1.0.0",
+          "path": "skills/data-validation/SKILL.md"
+        },
+        {
           "id": "debug",
           "name": "Debug Specialist",
           "version": "1.0.0",
@@ -623,6 +707,12 @@
           "name": "ER Diagram Builder",
           "version": "1.0.0",
           "path": "skills/er-diagram-builder/SKILL.md"
+        },
+        {
+          "id": "error-recovery",
+          "name": "Error Recovery — Automação que Sobrevive a Falhas",
+          "version": "1.0.0",
+          "path": "skills/error-recovery/SKILL.md"
         },
         {
           "id": "feature-flags",
@@ -979,6 +1069,12 @@
           "path": "skills/solid-validator/SKILL.md"
         },
         {
+          "id": "spreadsheet-automation",
+          "name": "Spreadsheet Automation — Planilhas como Fonte de Dados Confiável",
+          "version": "1.0.0",
+          "path": "skills/spreadsheet-automation/SKILL.md"
+        },
+        {
           "id": "sre-reliability",
           "name": "Skill SRE & Reliability — Izanagi",
           "version": "1.0.0",
@@ -1043,6 +1139,18 @@
           "name": "Technical Writer",
           "version": "1.0.0",
           "path": "skills/technical-writer/SKILL.md"
+        },
+        {
+          "id": "technology-selection",
+          "name": "Technology Selection — Escolha com Justificativa",
+          "version": "1.0.0",
+          "path": "skills/technology-selection/SKILL.md"
+        },
+        {
+          "id": "testing-automation",
+          "name": "Testing Automation — Automatize, Mas Teste Primeiro",
+          "version": "1.0.0",
+          "path": "skills/testing-automation/SKILL.md"
         },
         {
           "id": "tradeoff",
