@@ -12,6 +12,14 @@ Curadoria para direção de arte e design systems de alto craft (dark premium, g
 | Aceternity UI | https://ui.aceternity.com | Componentes premium copy-paste: bento grids, glassmorphism, sparkles, efeitos de luz |
 | Lucide | https://lucide.dev | Ícones consistentes e leves (SVG) — padrão para qualquer projeto |
 | Motion | https://motion.dev | Animações de UI (entrada, layout, gestos) em React |
+| 21st.dev | https://21st.dev | Marketplace open-source de componentes shadcn/ui (heroes, shaders, bento grids, AI chats) |
+| Cult UI | https://www.cult-ui.com | Componentes premium para shadcn/ui (Dynamic Island, Pixel Heading, 3D Carousel) |
+| Skiper UI | https://skiper-ui.com | "Un-common components" shadcn/ui (106+): Spotlight, Typewriter, Bento Grid |
+| React Bits | https://reactbits.dev | 140+ componentes animados (backgrounds, text effects, animations) |
+| OriginKit | https://originkit.dev | Componentes animados grátis (interactive, gallery, text, background) — Framer/React |
+| Uiverse | https://uiverse.io | 4.4k+ elementos UI open-source em CSS/Tailwind |
+| Animista | https://animista.net | Gerador de animações CSS on-demand (keyframes prontos) |
+| Phosphor Icons | https://phosphoricons.com | Ícones flexíveis (6 pesos) — SVG + @phosphor-icons/react |
 
 ## Fontes & paletas
 
