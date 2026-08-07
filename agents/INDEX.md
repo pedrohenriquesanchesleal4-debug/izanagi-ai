@@ -5,21 +5,23 @@
 
 ---
 
-## Available Agents
+## Available Agents (13 Specialized Agents)
 
-| Agent | Role | Skills | File |
-|-------|------|--------|------|
-| **Discovery** | Pré-produção: entrevista, pesquisa de referências, direções e prompt rico | Brainstorming, UI/UX Pro Max, Deep Research, Requirement Analyzer | `discovery-agent.json` |
-| **Software Architect** | System design & architecture | Software Architect, Clean Arch, Hexagonal, DDD, CQRS | `architect-agent.json` |
-| **Senior Engineer** | Full-stack development & code quality | Backend, Frontend, Code Review, Refactoring, Testing | `senior-engineer-agent.json` |
-| **Bug Hunter** | Debugging & root cause analysis | Debug Specialist, Bug Hunter, Root Cause Analyzer | `bug-hunter-agent.json` |
-| **Security Engineer** | Application security | Security Engineer, OWASP Auditor, Pentest Reviewer | `security-agent.json` |
-| **Professor** | Teaching & mentoring | Professor Mode, Mentor Mode, Explainer, Interactive | `professor-agent.json` |
-| **DevOps Engineer** | Infrastructure & deployment | DevOps, Docker, K8s, CI/CD, Monitoring, Linux | `devops-agent.json` |
-| **Database Engineer** | Data modeling & optimization | Database Engineer, SQL Optimizer, PostgreSQL, Redis | `database-agent.json` |
-| **Project Manager** | Delivery management | Project Manager, Task Planner, Release Planner, Risk Analyzer | `pm-agent.json` |
-| **Tech Lead** | Team & technical leadership | Tech Lead, Code Review, Architecture, Mentoring | `techlead-agent.json` |
-| **Documentation Writer** | Technical documentation | Documentation Writer, Technical Writer, README, UML | `docs-agent.json` |
+| Agent | Command | Role | File |
+|-------|---------|------|------|
+| **Discovery** | `/discovery` | Pré-produção: entrevista condicional, pesquisa de referências, direções e prompt rico | `discovery-agent.json` |
+| **Animation Engineer** | `/animation` | Scrollytelling, WebGL 3D, motion signature, design cinematográfico | `animation-agent.json` |
+| **Software Architect** | `/architect` | System design, Clean Arch, Hexagonal, DDD, CQRS, ADRs | `architect-agent.json` |
+| **Senior Engineer** | `/senior-engineer` | Full-stack development, refactoring, código limpo e testável | `senior-engineer-agent.json` |
+| **Tech Lead** | `/techlead` | Code review rigoroso, governança de arquitetura e mentoria | `techlead-agent.json` |
+| **Automation Engineer** | `/automation-engineer` | Automação de processos: planilhas, browser, API, ETL (Python padrão, idempotência, retries) | `automation-engineer-agent.json` |
+| **Security Engineer** | `/security` | Mitigação OWASP Top 10, auth, secure coding e secrets | `security-agent.json` |
+| **DevOps Engineer** | `/devops` | Pipelines CI/CD, Docker, Kubernetes, IaC e observabilidade | `devops-agent.json` |
+| **Database Engineer** | `/database` | Modelagem de dados, otimização SQL, PostgreSQL, Redis | `database-agent.json` |
+| **Bug Hunter** | `/bug-hunter` | Debugging sistemático e análise de causa raiz | `bug-hunter-agent.json` |
+| **Documentation Writer** | `/docs` | Documentação técnica, READMEs e diagramas UML | `docs-agent.json` |
+| **Project Manager** | `/pm` | Sprints, milestones, análise de riscos técnicos | `pm-agent.json` |
+| **Professor** | `/professor` | Ensino adaptativo, explicação didática e mentoria técnica | `professor-agent.json` |
 
 ---
 
