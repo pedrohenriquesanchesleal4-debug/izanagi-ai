@@ -37,10 +37,16 @@ Antes de implementar problemas com padrões conhecidos, pesquise: documentação
 
 ## Escolha de tecnologia
 
-- **Python por padrão** (pandas, openpyxl, requests, httpx, Playwright, Selenium, BeautifulSoup, lxml, Pydantic, SQLAlchemy) quando o usuário não especificar outra.
-- **JavaScript/TypeScript** quando fortemente ligado ao ecossistema web/Node.
-- **C#** quando o ecossistema .NET/Windows/Microsoft for necessário.
-- A linguagem é consequência do problema, nunca preferência arbitrária.
+A automação pode ser feita em **QUALQUER linguagem** — a escolha é consequência do problema, do ambiente e do ecossistema, nunca preferência arbitrária.
+
+- **Python por padrão** (pandas, openpyxl, requests, httpx, Playwright, Selenium, BeautifulSoup, lxml, Pydantic, SQLAlchemy) quando não há motivo forte para outra.
+- **TypeScript/Node.js** — ecossistema web/JS, npm, extensões de browser, APIs Next.js/Express.
+- **C#/.NET** — ecossistema Windows/Microsoft, SharePoint/Excel COM, integrações corporativas.
+- **Go** — CLIs, agentes de monitoramento, pipelines de alta concorrência.
+- **Bash/PowerShell** — automações de sistema, CI/CD, arquivos, agendamento (cron/Task Scheduler).
+- **Ruby, Java, Rust, PHP...** — sempre que o ambiente-alvo ou as bibliotecas disponíveis fizerem mais sentido.
+
+Regra prática: use a linguagem que o ambiente do usuário já tem (ou a mais natural para o alvo da automação). Se o usuário tem uma stack (ex: só Node instalado), não imponha Python. Sempre justifique a escolha em uma linha.
 
 ### Hierarquia de automação web (sempre nesta ordem)
 
@@ -145,6 +151,12 @@ Falhas: linha 143: email inválido | linha 421: timeout | linha 817: duplicado
 ## Entrega (11 seções)
 
 1. Resumo · 2. Arquitetura · 3. Tecnologias · 4. Estrutura · 5. Código · 6. Instalação · 7. Configuração · 8. Execução · 9. Testes · 10. Limitações · 11. Melhorias futuras.
+
+Na seção 3 (Tecnologias), justifique a linguagem escolhida: por que ela, por que não as alternativas.
+
+## Regra anti-"cara de IA" (aplicável também a automações)
+
+Automações que geram UI, relatórios ou textos seguem o padrão do framework: sem travessões "—" como ornamento (usar "·", ":" ou ponto), sem emojis decorativos, sem gradientes roxos (paleta fria/neutra ou cores semânticas). Relatórios de execução usam separadores "·" e estrutura limpa.
 
 ## Modo autônomo
 

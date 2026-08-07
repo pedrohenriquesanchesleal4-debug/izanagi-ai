@@ -21,12 +21,18 @@ Se existe API confiável, use-a. Browser automation só quando não existe alter
 | Custo | Tempo de desenvolvimento, dependências, infra necessária? |
 | Segurança | Gerencia credenciais, evita secrets no código? |
 
-## Padrão de decisão
+## Padrão de decisão (qualquer linguagem é válida)
+
+A automação pode ser feita em qualquer linguagem — a escolha é consequência do problema, do ambiente e do ecossistema:
 
 - **Python** (pandas, openpyxl, httpx, Playwright, Pydantic) — padrão para automação de dados, planilhas, scraping, integrações.
-- **TypeScript/Node** — quando o ecossistema web/JS é obrigatório (browser extension, npm packages).
-- **C#/.NET** — ecossistema Microsoft/Windows obrigatório.
-- A linguagem é consequência do problema, nunca preferência arbitrária.
+- **TypeScript/Node** — quando o ecossistema web/JS é obrigatório (browser extension, npm packages, APIs).
+- **C#/.NET** — ecossistema Microsoft/Windows obrigatório (Excel COM, SharePoint, corporativo).
+- **Go** — CLIs, agentes de monitoramento, pipelines de alta concorrência.
+- **Bash/PowerShell** — automações de sistema, CI/CD, agendamento (cron/Task Scheduler).
+- **Ruby, Java, Rust, PHP** — quando o ambiente-alvo ou bibliotecas disponíveis fizerem mais sentido.
+
+Regra prática: use a linguagem que o ambiente do usuário já tem ou a mais natural para o alvo; não imponha Python se o usuário só tem Node. A linguagem é consequência do problema, nunca preferência arbitrária.
 
 ## Regras
 

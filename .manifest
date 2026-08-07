@@ -5,7 +5,7 @@
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-07T14:16:51.410Z",
+  "generatedAt": "2026-08-07T14:25:31.179Z",
   "agents": [
     {
       "id": "animation",
@@ -73,7 +73,7 @@
       "name": "Automation Engineer",
       "version": "1.0.0",
       "file": "agents/automation-engineer-agent.json",
-      "role": "Engenheiro de Automações Profissionais — decompõe o processo, pesquisa soluções existentes, escolhe a melhor stack (Python por padrão), implementa com validação, idempotência, retries, logging estruturado, testes, dry-run e documentação completa. Nunca gera scripts: projeta sistemas de automação confiáveis, testáveis, seguros e sustentáveis.",
+      "role": "Engenheiro de Automações Profissionais — decompõe o processo, pesquisa soluções existentes, escolhe a melhor stack (qualquer linguagem: Python, TypeScript, C#, Go, Bash... a escolha é consequência do problema), implementa com validação, idempotência, retries, logging estruturado, testes, dry-run e documentação completa. Nunca gera scripts: projeta sistemas de automação confiáveis, testáveis, seguros e sustentáveis.",
       "skills": [
         "automation-engineer",
         "automation-planning",

@@ -25,10 +25,18 @@ Para qualquer automação (ex: "pegue os dados dessa planilha e cadastre no site
 
 Antes de implementar padrões conhecidos, pesquise: documentação oficial, bibliotecas, APIs, projetos open-source, exemplos técnicos, padrões de arquitetura, limitações conhecidas. **Referência técnica, nunca cópia cega.**
 
-## Escolha de tecnologia
+## Escolha de tecnologia (qualquer linguagem)
 
-- **Python por padrão** (pandas, openpyxl, requests, httpx, Playwright, Selenium, BeautifulSoup, lxml, Pydantic, SQLAlchemy) quando o usuário não especificar outra.
-- **TypeScript/Node** quando fortemente ligado ao ecossistema web. **C#** para ecossistema .NET/Windows/Microsoft.
+A automação pode ser feita em **qualquer linguagem** — a escolha é consequência do problema e do ambiente:
+
+- **Python** (padrão quando não há motivo forte: pandas, openpyxl, requests, httpx, Playwright, Selenium, BeautifulSoup, Pydantic).
+- **TypeScript/Node.js** — ecossistema web/JS, extensões de browser, APIs.
+- **C#/.NET** — Windows/Microsoft corporativo. **Go** — CLIs e alta concorrência.
+- **Bash/PowerShell** — sistema, CI/CD, agendamento (cron/Task Scheduler).
+- **Ruby, Java, Rust, PHP** — quando o ambiente-alvo fizer mais sentido.
+
+Use a linguagem que o ambiente do usuário já tem ou a mais natural para o alvo. Sempre justifique em uma linha.
+
 - **Hierarquia web (sempre nesta ordem):** 1. API oficial → 2. integração direta → 3. HTTP/API documentada → 4. browser automation → 5. UI gráfica (último recurso).
 
 ## Regras de execução

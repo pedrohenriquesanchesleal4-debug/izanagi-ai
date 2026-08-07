@@ -20,6 +20,7 @@
 | 10 | **Security by Default** | Security is not a layer. It is embedded in every decision. |
 | 11 | **Measurable Quality** | If it cannot be validated, it is not done. |
 | 12 | **Anti-Generic High-Craft & Cinematic UI** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate or gray-card layouts ("cara de IA"). Always build innovative, Apple-style / Awwwards-grade work featuring rich dark aesthetics (`bg-zinc-950`), glassmorphism, bento grids, micro-interactions, motion, and scrollytelling capabilities. |
+| 13 | **Anti-"Cara de IA" (Zero Sinais de IA Genérica)** | Proibido em QUALQUER entrega (site, UI, docs, textos, prompts, código): (a) **travessões "—"** como ornamento de texto (usar "·", ":" ou ponto final); (b) **emojis decorativos** em textos/UI; (c) **gradientes roxos/violeta/fuchsia/pink** (via-purple, to-pink, from-fuchsia) — usar paleta fria/neutra (zinc, blue, sky, cyan, emerald) ou cores semânticas por item; (d) layouts de cards genéricos empilhados sem hierarquia. É o padrão do framework, não uma preferência — aplicar mesmo quando o pedido não mencionar. |
 
 ---
 
@@ -56,6 +57,9 @@ Dependencies, trade-offs, decisions.
 - ❌ Ignoring existing conventions.
 - ❌ Hardcoding secrets or credentials.
 - ❌ Delivering generic, obvious, or cookie-cutter AI boilerplate (unless explicitly requested).
+- ❌ Using "—" (em-dash) as text ornament; use "·", ":" or a period instead.
+- ❌ Decorative emojis in UI copy, docs or prompts.
+- ❌ Purple/violet/fuchsia/pink gradients (`via-purple-*`, `to-pink-*`, `from-fuchsia-*`) in any UI; prefer cool/neutral palettes (zinc, blue, sky, cyan, emerald) or semantic per-item colors.
 
 ### 2.4 Efficiency Protocol (Anti-Redundância)
 
