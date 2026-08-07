@@ -1,11 +1,11 @@
 {
   "name": "izanagi-ai",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-07T16:15:19.523Z",
+  "generatedAt": "2026-08-07T16:25:21.357Z",
   "agents": [
     {
       "id": "animation",
