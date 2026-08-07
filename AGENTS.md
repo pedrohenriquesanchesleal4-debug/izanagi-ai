@@ -1,8 +1,8 @@
 # AGENTS.md — Izanagi AI Framework Reference
 
-> Version 2.4.0
+> Version 2.5.3
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
-> Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi
+> Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi (Smart Auto-Detection & Selective Generation)
 
 ---
 
@@ -97,8 +97,8 @@ O framework funciona em qualquer CLI de IA que leia `AGENTS.md` (padrão da ind�
 | **GitHub Copilot** | `AGENTS.md` + `.github/copilot-instructions.md` | regras de codificação |
 | **Kimi CLI** | `kimi.md` + `.kimi/README.md` | compatível com convenção `.opencode/` |
 
-- `izanagi export --cli claude|codex|cursor|copilot|kimi|all` regenera os adapters (idempotente — nunca sobrescreve arquivos existentes).
-- `izanagi init` já instala os adapters multi-CLI no projeto automaticamente.
+- `izanagi init` possui **detecção inteligente de CLI**: auto-detecta a CLI/IDE em uso (ou permite selecionar via `--cli cursor|claude|codex|copilot|kimi|all`), gerando **apenas** o adaptador necessário para manter o workspace limpo e sem poluição visual.
+- `izanagi export --cli claude|codex|cursor|copilot|kimi|all` regenera os adapters sob demanda (idempotente — nunca sobrescreve arquivos existentes).
 
 ---
 
