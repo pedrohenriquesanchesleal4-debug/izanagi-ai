@@ -11,7 +11,7 @@ Complementa a skill `memoria-projeto`, mas para o "estado da tarefa em progresso
 ## O que gravar
 Escreva (ou atualize) `.agents/memoria/em-andamento.md` com no máximo estes campos, curtos:
 ## Regras
-- Sobrescreva a entrada da mesma tarefa em vez de acumular várias entradas desatualizadas — isso é estado atual, não histórico. - Quando a tarefa for concluída, apague a entrada dela deste arquivo (o que vale a pena lembrar para sempre já…
+- Sobrescreva a entrada da mesma tarefa em vez de acumular várias entradas desatualizadas — isso é estado atual, não histórico. - Quando a tarefa for concluída, apague a entrada dela deste arquivo…
 - Ao retomar uma sessão, leia este arquivo primeiro se ele existir — economiza o usuário ter que reexplicar onde parou.
 ## References
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.

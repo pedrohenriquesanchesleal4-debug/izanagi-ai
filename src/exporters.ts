@@ -48,10 +48,23 @@ interface SkillSummary {
   body: string;
 }
 
+/**
+ * Trunca em limite de caracteres sem quebrar palavra e sem deixar parênteses
+ * órfãos (nunca corta no meio de uma frase com `(` aberto).
+ */
 function truncate(text: string, max: number): string {
   const t = text.replace(/\s+/g, ' ').trim();
   if (t.length <= max) return t;
-  return t.slice(0, max - 1).trimEnd() + '…';
+  let cut = t.slice(0, max - 1).trimEnd();
+  // Recua até o último espaço para não quebrar palavra no meio.
+  const lastSpace = cut.lastIndexOf(' ');
+  if (lastSpace > max * 0.6) cut = cut.slice(0, lastSpace).trimEnd();
+  // Se o corte caiu dentro de um parêntese/colchete aberto, recua até antes dele.
+  const openIdx = Math.max(cut.lastIndexOf('('), cut.lastIndexOf('['));
+  if (openIdx > max * 0.5 && cut.slice(openIdx).includes(')') === false && cut.slice(openIdx).includes(']') === false) {
+    cut = cut.slice(0, openIdx).trimEnd();
+  }
+  return `${cut}…`;
 }
 
 /** Extrai a description de um frontmatter YAML (suporta scalar inline e block scalar | / >). */
@@ -183,7 +196,10 @@ function parseSkillMarkdown(content: string): { description: string; body: strin
   flush();
 
   let result = out.join('\n').trim();
-  if (result.length > 1400) result = result.slice(0, 1400).trimEnd() + '\n\n… (resumo gerado automaticamente)';
+  if (result.length > 1400) {
+    const cut = truncate(result, 1400).replace(/…$/, '');
+    result = `${cut}\n\n… (resumo gerado automaticamente)`;
+  }
   return { description, body: result };
 }
 
