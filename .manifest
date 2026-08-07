@@ -1,11 +1,11 @@
 {
   "name": "izanagi-ai",
-  "version": "2.3.7",
+  "version": "2.4.0",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-04T15:39:26.771Z",
+  "generatedAt": "2026-08-07T13:18:01.278Z",
   "agents": [
     {
       "id": "animation",
@@ -25,7 +25,7 @@
         "reviewer"
       ],
       "chains": [
-        "new_project",
+        "cinematic_site",
         "new_feature",
         "implementation",
         "frontend",
@@ -64,7 +64,8 @@
         "new_project",
         "new_feature",
         "refactor",
-        "review"
+        "review",
+        "system_design"
       ]
     },
     {
@@ -89,7 +90,8 @@
       "chains": [
         "bug",
         "debug",
-        "prevent"
+        "prevent",
+        "regression"
       ]
     },
     {
@@ -111,9 +113,11 @@
         "integration-test"
       ],
       "chains": [
+        "modelagem",
         "schema",
         "optimize",
-        "migrate"
+        "migrate",
+        "pipeline"
       ]
     },
     {
@@ -142,28 +146,35 @@
         "deploy",
         "infra",
         "monitor",
-        "ci_cd"
+        "ci_cd",
+        "serverless",
+        "disaster_recovery"
       ]
     },
     {
       "id": "discovery",
       "name": "Discovery",
-      "version": "2.0.0",
+      "version": "3.0.0",
       "file": "agents/discovery-agent.json",
-      "role": "Investigador de Pré-Produção — entrevista completa antes de codar: coleta requisitos, pesquisa referências reais, propõe direções de design e gera um prompt rico de implementação. Nunca escreve código antes de mapear o projeto inteiro.",
+      "role": "Investigador de Pré-Produção — entrevista em 3 fases (~15 perguntas, uma por vez), pesquisa referências REAIS em 2 trilhas (visual + técnica), arquiteta a solução (blueprint + ADR-lite) e entrega um prompt rico de implementação. Nunca escreve código: o HARD-GATE só cai por dispensa explícita do usuário.",
       "skills": [
         "brainstorming",
-        "ui-ux-pro-max",
         "deep-research",
-        "requirement-analyzer",
+        "ui-ux-pro-max",
+        "requirements",
         "frontend",
         "animation-web",
         "motion-design",
-        "alternative-solution-generator",
+        "webgl-3d",
+        "alternatives",
         "tradeoff",
         "risk",
         "ux",
-        "architect"
+        "a11y",
+        "architect",
+        "data-engineering",
+        "db",
+        "web-perf-seo"
       ],
       "chains": [
         "new_project",
@@ -171,7 +182,9 @@
         "new_feature",
         "research",
         "app_ui",
-        "prompt_rich"
+        "prompt_rich",
+        "webgl_3d",
+        "blueprint"
       ]
     },
     {
@@ -195,7 +208,8 @@
         "readme",
         "api_docs",
         "architecture",
-        "guide"
+        "guide",
+        "documentation_deep"
       ]
     },
     {
@@ -217,6 +231,7 @@
         "docs"
       ],
       "chains": [
+        "discovery",
         "plan",
         "sprint",
         "release"
@@ -244,7 +259,8 @@
         "teach",
         "mentor",
         "explain",
-        "question"
+        "question",
+        "deep_teach"
       ]
     },
     {
@@ -265,7 +281,9 @@
         "security-privacy"
       ],
       "chains": [
+        "audit",
         "security_audit",
+        "pentest",
         "review",
         "implement"
       ]
@@ -299,11 +317,13 @@
         "security"
       ],
       "chains": [
+        "fullstack",
         "implement",
         "bug",
         "refactor",
         "review",
-        "optimize"
+        "optimize",
+        "new_feature"
       ]
     },
     {
@@ -334,6 +354,7 @@
       ],
       "chains": [
         "review",
+        "code_review_teach",
         "design",
         "unblock",
         "debt"
@@ -401,7 +422,7 @@
         },
         {
           "id": "brainstorming",
-          "name": "Brainstorming — Da Ideia",
+          "name": "brainstorming",
           "version": "1.0.0",
           "path": "skills/brainstorming/SKILL.md"
         },

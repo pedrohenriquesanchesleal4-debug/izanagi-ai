@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi } from './exporters.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -226,6 +227,26 @@ export function installToProject(targetDir: string, selectedPackIds: string[]): 
       } else {
         console.log(`  \x1b[33m•\x1b[0m .opencode/agent/${agentFile} already exists — kept as is`);
       }
+    }
+  }
+
+  // Multi-CLI adapters: Claude Code, Codex, Cursor, Copilot, Kimi — gerados a partir do framework instalado
+  const adapterJobs: Array<{ name: string; run: () => string[] }> = [
+    { name: 'Claude Code', run: () => exportToClaude(destinationRoot) },
+    { name: 'Codex (OpenAI)', run: () => exportToCodex(destinationRoot) },
+    { name: 'Cursor', run: () => exportToCursor(destinationRoot) },
+    { name: 'GitHub Copilot', run: () => exportToCopilot(destinationRoot) },
+    { name: 'Kimi CLI (Moonshot)', run: () => exportToKimi(destinationRoot) }
+  ];
+
+  console.log('\n  \x1b[1mMulti-CLI adapters:\x1b[0m');
+  for (const job of adapterJobs) {
+    try {
+      const created = job.run();
+      console.log(`  \x1b[32m✔\x1b[0m ${job.name} adapter: ${created.length} file(s) created`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(`  \x1b[33m⚠\x1b[0m ${job.name} adapter skipped: ${message}`);
     }
   }
 

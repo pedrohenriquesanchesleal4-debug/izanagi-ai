@@ -7,9 +7,11 @@
   "token_budget": 4096,
   "skills": ["db", "sql", "postgres", "mysql", "sqlserver", "redis", "repository", "perf", "er", "integration-test"],
   "chains": {
-    "schema": ["db", "er", "repository"],
-    "optimize": ["sql", "db", "perf"],
-    "migrate": ["db", "integration-test"]
+    "modelagem": ["memoria-projeto", "data-engineering", "db", "backend", "iac-terraform", "observability", "memoria-projeto"],
+    "schema": ["memoria-projeto", "data-engineering", "db", "er", "sql", "backend", "qa", "memoria-projeto"],
+    "optimize": ["memoria-projeto", "sql", "db", "perf", "observability", "tdd", "memoria-projeto"],
+    "migrate": ["memoria-projeto", "db", "sql", "integration-test", "tdd", "qa", "memoria-projeto"],
+    "pipeline": ["memoria-projeto", "data-engineering", "db", "backend", "iac-terraform", "observability", "qa", "memoria-projeto"]
   },
   "always": [
     "Schema antes de código (ERD + tipos corretos)",

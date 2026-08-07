@@ -7,10 +7,11 @@
   "token_budget": 4096,
   "skills": ["architect", "clean-arch", "hexagonal", "ddd", "cqrs", "event-driven", "microservices", "monolith", "repository", "uow", "tradeoff", "alternatives", "risk", "requirements", "docs", "uml", "sequence", "er", "scalability"],
   "chains": {
-    "new_project": ["planner", "architect", "requirements", "risk", "tradeoff", "alternatives", "uml"],
-    "new_feature": ["architect", "clean-arch", "risk"],
-    "refactor": ["architect", "risk", "tradeoff", "monolith"],
-    "review": ["architect", "tradeoff", "docs"]
+    "new_project": ["memoria-projeto", "deep-research", "brainstorming", "requirements", "tradeoff", "risk", "architect", "task-planner", "docs", "memoria-projeto"],
+    "new_feature": ["memoria-projeto", "architect", "requirements", "tradeoff", "risk", "uml", "memoria-projeto"],
+    "refactor": ["memoria-projeto", "architect", "complexity", "refactor", "breaking-change", "solid", "clean-code", "tdd", "memoria-projeto"],
+    "review": ["memoria-projeto", "architect", "tradeoff", "docs", "qa", "memoria-projeto"],
+    "system_design": ["memoria-projeto", "deep-research", "architect", "clean-arch", "ddd", "tradeoff", "risk", "docs", "memoria-projeto"]
   },
   "always": [
     "Trade-offs explícitos em formato ADR (contexto → opção → trade → decisão)",

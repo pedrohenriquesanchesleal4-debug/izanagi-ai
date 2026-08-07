@@ -7,10 +7,11 @@
   "token_budget": 4096,
   "skills": ["docs", "tech-writer", "readme", "uml", "sequence", "er", "architect", "requirements", "explainer"],
   "chains": {
-    "readme": ["readme", "docs", "uml"],
-    "api_docs": ["tech-writer", "api"],
-    "architecture": ["docs", "architect", "uml", "sequence", "er"],
-    "guide": ["tech-writer", "explainer"]
+    "readme": ["memoria-projeto", "readme", "docs", "uml", "qa", "memoria-projeto"],
+    "api_docs": ["memoria-projeto", "tech-writer", "api", "backend", "qa", "memoria-projeto"],
+    "architecture": ["memoria-projeto", "architect", "docs", "uml", "sequence", "er", "qa", "memoria-projeto"],
+    "guide": ["memoria-projeto", "tech-writer", "explainer", "docs", "qa", "memoria-projeto"],
+    "documentation_deep": ["memoria-projeto", "deep-research", "docs", "tech-writer", "readme", "uml", "qa", "memoria-projeto"]
   },
   "always": [
     "Conhecer a audiência e o objetivo da doc",

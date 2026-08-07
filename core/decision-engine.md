@@ -199,6 +199,47 @@ unknown:
 
 ---
 
+## Composição de Skills (Skill Composer)
+
+O Decision Engine não ativa skills soltas: ele seleciona **composições de domínio** em `core/skill-resolver.json` → `compositions` e ativa a cadeia completa como DAG coordenada. Skills isoladas fora de cadeia são proibidas (anti-pattern "skill de enfeite" — ver `core/skill-composer.md`).
+
+### Fluxo de composição
+
+```
+1. Classificar a tarefa (algoritmo acima ou matching de triggers)
+2. Selecionar a composição do domínio correspondente (ex: "site animado" → web_cinematic)
+3. Ativar a cadeia completa em ordem (output de cada skill alimenta a próxima)
+4. Aplicar desduplicação: skill sobreposta atua apenas no delta da anterior
+5. Iniciar com Study-First: carregar memoria-projeto (.agents/memoria/) e,
+   se a tarefa exige info externa (stack/refs/precos), rodar deep-research
+   ANTES de implementar
+```
+
+### Mapa categoria → composição
+
+| Categoria | Composição |
+|---|---|
+| `new_project` + pedido visual | `web_cinematic` / `webgl_experience` |
+| `new_project` + descoberta/viabilidade | `new_project_discovery` |
+| `new_feature` + web | `fullstack_crud` / `mobile_app` |
+| `new_feature` + IA | `ai_ml_feature` |
+| `bug` / `debug` | `debug_session` |
+| `refactor` | `refactor_safe` |
+| `security_audit` | `security_audit` |
+| `devops` | `devops_delivery` |
+| API/backend | `api_backend` |
+| dados/pipeline | `data_system` |
+| sem domínio mapeado | matriz `Skill Chain Matrix` acima (cadeia por categoria) |
+
+### Regras
+
+- ✅ Toda ativação passa pelo composer: categoria → domínio → `compositions.chain`.
+- ✅ Study-First é obrigatório: memória antes, deep-research antes de stack nova.
+- ✅ Desduplicação no delta: nenhuma skill rele arquivo já lido pela anterior.
+- ❌ Proibido ativar skill fora de composição sem justificativa registrada em reflection.
+
+---
+
 ## Decision Algorithm
 
 ```

@@ -7,9 +7,10 @@
   "token_budget": 4096,
   "skills": ["pm", "planner", "release", "risk", "requirements", "tradeoff", "tech-debt", "breaking-change", "deps", "docs"],
   "chains": {
-    "plan": ["requirements", "planner", "risk", "pm"],
-    "sprint": ["pm", "planner"],
-    "release": ["release", "breaking-change", "tech-debt", "docs"]
+    "discovery": ["memoria-projeto", "deep-research", "brainstorming", "requirements", "tradeoff", "risk", "task-planner", "pm", "memoria-projeto"],
+    "plan": ["memoria-projeto", "requirements", "risk", "tradeoff", "task-planner", "pm", "docs", "memoria-projeto"],
+    "sprint": ["memoria-projeto", "pm", "task-planner", "risk", "qa", "memoria-projeto"],
+    "release": ["memoria-projeto", "release", "breaking-change", "tech-debt", "docs", "qa", "memoria-projeto"]
   },
   "always": [
     "Tarefas atômicas com acceptance criteria escrito",

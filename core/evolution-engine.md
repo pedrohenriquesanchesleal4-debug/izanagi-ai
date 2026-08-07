@@ -94,6 +94,19 @@ patterns:
 
 ---
 
+## Evolução por Reincidência
+
+Quando o mesmo erro aparecer **3+ vezes** (contagem em `erros-corrigidos.md`/`learnings.md`):
+
+1. Gere entrada permanente em `.agents/memoria/learnings.md` com marcação ⚠️:
+   `- [AAAA-MM-DD] ⚠️ [ÁREA] erro repetido Nx → sintoma + causa raiz + correção definitiva (1-3 linhas cada)`
+2. Recomende ajuste da skill/chain responsável (ex: gotcha no SKILL.md da skill, ordem da chain) como change type **Minor** — requer aprovação do usuário.
+3. Registre o evolution event apontando para a entrada de `learnings.md` como rastreabilidade.
+
+A entrada de `learnings.md` é a correção definitiva; o ajuste de skill é a prevenção. Os dois acontecem juntos.
+
+---
+
 ## Evolution Log Format
 
 ```yaml

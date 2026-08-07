@@ -1,0 +1,39 @@
+---
+description: Izanagi AI Core — regras essenciais do framework (arquitetura antes de código, anti-generic, segurança, tokens)
+globs: ["**/*"]
+---
+
+# Izanagi AI — Core Rules
+
+O Cursor também lê `AGENTS.md` — a referência canônica do framework. Estas regras são o essencial operacional.
+
+## Arquitetura antes de código
+
+- Pense antes de agir: arquitetura primeiro, código depois.
+- Toda saída é um deliverable; trate cada mensagem como produto.
+- Cada tarefa segue o ciclo: Executar → Refletir → Registrar → Evoluir.
+
+## Anti-Generic / High-Craft
+
+- Proibido entregar código/design genérico "cara de IA" (templates óbvios, fundos cinzas chapados, cards repetitivos).
+- Estética Apple-like / Awwwards-grade: `bg-zinc-950`, glassmorphism, bento grids, tipografia precisa, scrollytelling e micro-interações.
+
+## Baixo token, alto sinal
+
+- Comprima sem piedade; nunca repita contexto.
+- Velocidade é feature: um arquivo completo por entrega, leia só o que mudou, agrupe chamadas de ferramentas.
+
+## Segurança
+
+- Sem secrets, sem vetores de injeção, sem credenciais hardcoded (use SSM/Vault/SOPS).
+- Qualidade é medida: se não pode ser medido, não pode ser melhorado.
+
+## Sempre
+
+- IaC versionado; monitoramento desde o dia 1; runbooks; secrets por ferramenta própria.
+
+## Nunca
+
+- Commit `.env`; container root; deploy sem CI; hardcode de configuração de ambiente.
+
+> Gerado pelo Izanagi AI — `izanagi export --cli cursor`

@@ -1,13 +1,14 @@
 # AGENTS.md — Izanagi AI Framework Reference
 
-> Version 2.3.5
+> Version 2.4.0
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
+> Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi
 
 ---
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Decision → Context → Skill → Quality → Reflection → Memory), biblioteca de skills especializadas, 12 agentes pré-definidos, **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Decision → Context → Skill → Quality → Reflection → Memory), biblioteca de skills especializadas, **Skill Composer** (12 composições de skills encadeadas que se conversam), 12 agentes pré-definidos, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
 
 ---
 
@@ -54,18 +55,22 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 ## 4. Estrutura do Framework
 
-- `core/` — 9 engines (.md, incluindo `checkpoint-healing-engine.md`) + **`skill-resolver.json`** (mapa alias → target)
-- `agents/` — 12 definições de agentes em JSON (fonte da verdade para o `/agents`)
+- `core/` — 10 engines (.md, incluindo `skill-composer.md` e `checkpoint-healing-engine.md`) + **`skill-resolver.json`** (mapa alias → target + seção `compositions`)
+- `agents/` — 12 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas (6-10 skills encadeadas)
 - `skills/` — 79+ skills em `skills/<name>/SKILL.md` (+ `references.md` opcional)
-- `.opencode/agent/` — comandos slash do Opencode
-- `src/` — CLI TypeScript (entrypoint: `src/cli/index.ts` → `runCLI`)
+- `references/` — curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo) — consulte antes de implementar
+- `.agents/memoria/` — memória persistente anti-repetição: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`
+- `.opencode/agent/` — comandos slash do Opencode; adapters equivalentes em `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`
+- `src/` — CLI TypeScript (entrypoint: `src/cli/index.ts` → `runCLI`; multi-CLI export: `src/exporters.ts`)
 - `SYSTEM.md` & `RULES.md` — fundação e regras operacionais (Anti-Generic High-Craft & Cinematic UI)
 
 ---
 
 ## 5. Regras de Execução & Autonomia
 
-- **Execução Paralela Concorrente:** Ative múltiplos agentes especializados simultaneamente para frentes distintas (ex: Database + Senior Engineer + Security + Animation em paralelo).
+- **Estudo Antes de Codar (Study-First):** toda tarefa começa (1) carregando `.agents/memoria/` (aprendizados, erros já corrigidos, decisões — nunca repita um erro já resolvido), (2) consultando `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços), e só então (3) arquitetar e implementar. Nunca programe no escuro.
+- **Composição de Skills Obrigatória:** skills nunca são usadas isoladas. O `core/skill-composer.md` + `compositions` do `skill-resolver.json` definem cadeias encadeadas por domínio (output de uma alimenta a input da próxima). Carregar skill "de enfeite" sem a cadeia é proibido.
+- **Execução Paralela Concorrente:** Ative múltiplos agentes especializados simultaneamente para frentes distintas (ex: Database + Senior Engineer + Security + Animation em paralelo), com desduplicação estrita (delta-first: cada skill atua só no que as anteriores não cobriram).
 - **Pré-instalação de Dependências:** Baixe e instale pacotes necessários (`npm install`) **antes** de criar ou alterar arquivos de código. Nunca espere o usuário fazer.
 - **Ponta a Ponta Autónomo:** Execute tarefas até a conclusão total (planejamento → instalação de deps → código → build/teste) sem pausas desnecessárias.
 
@@ -75,10 +80,29 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 Proibido entregar código/design genérico "cara de IA" (templates óbvios, fundos cinzas chapados, cards repetitivos, sem animação).
 - **Obrigatório:** Estética Apple-like / Awwwards-grade (`bg-zinc-950`, glassmorphism, bento grids, tipografia precisa, scrollytelling e micro-interações).
+- **Referências:** use `references/` como vocabulário técnico-visual (ex: `references/webgl-3d.md` traz exemplos reais do threejs.org para citar e aplicar) — nunca invente URLs, nunca entregue colagem.
 
 ---
 
-## 7. Release Flow (resumo)
+## 7. Multi-CLI Compatibility
+
+O framework funciona em qualquer CLI de IA que leia `AGENTS.md` (padrão da indústria) e possui adapters gerados:
+
+| CLI | Arquivos | Comandos/Agentes |
+|---|---|---|
+| **Opencode** | `.opencode/agent/*.md` | `/discovery`, `/architect`, `/agents`... |
+| **Claude Code** | `CLAUDE.md` + `.claude/commands/*.md` + `.claude/skills/*/SKILL.md` | `/discovery`, `/architect`... via commands; skills nativas |
+| **Codex** | `AGENTS.md` + `.codex/instructions.md` + `.codex/agents/*.md` | agentes em markdown simples |
+| **Cursor** | `.cursor/rules/*.mdc` | rules globais (core/agents/memory) |
+| **GitHub Copilot** | `AGENTS.md` + `.github/copilot-instructions.md` | regras de codificação |
+| **Kimi CLI** | `kimi.md` + `.kimi/README.md` | compatível com convenção `.opencode/` |
+
+- `izanagi export --cli claude|codex|cursor|copilot|kimi|all` regenera os adapters (idempotente — nunca sobrescreve arquivos existentes).
+- `izanagi init` já instala os adapters multi-CLI no projeto automaticamente.
+
+---
+
+## 8. Release Flow (resumo)
 
 1. `npm run bump:patch` (ou minor/major) — bumpa `package.json`/`package-lock.json`
 2. `npm run build` — recompila + regenera `.manifest`

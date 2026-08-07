@@ -7,10 +7,11 @@
   "token_budget": 4096,
   "skills": ["professor", "mentor", "explainer", "interactive", "adaptive", "tracker", "patterns", "recovery", "recall", "project-memory"],
   "chains": {
-    "teach": ["professor", "adaptive", "interactive", "tracker"],
-    "mentor": ["mentor", "adaptive", "tracker"],
-    "explain": ["explainer", "professor", "interactive"],
-    "question": ["professor", "explainer", "patterns"]
+    "teach": ["memoria-projeto", "professor", "adaptive", "interactive", "tracker", "memoria-projeto"],
+    "mentor": ["memoria-projeto", "professor", "mentor", "adaptive", "tracker", "memoria-projeto"],
+    "explain": ["memoria-projeto", "explainer", "professor", "interactive", "qa", "memoria-projeto"],
+    "question": ["memoria-projeto", "professor", "explainer", "patterns", "interactive", "memoria-projeto"],
+    "deep_teach": ["memoria-projeto", "deep-research", "professor", "explainer", "adaptive", "tracker", "qa", "memoria-projeto"]
   },
   "always": [
     "Adaptar ao nível do usuário",

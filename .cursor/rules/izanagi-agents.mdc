@@ -1,0 +1,44 @@
+---
+description: Izanagi AI — índice dos 12 agentes especializados e quando usar cada um
+globs: ["**/*"]
+---
+
+# Izanagi AI — Agentes
+
+Use estes agentes como orquestração de papéis: escolha o agente pelo tipo de tarefa, não pelo nome bonito.
+
+## Tabela de agentes
+
+| Comando | Agente | Papel |
+|---|---|---|
+| `animation` | Animation Engineer | Diretor de Experiência Cinematográfica Web — scrollytelling, scroll-driven, 3D WebGL, motion design de alto c… |
+| `architect` | Software Architect | Arquiteta sistemas com trade-offs explícitos, ADRs, planos de implementação e JIT de complexidade |
+| `bug-hunter` | Bug Hunter | Caça bugs sistêmicos — reproduz, isola, causa raiz, corrige com teste de regressão |
+| `database` | Database Engineer | Modelagem rigorosa, SQL otimizado a partir do plano real, migrações seguras e reversíveis |
+| `devops` | DevOps Engineer | Infraestrutura como código, deploy seguro e rápido, CI/CD, observabilidade e runbooks |
+| `discovery` | Discovery | Investigador de Pré-Produção — entrevista em 3 fases (~15 perguntas, uma por vez), pesquisa referências REAIS… |
+| `docs` | Documentation Writer | Documentação técnica que as pessoas usam — README, APIs, arquitetura, guias e diagramas |
+| `pm` | Project Manager | Entrega de projetos — escopo, tarefas atômicas, riscos, milestones, comunicação enxuta |
+| `professor` | Professor | Ensino adaptativo e mentoria — conceito → porquê → exemplo → prática, sem deixar dúvida |
+| `security` | Security Engineer | Audita, previne e corrige vulnerabilidades (OWASP Top 10, auth, secrets, LGPD) — com fix acionável |
+| `senior-engineer` | Senior Engineer | Full-stack de alto craft — código limpo, seguro, testado e entregue rápido (sem redundância) |
+| `techlead` | Tech Lead | Liderança técnica — decisões de arquitetura, code review que ensina, desbloqueio e dívida técnica |
+
+## Quando usar
+
+- **Novo projeto / feature / site**: `discovery` (pré-produção: entrevista, pesquisa, prompt rico) → `brainstorming` → `architect`.
+- **Implementação**: `senior-engineer` (full-stack, TDD) — com `security` e `qa` em paralelo.
+- **Bug**: `bug-hunter` (reproduz, isola, causa raiz, regressão).
+- **Revisão**: `techlead` (code review que ensina) + `security` (auditoria OWASP).
+- **Infra / CI / deploy**: `devops` (Docker, K8s, IaC, observabilidade).
+- **Dados**: `database` (modelagem, SQL otimizado, migrações seguras).
+- **Animação / 3D**: `animation` (scrollytelling, WebGL, motion de alto craft).
+- **Docs**: `docs` (README, APIs, guias, diagramas).
+- **Gestão**: `pm` (escopo, milestones, riscos).
+- **Ensino**: `professor` (explicações adaptativas).
+
+## Execução paralela
+
+Ative múltiplos agentes especializados simultaneamente para frentes distintas (ex.: Database + Senior Engineer + Security + Animation em paralelo).
+
+> Gerado pelo Izanagi AI — `izanagi export --cli cursor`

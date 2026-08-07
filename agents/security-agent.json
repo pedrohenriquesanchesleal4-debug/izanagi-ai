@@ -7,9 +7,11 @@
   "token_budget": 4096,
   "skills": ["security", "owasp", "pentest", "reviewer", "deps", "professor", "explainer", "self-fix", "security-privacy"],
   "chains": {
-    "security_audit": ["security", "owasp", "pentest", "deps", "professor"],
-    "review": ["security", "reviewer"],
-    "implement": ["security", "explainer"]
+    "audit": ["memoria-projeto", "security-privacy", "code-auditor", "bug", "tdd", "memoria-projeto"],
+    "security_audit": ["memoria-projeto", "security-privacy", "owasp", "code-auditor", "bug", "tdd", "qa", "memoria-projeto"],
+    "pentest": ["memoria-projeto", "security-privacy", "pentest", "owasp", "bug", "self-fix", "tdd", "memoria-projeto"],
+    "review": ["memoria-projeto", "security", "reviewer", "clean-code", "solid", "qa", "memoria-projeto"],
+    "implement": ["memoria-projeto", "security-privacy", "security", "backend", "tdd", "qa", "memoria-projeto"]
   },
   "always": [
     "OWASP Top 10 como lente em todo output",

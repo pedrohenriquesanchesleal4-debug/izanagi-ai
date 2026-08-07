@@ -7,12 +7,12 @@
   "token_budget": 4096,
   "skills": ["animation-web", "motion-design", "webgl-3d", "frontend", "architect", "ux", "a11y", "perf", "reviewer"],
   "chains": {
-    "new_project": ["planner", "animation-web", "motion-design", "architect", "webgl-3d", "ux"],
-    "new_feature": ["animation-web", "motion-design", "ux"],
-    "implementation": ["motion-design", "animation-web", "webgl-3d"],
-    "frontend": ["animation-web", "motion-design", "webgl-3d", "ux"],
-    "review": ["animation-web", "ux", "a11y", "performance"],
-    "refine": ["animation-web", "motion-design"]
+    "cinematic_site": ["memoria-projeto", "deep-research", "ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "web-perf-seo", "qa", "memoria-projeto"],
+    "new_feature": ["memoria-projeto", "ui-ux-pro-max", "motion-design", "animation-web", "web-perf-seo", "qa", "memoria-projeto"],
+    "implementation": ["memoria-projeto", "ui-ux-pro-max", "motion-design", "animation-web", "webgl-3d", "frontend", "web-perf-seo", "qa", "memoria-projeto"],
+    "frontend": ["memoria-projeto", "ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "a11y", "web-perf-seo", "qa", "memoria-projeto"],
+    "review": ["memoria-projeto", "ui-ux-pro-max", "a11y", "web-perf-seo", "qa", "memoria-projeto"],
+    "refine": ["memoria-projeto", "motion-design", "animation-web", "web-perf-seo", "qa", "memoria-projeto"]
   },
   "process": [
     "1. Entender o objetivo narrativo e o público (por que o usuário rola?)",

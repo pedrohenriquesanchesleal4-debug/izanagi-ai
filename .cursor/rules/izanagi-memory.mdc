@@ -1,0 +1,28 @@
+---
+description: Izanagi AI — memória de projeto, anti-repetição e evolução contínua
+globs: ["**/*"]
+---
+
+# Izanagi AI — Memória & Anti-Repetição
+
+## Arquitetura de memória
+
+- **Session Memory**: contexto da conversa atual — comprima ao exceder 70% do orçamento de tokens.
+- **Project Memory**: decisões, padrões e erros resolvidos deste projeto (skills `memoria-projeto` e `handoff-sessao`).
+- **Long-Term Memory**: knowledge graph — atualizado a cada tarefa concluída.
+
+## Anti-repetição
+
+- Nunca releia arquivos que já estão no contexto e não mudaram.
+- Prefira grep/glob direcionado a abrir arquivos inteiros.
+- Prefira edições por diff/patch a reescrever arquivos inteiros.
+- Não narre intenção antes de executar; não ecoe contexto.
+- Economia de tokens é regra permanente (skill `economia-tokens`).
+
+## Ciclo de evolução
+
+Tarefa → Executar → Refletir → Registrar → Atualizar skills → Próxima tarefa.
+
+Cada tarefa atualiza a base de skills — o agente melhora a cada interação.
+
+> Gerado pelo Izanagi AI — `izanagi export --cli cursor`

@@ -7,9 +7,10 @@
   "token_budget": 4096,
   "skills": ["debug", "bug", "root-cause", "unit-test", "integration-test", "reviewer", "perf", "professor", "explainer", "self-fix", "bug-prevention"],
   "chains": {
-    "bug": ["debug", "bug", "root-cause", "unit-test", "professor"],
-    "debug": ["debug", "bug", "explainer"],
-    "prevent": ["bug-prevention", "root-cause", "reviewer"]
+    "bug": ["memoria-projeto", "root-cause", "bug", "tdd", "self-fix", "memoria-projeto"],
+    "debug": ["memoria-projeto", "debug", "root-cause", "bug", "tdd", "self-fix", "memoria-projeto"],
+    "prevent": ["memoria-projeto", "bug-prevention", "root-cause", "reviewer", "qa", "memoria-projeto"],
+    "regression": ["memoria-projeto", "bug", "root-cause", "tdd", "integration-test", "self-fix", "qa", "memoria-projeto"]
   },
   "always": [
     "Reproduzir antes de fixar (cenário mínimo)",

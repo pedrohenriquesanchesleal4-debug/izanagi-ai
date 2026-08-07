@@ -170,6 +170,42 @@ on_complete:
 
 ---
 
+## Persistência Real (Memory Hooks)
+
+O YAML acima é teórico — a persistência de verdade acontece em `.agents/memoria/` (ver skill `memoria-projeto`). Ao final de cada tarefa:
+
+| O que aconteceu | Hook |
+|---|---|
+| Erro corrigido (1ª vez) | append 1 linha em `.agents/memoria/erros-corrigidos.md` |
+| Erro repetido (2+ vezes) | marcação `[REINCIDÊNCIA]` + contagem em `learnings.md` |
+| Decisão de arquitetura/design | append 1 linha em `.agents/memoria/decisoes.md` |
+| Padrão de código novo / convenção | append 1 linha em `.agents/memoria/contexto.md` |
+
+Regras: append (nunca reescrever), entrada de 1-3 linhas no formato `- [AAAA-MM-DD] descrição`, sem dados sensíveis. Sem arquivo de memória → nada a persistir (reflexão vira log interno apenas).
+
+## Triagem Anti-Repetição (antes da entrega)
+
+Antes de entregar, responda contra `.agents/memoria/`:
+
+1. **Já resolvido?** — `erros-corrigidos.md`/`learnings.md` têm solução para este problema? Se sim, aplique a correção registrada em vez de debug novo.
+2. **Armadilha registrada?** — `learnings.md` marca armadilha desta área/stack? Não trilhe o caminho conhecido como errado.
+3. **Decisão contraditória?** — `decisoes.md` tem decisão prévia que invalida o plano? Alinhe antes de prosseguir.
+
+Falhou em qualquer uma → entregue citando a entrada de memória usada, sem silenciar a contradição.
+
+## Loop de Correção em 1 Passe
+
+Se um erro se repetir:
+
+1. **Pare** — não trilhe o mesmo caminho de debug.
+2. Abra `learnings.md` / `erros-corrigidos.md` e localize a entrada do erro.
+3. Aplique a **correção definitiva registrada** — direto, sem re-explorar.
+4. Registre a reincidência (contagem +1, marcação `[REINCIDÊNCIA]`).
+
+NUNCA percorra o mesmo debug duas vezes — a memória existe exatamente para isso.
+
+---
+
 ## Changelog
 
 ### 1.0.0 (2026-07-17)

@@ -9,6 +9,7 @@ import { compileCommand } from './commands/compile.js';
 import { runCommand } from './commands/run.js';
 import { createCommand } from './commands/create.js';
 import { chatCommand } from './commands/chat.js';
+import { exportCommand } from './commands/export.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,6 +64,10 @@ export async function runCLI(args: string[]): Promise<void> {
       doctorCommand(baseDir);
       break;
 
+    case 'export':
+      exportCommand(rest);
+      break;
+
     case 'version':
     case '-v':
     case '--version':
@@ -97,6 +102,8 @@ function showHelp(): void {
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
   \x1b[32mlist [skills|agents]\x1b[0m           Lists all registered skills and agents.
   \x1b[32mdoctor\x1b[0m                        Validates framework integrity, JSONs, and alias links.
+  \x1b[32mexport --cli <target>\x1b[0m         Exports framework adapters for other AI CLIs
+                          (claude, codex, cursor, copilot, kimi, all).
   \x1b[32mversion\x1b[0m                       Displays Izanagi AI version.
 
 \x1b[1mOptions:\x1b[0m

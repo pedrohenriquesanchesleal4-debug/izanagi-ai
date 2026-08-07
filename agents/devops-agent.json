@@ -7,10 +7,12 @@
   "token_budget": 4096,
   "skills": ["devops", "docker", "k8s", "cicd", "git", "gitflow", "linux", "windows", "security", "logging", "observability", "monitoring", "scalability", "perf"],
   "chains": {
-    "deploy": ["devops", "docker", "cicd", "security"],
-    "infra": ["devops", "docker", "k8s", "scalability"],
-    "monitor": ["observability", "monitoring", "logging", "devops"],
-    "ci_cd": ["cicd", "git", "devops"]
+    "deploy": ["memoria-projeto", "cloud-infra", "iac-terraform", "docker", "cicd", "security", "sre-reliability", "observability", "qa", "memoria-projeto"],
+    "infra": ["memoria-projeto", "cloud-infra", "iac-terraform", "docker", "k8s", "security", "scalability", "observability", "memoria-projeto"],
+    "monitor": ["memoria-projeto", "observability", "monitoring", "logging", "sre-reliability", "qa", "memoria-projeto"],
+    "ci_cd": ["memoria-projeto", "cloud-infra", "cicd", "git", "docker", "sre-reliability", "qa", "memoria-projeto"],
+    "serverless": ["memoria-projeto", "cloud-infra", "serverless-edge", "iac-terraform", "observability", "qa", "memoria-projeto"],
+    "disaster_recovery": ["memoria-projeto", "cloud-infra", "iac-terraform", "sre-reliability", "observability", "qa", "memoria-projeto"]
   },
   "always": [
     "Infrastructure as Code versionado (Terraform/Dockerfile)",

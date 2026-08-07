@@ -9,14 +9,17 @@
 | # | Rule | Description |
 |---|------|-------------|
 | 1 | **Architecture First** | Never write code without a plan. Architecture → Plan → Code → Review. |
-| 2 | **One File Per Response** | Each output produces exactly one complete file. No exceptions. |
-| 3 | **Consistency** | Every new file must be compatible with every existing file. No breaking changes. |
-| 4 | **Low Token** | Every token must carry meaning. Eliminate fluff, repetition, and noise. |
-| 5 | **Self-Review** | After every task, reflect. What was good? What can improve? Log it. |
-| 6 | **Teach** | Every response should educate the user at least one thing. |
-| 7 | **Security by Default** | Security is not a layer. It is embedded in every decision. |
-| 8 | **Measurable Quality** | If it cannot be validated, it is not done. |
-| 9 | **Anti-Generic High-Craft & Cinematic UI** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate or gray-card layouts ("cara de IA"). Always build innovative, Apple-style / Awwwards-grade work featuring rich dark aesthetics (`bg-zinc-950`), glassmorphism, bento grids, micro-interactions, motion, and scrollytelling capabilities. |
+| 2 | **Study-First (Estudo Antes de Codar)** | Antes de QUALQUER implementação: (1) carregue `.agents/memoria/` (learnings, erros já corrigidos, decisões — nunca repita um erro já resolvido); (2) consulte `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços). Proibido programar no escuro. |
+| 3 | **Skill Composition Obrigatória** | Skills nunca são usadas isoladas. Cada skill ativada puxa a cadeia do seu domínio (`core/skill-composer.md` + `compositions` em `core/skill-resolver.json`). Output de uma alimenta o input da próxima. Skill "de enfeite" sem cadeia = violação. |
+| 4 | **Anti-Repetição (Never Repeat Mistakes)** | Antes de entregar, triagem obrigatória: (a) esse problema já foi resolvido/corrigido antes? (b) essa armadilha está registrada no `.agents/memoria/learnings.md`? (c) há decisão prévia que contradiz o plano? Se um erro se repetir 3+, registre reincidência com destaque ⚠️ e aplique a correção definitiva — nunca re-percorra o mesmo caminho de debug. |
+| 5 | **One File Per Response** | Each output produces exactly one complete file. No exceptions. |
+| 6 | **Consistency** | Every new file must be compatible with every existing file. No breaking changes. |
+| 7 | **Low Token** | Every token must carry meaning. Eliminate fluff, repetition, and noise. |
+| 8 | **Self-Review** | After every task, reflect. What was good? What can improve? Log it. |
+| 9 | **Teach** | Every response should educate the user at least one thing. |
+| 10 | **Security by Default** | Security is not a layer. It is embedded in every decision. |
+| 11 | **Measurable Quality** | If it cannot be validated, it is not done. |
+| 12 | **Anti-Generic High-Craft & Cinematic UI** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate or gray-card layouts ("cara de IA"). Always build innovative, Apple-style / Awwwards-grade work featuring rich dark aesthetics (`bg-zinc-950`), glassmorphism, bento grids, micro-interactions, motion, and scrollytelling capabilities. |
 
 ---
 
@@ -123,6 +126,15 @@ compatibility: ">=1.0.0"
 
 Skills are activated by the Decision Engine based on task classification. Multiple skills can form a chain (DAG). A skill chain must be declared in the `dependencies` field.
 
+### 3.4 Skill Composition (Como as Skills se Conversam)
+
+Skills NUNCA atuam isoladas — cada ativação dispara a cadeia de composição do seu domínio, definida em `core/skill-composer.md` e `compositions` do `core/skill-resolver.json`:
+
+1. **Output→Input Chaining**: o artefato de cada skill alimenta a próxima (ex: `ui-ux-pro-max` gera design system → `frontend` consome os tokens → `motion-design` aplica micro-interações → `animation-web` cria o scrollytelling → `web-perf-seo` valida vitals).
+2. **Domínios principais**: `web_cinematic`, `webgl_experience`, `api_backend`, `data_system`, `security_audit`, `devops_delivery`, `debug_session`, `refactor_safe`, `new_project_discovery`, `fullstack_crud`, `mobile_app`, `ai_ml_feature`.
+3. **Desduplicação Delta-First**: se duas skills da cadeia sobrepõem responsabilidade (ex: `qa` e `code-auditor`), a segunda atua apenas no delta — o que a primeira não cobriu. Nunca reler arquivos que outra skill da cadeia já leu.
+4. **Início obrigatório**: toda cadeia começa carregando `.agents/memoria/` e, se a tarefa exige informação externa, `deep-research` antes de implementar.
+
 ---
 
 ## 4. Memory Rules
@@ -130,16 +142,23 @@ Skills are activated by the Decision Engine based on task classification. Multip
 ### 4.1 Storage
 
 - Session memory: retained for current conversation only.
-- Project memory: persisted across sessions for the same project.
+- Project memory: persisted across sessions for the same project — **`.agents/memoria/`**: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`.
 - Long-term memory: persisted across all projects (user preferences, patterns).
 
-### 4.2 Compression
+### 4.2 Anti-Repetição (Protocolo de Reincidência)
+
+- Erro novo → append em `erros-corrigidos.md` (`- [AAAA-MM-DD] descrição curta`).
+- Erro repetido → marcar `[REINCIDÊNCIA]` + incrementar contagem Nx na entrada existente.
+- 3+ reincidências → entrada permanente ⚠️ em `learnings.md` (`- [AAAA-MM-DD] ⚠️ [ÁREA] erro repetido Nx → sintoma + causa raiz + correção definitiva`) + sugerir ajuste da skill/chain responsável.
+- Proibido: re-percorrer um caminho de debug já registrado; repetir código já apresentado; reexplicar contexto já dado.
+
+### 4.3 Compression
 
 - Memory is compressed when it exceeds 70% of the allocated budget.
 - Compression preserves: decisions, patterns, errors, key facts.
 - Compression removes: repetition, verbose explanations, intermediate steps.
 
-### 4.3 Recall
+### 4.4 Recall
 
 - Only relevant memory is loaded into context.
 - Relevance is determined by the Context Engine using keyword matching and knowledge graph traversal.
