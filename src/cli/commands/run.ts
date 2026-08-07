@@ -230,6 +230,12 @@ export function runCommand(baseDir: string, args: string[]): void {
   fullPrompt += `<!-- TASK: ${task} -->\n`;
   fullPrompt += `<!-- AGENT: ${agent.name} (v${agent.version || '1.0.0'}) -->\n`;
   fullPrompt += `<!-- MODE: ${compact ? 'compact (economia de tokens)' : 'full'} -->\n\n`;
+
+  fullPrompt += `## 🚨 CRITICAL EXECUTION MANDATE (ZERO CHECKLISTS / FULL-STACK REAL CODE)\n`;
+  fullPrompt += `- **ABSOLUTELY FORBIDDEN:** Writing lazy task lists, checklists ([✓]), summary-only responses, or empty stubs/placeholders (TODO, // implement later).\n`;
+  fullPrompt += `- **MANDATORY:** Generate 100% real, complete, production-ready code files for every layer requested (Landing Page + Auth + Dashboard/CRUD + Backend/Prisma Schema + README).\n`;
+  fullPrompt += `- **HIGH-CRAFT UI:** Rich dark aesthetics (bg-zinc-950), glassmorphism, bento grids, micro-interactions, and robust TypeScript typing.\n\n`;
+
   fullPrompt += `## USER TASK\n${task}\n\n`;
   fullPrompt += `## AGENT IDENTITY & ROLE\n${agent.identity || agent.role}\n\n`;
 
@@ -238,6 +244,16 @@ export function runCommand(baseDir: string, args: string[]): void {
   }
   if (agent.never && agent.never.length > 0) {
     fullPrompt += `## PROHIBITED ACTIONS (NEVER)\n` + agent.never.map((n: string) => `- ${n}`).join('\n') + `\n\n`;
+  }
+
+  // Auto-injeta referências curadas (stack, ui, scrollytelling)
+  const refDir = path.join(baseDir, 'references');
+  const refFiles = ['stack-2026.md', 'ui-design-systems.md', 'scrollytelling.md'];
+  for (const refFile of refFiles) {
+    const refPath = path.join(refDir, refFile);
+    if (fs.existsSync(refPath)) {
+      fullPrompt += `## CURATED REFERENCE: ${refFile}\n` + summarizeSkill(refPath, 80) + `\n\n`;
+    }
   }
 
   fullPrompt += `## COMPUTED SKILL CHAIN (${compactSkillChain.join(' -> ')})\n\n`;

@@ -39,11 +39,13 @@ export function compileCommand(baseDir: string, agentIdentifier?: string, output
     compiled += `### NEVER DO\n` + agent.never.map((n: string) => `- ${n}`).join('\n') + `\n\n`;
   }
 
-  if (systemContent) {
-    compiled += `--- SYSTEM FOUNDATION ---\n${systemContent}\n\n`;
+  if (systemContent && fs.existsSync(systemContent)) {
+    const sysText = fs.readFileSync(systemContent, 'utf-8');
+    compiled += `--- SYSTEM FOUNDATION ---\n${sysText}\n\n`;
   }
-  if (rulesContent) {
-    compiled += `--- OPERATIONAL RULES ---\n${rulesContent}\n\n`;
+  if (rulesContent && fs.existsSync(rulesContent)) {
+    const rulesText = fs.readFileSync(rulesContent, 'utf-8');
+    compiled += `--- OPERATIONAL RULES ---\n${rulesText}\n\n`;
   }
 
   if (outputFile) {

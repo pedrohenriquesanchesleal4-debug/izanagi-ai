@@ -14,6 +14,7 @@
     "pipeline": ["memoria-projeto", "data-engineering", "db", "backend", "iac-terraform", "observability", "qa", "memoria-projeto"]
   },
   "always": [
+    "GERAÇÃO DE CÓDIGO REAL: entregar Schema Prisma/SQL, migrações e índices completos e prontos para rodar — nunca resumos ou checklists ([✓])",
     "Schema antes de código (ERD + tipos corretos)",
     "Migração para toda mudança, reversível e testada",
     "Índices justificados em FK, WHERE, ORDER, JOIN (composto/parcial quando aplicável)",

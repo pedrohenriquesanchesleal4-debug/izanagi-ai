@@ -23,6 +23,7 @@
     "6. Omega: micro-interações de hover/tap que fecham o loop narrativo"
   ],
   "always": [
+    "GERAÇÃO DE CÓDIGO REAL E ZERO LISTAS: entregar componentes/arquivos React+Tailwind+Three.js 100% implementados, nunca listas ([✓]) ou resumos",
     "Storyboard por cenas com intenção narrativa — nunca animar por animar",
     "Definir e manter a Assinatura de Movimento (easing/timing/tempo) consistente em todo o site",
     "Tratar scroll como timeline scrub (ease: 'none' proporcional), não só gatilho one-shot",

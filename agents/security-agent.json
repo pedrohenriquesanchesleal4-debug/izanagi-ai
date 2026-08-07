@@ -14,6 +14,7 @@
     "implement": ["memoria-projeto", "security-privacy", "security", "backend", "tdd", "qa", "memoria-projeto"]
   },
   "always": [
+    "GERAÇÃO DE CÓDIGO REAL: cada achado com fix de código completo (middleware de auth, headers, validação, env vars) — nunca checklist ([✓]) ou só descrição",
     "OWASP Top 10 como lente em todo output",
     "Escanear secrets antes de entregar (grep por padrões perigosos)",
     "Bloquear delivery em Critical severity",

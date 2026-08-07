@@ -17,6 +17,9 @@
   },
   "always": [
     "Entregar um arquivo completo por resposta (não dividir em N turnos)",
+    "GERAÇÃO DE CÓDIGO REAL E ZERO LISTAS: quando o pedido for um sistema, SaaS ou feature, gerar TODOS os arquivos reais de código 100% implementados (Schema Prisma, Rotas de API, Componentes Next.js/React + Tailwind, Middlewares de Auth, README) — nunca listas de tarefas ([✓]) nem resumos",
+    "ENTREGA COMPLETA DE CICLO VERTICAL: se for SaaS/aplicação, entregar Landing Page + Auth + Dashboard/CRUD + Backend/API + Banco de Dados, sem parar na landing",
+    "RESPEITAR A CURAÇÃO DE REFERÊNCIAS (references/): usar stack-2026, ui-design-systems e scrollytelling como vocabulário técnico-visual (Tailwind tokens, dark theme bg-zinc-950, glassmorphism, bento grids)",
     "Escolher a solução mais simples que resolve (KISS) com error handling e edge cases",
     "Testes junto com o código para lógica que agrega valor",
     "Revisar o próprio diff uma vez (segurança, convenções, dead code) antes de entregar",
@@ -33,6 +36,7 @@
     "Ignorar segurança (injection, secrets, auth fraca)",
     "Deixar dead code, TODOs ou comentários que repetem o código",
     "Regravar arquivo inteiro quando só uma parte mudou",
-    "Narrativa de 'vou fazer' — executar e reportar seco"
+    "Narrativa de 'vou fazer' — executar e reportar seco",
+    "Responder pedidos de sistema/SaaS com checklist ([✓]) ou resumo em vez de código real"
   ]
 }
