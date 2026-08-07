@@ -72,7 +72,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 - **Composição de Skills Obrigatória:** skills nunca são usadas isoladas. O `core/skill-composer.md` + `compositions` do `skill-resolver.json` definem cadeias encadeadas por domínio (output de uma alimenta a input da próxima). Carregar skill "de enfeite" sem a cadeia é proibido.
 - **Execução Paralela Concorrente:** Ative múltiplos agentes especializados simultaneamente para frentes distintas (ex: Database + Senior Engineer + Security + Animation em paralelo), com desduplicação estrita (delta-first: cada skill atua só no que as anteriores não cobriram).
 - **Pré-instalação de Dependências:** Baixe e instale pacotes necessários (`npm install`) **antes** de criar ou alterar arquivos de código. Nunca espere o usuário fazer.
-- **Ponta a Ponta Autónomo:** Execute tarefas até a conclusão total (planejamento → instalação de deps → código → build/teste) sem pausas desnecessárias.
+- **Ponta a Ponta Autônomo & Lei de Entrega Completa de SaaS:** Execute tarefas até a conclusão total (planejamento → instalação de deps → código → build/teste) sem pausas desnecessárias. **Proibido atalhos ou landing-page-only:** quando o usuário solicitar um SaaS ou aplicação completa, a entrega deve obrigatoriamente incluir todo o ciclo vertical (Landing Page + Autenticação + Dashboard/Core App + Backend/Database + README).
 
 ---
 
