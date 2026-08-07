@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
+import { buildBlueprintCtx } from '../blueprint.js';
 
 interface RunArgs {
   agentId?: string;
@@ -235,6 +236,12 @@ export function runCommand(baseDir: string, args: string[]): void {
   fullPrompt += `- **ABSOLUTELY FORBIDDEN:** Writing lazy task lists, checklists ([✓]), summary-only responses, or empty stubs/placeholders (TODO, // implement later).\n`;
   fullPrompt += `- **MANDATORY:** Generate 100% real, complete, production-ready code files for every layer requested (Landing Page + Auth + Dashboard/CRUD + Backend/Prisma Schema + README).\n`;
   fullPrompt += `- **HIGH-CRAFT UI:** Rich dark aesthetics (bg-zinc-950), glassmorphism, bento grids, micro-interactions, and robust TypeScript typing.\n\n`;
+
+  // Blueprint Engine: manifiesto de arquivos + contrato de materialização + gates
+  const bp = buildBlueprintCtx(task, baseDir);
+  if (bp.scope !== 'other') {
+    fullPrompt += bp.blueprint + `\n`;
+  }
 
   fullPrompt += `## USER TASK\n${task}\n\n`;
   fullPrompt += `## AGENT IDENTITY & ROLE\n${agent.identity || agent.role}\n\n`;
