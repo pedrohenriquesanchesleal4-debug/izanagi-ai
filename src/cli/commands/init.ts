@@ -6,11 +6,13 @@ import { selectPacks } from '../prompts.js';
 interface InitArgs {
   targetDir: string;
   packs?: string[];
+  cli?: string;
 }
 
 function parseInitArgs(args: string[]): InitArgs {
   let targetDir = process.cwd();
   const packs: string[] = [];
+  let cli: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -22,6 +24,14 @@ function parseInitArgs(args: string[]): InitArgs {
       }
     } else if (arg.startsWith('--packs=')) {
       packs.push(...arg.slice(8).split(',').map((s) => s.trim()).filter(Boolean));
+    } else if (arg === '--cli' || arg === '-c') {
+      const value = args[i + 1];
+      if (value) {
+        cli = value.trim();
+        i++;
+      }
+    } else if (arg.startsWith('--cli=')) {
+      cli = arg.slice(6).trim();
     } else if (arg === '--all') {
       packs.push(...PACKS.map((p) => p.id));
     } else if (!arg.startsWith('-')) {
@@ -29,7 +39,7 @@ function parseInitArgs(args: string[]): InitArgs {
     }
   }
 
-  return { targetDir, packs: packs.length > 0 ? packs : undefined };
+  return { targetDir, packs: packs.length > 0 ? packs : undefined, cli };
 }
 
 function validatePacks(packs: string[]): string[] {
@@ -45,7 +55,7 @@ function validatePacks(packs: string[]): string[] {
 }
 
 export async function initCommand(args: string[]): Promise<void> {
-  const { targetDir, packs } = parseInitArgs(args);
+  const { targetDir, packs, cli } = parseInitArgs(args);
   const destinationRoot = path.resolve(targetDir);
 
   if (fs.existsSync(destinationRoot)) {
@@ -68,7 +78,7 @@ export async function initCommand(args: string[]): Promise<void> {
     selectedPacks = await selectPacks(PACKS, CORE_PACK_ID);
   }
 
-  installToProject(destinationRoot, selectedPacks);
+  installToProject(destinationRoot, selectedPacks, cli);
 
   console.log('\x1b[32mIzanagi AI successfully initialized!\x1b[0m');
   console.log(`\x1b[90mNext:\x1b[0m \x1b[1mcd ${path.basename(destinationRoot)}\x1b[0m && \x1b[36mizanagi run "your task"\x1b[0m\n`);

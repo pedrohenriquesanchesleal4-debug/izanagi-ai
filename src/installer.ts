@@ -144,7 +144,7 @@ export function resolveFrameworkRoot(cwd: string): string {
 /**
  * Instala os packs selecionados do Izanagi AI na pasta `.agents` do projeto do usuário.
  */
-export function installToProject(targetDir: string, selectedPackIds: string[]): void {
+export function installToProject(targetDir: string, selectedPackIds: string[], cliTarget?: string): void {
   const destinationRoot = path.resolve(targetDir);
   const packageDir = getPackageDir();
 
@@ -230,24 +230,49 @@ export function installToProject(targetDir: string, selectedPackIds: string[]): 
     }
   }
 
-  // Multi-CLI adapters: Claude Code, Codex, Cursor, Copilot, Kimi — gerados a partir do framework instalado
-  const adapterJobs: Array<{ name: string; run: () => string[] }> = [
-    { name: 'Claude Code', run: () => exportToClaude(destinationRoot) },
-    { name: 'Codex (OpenAI)', run: () => exportToCodex(destinationRoot) },
-    { name: 'Cursor', run: () => exportToCursor(destinationRoot) },
-    { name: 'GitHub Copilot', run: () => exportToCopilot(destinationRoot) },
-    { name: 'Kimi CLI (Moonshot)', run: () => exportToKimi(destinationRoot) }
-  ];
+  // Determina qual CLI/adaptador gerar para não poluir o projeto com arquivos desnecessários
+  let targetCli = (cliTarget || '').toLowerCase().trim();
+  if (!targetCli) {
+    // Auto-detecção baseada em pastas existentes no projeto
+    if (fs.existsSync(path.join(destinationRoot, '.cursor'))) targetCli = 'cursor';
+    else if (fs.existsSync(path.join(destinationRoot, '.claude'))) targetCli = 'claude';
+    else if (fs.existsSync(path.join(destinationRoot, '.github'))) targetCli = 'copilot';
+    else if (fs.existsSync(path.join(destinationRoot, '.codex'))) targetCli = 'codex';
+    else if (fs.existsSync(path.join(destinationRoot, '.kimi'))) targetCli = 'kimi';
+    else targetCli = 'opencode'; // Padrão limpo sem poluir outras CLIs
+  }
 
-  console.log('\n  \x1b[1mMulti-CLI adapters:\x1b[0m');
-  for (const job of adapterJobs) {
-    try {
-      const created = job.run();
-      console.log(`  \x1b[32m✔\x1b[0m ${job.name} adapter: ${created.length} file(s) created`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.log(`  \x1b[33m⚠\x1b[0m ${job.name} adapter skipped: ${message}`);
+  const adapterMap: Record<string, () => string[]> = {
+    claude: () => exportToClaude(destinationRoot),
+    cursor: () => exportToCursor(destinationRoot),
+    codex: () => exportToCodex(destinationRoot),
+    copilot: () => exportToCopilot(destinationRoot),
+    kimi: () => exportToKimi(destinationRoot),
+    opencode: () => [] // Opencode já é nativo
+  };
+
+  if (targetCli === 'all') {
+    console.log('\n  \x1b[1mGenerating all Multi-CLI adapters:\x1b[0m');
+    for (const [name, fn] of Object.entries(adapterMap)) {
+      if (name === 'opencode') continue;
+      try {
+        const created = fn();
+        console.log(`  \x1b[32m✔\x1b[0m ${name} adapter: ${created.length} file(s) created`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.log(`  \x1b[33m⚠\x1b[0m ${name} skipped: ${msg}`);
+      }
     }
+  } else if (adapterMap[targetCli] && targetCli !== 'opencode') {
+    try {
+      const created = adapterMap[targetCli]();
+      console.log(`  \x1b[32m✔\x1b[0m Generated adapter for CLI: \x1b[1m${targetCli}\x1b[0m (${created.length} files)`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(`  \x1b[33m⚠\x1b[0m Adapter ${targetCli} skipped: ${msg}`);
+    }
+  } else {
+    console.log(`  \x1b[32m✔\x1b[0m CLI target: Opencode (clean workspace, no extra CLI folders)`);
   }
 
   console.log(`\n\x1b[32m[Izanagi AI] Success! ${copiedItems} files copied to .agents (${packs.length} packs).\x1b[0m`);
