@@ -233,7 +233,10 @@
     "swarm": "skills/parallel-agents/SKILL",
     "defense-in-depth": "skills/defense-in-depth/SKILL",
     "camadas-seguranca": "skills/defense-in-depth/SKILL",
-    "layered-security": "skills/defense-in-depth/SKILL"
+    "layered-security": "skills/defense-in-depth/SKILL",
+    "systematic-debugging": "skills/systematic-debugging/SKILL",
+    "debug-6-fases": "skills/systematic-debugging/SKILL",
+    "six-phase-debug": "skills/systematic-debugging/SKILL"
   },
   "compositions": {
     "web_cinematic": {
@@ -371,6 +374,7 @@
         "exception"
       ],
       "chain": [
+        "systematic-debugging",
         "root-cause",
         "bug",
         "tdd",

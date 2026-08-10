@@ -65,7 +65,7 @@ These are frequently overlooked issues that make UI look unprofessional.
 Before delivering app UI code, verify every item below. Start with the process steps, then the per-area checkboxes.
 
 ### Process
-- [ ] Applied the Accessibility/Performance/Animation rules from `quick-reference.md` (`color-contrast`, `z-index-management`, `motion-meaning`, `loading-states`) as a validation pass before implementation
+- [ ] Ran `--domain ux "animation accessibility z-index loading"` as a validation pass before implementation
 - [ ] Reviewed `quick-reference.md` §1–§3 (CRITICAL + HIGH) as a final pass
 - [ ] Tested on 375px (small phone) and in landscape orientation
 - [ ] Verified behavior with **reduced-motion** enabled and **Dynamic Type**/largest system text size

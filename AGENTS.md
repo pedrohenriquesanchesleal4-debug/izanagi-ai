@@ -59,7 +59,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 - `core/` — 10 engines (.md, incluindo `skill-composer.md` e `checkpoint-healing-engine.md`) + **`skill-resolver.json`** (mapa alias → target + seção `compositions`)
 - `agents/` — 13 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas
-- `skills/` — 204 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria) e `anti-ai-slop` (auditoria zero "cara de IA")
+- `skills/` — 207 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria), `ui-ux-pro-max` (design system com motor BM25 offline em Node) e `anti-ai-slop` (auditoria zero "cara de IA")
 - `references/` — curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
 - `.agents/memoria/` — memória persistente anti-repetição: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`
 - `.opencode/agent/` — comandos slash do Opencode; adapters equivalentes gerados sob demanda em `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`

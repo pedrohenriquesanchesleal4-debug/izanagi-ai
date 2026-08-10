@@ -1,6 +1,6 @@
 # Quick Reference — Full Rule Set (all 10 categories)
 
-Load this file when doing a UI review/audit pass, or when you need the full checklist for a category beyond the priority table in SKILL.md. This is the static index of the complete rule set — scan the relevant category on demand (avoid loading the whole file every time).
+Load this file when doing a UI review/audit pass, or when you need the full checklist for a category beyond the priority table in SKILL.md. Each rule is also present verbatim in `data/ux-guidelines.csv` / `data/app-interface.csv` and is reachable via `--domain ux` / `--domain web` search — this file is a static index for quick scanning without a search round-trip.
 
 ## Quick Reference
 
@@ -65,10 +65,10 @@ Load this file when doing a UI review/audit pass, or when you need the full chec
 
 ### 4. Style Selection (HIGH)
 
-- `style-match` - Match style to product type (use the design system generator in SKILL.md)
+- `style-match` - Match style to product type (use `--design-system` for recommendations)
 - `consistency` - Use same style across all pages
 - `no-emoji-icons` - Use SVG icons (Heroicons, Lucide), not emojis
-- `color-palette-from-product` - Choose palette matching product/industry (query SKILL.md for style/palette guidance)
+- `color-palette-from-product` - Choose palette from product/industry (search `--domain color`)
 - `effects-match-style` - Shadows, blur, radius aligned with chosen style (glass / flat / clay etc.)
 - `platform-adaptive` - Respect platform idioms (iOS HIG vs Material): navigation, controls, typography, motion
 - `state-clarity` - Make hover/pressed/disabled states visually distinct while staying on-style (Material state layers)

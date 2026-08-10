@@ -17,10 +17,14 @@ function classifyTask(desc: string) {
   ) {
     return { category: 'frontend', agent: 'animation' };
   }
-  if (lower.includes('architect') || lower.includes('design') || lower.includes('microservice') || lower.includes('clean arch') || lower.includes('estrutura') || lower.includes('arquitet')) {
+  if (lower.includes('architect') || lower.includes('microservice') || lower.includes('clean arch') || lower.includes('estrutura') || lower.includes('arquitet')) {
     return { category: 'architecture', agent: 'architect' };
   }
-  if (lower.includes('security') || lower.includes('auth') || lower.includes('owasp') || lower.includes('vulnerab') || lower.includes('audit') || lower.includes('lgpd')) {
+  // Páginas/componentes de UI vêm antes de security: "login page" é frontend, não auditoria
+  if (lower.includes('frontend') || lower.includes('react') || lower.includes('page') || lower.includes('component') || lower.includes('css') || lower.includes('tailwind')) {
+    return { category: 'frontend', agent: 'senior-engineer' };
+  }
+  if (lower.includes('security') || lower.includes('owasp') || lower.includes('vulnerab') || lower.includes('audit') || lower.includes('lgpd') || lower.includes('pentest')) {
     return { category: 'security_audit', agent: 'security' };
   }
   if (lower.includes('bug') || lower.includes('fix') || lower.includes('error') || lower.includes('crash') || lower.includes('debug')) {
@@ -44,11 +48,11 @@ function classifyTask(desc: string) {
   if (lower.includes('test') || lower.includes('qa')) {
     return { category: 'testing', agent: 'qa' };
   }
-  if (lower.includes('frontend') || lower.includes('react') || lower.includes('ui') || lower.includes('page') || lower.includes('component') || lower.includes('css') || lower.includes('tailwind')) {
-    return { category: 'frontend', agent: 'frontend' };
-  }
   if (lower.includes('backend') || lower.includes('api') || lower.includes('endpoint') || lower.includes('laravel') || lower.includes('node')) {
-    return { category: 'backend', agent: 'backend' };
+    return { category: 'backend', agent: 'senior-engineer' };
+  }
+  if (lower.includes('login') || lower.includes('auth') || lower.includes('authentication')) {
+    return { category: 'implementation', agent: 'senior-engineer' };
   }
   return { category: 'implementation', agent: 'senior-engineer' };
 }
@@ -88,6 +92,25 @@ export function chatCommand(baseDir: string): void {
     prompt: '\x1b[35mizanagi>\x1b[0m '
   });
 
+  // Em pipes/CI (stdin não-TTY), processa todas as linhas e sai sem segurar o processo
+  if (!process.stdin.isTTY) {
+    rl.on('line', (line) => { /* linhas são processadas no handler principal abaixo */ });
+  }
+
+  // Ctrl+C / SIGINT: encerra o REPL de forma limpa (não "trava")
+  rl.on('SIGINT', () => {
+    console.log('\n\x1b[32mExiting Izanagi Interactive Shell. Goodbye!\x1b[0m\n');
+    process.exit(0);
+  });
+
+  // Proteção contra travamento: se o stdin fechar sem /exit, sai limpo
+  process.stdin.on('end', () => {
+    if (!process.stdin.isTTY) {
+      console.log('\n\x1b[32mGoodbye!\x1b[0m\n');
+      process.exit(0);
+    }
+  });
+
   rl.prompt();
 
   rl.on('line', (line) => {
@@ -98,13 +121,25 @@ export function chatCommand(baseDir: string): void {
       return;
     }
 
-    if (input === '/exit' || input === '/quit') {
+    if (input === '/exit' || input === '/quit' || input === 'exit' || input === 'quit') {
       console.log('\n\x1b[32mExiting Izanagi Interactive Shell. Goodbye!\x1b[0m\n');
       process.exit(0);
     }
 
     if (input === '/clear') {
       console.clear();
+      rl.prompt();
+      return;
+    }
+
+    if (input === '/help' || input === '/?') {
+      console.log('\n\x1b[36m=== Izanagi REPL Commands ===\x1b[0m');
+      console.log('  \x1b[33m/agents\x1b[0m   - list available agents');
+      console.log('  \x1b[33m/skills\x1b[0m   - list available skills');
+      console.log('  \x1b[33m/doctor\x1b[0m   - run integrity check');
+      console.log('  \x1b[33m/clear\x1b[0m    - clear screen');
+      console.log('  \x1b[33m/exit\x1b[0m     - quit interactive session');
+      console.log('  \x1b[90mOr type a task naturally: "animacao 3d para landing"\n\x1b[0m');
       rl.prompt();
       return;
     }
@@ -125,7 +160,6 @@ export function chatCommand(baseDir: string): void {
 
     if (input === '/agents' || input === '/skills') {
       const type = input === '/agents' ? 'agents' : 'skills';
-      console.log(`\n\x1b[36mListing ${type}...\x1b[0m`);
       const searchDirs = [
         path.join(cwd, '.agents', type),
         path.join(cwd, type),
@@ -142,7 +176,15 @@ export function chatCommand(baseDir: string): void {
         const aliases = loadSkillResolver(cwd, baseDir);
         Object.keys(aliases).forEach(k => found.add(k));
       }
-      Array.from(found).slice(0, 30).forEach(f => console.log(`  • ${f}`));
+
+      const items = Array.from(found).slice(0, 30);
+      const extras = found.size - items.length;
+      console.log(`\n\x1b[36m=== ${type === 'agents' ? 'Available Agents' : 'Available Skills'} (${found.size}) ===\x1b[0m`);
+      items.forEach(f => {
+        const label = f.replace(/\.json$/i, '').replace(/-agent$/i, '');
+        console.log(`  \x1b[32m•\x1b[0m ${label}`);
+      });
+      if (extras > 0) console.log(`  \x1b[90m… and ${extras} more (use 'izanagi list ${type}' for the full list)\x1b[0m`);
       console.log('');
       rl.prompt();
       return;
@@ -150,26 +192,31 @@ export function chatCommand(baseDir: string): void {
 
     // Process task through Decision Engine
     const task = input;
-    const classified = classifyTask(task);
-    const category = classified.category;
-    const agentFile = findAgentFile(cwd, baseDir, classified.agent);
-    const agent = agentFile ? JSON.parse(fs.readFileSync(agentFile, 'utf-8')) : { name: classified.agent, skills: [] };
-    const skillChain = resolveChainForCategory(agent, category);
-    const aliases = loadSkillResolver(cwd, baseDir);
+    try {
+      const classified = classifyTask(task);
+      const category = classified.category;
+      const agentFile = findAgentFile(cwd, baseDir, classified.agent);
+      const agent = agentFile ? JSON.parse(fs.readFileSync(agentFile, 'utf-8')) : { name: classified.agent, skills: [] };
+      const skillChain = resolveChainForCategory(agent, category);
+      const aliases = loadSkillResolver(cwd, baseDir);
 
-    console.log(`\n\x1b[36m--- Decision Engine --- \x1b[0m`);
-    console.log(`\x1b[1mTask:\x1b[0m "${task}"`);
-    console.log(`\x1b[32m✔ Category:\x1b[0m ${category}`);
-    console.log(`\x1b[32m✔ Selected Agent:\x1b[0m ${agentLabel(agent)} (v${agent.version || '1.0.0'})`);
-    console.log(`\x1b[32m✔ Skill Chain:\x1b[0m ${skillChain.join(' -> ')}`);
-    
-    let resolvedCount = 0;
-    skillChain.forEach(skill => {
-      const sp = resolveSkillPath(cwd, baseDir, skill);
-      if (sp) resolvedCount++;
-    });
-    console.log(`\x1b[32m✔ Resolved Skills:\x1b[0m ${resolvedCount}/${skillChain.length} ready in context.`);
-    console.log(`\x1b[90m(Tip: Use 'izanagi run --task "${task}"' to execute or integrate with opencode for full agent generation.)\x1b[0m\n`);
+      console.log(`\n\x1b[36m--- Decision Engine --- \x1b[0m`);
+      console.log(`\x1b[1mTask:\x1b[0m "${task}"`);
+      console.log(`\x1b[32m✔ Category:\x1b[0m ${category}`);
+      console.log(`\x1b[32m✔ Selected Agent:\x1b[0m ${agentLabel(agent)} (v${agent.version || '1.0.0'})`);
+      console.log(`\x1b[32m✔ Skill Chain:\x1b[0m ${skillChain.join(' -> ')}`);
+
+      let resolvedCount = 0;
+      skillChain.forEach(skill => {
+        const sp = resolveSkillPath(cwd, baseDir, skill);
+        if (sp) resolvedCount++;
+      });
+      console.log(`\x1b[32m✔ Resolved Skills:\x1b[0m ${resolvedCount}/${skillChain.length} ready in context.`);
+      console.log(`\x1b[90m(Tip: Use 'izanagi run --task "${task}"' to execute or integrate with opencode for full agent generation.)\x1b[0m\n`);
+    } catch (err: any) {
+      // Nunca deixa o REPL morrer por um erro de processamento
+      console.log(`\x1b[31m✖ Error processing task:\x1b[0m ${err.message || err}\n`);
+    }
 
     rl.prompt();
   }).on('close', () => {

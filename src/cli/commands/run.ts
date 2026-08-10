@@ -61,10 +61,14 @@ function classifyTask(desc: string): TaskClassification {
   ) {
     return { category: 'frontend', agent: 'animation' };
   }
-  if (lower.includes('architect') || lower.includes('design') || lower.includes('microservice') || lower.includes('clean arch') || lower.includes('estrutura') || lower.includes('arquitet')) {
+  if (lower.includes('architect') || lower.includes('microservice') || lower.includes('clean arch') || lower.includes('estrutura') || lower.includes('arquitet')) {
     return { category: 'architecture', agent: 'architect' };
   }
-  if (lower.includes('security') || lower.includes('auth') || lower.includes('owasp') || lower.includes('vulnerab') || lower.includes('audit') || lower.includes('lgpd')) {
+  // Páginas/componentes de UI vêm antes de security: "login page" é frontend, não auditoria
+  if (lower.includes('frontend') || lower.includes('react') || lower.includes('page') || lower.includes('component') || lower.includes('css') || lower.includes('tailwind')) {
+    return { category: 'frontend', agent: 'senior-engineer' };
+  }
+  if (lower.includes('security') || lower.includes('owasp') || lower.includes('vulnerab') || lower.includes('audit') || lower.includes('lgpd') || lower.includes('pentest')) {
     return { category: 'security_audit', agent: 'security' };
   }
   if (lower.includes('bug') || lower.includes('fix') || lower.includes('error') || lower.includes('crash') || lower.includes('debug')) {
@@ -88,13 +92,13 @@ function classifyTask(desc: string): TaskClassification {
   if (lower.includes('test') || lower.includes('qa')) {
     return { category: 'testing', agent: 'qa' };
   }
-  if (lower.includes('frontend') || lower.includes('react') || lower.includes('ui') || lower.includes('page') || lower.includes('component') || lower.includes('css') || lower.includes('tailwind')) {
-    return { category: 'frontend', agent: 'frontend' };
-  }
   if (lower.includes('backend') || lower.includes('api') || lower.includes('endpoint') || lower.includes('laravel') || lower.includes('node')) {
-    return { category: 'backend', agent: 'backend' };
+    return { category: 'backend', agent: 'senior-engineer' };
   }
-  if (lower.includes('login') || lower.includes('create') || lower.includes('build') || lower.includes('feature') || lower.includes('implement')) {
+  if (lower.includes('login') || lower.includes('auth') || lower.includes('authentication')) {
+    return { category: 'implementation', agent: 'senior-engineer' };
+  }
+  if (lower.includes('create') || lower.includes('build') || lower.includes('feature') || lower.includes('implement')) {
     return { category: 'implementation', agent: 'senior-engineer' };
   }
 

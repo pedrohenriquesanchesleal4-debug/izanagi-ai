@@ -1,79 +1,160 @@
 ---
 name: ui-ux-pro-max
-description: "Design intelligence profissional para UI/UX: gera design system completo (padrão, estilo, paleta, tipografia, efeitos, anti-padrões) a partir do tipo de produto e indústria. Use ao projetar páginas, componentes, paletas, tipografia, layouts, acessibilidade ou ao revisar UI. Inspirado no pacote ui-ux-pro-max-skill (113k stars)."
+description: "Design intelligence profissional para UI/UX com banco de dados local pesquisável (BM25): 84 estilos, 192 paletas de cor, 74 pares de tipografia, 192 tipos de produto, 98 diretrizes UX, 16 presets GSAP, 25 tipos de chart e guidelines por stack (React, Next.js, Vue, Flutter, SwiftUI, Tailwind, shadcn/ui, Three.js e mais). Use ao projetar páginas, componentes, paletas, tipografia, layouts, acessibilidade, animação ou ao revisar UI. Baseado no pacote ui-ux-pro-max-skill (115k stars, MIT)."
 ---
 
 # UI/UX Pro Max — Design Intelligence
 
-Gere um **design system completo** antes de qualquer código visual: padrão de página, estilo, cores, tipografia, efeitos, anti-padrões do nicho e checklist pré-entrega.
+Banco de dados pesquisável de regras de UI/UX com recomendação por prioridade: 84 estilos, 192 paletas, 74 pares de fonte, 192 tipos de produto com regras de raciocínio, 98 diretrizes UX, 104 ícones, 16 presets GSAP e 25 tipos de chart em 22 stacks. **Todo o banco é local (CSVs) — zero chamadas de rede, zero telemetria, dados do projeto nunca saem da máquina.**
 
 ## Quando usar
 
-Design de novas páginas/projetos, escolha de estilo/paleta/tipografia, revisão de UI (UX, acessibilidade, consistência), implementação de animações de interface. **Pule** para backend puro, infra, lógica sem visual.
+Use quando a tarefa envolver **estrutura de UI, decisões visuais, padrões de interação ou controle de qualidade de UX**: criar páginas novas, criar/refatorar componentes UI, escolher cor/tipografia/espaçamento/layout, revisar UI (UX, acessibilidade, consistência), implementar navegação/animação/responsividade.
+
+**Pule** para backend puro, API/banco, performance não-visual, infra/DevOps ou scripts não-visuais — a menos que a tarefa mude como algo **parece, sente, se move ou é interagido**.
 
 ## Categorias de regras por prioridade
 
-| Prio | Categoria | Crítico | Anti-padrões (evite) |
-|------|-----------|---------|----------------------|
-| 1 | Acessibilidade | CRÍTICO | Contrastes <4.5:1, remover focus rings, ícone sem label |
-| 2 | Touch & Interação | CRÍTICO | Alvos <44×44px, depender só de hover, mudanças instantâneas (0ms) |
-| 3 | Performance | ALTO | Layout thrashing, CLS, imagens sem lazy/WebP/AVIF |
-| 4 | Seleção de estilo | ALTO | Misturar flat+skeuomorphic, emoji como ícone (use SVG) |
-| 5 | Layout responsivo | ALTO | Scroll horizontal, containers px fixos, zoom desabilitado |
-| 6 | Tipografia & Cor | MÉDIO | Texto <12px, cinza-sobre-cinza, hex cru em componentes |
-| 7 | Animação | MÉDIO | Decorativa sem propósito, animar width/height, sem reduced-motion |
-| 8 | Forms & Feedback | MÉDIO | Placeholder como label, erros só no topo, sobrecarregar |
-| 9 | Navegação | ALTO | Nav sobrecarregada, back quebrado, sem deep links |
-| 10 | Charts & Dados | BAIXO | Depender só de cor para transmitir valor |
+*Siga a prioridade 1→10 para decidir qual categoria focar primeiro; use `--domain <Domain>` para consultar detalhes. O texto completo de regras vive em `references/quick-reference.md` — leia sob demanda, não carregue sempre.*
 
-## Fluxo de geração de design system
+| Prio | Categoria | Impacto | Domain | Checks (deve ter) | Anti-padrões (evite) |
+|------|-----------|---------|--------|-------------------|----------------------|
+| 1 | Acessibilidade | CRÍTICO | `ux` | Contraste 4.5:1, Alt text, Navegação por teclado, Aria-labels | Remover focus rings, Ícone-only sem label |
+| 2 | Touch & Interação | CRÍTICO | `ux` | Alvo ≥44×44px, espaçamento 8px+, feedback de loading | Depender só de hover, mudanças instantâneas (0ms) |
+| 3 | Performance | ALTO | `ux` | WebP/AVIF, Lazy loading, reservar espaço (CLS < 0.1) | Layout thrashing, Cumulative Layout Shift |
+| 4 | Seleção de estilo | ALTO | `style`, `product` | Combinar com tipo de produto, consistência, ícones SVG (sem emoji) | Misturar flat & skeuomorphic, emoji como ícone |
+| 5 | Layout & Responsivo | ALTO | `ux` | Mobile-first breakpoints, Viewport meta, sem scroll horizontal | Scroll horizontal, containers px fixos, desabilitar zoom |
+| 6 | Tipografia & Cor | MÉDIO | `typography`, `color` | Base 16px, line-height 1.5, tokens semânticos de cor | Texto <12px, cinza-sobre-cinza, hex cru em componentes |
+| 7 | Animação | MÉDIO | `ux`, `gsap` | Duração 150–300ms, motion com significado, continuidade espacial | Animação só decorativa, animar width/height, sem reduced-motion |
+| 8 | Forms & Feedback | MÉDIO | `ux` | Labels visíveis, erro perto do campo, helper text, progressive disclosure | Placeholder como label, erros só no topo, sobrecarregar |
+| 9 | Navegação | ALTO | `ux` | Back previsível, bottom nav ≤5, deep linking | Nav sobrecarregada, back quebrado, sem deep links |
+| 10 | Charts & Dados | BAIXO | `chart` | Legends, tooltips, cores acessíveis | Depender só de cor para transmitir valor |
 
-1. **Analise o pedido**: tipo de produto (SaaS, e-commerce, portfólio, dashboard, serviços...), público, keywords de estilo, stack (detecte do projeto; nunca assuma — pergunte se não detectar).
-2. **Gere o design system** com o formato abaixo.
-3. **Complemente** com buscas específicas (estilo, paleta, tipografia, UX) se preciso.
-4. **Persista** como `design-system/MASTER.md` (+ `pages/<page>.md` para overrides por página) e consulte-o nas próximas sessões.
+## Rodando o motor de busca
 
-## Formato de saída (design system)
+**Motor oficial: Node.js** (`search.mjs`) — zero dependências, funciona em qualquer máquina com Node (que o framework já exige). Os scripts Python originais (`search.py`) também estão disponíveis em `scripts/` como fallback.
 
-```
-PADRÃO: Hero-Centric / Social Proof / Feature-Rich / Conversion-Optimized...
-   Estrutura de seções recomendada para o nicho + CTA position
-ESTILO: <estilo 1-3 candidatos> (Glassmorphism, Bento, Brutalism, Minimalism, Neumorphism, Dark Mode, AI-Native...)
-   Keywords, melhor para, performance, acessibilidade
-CORES: Primary/Secondary/CTA/Background/Text (hex) + notes
-TIPOGRAFIA: par de fontes + mood + Google Fonts link
-EFEITOS: sombras suaves, transições 150-300ms, hovers, easing
-EVITE (anti-padrões do nicho): ex: neon + AI purple/pink gradient em banking
-CHECKLIST PRÉ-ENTREGA:
-   [ ] Sem emoji como ícone (SVG: Heroicons/Lucide)
-   [ ] cursor-pointer em todo elemento clicável
-   [ ] Hover states com transição suave (150-300ms)
-   [ ] Contraste 4.5:1 mínimo em texto
-   [ ] Focus states visíveis p/ navegação por teclado
-   [ ] prefers-reduced-motion respeitado
-   [ ] Responsivo: 375 / 768 / 1024 / 1440px
-   [ ] CTA primário repetido após prova social
+O script vive dentro do diretório da skill. Sempre invoque pelo caminho completo (resolvido a partir da raiz do framework — `.agents/skills/ui-ux-pro-max/` em projetos inicializados, ou `skills/ui-ux-pro-max/` no repo):
+
+```bash
+node <skill-dir>/scripts/search.mjs "<query>" --domain <domain>
 ```
 
-## Estilos relevantes (amostra dos 84)
+## Workflow
 
-Minimalism & Swiss, Neumorphism, Glassmorphism, Brutalism, 3D & Hyperrealism, Vibrant & Block-based, Dark Mode (OLED), Accessible & Ethical, Claymorphism, Aurora UI, Retro-Futurism, Flat Design, Skeuomorphism, Liquid Glass, Motion-Driven, Micro-interactions, Inclusive Design, Zero Interface, Soft UI Evolution, Neubrutalism, Bento Box Grid, Y2K, Cyberpunk UI, Organic Biophilic, AI-Native UI, Memphis, Vaporwave, Kinetic Typography, Parallax Storytelling, HUD/Sci-Fi FUI, Pixel Art, Spatial UI (VisionOS), Gen Z Chaos, Interactive Cursor, 3D Product Preview, Gradient Mesh, Editorial Grid, Chromatic Aberration, Vintage Analog.
+### Passo 1: Analisar requisitos do usuário
 
-**Landing patterns**: Hero-Centric, Conversion-Optimized, Feature-Rich Showcase, Minimal & Direct, Social Proof-Focused, Interactive Product Demo, Trust & Authority, Storytelling-Driven.
+- **Tipo de produto**: SaaS, e-commerce, portfólio, dashboard, entretenimento, ferramenta, produtividade ou híbrido
+- **Público-alvo e contexto**: faixa etária, contexto de uso
+- **Keywords de estilo**: playful, vibrant, minimal, dark mode, content-first, imersivo, etc.
+- **Stack**: detecte do projeto (package.json, pubspec.yaml, *.xcodeproj). Se nada detectável, pergunte ou use `html-tailwind`. **Nunca assuma uma stack** — um default hardcoded desvia todas as recomendações.
 
-## Se não houver match
+### Passo 2: Gerar Design System (OBRIGATÓRIO para páginas/projetos novos)
 
-Não fabrique. Retente com keywords mais amplas (produto + estilo separados). Se ainda vazio, use defaults do nicho e **diga explicitamente** que a recomendação veio dos defaults, não de um match.
+Sempre comece com `--design-system` para obter recomendações completas com raciocínio:
 
-## Arquivos locais (referências portadas)
+```bash
+node <skill-dir>/scripts/search.mjs "<tipo_produto> <industria> <keywords>" --design-system [-p "Nome do Projeto"]
+```
 
-Leia **sob demanda** — nunca carregue ambos de uma vez:
+Isso busca produto/estilo/cor/landing/tipografia em paralelo, aplica as regras de raciocínio (`ui-reasoning.csv`) e retorna padrão, estilo, cores, tipografia, efeitos e anti-padrões.
 
-- `references/quick-reference.md` — regras UX completas em 10 categorias priorizadas (a11y, touch, performance, estilo, layout, tipografia/cor, animação, forms, navegação, charts). Use em **reviews/auditorias de UI** ou para o checklist completo de uma categoria.
-- `references/pro-rules.md` — polish de **apps nativas** (iOS/Android/RN/Flutter): ícones, interação, light/dark, layout com safe-areas + checklist canônico pré-entrega. Use antes de entregar UI de app nativo.
+### Passo 2b: Persistir Design System (padrão Master + Overrides)
 
-## References
+```bash
+node <skill-dir>/scripts/search.mjs "<query>" --design-system --persist -p "Nome" --output-dir "<raiz-do-projeto>"
+```
 
-- Repo: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) — 113k stars, MIT. Instalação opcional via `npx ui-ux-pro-max-cli init --ai opencode` traz a busca Python + dados CSV completos (~1.5MB) — não necessária aqui (versão texto portada em `references/`).
-- Docs: https://uupm.cc — comparativo básico vs premium.
-- Veja `references.md` para a curadoria completa de fontes.
+Cria `design-system/<slug>/MASTER.md` (fonte da verdade) + `design-system/<slug>/pages/` (overrides por página). Com `--page "dashboard"`, cria override específico. Se `MASTER.md` já existe, `--persist` **não sobrescreve** sem `--force`.
+
+**Recuperação ao construir página específica:** 1) leia `MASTER.md`; 2) se `pages/<page>.md` existir, suas regras sobrescrevem o Master; 3) senão use só o Master.
+
+### Passo 2c: Design Dials (opcional)
+
+Três sliders 1-10 que ajustam a saída sem mudar a query:
+
+| Dial | Baixo (1-3) | Médio (4-7) | Alto (8-10) |
+|------|-------------|-------------|-------------|
+| `--variance` | Centrado / minimal | Equilibrado / moderno | Ousado / assimétrico (Brutalism, Bento) |
+| `--motion` | Micro-interações sutis | Scroll/stagger padrão | Coreografia complexa (pin, Flip, SplitText) |
+| `--density` | Espaçoso (24-96px) | Padrão (16-64px) | Denso/dashboard (8-32px) |
+
+### Passo 3: Buscas detalhadas complementares
+
+```bash
+node <skill-dir>/scripts/search.mjs "<keyword>" --domain <domain> [-n <max>]
+```
+
+| Necessidade | Domain | Exemplo |
+|-------------|--------|---------|
+| Padrões por tipo de produto | `product` | `--domain product "entertainment social"` |
+| Mais opções de estilo | `style` | `--domain style "glassmorphism dark"` |
+| Paletas de cor | `color` | `--domain color "entertainment vibrant"` |
+| Pares de tipografia | `typography` | `--domain typography "playful modern"` |
+| Google Fonts individuais | `google-fonts` | `--domain google-fonts "sans serif variable"` |
+| Charts | `chart` | `--domain chart "real-time dashboard"` |
+| Práticas UX | `ux` | `--domain ux "animation accessibility"` |
+| Estrutura de landing | `landing` | `--domain landing "hero social-proof"` |
+| Ícones | `icons` | `--domain icons "navigation outline"` |
+| Presets GSAP | `gsap` | `--domain gsap "scroll reveal stagger"` |
+| Performance React/Next | `react` | `--domain react "rerender memo list"` |
+| Diretrizes app/nativo | `web` | `--domain web "accessibilityLabel touch safe-areas"` |
+
+### Passo 4: Guidelines por stack
+
+```bash
+node <skill-dir>/scripts/search.mjs "<keyword>" --stack <stack>
+```
+
+**Stacks:** `react`, `nextjs`, `vue`, `svelte`, `astro`, `nuxtjs`, `nuxt-ui`, `angular`, `laravel`, `swiftui`, `react-native`, `flutter`, `jetpack-compose`, `html-tailwind`, `shadcn`, `threejs`, `javafx`, `wpf`, `winui`, `avalonia`, `uno`, `uwp`.
+
+## Se a busca retornar 0 resultados
+
+Não fabrique saída:
+1. Tente uma vez com keywords mais amplas ou diferentes (produto e estilo separados).
+2. Se ainda vazio, use a tabela de prioridades acima e diga explicitamente ao usuário que a recomendação veio dos defaults embutidos, não de um match do banco.
+3. Nunca apresente uma busca de 0 resultados como se tivesse retornado dados.
+
+## Exemplo de workflow
+
+**Pedido:** "Faça uma homepage de busca com IA." (stack detectada: Next.js)
+
+```bash
+node <skill-dir>/scripts/search.mjs "AI search tool modern minimal" --design-system -p "AI Search"
+node <skill-dir>/scripts/search.mjs "search loading animation" --domain ux
+node <skill-dir>/scripts/search.mjs "suspense streaming bundle" --stack nextjs
+```
+
+Depois, sintetize o design system + buscas detalhadas e implemente.
+
+## Formatos de saída
+
+`--design-system` suporta `-f ascii` (default, terminal), `-f markdown` (documentação) e `--json` (máquina).
+
+## Dicas para melhores resultados
+
+- Use **keywords multidimensionais**: combine produto + indústria + tom + densidade: `"entertainment social vibrant content-dense"`, não só `"app"`.
+- Tente diferentes frases para a mesma necessidade: `"playful neon"` → `"vibrant dark"` → `"content-first minimal"`.
+- Use `--design-system` primeiro, depois `--domain` para aprofundar.
+- Passe a stack detectada para orientação de implementação específica.
+
+| Problema | O que fazer |
+|----------|-------------|
+| Não decide estilo/cor | Rode `--design-system` com keywords diferentes |
+| Contraste em dark mode | `references/quick-reference.md` §6: `color-dark-mode` + `color-accessible-pairs` |
+| Animações artificiais | `references/quick-reference.md` §7: `spring-physics` + `easing` + `exit-faster-than-enter` |
+| Form UX ruim | `references/quick-reference.md` §8: `inline-validation` + `error-clarity` + `focus-management` |
+| Navegação confusa | `references/quick-reference.md` §9: `nav-hierarchy` + `bottom-nav-limit` + `back-behavior` |
+| Layout quebra em telas pequenas | `references/quick-reference.md` §5: `mobile-first` + `breakpoint-consistency` |
+| Performance / jank | `references/quick-reference.md` §3: `virtualize-lists` + `main-thread-budget` + `debounce-throttle` |
+
+## Antes de entregar UI de app
+
+Leia `references/pro-rules.md` e percorra seu checklist canônico pré-entrega (ícones, feedback de interação, contraste light/dark, safe areas, acessibilidade) — escopado para UI nativa/mobile (iOS/Android/React Native/Flutter).
+
+## Nota de segurança e integração Izanagi
+
+- **Motor 100% offline**: `search.mjs` (Node.js, port do motor original) e os scripts Python de referência usam apenas a biblioteca padrão e leem CSVs locais. Sem rede, sem upload, sem telemetria.
+- **Sem dependências**: Node.js já é exigido pelo framework — `search.mjs` roda sem `npm install` extra.
+- **Privacidade**: dados do projeto permanecem na máquina do usuário.
+- **Licença**: MIT (ui-ux-pro-max-skill, 115k★) — integrado e adaptado ao framework Izanagi.
