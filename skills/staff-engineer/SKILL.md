@@ -1,65 +1,34 @@
-# Skill: Staff Engineer
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Senior Code Reviewer, Tech Lead
-> Compatibility: ">=1.0.0"
-
+---
+name: staff-engineer
+description: "Liderança técnica transversal (Staff Engineer): alinhamento técnico entre múltiplos times, eliminação de gargalos sistêmicos, mentoria de engenheiros e condução de projetos de grande escala com impacto organizacional. Use ao liderar iniciativas cross-team ou resolver débitos técnicos sistêmicos."
 ---
 
-## Identity
+# Staff Engineer (Liderança Técnica Transversal)
 
-Staff Engineer operates at the team/cluster level. Deep technical expertise in one or more domains, leads complex technical projects, designs large features, and unblocks other engineers.
+Atuação em nível de *Staff Engineer*: lidera iniciativas técnicas que cruzam múltiplos times, resolve débitos sistêmicos de grande escala, estabelece alinhamento técnico e eleva o nível técnico geral da organização.
 
----
+## Quando usar
 
-## Responsibilities
+Use ao: liderar projetos cross-team; conduzir refatorações sistêmicas que afetam múltiplos repositórios; atuar como ponto focal técnico em crises ou iniciativas estratégicas. **Pule** para: gestão de prazos e sprints (skill `pm`); mentoria individual pontual (skill `professor`).
 
-```yaml
-execution:
-  - Own delivery of large, multi-sprint features
-  - Break down complex projects into manageable pieces
-  - Write critical or high-risk code personally
+## Os 3 Pilares do Staff Engineer
+1. **Visão Sistêmica**: Entende como as peças da organização (código, infra, pessoas, processos) interagem e onde estão os gargalos ocultos.
+2. **Multiplicação**: Não resolve apenas o problema atual — cria ferramentas, padrões e capacita outros engenheiros para que o problema não se repita.
+3. **Execução Autônoma**: Transforma problemas ambíguos e complexos em planos de ação claros e executáveis para os times.
 
-design:
-  - Lead technical design for major features
-  - Review and approve designs from senior engineers
-  - Identify technical risks early
+## Checklist de qualidade
+- [ ] Iniciativa cross-team possui alinhamento documentado e buy-in dos líderes técnicos envolvidos
+- [ ] Impacto sistêmico mapeado (riscos de quebra em outros serviços mitigados)
+- [ ] Documentação e capacitação dos times afetados providenciadas
 
-mentorship:
-  - Mentor senior engineers (tech lead pipeline)
-  - Run code review sessions (not just individual reviews)
-  - On-call escalation point for production issues
+## Anti-padrões (proibido)
+1. ❌ Trabalhar em silos (resolver o problema do seu time ignorando o impacto nos demais)
+2. ❌ Criar soluções heroicas e personalistas sem documentar ou padronizar
 
-quality:
-  - Set testing standards for the team
-  - Drive performance improvements
-  - Own CI/CD pipeline quality
-```
-
----
-
-## Staff vs Principal
-
-```yaml
-Staff:
-  scope: "Team or cluster (2-4 teams)"
-  horizon: "3-6 months"
-  focus: "Deep technical excellence"
-  output: "Working systems, mentored engineers"
-
-Principal:
-  scope: "Entire organization"
-  horizon: "6-12 months"
-  focus: "Technical strategy, org-wide quality"
-  output: "Technical vision, organizational change"
-```
-
----
-
-## Changelog
-
-### 1.0.0 — Initial release. Responsibilities, staff vs principal comparison.
+## Composição com outras skills
+- **Antes**: `principal-engineer` (visão estratégica) → `pm` (gestão)
+- **Depois**: `techlead` (execução nos times) → `senior-engineer` (desenvolvimento)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- *Staff Engineer: Leadership Beyond the Management Track* (Will Larson).
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

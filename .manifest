@@ -5,67 +5,57 @@
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-10T14:14:06.867Z",
+  "generatedAt": "2026-08-10T16:52:10.953Z",
   "agents": [
     {
       "id": "animation",
       "name": "Animation Engineer",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/animation-agent.json",
-      "role": "Diretor de Experiência Cinematográfica Web — scrollytelling, scroll-driven, 3D WebGL, motion design de alto craft. Nunca entrega site estático ou animação genérica.",
+      "role": "Scrollytelling imersivo, WebGL 3D (Three.js / React Three Fiber), Motion signature (GSAP / Framer Motion) e interfaces cinematográficas Awwwards-grade",
       "skills": [
         "animation-web",
         "motion-design",
         "webgl-3d",
-        "frontend",
-        "architect",
-        "ux",
-        "a11y",
-        "perf",
-        "reviewer"
+        "gsap",
+        "threejs",
+        "r3f",
+        "scrollytelling",
+        "design-directions",
+        "anti-ai-slop",
+        "memoria-projeto"
       ],
       "chains": [
-        "cinematic_site",
-        "new_feature",
-        "implementation",
-        "frontend",
-        "review",
-        "refine"
+        "scrollytelling",
+        "webgl_scene",
+        "motion_signature",
+        "preloader"
       ]
     },
     {
       "id": "architect",
       "name": "Software Architect",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/architect-agent.json",
-      "role": "Arquiteta sistemas com trade-offs explícitos, ADRs, planos de implementação e JIT de complexidade",
+      "role": "System design de alto nível, Clean Architecture, DDD, CQRS, ADRs e trade-offs técnicos robustos",
       "skills": [
-        "architect",
-        "clean-arch",
-        "hexagonal",
+        "architecture-patterns",
+        "clean-architecture",
         "ddd",
         "cqrs",
-        "event-driven",
+        "adrs",
+        "system-design",
         "microservices",
-        "monolith",
-        "repository",
-        "uow",
-        "tradeoff",
-        "alternatives",
-        "risk",
-        "requirements",
-        "docs",
-        "uml",
-        "sequence",
-        "er",
-        "scalability"
+        "hexagonal-architecture",
+        "security",
+        "scalability",
+        "memoria-projeto"
       ],
       "chains": [
-        "new_project",
-        "new_feature",
-        "refactor",
-        "review",
-        "system_design"
+        "design_system",
+        "plan_adr",
+        "review_architecture",
+        "new_feature"
       ]
     },
     {
@@ -101,84 +91,70 @@
     {
       "id": "bug-hunter",
       "name": "Bug Hunter",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/bug-hunter-agent.json",
-      "role": "Caça bugs sistêmicos — reproduz, isola, causa raiz, corrige com teste de regressão",
+      "role": "Debugging avançado em 6 fases, Root Cause Analysis (RCA), reprodução cirúrgica de falhas e correção com teste de regressão",
       "skills": [
-        "debug",
-        "bug",
-        "root-cause",
-        "unit-test",
-        "integration-test",
-        "reviewer",
-        "perf",
-        "professor",
-        "explainer",
-        "self-fix",
-        "bug-prevention"
+        "systematic-debugging",
+        "bug-hunter",
+        "tdd",
+        "error-recovery",
+        "self-correction",
+        "memoria-projeto"
       ],
       "chains": [
-        "bug",
-        "debug",
-        "prevent",
-        "regression"
+        "bug_debug",
+        "root_cause",
+        "regression_fix"
       ]
     },
     {
       "id": "database",
       "name": "Database Engineer",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/database-agent.json",
-      "role": "Modelagem rigorosa, SQL otimizado a partir do plano real, migrações seguras e reversíveis",
+      "role": "Modelagem de dados relacional e NoSQL, SQL avançado, PostgreSQL, Redis, indexação, migrações seguras e otimização de performance",
       "skills": [
-        "db",
+        "data-engineering",
+        "database",
         "sql",
-        "postgres",
-        "mysql",
-        "sqlserver",
+        "postgresql",
         "redis",
-        "repository",
-        "perf",
-        "er",
-        "integration-test"
+        "prisma",
+        "indexing",
+        "migrations",
+        "query-optimization",
+        "memoria-projeto"
       ],
       "chains": [
-        "modelagem",
-        "schema",
-        "optimize",
+        "model",
         "migrate",
-        "pipeline"
+        "optimize_query",
+        "review_schema"
       ]
     },
     {
       "id": "devops",
       "name": "DevOps Engineer",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/devops-agent.json",
-      "role": "Infraestrutura como código, deploy seguro e rápido, CI/CD, observabilidade e runbooks",
+      "role": "Infraestrutura como Código (Terraform), Docker, Kubernetes, CI/CD automatizado, observabilidade e deploys seguros",
       "skills": [
+        "cloud-infra",
         "devops",
         "docker",
-        "k8s",
-        "cicd",
-        "git",
-        "gitflow",
-        "linux",
-        "windows",
-        "security",
-        "logging",
+        "kubernetes",
+        "iac-terraform",
+        "ci-cd",
         "observability",
-        "monitoring",
-        "scalability",
-        "perf"
+        "security-privacy",
+        "memoria-projeto"
       ],
       "chains": [
-        "deploy",
+        "dockerize",
+        "cicd",
         "infra",
-        "monitor",
-        "ci_cd",
-        "serverless",
-        "disaster_recovery"
+        "deploy"
       ]
     },
     {
@@ -222,126 +198,130 @@
     {
       "id": "docs",
       "name": "Documentation Writer",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/docs-agent.json",
-      "role": "Documentação técnica que as pessoas usam — README, APIs, arquitetura, guias e diagramas",
+      "role": "Documentação técnica de alto padrão, READMEs executáveis, guias Diátaxis, diagramas como código (Mermaid) e APIs",
       "skills": [
+        "technical-writer",
+        "readme-generator",
+        "sequence-diagram-builder",
         "docs",
-        "tech-writer",
-        "readme",
-        "uml",
-        "sequence",
-        "er",
-        "architect",
-        "requirements",
-        "explainer"
+        "memoria-projeto"
       ],
       "chains": [
         "readme",
-        "api_docs",
-        "architecture",
         "guide",
-        "documentation_deep"
+        "api_docs",
+        "diagram"
+      ]
+    },
+    {
+      "id": "form-engineer",
+      "name": "Form & UI Engineer",
+      "version": "2.1.0",
+      "file": "agents/form-engineer-agent.json",
+      "role": "Especialista em formulários web de altíssimo craft, validação estrita com Zod + React Hook Form, wizards multi-step e acessibilidade WCAG",
+      "skills": [
+        "web-forms",
+        "frontend",
+        "accessibility-reviewer",
+        "ux-reviewer",
+        "zod",
+        "react-hook-form",
+        "memoria-projeto"
+      ],
+      "chains": [
+        "form_wizard",
+        "form_audit",
+        "form_implement"
       ]
     },
     {
       "id": "pm",
       "name": "Project Manager",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/pm-agent.json",
-      "role": "Entrega de projetos — escopo, tarefas atômicas, riscos, milestones, comunicação enxuta",
+      "role": "Gerenciamento ágil de projetos, planejamento de épicos, definição de milestones, gestão de riscos e comunicação executiva",
       "skills": [
+        "task-planner",
+        "requirement-analyzer",
         "pm",
-        "planner",
-        "release",
-        "risk",
-        "requirements",
-        "tradeoff",
-        "tech-debt",
-        "breaking-change",
-        "deps",
-        "docs"
+        "staff-engineer",
+        "memoria-projeto"
       ],
       "chains": [
-        "discovery",
         "plan",
         "sprint",
-        "release"
+        "risk_assessment",
+        "exec_report"
       ]
     },
     {
       "id": "professor",
-      "name": "Professor",
-      "version": "2.0.0",
+      "name": "Professor / Mentor",
+      "version": "2.1.0",
       "file": "agents/professor-agent.json",
-      "role": "Ensino adaptativo e mentoria — conceito → porquê → exemplo → prática, sem deixar dúvida",
+      "role": "Ensino adaptativo, explicações didáticas passo a passo, mentoria de código, exemplos práticos e exercícios de fixação",
       "skills": [
+        "professor-modo",
+        "technical-writer",
         "professor",
-        "mentor",
-        "explainer",
-        "interactive",
-        "adaptive",
-        "tracker",
-        "patterns",
-        "recovery",
-        "recall",
-        "project-memory"
+        "mentoring",
+        "memoria-projeto"
       ],
       "chains": [
-        "teach",
-        "mentor",
         "explain",
-        "question",
-        "deep_teach"
+        "teach",
+        "review_learning",
+        "exercise"
       ]
     },
     {
       "id": "qa",
-      "name": "QA & Test Automation Engineer",
-      "version": "1.0.0",
+      "name": "QA Engineer",
+      "version": "2.1.0",
       "file": "agents/qa-agent.json",
-      "role": "Garante a qualidade total do produto: testes unitários, de integração, E2E (Playwright), acessibilidade, performance e cobertura rigorosa",
+      "role": "QA e Automação de Testes: testes unitários, de integração, E2E com Playwright, acessibilidade WCAG e quality gates de entrega",
       "skills": [
         "qa",
         "tdd",
-        "webapp-testing",
         "testing-automation",
+        "webapp-testing",
         "accessibility-reviewer",
         "error-recovery",
-        "data-validation",
-        "professor",
-        "explainer",
-        "self-fix"
+        "memoria-projeto"
       ],
       "chains": [
-        "test_suite",
-        "e2e_audit",
-        "review"
+        "unit",
+        "integration",
+        "e2e",
+        "accessibility",
+        "regression"
       ]
     },
     {
       "id": "security",
       "name": "Security Engineer",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/security-agent.json",
-      "role": "Audita, previne e corrige vulnerabilidades (OWASP Top 10, auth, secrets, LGPD) — com fix acionável",
+      "role": "Auditoria de segurança, OWASP Top 10, autenticação robusta, secure coding, gestão de segredos e conformidade LGPD",
       "skills": [
-        "security",
+        "security-privacy",
+        "code-auditor",
         "owasp",
-        "pentest",
-        "reviewer",
-        "deps",
-        "professor",
-        "explainer",
-        "self-fix",
-        "security-privacy"
+        "auth",
+        "secure-coding",
+        "secrets",
+        "lgpd",
+        "penetration-testing",
+        "defense-in-depth",
+        "memoria-projeto"
       ],
       "chains": [
-        "audit",
-        "security_audit",
-        "pentest",
-        "review",
-        "implement"
+        "full_audit",
+        "implement_auth",
+        "hardening",
+        "review_pr"
       ]
     },
     {
@@ -385,58 +365,45 @@
     {
       "id": "techlead",
       "name": "Tech Lead",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "file": "agents/techlead-agent.json",
-      "role": "Liderança técnica — decisões de arquitetura, code review que ensina, desbloqueio e dívida técnica",
+      "role": "Liderança técnica, code review pedagógico que ensina, governança técnica, desbloqueio de engenheiros e padrões de código",
       "skills": [
-        "techlead",
-        "principal",
-        "staff",
-        "reviewer",
-        "architect",
+        "tech-lead",
+        "principal-engineer",
+        "staff-engineer",
         "clean-code",
-        "solid",
-        "refactor",
-        "complexity",
-        "tech-debt",
-        "patterns",
-        "mentor",
-        "risk",
-        "tradeoff",
-        "requirements",
-        "pm",
-        "planner",
-        "self-critique"
+        "qa",
+        "memoria-projeto"
       ],
       "chains": [
-        "review",
-        "code_review_teach",
-        "design",
-        "unblock",
-        "debt"
+        "review_teach",
+        "governance",
+        "mentor",
+        "unblock"
       ]
     }
   ],
   "skills": [
     {
       "name": "Skill Library",
-      "count": 141,
+      "count": 142,
       "skills": [
         {
           "id": "a11y",
-          "name": "Accessibility Reviewer",
+          "name": "Accessibility Reviewer (WCAG 2.2 AA)",
           "version": "1.0.0",
           "path": "skills/accessibility-reviewer/SKILL.md"
         },
         {
           "id": "accessibility-reviewer",
-          "name": "Accessibility Reviewer",
+          "name": "Accessibility Reviewer (WCAG 2.2 AA)",
           "version": "1.0.0",
           "path": "skills/accessibility-reviewer/SKILL.md"
         },
         {
           "id": "agentic-coding",
-          "name": "Agentic Coding",
+          "name": "agentic-coding",
           "version": "1.0.0",
           "path": "skills/agentic-coding/SKILL.md"
         },
@@ -472,7 +439,7 @@
         },
         {
           "id": "api-automation",
-          "name": "API Automation — Integração de Serviços Confiável",
+          "name": "API Automation",
           "version": "1.0.0",
           "path": "skills/api-automation/SKILL.md"
         },
@@ -490,7 +457,7 @@
         },
         {
           "id": "automation-documentation",
-          "name": "Automation Documentation — Entregável Usável por Humanos",
+          "name": "automation-documentation",
           "version": "1.0.0",
           "path": "skills/automation-documentation/SKILL.md"
         },
@@ -502,25 +469,25 @@
         },
         {
           "id": "automation-optimization",
-          "name": "Automation Optimization — Rápido Sem Quebrar",
+          "name": "automation-optimization",
           "version": "1.0.0",
           "path": "skills/automation-optimization/SKILL.md"
         },
         {
           "id": "automation-planning",
-          "name": "Automation Planning — Projetar Antes de Automatizar",
+          "name": "Automation Planning",
           "version": "1.0.0",
           "path": "skills/automation-planning/SKILL.md"
         },
         {
           "id": "automation-research",
-          "name": "Automation Research — Pesquisar Antes de Reinventar",
+          "name": "automation-research",
           "version": "1.0.0",
           "path": "skills/automation-research/SKILL.md"
         },
         {
           "id": "automation-security",
-          "name": "Automation Security — Credenciais e Dados Protegidos",
+          "name": "automation-security",
           "version": "1.0.0",
           "path": "skills/automation-security/SKILL.md"
         },
@@ -544,7 +511,7 @@
         },
         {
           "id": "browser-automation",
-          "name": "Browser Automation — Automação de Interface Resiliente",
+          "name": "Brow",
           "version": "1.0.0",
           "path": "skills/browser-automation/SKILL.md"
         },
@@ -598,7 +565,7 @@
         },
         {
           "id": "code-auditor",
-          "name": "Code Auditor & Vulnerability Scanner",
+          "name": "code-auditor",
           "version": "1.0.0",
           "path": "skills/code-auditor/SKILL.md"
         },
@@ -616,19 +583,19 @@
         },
         {
           "id": "confidence",
-          "name": "Confidence Estimator",
+          "name": "Confidence Estimator (Calibraçã",
           "version": "1.0.0",
           "path": "skills/confidence-estimator/SKILL.md"
         },
         {
           "id": "confidence-estimator",
-          "name": "Confidence Estimator",
+          "name": "Confidence Estimator (Calibraçã",
           "version": "1.0.0",
           "path": "skills/confidence-estimator/SKILL.md"
         },
         {
           "id": "continuous-improvement",
-          "name": "Continuous Improvement",
+          "name": "Continuous Improvement (Evolução Contínua e Aprendizado)",
           "version": "1.0.0",
           "path": "skills/continuous-improvement/SKILL.md"
         },
@@ -652,7 +619,7 @@
         },
         {
           "id": "data-validation",
-          "name": "Data Validation — Nunca Confie em Dados de Entrada",
+          "name": "Data Va",
           "version": "1.0.0",
           "path": "skills/data-validation/SKILL.md"
         },
@@ -760,13 +727,13 @@
         },
         {
           "id": "error-recovery",
-          "name": "Error Recovery — Automação que Sobrevive a Falhas",
+          "name": "Error Recovery",
           "version": "1.0.0",
           "path": "skills/error-recovery/SKILL.md"
         },
         {
           "id": "fan-out",
-          "name": "parallel-agents",
+          "name": "Parallel Agents (Fan-Out & Swarm Orc",
           "version": "1.0.0",
           "path": "skills/parallel-agents/SKILL.md"
         },
@@ -775,6 +742,12 @@
           "name": "Skill Feature Flags — Izanagi",
           "version": "1.0.0",
           "path": "skills/feature-flags/SKILL.md"
+        },
+        {
+          "id": "form",
+          "name": "web-forms",
+          "version": "1.0.0",
+          "path": "skills/web-forms/SKILL.md"
         },
         {
           "id": "frontend",
@@ -790,19 +763,19 @@
         },
         {
           "id": "hallucination",
-          "name": "Hallucination Detection",
+          "name": "Hallucination Det",
           "version": "1.0.0",
           "path": "skills/hallucination-detection/SKILL.md"
         },
         {
           "id": "hallucination-detection",
-          "name": "Hallucination Detection",
+          "name": "Hallucination Det",
           "version": "1.0.0",
           "path": "skills/hallucination-detection/SKILL.md"
         },
         {
           "id": "handoff-sessao",
-          "name": "Handoff de sessão",
+          "name": "handoff-sessao",
           "version": "1.0.0",
           "path": "skills/handoff-sessao/SKILL.md"
         },
@@ -820,7 +793,7 @@
         },
         {
           "id": "improvement",
-          "name": "Continuous Improvement",
+          "name": "Continuous Improvement (Evolução Contínua e Aprendizado)",
           "version": "1.0.0",
           "path": "skills/continuous-improvement/SKILL.md"
         },
@@ -844,13 +817,13 @@
         },
         {
           "id": "mcp",
-          "name": "Model Context Protocol (MCP) Server Development",
+          "name": "mcp-server-dev",
           "version": "1.0.0",
           "path": "skills/mcp-server-dev/SKILL.md"
         },
         {
           "id": "mcp-server-dev",
-          "name": "Model Context Protocol (MCP) Server Development",
+          "name": "mcp-server-dev",
           "version": "1.0.0",
           "path": "skills/mcp-server-dev/SKILL.md"
         },
@@ -868,13 +841,13 @@
         },
         {
           "id": "monitoring",
-          "name": "Monitoring Specialist",
+          "name": "Monitoring Specialist (Métricas, Alertas e SLOs",
           "version": "1.0.0",
           "path": "skills/monitoring-specialist/SKILL.md"
         },
         {
           "id": "monitoring-specialist",
-          "name": "Monitoring Specialist",
+          "name": "Monitoring Specialist (Métricas, Alertas e SLOs",
           "version": "1.0.0",
           "path": "skills/monitoring-specialist/SKILL.md"
         },
@@ -886,13 +859,13 @@
         },
         {
           "id": "observability",
-          "name": "Observability Expert",
+          "name": "Observability Expert (Tracing Distribuído e Logs Estruturado",
           "version": "1.0.0",
           "path": "skills/observability-expert/SKILL.md"
         },
         {
           "id": "observability-expert",
-          "name": "Observability Expert",
+          "name": "Observability Expert (Tracing Distribuído e Logs Estruturado",
           "version": "1.0.0",
           "path": "skills/observability-expert/SKILL.md"
         },
@@ -916,7 +889,7 @@
         },
         {
           "id": "planner",
-          "name": "Task Planner",
+          "name": "Task Planner (Planejamento Hierárquico de Enge",
           "version": "1.0.0",
           "path": "skills/task-planner/SKILL.md"
         },
@@ -928,13 +901,13 @@
         },
         {
           "id": "principal",
-          "name": "Principal Engineer",
+          "name": "Principal Engine",
           "version": "1.0.0",
           "path": "skills/principal-engineer/SKILL.md"
         },
         {
           "id": "principal-engineer",
-          "name": "Principal Engineer",
+          "name": "Principal Engine",
           "version": "1.0.0",
           "path": "skills/principal-engineer/SKILL.md"
         },
@@ -952,13 +925,13 @@
         },
         {
           "id": "prompt-eng",
-          "name": "Prompt Engineering & System Design",
+          "name": "prompt-engineering",
           "version": "1.0.0",
           "path": "skills/prompt-engineering/SKILL.md"
         },
         {
           "id": "prompt-engineering",
-          "name": "Prompt Engineering & System Design",
+          "name": "prompt-engineering",
           "version": "1.0.0",
           "path": "skills/prompt-engineering/SKILL.md"
         },
@@ -970,13 +943,13 @@
         },
         {
           "id": "readme",
-          "name": "README Generator",
+          "name": "readme-generator",
           "version": "1.0.0",
           "path": "skills/readme-generator/SKILL.md"
         },
         {
           "id": "readme-generator",
-          "name": "README Generator",
+          "name": "readme-generator",
           "version": "1.0.0",
           "path": "skills/readme-generator/SKILL.md"
         },
@@ -1006,13 +979,13 @@
         },
         {
           "id": "requirement-analyzer",
-          "name": "Requirement Analyzer",
+          "name": "Requirement Analyzer (Análise e Refinamento de Requisi",
           "version": "1.0.0",
           "path": "skills/requirement-analyzer/SKILL.md"
         },
         {
           "id": "requirements",
-          "name": "Requirement Analyzer",
+          "name": "Requirement Analyzer (Análise e Refinamento de Requisi",
           "version": "1.0.0",
           "path": "skills/requirement-analyzer/SKILL.md"
         },
@@ -1066,19 +1039,19 @@
         },
         {
           "id": "self-correction",
-          "name": "Self Correction",
+          "name": "Self-Correction (Auto-Correção em Tempo de Execução)",
           "version": "1.0.0",
           "path": "skills/self-correction/SKILL.md"
         },
         {
           "id": "self-critique",
-          "name": "Self Critique",
+          "name": "Self-Critique (Auto-Revisão Crítica de Entrega)",
           "version": "1.0.0",
           "path": "skills/self-critique/SKILL.md"
         },
         {
           "id": "self-fix",
-          "name": "Self Correction",
+          "name": "Self-Correction (Auto-Correção em Tempo de Execução)",
           "version": "1.0.0",
           "path": "skills/self-correction/SKILL.md"
         },
@@ -1090,13 +1063,13 @@
         },
         {
           "id": "sequence",
-          "name": "Sequence Diagram Builder",
+          "name": "Sequence Diagram Builder (Diagramas de Sequência via Mermaid)",
           "version": "1.0.0",
           "path": "skills/sequence-diagram-builder/SKILL.md"
         },
         {
           "id": "sequence-diagram-builder",
-          "name": "Sequence Diagram Builder",
+          "name": "Sequence Diagram Builder (Diagramas de Sequência via Mermaid)",
           "version": "1.0.0",
           "path": "skills/sequence-diagram-builder/SKILL.md"
         },
@@ -1126,7 +1099,7 @@
         },
         {
           "id": "spreadsheet-automation",
-          "name": "Spreadsheet Automation — Planilhas como Fonte de Dados Confiável",
+          "name": "spreadsheet-automation",
           "version": "1.0.0",
           "path": "skills/spreadsheet-automation/SKILL.md"
         },
@@ -1138,19 +1111,19 @@
         },
         {
           "id": "staff",
-          "name": "Staff Engineer",
+          "name": "Staff Engineer (Liderança Técnica Transversal)",
           "version": "1.0.0",
           "path": "skills/staff-engineer/SKILL.md"
         },
         {
           "id": "staff-engineer",
-          "name": "Staff Engineer",
+          "name": "Staff Engineer (Liderança Técnica Transversal)",
           "version": "1.0.0",
           "path": "skills/staff-engineer/SKILL.md"
         },
         {
           "id": "task-planner",
-          "name": "Task Planner",
+          "name": "Task Planner (Planejamento Hierárquico de Enge",
           "version": "1.0.0",
           "path": "skills/task-planner/SKILL.md"
         },
@@ -1168,19 +1141,19 @@
         },
         {
           "id": "tech-lead",
-          "name": "Tech Lead",
+          "name": "Tech Lead (Liderança Técnica Operacional e Code Review Pedagógico)",
           "version": "1.0.0",
           "path": "skills/tech-lead/SKILL.md"
         },
         {
           "id": "tech-writer",
-          "name": "Technical Writer",
+          "name": "Technical Writer (Documentação Técnica de Alto Craft)",
           "version": "1.0.0",
           "path": "skills/technical-writer/SKILL.md"
         },
         {
           "id": "techlead",
-          "name": "Tech Lead",
+          "name": "Tech Lead (Liderança Técnica Operacional e Code Review Pedagógico)",
           "version": "1.0.0",
           "path": "skills/tech-lead/SKILL.md"
         },
@@ -1192,19 +1165,19 @@
         },
         {
           "id": "technical-writer",
-          "name": "Technical Writer",
+          "name": "Technical Writer (Documentação Técnica de Alto Craft)",
           "version": "1.0.0",
           "path": "skills/technical-writer/SKILL.md"
         },
         {
           "id": "technology-selection",
-          "name": "Technology Selection — Escolha com Justificativa",
+          "name": "Technology Selection",
           "version": "1.0.0",
           "path": "skills/technology-selection/SKILL.md"
         },
         {
           "id": "testing-automation",
-          "name": "Testing Automation — Automatize, Mas Teste Primeiro",
+          "name": "testing-automation",
           "version": "1.0.0",
           "path": "skills/testing-automation/SKILL.md"
         },
@@ -1234,13 +1207,13 @@
         },
         {
           "id": "ux",
-          "name": "UX Reviewer",
+          "name": "UX Reviewer (Heurísticas de Nielsen &",
           "version": "1.0.0",
           "path": "skills/ux-reviewer/SKILL.md"
         },
         {
           "id": "ux-reviewer",
-          "name": "UX Reviewer",
+          "name": "UX Reviewer (Heurísticas de Nielsen &",
           "version": "1.0.0",
           "path": "skills/ux-reviewer/SKILL.md"
         },

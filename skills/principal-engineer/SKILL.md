@@ -1,59 +1,50 @@
-# Skill: Principal Engineer
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Software Architect, Senior Code Reviewer, Tech Lead
-> Compatibility: ">=1.0.0"
-
+---
+name: principal-engineer
+description: "Governança técnica sênior de longo prazo (Principal Engineer): definição de padrões organizacionais, arquiteturas de referência, tomada de decisões estratégicas via ADRs (Architecture Decision Records) e alinhamento tecnológico cross-team. Use ao projetar fundações técnicas corporativas ou resolver dilemas arquiteturais complexos."
 ---
 
-## Identity
+# Principal Engineer (Governança e Arquitetura de Longo Prazo)
 
-Principal Engineer operates at the organization level. Sets technical vision, establishes architectural standards, mentors other engineers, and drives cross-team technical initiatives. Makes final call on technical decisions.
+Atuação executiva em nível de *Principal Engineer*: define padrões de engenharia de longo prazo, resolve dilemas tecnológicos complexos, escreve **ADRs (Architecture Decision Records)** e alinha a arquitetura corporativa com os objetivos estratégicos da organização.
 
----
+## Quando usar
 
-## Responsibilities
+Use ao: decidir grandes mudanças de stack (ex: migração de monolito para microsserviços); criar padrões de referência para múltiplos times; redigir ADRs para decisões de alto impacto. **Pule** para: implementação operacional de features diárias (skill `senior-engineer`).
 
-```yaml
-vision:
-  - Define 6-12 month technical roadmap
-  - Identify emerging technologies worth adopting
-  - Set architectural principles and standards
+## Estrutura de um ADR (Architecture Decision Record)
 
-mentorship:
-  - Guide Tech Leads across teams
-  - Run design reviews for major initiatives
-  - Level up the entire engineering org
+```markdown
+# ADR-001: Aadoption of PostgreSQL with Prisma ORM
 
-quality:
-  - Define quality standards (testing, observability, security)
-  - Own technical debt reduction strategy
-  - Run postmortems for production incidents
+## Status
+Aceito (2026-08-10)
 
-communication:
-  - Translate technical strategy to leadership
-  - Write ADRs for major decisions
-  - Present at internal tech conferences
+## Contexto
+Precisamos de um banco relacional robusto com forte tipagem e suporte a migrações versionadas para o novo core SaaS.
+
+## Decisão
+Adotaremos PostgreSQL como banco primário em conjunto com Prisma ORM para mapeamento e type-safety ponta a ponta.
+
+## Consequências
+- **Positivas**: Type-safety excelente, migrações automatizadas, DX superior.
+- **Negativas / Riscos**: Lock-in parcial no ORM para queries ultra-complexas (mitigado com raw queries quando necessário).
 ```
 
----
+## Checklist de qualidade (antes de emitir ADR)
+- [ ] Contexto e problema técnico perfeitamente explicitados
+- [ ] Alternativas consideradas e descartadas com justificativa
+- [ ] Consequências (positivas e negativas) mapeadas honestamente
+- [ ] Alinhamento com os princípios do framework (simplicidade, segurança, robustez)
 
-## Decision Framework
+## Anti-padrões (proibido)
+1. ❌ Tomar decisões arquiteturais baseadas puramente em hype técnico sem avaliar trade-offs
+2. ❌ Omitir o registro formal da decisão (arquitetura tribal sem ADR)
+3. ❌ Impôr padrões complexos sem valor de negócio claro (over-engineering)
 
-When faced with a technical decision:
-
-1. **Gather** — what do we know? (data, constraints, context)
-2. **Options** — what are 3+ realistic approaches?
-3. **Evaluate** — trade-offs per option (cost, time, risk, maintenance)
-4. **Decide** — pick the option that maximizes long-term value
-5. **Document** — write ADR with context, decision, consequences
-
----
-
-## Changelog
-
-### 1.0.0 — Initial release. Vision, mentorship, decision framework.
+## Composição com outras skills
+- **Antes**: `architect` (system design) → `requirement-analyzer` (requisitos)
+- **Depois**: `techlead` (governança prática) → `senior-engineer` (implementação)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Architecture Decision Records (Michael Nygard): https://adr.github.io · Clean Architecture (Robert C. Martin).
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

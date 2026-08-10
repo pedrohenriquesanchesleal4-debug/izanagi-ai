@@ -1,69 +1,51 @@
-# Skill: Requirement Analyzer
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Software Architect
-> Compatibility: ">=1.0.0"
-
+---
+name: requirement-analyzer
+description: "Análise e decomposição rigorosa de requisitos de software: extração de regras funcionais e não-funcionais, identificação de ambiguidades, definição de critérios de aceite (BDD / Given-When-Then) e mapeamento de restrições técnicas. Use ao receber especificações vagas ou iniciar novos épicos."
 ---
 
-## Identity
+# Requirement Analyzer (Análise e Refinamento de Requisitos)
 
-Requirement Analyzer extracts, clarifies, and structures requirements from natural language input. Identifies functional and non-functional requirements, constraints, assumptions, and open questions.
+Decompõe pedidos e especificações em **requisitos funcionais, não-funcionais e critérios de aceite testáveis**, eliminando ambiguidades antes que o código comece a ser escrito.
 
----
+## Quando usar
 
-## Extraction Process
+Use ao: receber um briefing vago ou complexo do usuário; traduzir histórias de usuário em especificações técnicas; preparar o escopo para arquitetura e planejamento. **Pule** para: tarefas técnicas já especificadas com precisão (skill `task-planner`).
 
-```
-1. Parse input → extract explicit requirements
-2. Ask clarifying questions for ambiguities
-3. Categorize: functional vs non-functional
-4. Prioritize: must-have vs nice-to-have
-5. Identify constraints (time, budget, tech)
-6. Document open questions
-7. Output structured requirements document
-```
+## Matriz de Análise de Requisitos
 
----
+| Tipo | O que define | Exemplo |
+|---|---|---|
+| **Funcional (RF)** | O que o sistema *faz* | O usuário deve poder redefinir a senha via email. |
+| **Não-Funcional (RNF)** | Como o sistema se *comporta* | O tempo de resposta da API deve ser < 200ms no percentil 95. |
+| **Restrição (RES)** | Limites tecnológicos ou de negócio | Hospedagem restrita à AWS us-east-1; conformidade com LGPD. |
 
-## Requirement Format
+## Critérios de Aceite no Formato BDD (Given-When-Then)
 
-```yaml
-requirements:
-  functional:
-    - id: F1
-      title: "User registration"
-      description: "Users can register with email and password"
-      priority: "must-have"
-      acceptance: "POST /api/v1/users returns 201 with valid data"
-    
-    - id: F2
-      title: "Email verification"
-      description: "Users must verify email before accessing dashboard"
-      priority: "must-have"
-      acceptance: "Unverified users get 403 on dashboard"
-  
-  non_functional:
-    - id: NF1
-      title: "Response time"
-      description: "API p95 response under 200ms"
-      priority: "must-have"
-    
-  constraints:
-    - "Laravel 11 + PostgreSQL 16"
-    - "Delivery in 4 weeks"
-  
-  open_questions:
-    - "Should we support social login (Google, GitHub)?"
-    - "Password policy: minimum length?"
+```gherkin
+Funcionalidade: Recuperação de Senha
+  Cenário: Solicitação de reset com email válido
+    Dado que o usuário está na tela de recuperação de senha
+    Quando ele insere um email cadastrado "user@example.com"
+    E clica em "Enviar instruções"
+    Então um email com token de reset é disparado
+    E uma mensagem de sucesso é exibida na tela
 ```
 
----
+## Checklist de qualidade (antes de avançar)
+- [ ] Requisitos funcionais enumerados e sem ambiguidades
+- [ ] Requisitos não-funcionais com métricas mensuráveis (latência, uptime, segurança)
+- [ ] Critérios de aceite escritos em formato BDD claro
+- [ ] Restrições tecnológicas explicitadas
 
-## Changelog
+## Anti-padrões (proibido)
+- ❌ Aceitar requisitos vagos ("o sistema deve ser rápido e bonito")
+- ❌ Misturar regras de negócio com detalhes de implementação de UI
+- ❌ Omitir requisitos de segurança ou tratamento de erro nas especificações
 
-### 1.0.0 — Initial release. Extraction, categorization, format.
+## Composição com outras skills
+- **Before**: `discovery` (entrevista inicial) → `pm` (gestão de projeto)
+- **After**: `task-planner` (planejamento) → `architect` (arquitetura)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Agile Requirements & BDD (Specification by Example): Gojko Adzic.
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

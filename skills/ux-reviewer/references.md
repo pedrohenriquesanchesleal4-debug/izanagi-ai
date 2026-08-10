@@ -1,21 +1,15 @@
-# References — UX Reviewer
+# References — UX Reviewer (Nielsen Heuristics)
 
-> Curadoria dos melhores sites/referências (2026) para revisão e avaliação de experiência do usuário (UX). Use como fonte de padrões e inspiração.
+> Curadoria (2026) para usabilidade e heurísticas de experiência do usuário.
 
 ## Docs canônicas
-- [Nielsen Norman Group](https://www.nngroup.com/) — pesquisas e heurísticas de usabilidade mais citadas do mundo.
-- [Usability.gov](https://www.usability.gov/) — guias oficiais do governo dos EUA sobre UX e usability research.
-- [Interaction Design Foundation](https://www.interaction-design.org/) — enciclopédia e cursos sobre fundamentos de design de interação.
-- [Laws of UX](https://lawsofux.com/) — princípios psicológicos que guiam decisões de interface.
-- [Baymard Institute](https://www.baymard.com/) — pesquisas de benchmark de e-commerce e checkouts.
+- [Nielsen Norman Group (NN/g) Heuristics](https://www.nngroup.com/articles/ten-usability-heuristics/) — as 10 heurísticas clássicas
+- [Don Norman: The Design of Everyday Things](https://jnd.org/the-design-of-everyday-things/)
 
 ## Referências e inspiração
-- [Smashing Magazine](https://www.smashingmagazine.com/) — artigos práticos sobre UX, pesquisa e design de interface.
-- [UI-Patterns](https://ui-patterns.com/) — catálogo de padrões de interface com exemplos reais.
-- [Hotjar](https://www.hotjar.com/) — ferramentas de heatmaps e sessões para validar comportamento real do usuário.
-- [UserTesting](https://www.usertesting.com/) — plataforma de testes de usabilidade com usuários reais.
+- [Baymard Institute](https://baymard.com) — UX research em e-commerce e formulários
+- [Interaction Design Foundation (IxDF)](https://www.interaction-design.org)
 
-## Comunidade / galerias / exemplos
-- [Page Flows](https://www.pageflows.com/) — fluxos de UX gravados de apps populares para benchmarking.
-- [UX Archive](https://uxarchive.com/) — biblioteca de fluxos de UX mobile históricos e atuais.
-- [Dribbble](https://dribbble.com/) — galeria de UI/UX para referência visual de interfaces.
+## Comunidade / tutoriais
+- [Smashing Magazine: UX Design](https://www.smashingmagazine.com/category/ux-design)
+- [UX Collective](https://uxdesign.cc)

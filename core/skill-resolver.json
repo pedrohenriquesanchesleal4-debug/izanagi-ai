@@ -92,6 +92,8 @@
     "ux": "skills/ux-reviewer",
     "a11y": "skills/accessibility-reviewer",
     "logging": "skills/logging-expert",
+    "web-forms": "skills/web-forms/SKILL",
+    "form": "skills/web-forms/SKILL",
     "observability": "skills/observability-expert",
     "monitoring": "skills/monitoring-specialist",
     "self-fix": "skills/self-correction",

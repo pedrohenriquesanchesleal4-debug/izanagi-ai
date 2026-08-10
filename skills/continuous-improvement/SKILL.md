@@ -1,50 +1,48 @@
-# Skill: Continuous Improvement
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Evolution Engine, Reflection Engine
-> Compatibility: ">=1.0.0"
-
+---
+name: continuous-improvement
+description: "Evolução contínua do framework e dos projetos: reflete sobre o ciclo de desenvolvimento concluído, extrai aprendizados estruturados, atualiza a memória persistente e sugere aprimoramentos em skills ou padrões. Use ao encerrar ciclos de projeto, marcos ou após correções complexas."
 ---
 
-## Identity
+# Continuous Improvement (Evolução Contínua e Aprendizado)
 
-Continuous Improvement ensures the agent gets better over time. Tracks improvements made, measures effectiveness, and identifies areas for further growth.
+Processo sistemático de reflexão pós-execução para extrair lições, atualizar a **memória persistente do projeto** (`.agents/memoria/`) e aprimorar continuamente a base de conhecimento do framework.
 
----
+## Quando usar
 
-## Improvement Cycle
+Use ao: concluir uma feature compleja ou ciclo de sprint; resolver um bug difícil cujo aprendizado deve ser guardado; finalizar um projeto e consolidar o ADR-lite. **Pule** para: tarefas rotineiras e isoladas sem aprendizado estrutural.
 
-```
-Reflection → Pattern Detection → Skill Update → Measure → Repeat
+## Workflow de Melhoria Contínua (4 passos)
 
-Each cycle answers:
-1. What did I learn from the last task?
-2. What pattern emerged?
-3. Did the previous update work?
-4. What should I improve next?
-```
+### 1. Reflexão pós-execução (O que aconteceu?)
+Analise o que correu bem, onde houve fricção e qual obstáculo inesperado apareceu durante a tarefa.
 
-## Tracking
+### 2. Extração de padrão ou anti-padrão
+Converta a experiência em uma regra reutilizável (ex: "Sempre validar X antes de chamar Y").
 
-```yaml
-improvements_tracked:
-  - date: "2026-07-17"
-    change: "Added null safety check to Security Engineer checklist"
-    trigger: "Bug report: Str::contains() TypeError"
-    effectiveness: "Prevented 3 similar bugs since"
-    
-  - date: "2026-07-15"
-    change: "Reduced Backend Engineer token budget by 10%"
-    trigger: "Token waste pattern detected"
-    effectiveness: "20% fewer compression activations"
-```
+### 3. Atualização da Memória Persistente
+Escreva o aprendizado no arquivo correspondente em `.agents/memoria/`:
+- `learnings.md`: novos padrões e descobertas.
+- `decisoes.md`: trade-offs e ADRs.
+- `erros-corrigidos.md`: armadilhas técnicas evitadas.
 
----
+### 4. Proposta de evolução de skill
+Se o aprendizado for genérico o bastante, sugira a atualização de uma skill ou regra do framework para beneficiar futuros projetos.
 
-## Changelog
+## Checklist de qualidade (antes de encerrar)
+- [ ] Lição principal extraída e documentada em 1-2 frases claras
+- [ ] Memória persistente (`.agents/memoria/`) atualizada
+- [ ] Nenhum aprendizado valioso perdido na conversa volátil
+- [ ] Regras de prevenção de erros registradas
 
-### 1.0.0 — Initial release. Cycle, tracking.
+## Anti-padrões (proibido)
+1. ❌ Encerrar sessões complexas sem registrar nada na memória do projeto
+2. ❌ Registrar apenas "funcionou" sem documentar o *porquê* ou a *armadilha* evitada
+3. ❌ Acumular dados obsoletos na memória persistente
+
+## Composição com outras skills
+- **Antes**: `self-critique` (auto-revisão) → `qa` (validação)
+- **Depois**: `memoria-projeto` (armazenamento persistente) → início da próxima tarefa com contexto enriquecido
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Continuous improvement in software engineering (Kaizen / Post-mortem culture): Google SRE Book (Incident Post-mortems).
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

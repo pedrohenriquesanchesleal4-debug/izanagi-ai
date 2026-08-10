@@ -1,46 +1,53 @@
-# Skill: Self Critique
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Reflection Engine
-> Compatibility: ">=1.0.0"
-
+---
+name: self-critique
+description: "Revisão crítica autônoma do próprio trabalho (código, artefatos, texto) antes de declarar a entrega concluída: aplica quality gates, verifica conformidade com as regras do framework, checa edge cases e elimina stubs ou débitos técnicos. Use antes de finalizar qualquer entrega importante."
 ---
 
-## Identity
+# Self-Critique (Auto-Revisão Crítica de Entrega)
 
-Self Critique proactively reviews its own output for potential improvements before the user points them out. Aims to find at least one improvement per response.
+Protocolo de auditoria interna onde o agente atua como seu próprio revisor exigente, aplicando **quality gates rigorosos** antes de entregar qualquer código, texto ou arquitetura ao usuário.
 
----
+## Quando usar
 
-## Critique Questions
+Use **obrigatoriamente** antes de finalizar qualquer tarefa complexa, feature full-stack, refatoração ou entrega de sistema. **Pule** para: revisões colaborativas com o Tech Lead (skill `techlead`).
 
-```
-- Is this the clearest way to explain this?
-- Could a beginner understand this?
-- Did I include all relevant options?
-- Did I explain my reasoning?
-- Is there a simpler approach I missed?
-- Did I consider security implications?
-- Did I consider edge cases?
-- Is this the most efficient solution?
-```
+## Rubrica de Auto-Revisão (Os 5 Quality Gates do Izanagi)
 
-## Critique Process
+1. **Gate de Completude (Zero Stubs)**: Há algum `TODO`, `// implement later`, função vazia ou dado mockado onde deveria haver lógica real?
+2. **Gate de Segurança**: Há secrets expostos, SQL injection, validação de input ausente ou falha de autorização?
+3. **Gate de Craft (Anti AI-Slop)**: O código e a UI fogem do padrão genérico? Há tipagem estrita e semântica clara?
+4. **Gate de Verificação**: O build e os testes foram rodados e passaram com evidência?
+5. **Gate de Concisão**: Há arquivos gigantes desnecessários ou código duplicado (DRY violado)?
 
-```
-1. Generate initial response
-2. Run self-critique (5 questions minimum)
-3. If improvement found: revise before delivery
-4. If no improvement: deliver as is
-5. Log critique result (improvements found/none)
-```
+## Workflow de Auto-Revisão (3 passos)
 
----
+### 1. Inspeção do Diff Final (`git diff`)
+Revise linha por linha do que foi produzido nesta sessão. Procure por imports órfãos, variáveis não utilizadas e tratamento de erro ausente.
 
-## Changelog
+### 2. Avaliação contra as Regras Globais
+Confirme se as leis do framework (ciclo vertical completo, zero listas para SaaS, sem stubs) foram rigorosamente obedecidas.
 
-### 1.0.0 — Initial release. Questions, process.
+### 3. Emissão do Veredito
+- **Aprovado**: Entrega liberada.
+- **Reprovado internamente**: Correção imediata do achado antes de enviar ao usuário.
+
+## Checklist de qualidade (antes de entregar)
+- [ ] Nenhum stub, `TODO` ou código incompleto remanescente
+- [ ] Tratamento de erros real implementado em todas as rotas/funções críticas
+- [ ] Tipagem estrita validada (sem `any` injustificado em TypeScript)
+- [ ] Build e testes validados empiricamente
+- [ ] Diff limpo, sem arquivos temporários ou lixo no commit
+
+## Anti-padrões (proibido)
+1. ❌ Entregar código com base na pressuposição de que "deve funcionar" sem checar o diff
+2. ❌ Ignorar pequenos débitos técnicos ("depois a gente arruma")
+3. ❌ Deixar comentários órfãos ou código comentado morto
+4. ❌ Pular a auto-revisão por pressa
+
+## Composição com outras skills
+- **Antes**: `agentic-coding` (implementação) → `code-auditor` (segurança)
+- **Depois**: `qa` (validação final) → entrega ao usuário
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Code review best practices: Google Engineering Practices documentation · Clean Code (Robert C. Martin).
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

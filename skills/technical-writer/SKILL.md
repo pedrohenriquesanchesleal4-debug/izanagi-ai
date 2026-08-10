@@ -1,43 +1,74 @@
-# Skill: Technical Writer
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Documentation Writer
-> Compatibility: ">=1.0.0"
-
+---
+name: technical-writer
+description: "Redação e estruturação de documentação técnica de alto nível: guias de arquitetura, referências de API, manuais operacionais e diagramas como código (Mermaid), seguindo os princípios de clareza, concisão e foco no desenvolvedor. Use ao documentar sistemas, APIs ou arquiteturas."
 ---
 
-## Identity
+# Technical Writer (Documentação Técnica de Alto Craft)
 
-Technical Writer produces clear, concise technical documentation for developers and end-users. Follows the Diátaxis framework: tutorials, how-to guides, reference, and explanation.
+Criação de documentação técnica clara, estruturada e voltada para desenvolvedores e operadores — utilizando princípios modernos como **Diátaxis** (manuais orientados a tarefas, tutoriais e explicações) e diagramas como código.
 
----
+## Quando usar
 
-## Diátaxis Framework
+Use ao: documentar APIs públicas ou internas; criar guias de arquitetura e manuais de onboarding para novos desenvolvedores; estruturar wikis técnicas. **Pule** para: READMEs rápidos de repositórios (skill `readme-generator`).
 
-```yaml
-tutorials: "Learning-oriented — guide a beginner through a complete task"
-how_to: "Task-oriented — solve a specific problem"
-reference: "Information-oriented — describe the system (API, config)"
-explanation: "Understanding-oriented — explain concepts and reasoning"
+## Os 4 Pilares da Documentação (Diátaxis)
+
+1. **Tutoriais (Orientados ao aprendizado)**: Leem-se pela mão do iniciante para dar uma experiência de sucesso rápido (ex: "Seu primeiro endpoint em 5 minutos").
+2. **How-to Guides (Orientados a tarefas)**: Receitas passo a passo para resolver problemas reais específicos (ex: "Como configurar OAuth2 com Google").
+3. **Reference (Orientados à informação)**: Descrição técnica árida e precisa (ex: "Especificação exata de parâmetros da API REST").
+4. **Explanation (Orientados à compreensão)**: Discussão teórica, trade-offs e arquitetura (ex: "Por que escolhemos PostgreSQL em vez de NoSQL").
+
+## Workflow de Redução de Ruído (3 passos)
+
+1. **Eliminar introduções genéricas**: Vá direto ao ponto técnico na primeira linha.
+2. **Estrutura baseada em blocos**: Use tabelas para parâmetros, blocos de código com sintaxe destacada e avisos visuais para pontos críticos.
+3. **Revisão de legibilidade**: Verifique se a documentação responde à pergunta do desenvolvedor em menos de 30 segundos.
+
+## Exemplo de Documentação de Endpoint de API
+
+```markdown
+### POST /api/v1/projects
+Cria um novo projeto no workspace autenticado.
+
+#### Headers
+| Header | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `Authorization` | string | Sim | Bearer token JWT |
+| `Content-Type` | string | Sim | `application/json` |
+
+#### Payload de Requisição
+```json
+{
+  "name": "Meu Projeto SaaS",
+  "region": "us-east-1"
+}
 ```
 
-## Writing Principles
-
+#### Resposta de Sucesso (201 Created)
+```json
+{
+  "id": "proj_99812",
+  "name": "Meu Projeto SaaS",
+  "createdAt": "2026-08-10T19:00:00Z"
+}
 ```
-- One idea per paragraph
-- Short sentences (max 25 words)
-- Active voice ("Click Submit" not "The Submit button should be clicked")
-- Code examples before explanation
-- Consistent terminology
-- No assumptions about reader knowledge (link to prerequisites)
 ```
 
----
+## Checklist de qualidade (antes de entregar)
+- [ ] Documentação estruturada seguindo o modelo Diátaxis adequado
+- [ ] Exemplos de código testados e funcionais (sem sintaxe fictícia)
+- [ ] Tabelas claras para parâmetros e headers
+- [ ] Zero termos vagos ou redundantes ("fácil de usar", "poderoso")
 
-## Changelog
+## Anti-padrões (proibido)
+1. ❌ Documentação desatualizada que diverge do código real ("docs mentem mais que código")
+2. ❌ Blocos de texto intermináveis sem formatação ou tabelas
+3. ❌ Exemplos de código com erros de sintaxe óbvios
 
-### 1.0.0 — Initial release. Diátaxis, writing principles.
+## Composição com outras skills
+- **Antes**: `architect` (arquitetura) → `docs` (agente de documentação)
+- **Depois**: `readme-generator` (geração de README) → `qa` (revisão de clareza)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Diátaxis Framework: https://diataxis.fr · Google Technical Writing Courses: https://developers.google.com/tech-writing.
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

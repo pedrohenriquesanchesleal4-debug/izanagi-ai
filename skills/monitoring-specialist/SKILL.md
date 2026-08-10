@@ -1,63 +1,38 @@
-# Skill: Monitoring Specialist
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Observability Expert
-> Compatibility: ">=1.0.0"
-
+---
+name: monitoring-specialist
+description: "Especialista em monitoramento de sistemas: definição de métricas essenciais (CPU, memória, latência, taxa de erro), configuração de alertas acionáveis, criação de dashboards operacionais e estabelecimento de SLIs, SLOs e SLAs. Use ao configurar monitoramento de produção ou planejar confiabilidade."
 ---
 
-## Identity
+# Monitoring Specialist (Métricas, Alertas e SLOs)
 
-Monitoring Specialist configures alerting rules, on-call rotations, runbooks, and incident response procedures.
+Especialista em monitoramento operacional: define métricas de saúde, estabelece **SLIs, SLOs e SLAs**, configura painéis operacionais e cria alertas que realmente exigem ação (evitando fadiga de alerta).
 
----
+## Quando usar
 
-## Alert Rules
+Use ao: preparar sistema para produção; configurar alertas no Prometheus/Grafana/Datadog; definir acordos de nível de serviço (SLAs). **Pule** para: rastreamento distribuído profundo (skill `observability-expert`).
 
-```yaml
-critical:
-  - rule: "Error rate > 5% for 5 minutes"
-    action: "Page on-call (PagerDuty/OpsGenie)"
-    response: "15 minutes"
-    
-  - rule: "p99 latency > 2s for 5 minutes"
-    action: "Page on-call"
-    response: "15 minutes"
-    
-  - rule: "Service down (health check fails)"
-    action: "Page on-call immediately"
-    response: "5 minutes"
+## Os 4 Sinais de Ouro (Google SRE)
+1. **Latência**: Tempo que leva para servir uma requisição (separada entre sucesso e erro).
+2. **Tráfego**: Demanda exercida sobre o sistema (ex: requisições por segundo).
+3. **Erros**: Taxa de requisições que falham (erros 5xx, falhas de conexão).
+4. **Saturação**: O quão "cheio" está o recurso mais restrito (CPU, memória, conexões de banco).
 
-warning:
-  - rule: "Error rate > 2% for 10 minutes"
-    action: "Slack notification"
-    
-  - rule: "Disk > 80%"
-    action: "Slack notification"
-    
-  - rule: "Slow query count > 10/minute"
-    action: "Slack notification"
-```
+## Regra de Ouro para Alertas
+- **Alerta acionável**: Se um alerta dispara, alguém precisa fazer algo **agora**. Se a pessoa pode ignorar até amanhã, o alerta é um relatório e deve ir para um dashboard, não para o PagerDuty.
 
----
+## Checklist de qualidade
+- [ ] Os 4 Sinais de Ouro monitorados em dashboards centrais
+- [ ] SLOs definidos com base na expectativa real do usuário
+- [ ] Alertas testados e associados a runbooks de mitigação
 
-## Incident Response
+## Anti-padrões (proibido)
+1. ❌ Alertas baseados em uso de CPU em 80% sem queda real de serviço (falso positivo crônico)
+2. ❌ Ausência de métricas de erro na camada de API
 
-```
-1. DETECT — Alert fires or user reports
-2. ACKNOWLEDGE — On-call person acknowledges (2 min)
-3. ASSESS — What's the impact? How many users affected?
-4. MITIGATE — Apply immediate fix (rollback, feature flag)
-5. RESOLVE — Confirm service is healthy
-6. POSTMORTEM — Within 24h: what happened? why? how to prevent?
-```
-
----
-
-## Changelog
-
-### 1.0.0 — Initial release. Alert rules, incident response.
+## Composição com outras skills
+- **Before**: `devops` (infraestrutura) → `sre-reliability` (confiabilidade)
+- **After**: `observability-expert` (tracing) → `bug-hunter` (análise de incidentes)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Google SRE Book (Monitoring Distributed Systems): https://sre.google/sre-book/monitoring-distributed-systems/
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

@@ -1,65 +1,67 @@
-# Skill: Task Planner
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Planning Engine, Project Manager
-> Compatibility: ">=1.0.0"
-
+---
+name: task-planner
+description: "Planejamento estruturado de tarefas e épicos de engenharia: decomposição hierárquica em marcos, definição de dependências lógicas, estimativa de complexidade, critérios de aceite mensuráveis e rastreabilidade de progresso. Use ao iniciar projetos complexos, novas features de grande porte ou reestruturações."
 ---
 
-## Identity
+# Task Planner (Planejamento Hierárquico de Engenharia)
 
-Task Planner breaks work into manageable, assignable tasks. Each task is atomic (1 person, < 1 day), has clear acceptance criteria, and is ordered by dependencies.
+Metodologia de planejamento para decompor grandes objetivos de engenharia em **marcos executáveis, dependências sequenciais e critérios de aceite mensuráveis** — garantindo execução sem surpresas e visibilidade total do progresso.
 
----
+## Quando usar
 
-## Task Breakdown
+Use ao: iniciar projeto ou SaaS novo; planejar feature complexa com múltiplos módulos; organizar refatoração profunda. **Pule** para: correção de bug pontual ou tarefa simples de 1 passo.
+
+## Estrutura do Plano de Tarefas (Template Izanagi)
 
 ```yaml
-epic: "Payment integration"
-  task_1: "Create payments migration"
-    effort: 2h
-    deps: []
-    acceptance: "payments table exists with correct schema"
-    
-  task_2: "Create Payment model"
-    effort: 1h
-    deps: [task_1]
-    acceptance: "Payment model with relationships and casts"
-    
-  task_3: "Create StripeService"
-    effort: 4h
-    deps: []
-    acceptance: "Can create, retrieve, refund payments via Stripe"
-    
-  task_4: "Create PaymentController"
-    effort: 3h
-    deps: [task_2, task_3]
-    acceptance: "POST /api/payments creates payment, returns 201"
-    
-  task_5: "Write payment tests"
-    effort: 3h
-    deps: [task_4]
-    acceptance: "Unit + feature tests cover happy path and errors"
+task_plan:
+  projeto: "Nome do Épico / Feature"
+  objetivo: "1 frase descrevendo a entrega de valor"
+  marcos:
+    - marco: "1. Fundação & Dados"
+      tarefas:
+        - id: "1.1"
+          titulo: "Criar schema Prisma e migrações"
+          estimativa: "30m"
+          dependencia: []
+          criterio_aceite: "Schema migrado sem erro no banco de dev"
+        - id: "1.2"
+          titulo: "Seed de dados iniciais"
+          estimativa: "15m"
+          dependencia: ["1.1"]
+          criterio_aceite: "Banco populado com dados de teste válidos"
+
+    - marco: "2. API Backend"
+      tarefas:
+        - id: "2.1"
+          titulo: "Rotas CRUD de recursos"
+          estimativa: "45m"
+          dependencia: ["1.2"]
+          criterio_aceite: "Testes unitários cobrindo 100% dos endpoints"
 ```
 
----
+## Workflow de Planejamento (4 passos)
 
-## Estimation Guidelines
+1. **Decomposição Top-Down**: Quebre o épico em 3 a 5 marcos lógicos.
+2. **Granularidade de Tarefas**: Cada tarefa deve durar entre 15 minutos e 2 horas de execução de agente/dev.
+3. **Mapeamento de Dependências**: Identifique qual tarefa bloqueia qual, evitando conflitos de execução em paralelo.
+4. **Critérios de Aceite Mensuráveis**: Cada tarefa tem uma condição binária de conclusão ("passou no teste X" vs "feito").
 
-```
-1 point = 2-4 hours (simple, well-understood)
-2 points = 1 day (moderate complexity)
-3 points = 2 days (complex, some unknowns)
-5 points = 1 week (very complex, many unknowns)
-8+ points = must break down further
-```
+## Checklist de qualidade (antes de iniciar)
+- [ ] Objetivo do épico claro em 1 frase
+- [ ] Marcos sequenciados sem dependências circulares
+- [ ] Tarefas granulares (máximo 2h cada)
+- [ ] Critérios de aceite verificáveis e objetivos
 
----
+## Anti-padrões (proibido)
+1. ❌ Tarefas vagas ("fazer o backend", "arrumar o frontend") sem escopo fechado
+2. ❌ Ignorar dependências entre tarefas (começar o front sem o contrato de API)
+3. ❌ Ausência de critérios de aceite mensuráveis
 
-## Changelog
-
-### 1.0.0 — Initial release. Breakdown, estimation, acceptance criteria.
+## Composição com outras skills
+- **Antes**: `discovery` (entrevista e requisitos) → `architect` (arquitetura)
+- **Depois**: `parallel-agents` (despacho das frentes planejadas) → `agentic-coding` (execução)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Agile Planning & WBS (Work Breakdown Structure): PMI / Scrum Guide.
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

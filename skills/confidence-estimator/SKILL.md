@@ -1,57 +1,59 @@
-# Skill: Confidence Estimator
-
-> Version 1.0.0 | Priority: Medium (Future)
-> Dependencies: Hallucination Detection
-> Compatibility: ">=1.0.0"
-
+---
+name: confidence-estimator
+description: "Estima e comunica o grau de certeza (alta, média, baixa) em recomendações e pedaços de código, evitando alucinações por suposição, calibrando premissas e indicando explicitamente quando faltam dados ou evidências. Use ao tomar decisões arquiteturais, responder dúvidas incertas ou auditar a veracidade de propostas."
 ---
 
-## Identity
+# Confidence Estimator (Calibração de Certeza)
 
-Confidence Estimator quantifies how certain the agent is about each statement or recommendation. Communicates uncertainty clearly to the user.
+Quantifica e comunica com precisão o grau de certeza do agente em recomendações, código e premissas — **transformando suposições silenciosas em incertezas explícitas** e prevenindo que alucinações passem como fatos.
 
----
+## Quando usar
 
-## Scoring Factors
+Use ao: arquitetar sistemas com tecnologias pouco conhecidas; responder perguntas complexas onde há ambiguidade na documentação; estimar impacto de refatoração; auditar código gerado por outros modelos ou humanos. **Pule** para: código 100% verificado no repositório local (certeza alta intrínseca); tarefas mecânicas sem ambiguidades (skill `agentic-coding`).
 
-```yaml
-factors:
-  source_reliability:
-    official_docs: 1.0 (complete confidence)
-    project_code: 0.95 (verified)
-    personal_experience: 0.85 (tried and tested)
-    common_knowledge: 0.80 (widely known)
-    internet_forum: 0.50 (unverified)
-    assumption: 0.30 (guess)
-    
-  specificity:
-    concrete_details: 1.0 (exact code, version numbers)
-    general_principles: 0.75 (concepts, patterns)
-    vague: 0.40 ("might work", "some people use")
-```
+## Matriz de Fatores de Confiança (Escala 0.0 a 1.0)
 
-## Communication
+| Fator | Nível | Peso | Critério de Evidência |
+|---|---|---|---|
+| **Fonte Oficial** | Alta | 1.0 | Documentação oficial lida, commit verificado, API testada |
+| **Código Local** | Alta | 0.95 | Padrão existente inspecionado diretamente no repositório |
+| **Experiência Conhecida** | Média | 0.80 | Padrão amplamente testado em projetos anteriores equivalentes |
+| **Inferência / Analogia** | Média | 0.60 | Dedução lógica baseada em princípios similares, sem teste direto |
+| **Suposição / Chute** | Baixa | 0.30 | Falta de dados; premissa sem verificação ("deve funcionar assim") |
 
-```yaml
-high confidence: no qualifier needed
-  "Use httpOnly cookies for JWT tokens."
+## Protocolo de Comunicação por Nível de Confiança
 
-medium confidence: mild qualifier
-  "I believe this pattern works well for your case."
+- **Confiança Alta (≥ 0.9)**: Afirmação direta, sem qualificadores.
+  - *Exemplo*: `"Configure o middleware Next.js em `middleware.ts` com matchers explícitos para rotas protegidas."`
+- **Confiança Média (0.6 - 0.89)**: Qualificador moderado e indicação de premissa.
+  - *Exemplo*: `"Esta abordagem de cache em memória deve funcionar bem para o seu volume atual, assumindo < 50k requisições/dia."`
+- **Confiança Baixa (< 0.6)**: Alerta explícito de incerteza e proposta de verificação.
+  - *Exemplo*: `"Não tenho certeza absoluta sobre a compatibilidade desta versão do driver com o PostgreSQL 16. Recomendo validar com um teste dry-run antes."`
+- **Incerteza Crítica (Falta de dados)**: Interrupção e solicitação de contexto.
+  - *Exemplo*: `"Não tenho elementos suficientes para estimar o impacto desta migração. Poderia fornecer o schema atual e o volume de linhas?"`
 
-low confidence: explicit qualifier
-  "I'm not 100% certain about this. My best guess is..."
+## Workflow de Estimação (3 passos)
 
-flagged: ask for clarification
-  "I don't have enough information to answer confidently. Could you provide more context?"
-```
+1. **Auto-auditoria de premissa**: Antes de responder, pergunte-se: "Vi isso no código ou estou deduzindo?"
+2. **Atribuição de peso**: Calcule mentalmente a confiabilidade da fonte e dos detalhes técnicos.
+3. **Qualificação da resposta**: Aplique o prefixo ou tom correspondente ao nível de confiança calculado.
 
----
+## Checklist de qualidade (antes de entregar)
+- [ ] Afirmações baseadas em suposições estão explicitamente qualificadas ("presumindo que...", "com base em padrões similares...")
+- [ ] Nenhuma suposição é apresentada como fato absoluto
+- [ ] Quando há ambiguidade, o agente solicita esclarecimento em vez de chutar
+- [ ] Versões de bibliotecas mencionadas têm nível de confiança verificado
 
-## Changelog
+## Anti-padrões (proibido)
+1. ❌ Afirmar com certeza absoluta uma API ou comportamento hipotético (alucinação perigosa)
+2. ❌ Ocultar dúvidas para parecer mais "confiante"
+3. ❌ Chutar números de performance ou limites sem benchmark ou docs oficiais
+4. ❌ Aceitar premissas do usuário sem verificar a consistência técnica
 
-### 1.0.0 — Initial release. Factors, communication patterns.
+## Composição com outras skills
+- **Antes**: `hallucination-detection` (verificação de fatos) → `deep-research` (busca externa)
+- **Depois**: `agentic-coding` (execução com verificação empírica) → `self-critique` (revisão)
 
 ## References
-
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Epistemic calibration: https://en.wikipedia.org/wiki/Confidence_assessment · Calibrated probability assessment: Good, D. J.
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

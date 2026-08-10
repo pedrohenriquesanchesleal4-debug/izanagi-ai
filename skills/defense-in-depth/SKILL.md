@@ -1,66 +1,83 @@
 ---
 name: defense-in-depth
-description: Seguranca em camadas para aplicacoes e infraestrutura. Aplica o principio de defense-in-depth (OWASP): nenhuma camada individual e suficiente — autenticacao, autorizacao, validacao de entrada, sanitizacao de saida, segredos, logging seguro, rate limiting, headers de seguranca e dependencias. Use em QUALQUER entrega que envolva dados de usuario, auth, API publica ou deploy. Inspirado no padrao defense-in-depth de obra/superpowers e OWASP ASVS.
+description: "Estratégia de segurança e robustez em camadas (Defense in Depth): implementação de múltiplas barreiras defensivas independentes (validação de entrada, sanitização, autenticação, autorização por rota, validação de saída, auditoria e sandboxing) para que a falha de uma camada não comprometa o sistema. Use ao projetar sistemas críticos, APIs sensíveis ou rotas de autenticação."
 ---
 
-# Defense in Depth (Seguranca em Camadas)
+# Defense in Depth (Segurança e Robustez em Camadas)
 
-## Identidade
+Estratégia arquitetural onde **múltiplas camadas defensivas independentes** são implementadas em cascata. Se uma camada falhar ou for burlada, as camadas subsequentes impedem a brecha ou a corrupção do sistema.
 
-Você é o auditor de segurança embutido em toda entrega. Você assume que QUALQUER camada individual pode falhar — então protege em profundidade: se o login falhar, a autorização ainda bloqueia; se a autorização falhar, a validação de entrada ainda protege o backend; se o backend falhar, o logging não vaza segredos.
+## Quando usar
 
-## Princípio central
+Use ao: projetar fluxos de autenticação/autorização; construir APIs públicas que recebem dados não confiáveis; manipular dados sensíveis (LGPD/Financeiro); endurecer sistemas contra vulnerabilidades do OWASP Top 10. **Pule** para: scripts internos descartáveis de uso único.
 
-> Uma única camada de defesa é uma única falha de segurança. Toda entrega aplica 3+ camadas sobrepostas para cada vetor de risco.
+## As 5 Camadas Defensivas na Aplicação
 
-## Checklist de camadas (aplicar sempre que relevante)
+```yaml
+camada_1_perimetro: "Rate Limiting & Firewall WAF (bloqueio de IPs maliciosos e brute-force)"
+camada_2_transporte: "TLS 1.3 obrigatório, Headers de segurança (CSP, HSTS, X-Frame-Options)"
+camada_3_entrada: "Validação estrita de schema (Pydantic / Zod) + Sanitização contra Injection"
+camada_4_logica: "Verificação explícita de autorização (RBAC/ABAC) em cada serviço/endpoint (IDOR check)"
+camada_5_persistencia: "Prepared statements / ORM parametrizado + criptografia em repouso"
+```
 
-1. **Autenticação (quem é você?)**
-   - Senhas com hash moderno (argon2id/bcrypt, custo adequado), nunca em texto plano.
-   - Sessões: JWT com expiração curta + refresh token rotativo, ou sessions server-side.
-   - Rate limiting no login (anti brute-force), lockout progressivo, MFA quando aplicável.
+## Exemplo de Implementação em Camadas (TypeScript / Next.js API)
 
-2. **Autorização (o que você pode fazer?)**
-   - RBAC/ABAC explícito em TODA rota/endpoint — nunca só no frontend.
-   - Verificação server-side de ownership (o usuário só acessa recursos próprios).
-   - Object-level authorization (IDOR prevention): nunca confiar em IDs enviados pelo cliente.
+```typescript
+// Camada 3 (Input) + Camada 4 (Auth/Authorization) + Camada 5 (Safe DB)
+import { z } from 'zod';
+import { verifySession } from '@/lib/auth';
+import { db } from '@/lib/db';
 
-3. **Validação de entrada (a primeira linha)**
-   - Schema validation em toda API (zod/joi/pydantic) — nunca `any`/`*` não validado.
-   - Whitelist de tipos, tamanhos, formatos. Rejeitar por padrão.
-   - SQL injection: sempre parametrized queries / ORM — proibido concatenação.
-   - XSS: escapar saída (React/Next já fazem por padrão — nunca usar `dangerouslySetInnerHTML` sem sanitização).
-   - CSRF: tokens em mutações, SameSite cookies.
+const UpdateSchema = z.object({
+  name: z.string().min(2).max(100),
+  bio: z.string().max(500).optional(),
+});
 
-4. **Segredos e configuração**
-   - Zero secrets em código/README/git history — sempre env vars / secret manager.
-   - `.env` no .gitignore; `.env.example` documentado.
-   - Menor privilégio: credenciais de DB sem permissões de admin; chaves separadas por serviço.
+export async function updateProfile(req: Request) {
+  // 1. Camada de Autenticação
+  const session = await verifySession(req);
+  if (!session) return new Response('Unauthorized', { status: 401 });
 
-5. **Logging e observabilidade seguros**
-   - Nunca logar senhas, tokens, cookies, PII (LGPD/GDPR).
-   - Log estruturado com IDs de correlação, sem dados sensíveis.
+  // 2. Camada de Validação de Entrada (Schema)
+  const body = await req.json();
+  const parsed = UpdateSchema.safeParse(body);
+  if (!parsed.success) return new Response('Invalid input', { status: 400 });
 
-6. **Headers e hardening HTTP**
-   - `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`/frame-ancestors, `Referrer-Policy`, `Strict-Transport-Security` (HSTS).
-   - HTTPS obrigatório; redirect 301 de http→https.
+  // 3. Camada de Autorização (IDOR check)
+  // Garantimos que o usuário só altera o próprio perfil ou é admin
+  const targetUserId = req.headers.get('x-target-user');
+  if (targetUserId && targetUserId !== session.userId && !session.isAdmin) {
+    return new Response('Forbidden', { status: 403 });
+  }
 
-7. **Dependências e supply chain**
-   - Auditar dependências (`npm audit`, `pip-audit`, dependabot).
-   - Pinar versões críticas; atualizar CVEs conhecidos.
+  // 4. Camada de Persistência Segura (ORM parametrizado)
+  const updated = await db.user.update({
+    where: { id: session.userId },
+    data: parsed.data,
+  });
 
-8. **Rate limiting e abuso**
-   - Limites por IP/usuário em endpoints sensíveis (login, upload, criação de recursos).
+  return Response.json(updated);
+}
+```
 
-## Regras de ouro
+## Checklist de qualidade (antes de entregar)
+- [ ] Entrada de dados validada por schema rígido (Zod/Pydantic) antes de qualquer lógica
+- [ ] Autenticação verificada em todas as rotas protegidas
+- [ ] Autorização (permissão/IDOR) validada explicitamente em nível de registro/recurso
+- [ ] Consultas ao banco parametrizadas (zero concatenação de strings SQL)
+- [ ] Tratamento de erros seguro (sem stack traces ou dados sensíveis vazados na resposta)
 
-- **Defenda em profundidade**: nunca confiar que a camada anterior funcionou.
-- **Falhe com segurança**: em erro, negue acesso (fail-closed), não abra exceção.
-- **Menos superfície**: só exponha o necessário; endpoints internos nunca públicos.
-- **Documente o modelo de ameaça**: 2-3 linhas no README sobre vetores cobertos.
-- **LGPD/GDPR**: dados pessoais minimizados, consentimento explícito quando aplicável.
+## Anti-padrões (proibido)
+1. ❌ Confiar cegamente no cliente (frontend valida, backend confia)
+2. ❌ Autenticação sem checagem de autorização (qualquer usuário logado acessa dados de qualquer outro - IDOR)
+3. ❌ Concatenação de variáveis de usuário direto em queries SQL
+4. ❌ Depender de uma única barreira de segurança para proteger dados críticos
 
-## Saída esperada
+## Composição com outras skills
+- **Antes**: `architect` (design em camadas) → `security` (padrões OWASP)
+- **Depois**: `code-auditor` (SAST manual) → `qa` (testes de segurança)
 
-- Implementação com as camadas aplicáveis (auth, validação, headers, secrets).
-- Nota curta de segurança no README: o que foi protegido e como.
+## References
+- OWASP Defense in Depth: https://cheatsheetseries.owasp.org · NIST Cybersecurity Framework.
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
