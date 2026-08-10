@@ -62,7 +62,8 @@ Proibido codar no escuro: sem memória carregada e sem pesquisa (quando aplicáv
 ### 1. `web_cinematic` — Site/landing animada
 
 - **Gatilhos**: "site animado", "landing", "scrollytelling", "site estilo vídeo", "Apple-style"
-- **Cadeia**: `ui-ux-pro-max` → `frontend` → `motion-design` → `animation-web` → `webgl-3d` → `web-perf-seo` → `a11y` → `qa`
+- **Cadeia**: `design-directions` → `ui-ux-pro-max` → `frontend` → `motion-design` → `animation-web` → `webgl-3d` → `web-perf-seo` → `a11y` → `anti-ai-slop` → `qa`
+  - design-directions: apresenta 3-5 direções de design BESPOKE do nicho e captura a ESCOLHA do usuário (nunca template único).
   - ui-ux-pro-max: define design system (paleta, tipografia, tokens) que será a língua visual de tudo.
   - frontend: consome os tokens e constrói a estrutura de componentes base.
   - motion-design: aplica micro-interações e easing com identidade de movimento.
@@ -70,20 +71,23 @@ Proibido codar no escuro: sem memória carregada e sem pesquisa (quando aplicáv
   - webgl-3d: adiciona a camada 3D imersiva onde o scroll exige profundidade.
   - web-perf-seo: valida Core Web Vitals (LCP < 2.5s, INP < 200ms, CLS < 0.1) e SEO.
   - a11y: garante reduced-motion, contraste e fallback sem JS.
+  - anti-ai-slop: audita a UI contra o catálogo de tells (Inter default, gradientes roxo, hero+3 cards) — ZERO ocorrências.
   - qa: validação final de qualidade e regressão visual.
-- **Artefato**: landing cinematográfica completa (design system + componentes + scrollytelling + 3D + perf validada).
+- **Artefato**: landing cinematográfica completa (direção de design escolhida + design system + componentes + scrollytelling + 3D + zero AI-slop + perf validada).
 
 ### 2. `webgl_experience` — Site 3D/WebGL
 
 - **Gatilhos**: "site 3d", "three.js", "webgl", "cena 3d", "shader", "partículas"
-- **Cadeia**: `ui-ux-pro-max` → `webgl-3d` → `animation-web` → `motion-design` → `frontend` → `web-perf-seo`
+- **Cadeia**: `design-directions` → `ui-ux-pro-max` → `webgl-3d` → `animation-web` → `motion-design` → `frontend` → `web-perf-seo` → `anti-ai-slop`
+  - design-directions: direções de design BESPOKE do nicho + escolha do usuário.
   - ui-ux-pro-max: paleta e atmosfera visual que a cena 3D precisa respeitar.
   - webgl-3d: constrói a cena (Three/R3F, shaders, GLTF) como núcleo da experiência.
   - animation-web: amarra a cena ao scroll (scroll-driven 3D, pin + scrub).
   - motion-design: refina easing e micro-interações de câmera/UI.
   - frontend: integra a cena ao layout e componentes da página.
   - web-perf-seo: valida FPS, LCP, DPR cap e fallback mobile.
-- **Artefato**: cena 3D com scroll (navegável, performática, com fallback).
+  - anti-ai-slop: auditoria final contra tells genéricos.
+- **Artefato**: cena 3D com scroll (navegável, performática, com fallback, zero AI-slop).
 
 ### 3. `api_backend` — API/REST/GraphQL
 
@@ -171,16 +175,18 @@ Proibido codar no escuro: sem memória carregada e sem pesquisa (quando aplicáv
 ### 10. `fullstack_crud` — App fullstack completo
 
 - **Gatilhos**: "app completo", "CRUD", "fullstack", "sistema", "dashboard com backend"
-- **Cadeia**: `architect` → `db` → `backend` → `frontend` → `security` → `ui-ux-pro-max` → `qa` → `memoria-projeto`
+- **Cadeia**: `architect` → `db` → `backend` → `design-directions` → `frontend` → `security` → `ui-ux-pro-max` → `anti-ai-slop` → `qa` → `memoria-projeto`
   - architect: estrutura de pastas, contratos e modelo antes do código.
   - db: schema e migrações.
   - backend: API e regras de negócio.
+  - design-directions: direções de design do nicho + escolha do usuário (dashboards também têm identidade).
   - frontend: UI consumindo a API.
   - security: auth, validação e proteção ponta a ponta.
   - ui-ux-pro-max: eleva a UI a alto craft (anti "cara de IA").
+  - anti-ai-slop: auditoria final zero tells.
   - qa: validação end-to-end final.
   - memoria-projeto: registra decisões e padrões do app.
-- **Artefato**: app fullstack completo (schema + API + UI + segurança + QA).
+- **Artefato**: app fullstack completo (schema + API + UI + segurança + QA + direção de design escolhida).
 
 ### 11. `mobile_app` — Aplicativo mobile
 

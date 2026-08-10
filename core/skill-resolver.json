@@ -219,7 +219,14 @@
     "testing-automation": "skills/testing-automation/SKILL",
     "automation-security": "skills/automation-security/SKILL",
     "automation-optimization": "skills/automation-optimization/SKILL",
-    "automation-documentation": "skills/automation-documentation/SKILL"
+    "automation-documentation": "skills/automation-documentation/SKILL",
+    "design-directions": "skills/design-directions/SKILL",
+    "style-selector": "skills/design-directions/SKILL",
+    "direcoes-design": "skills/design-directions/SKILL",
+    "anti-ai-slop": "skills/anti-ai-slop/SKILL",
+    "de-slop": "skills/anti-ai-slop/SKILL",
+    "design-audit": "skills/anti-ai-slop/SKILL",
+    "ai-slop": "skills/anti-ai-slop/SKILL"
   },
   "compositions": {
     "web_cinematic": {
@@ -232,6 +239,7 @@
         "cinematic website"
       ],
       "chain": [
+        "design-directions",
         "ui-ux-pro-max",
         "frontend",
         "motion-design",
@@ -239,9 +247,10 @@
         "webgl-3d",
         "web-perf-seo",
         "a11y",
+        "anti-ai-slop",
         "qa"
       ],
-      "artifact": "landing cinematografica completa"
+      "artifact": "landing cinematografica completa (direcao de design escolhida + design system + componentes + scrollytelling + 3D + zero AI-slop + perf validada)"
     },
     "webgl_experience": {
       "triggers": [
@@ -254,14 +263,16 @@
         "react three fiber"
       ],
       "chain": [
+        "design-directions",
         "ui-ux-pro-max",
         "webgl-3d",
         "animation-web",
         "motion-design",
         "frontend",
-        "web-perf-seo"
+        "web-perf-seo",
+        "anti-ai-slop"
       ],
-      "artifact": "cena 3D com scroll"
+      "artifact": "cena 3D com scroll (direcao de design + zero AI-slop)"
     },
     "api_backend": {
       "triggers": [
@@ -414,13 +425,15 @@
         "architect",
         "db",
         "backend",
+        "design-directions",
         "frontend",
         "security",
         "ui-ux-pro-max",
+        "anti-ai-slop",
         "qa",
         "memoria-projeto"
       ],
-      "artifact": "app fullstack completo"
+      "artifact": "app fullstack completo (direcao de design + zero AI-slop)"
     },
     "mobile_app": {
       "triggers": [

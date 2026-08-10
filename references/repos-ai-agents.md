@@ -32,6 +32,37 @@ Curadoria de repositórios GitHub, bancos de prompts e fontes de componentes de 
 | 10x.app | https://www.10x.app | App builder AI (iOS/macOS SwiftUI) — inspiração de UX de ferramentas de geração de app |
 | Three.js | https://threejs.org/examples | Exemplos canônicos 3D/WebGL (ver também references/webgl-3d.md) |
 
+## Anti AI-Slop & Design de Alto Craft (2026)
+
+| Recurso | URL | O que extrair |
+|---|---|---|
+| avoid-ai-design (funboy322) | https://github.com/funboy322/avoid-ai-design | Skill que audita frontend e reescreve removendo AI-slop (gradientes roxo, Inter, shadcn default). Base da skill `anti-ai-slop` do Izanagi; inclui catálogo `ai-tells-catalog.md` |
+| Superdesign blog | https://superdesign.dev/blog/how-to-make-ai-ui-look-less-generic | 5 fixes para UI IA genérica: tipografia distinta, cor dominante + acento, layout assimétrico, motion proposital |
+| 925studios — AI Slop Guide | https://www.925studios.co/blog/ai-slop-web-design-guide | Guia completo 2026: como identificar e corrigir sites genéricos; tipografia como sinal de marca |
+| BSWEN — Anti-Patterns Guide | https://docs.bswen.com/blog/2026-03-20-ai-generated-ui-anti-patterns | Framework de penalidades/recompensas para avaliação de design (Anthropic): penalizar gradientes roxo, card grids, hero centralizado; recompensar composições inesperadas |
+| Visily — Adopt/Avoid | https://www.visily.ai/blog/how-to-make-ai-designs-less-generic | Técnica adopt/avoid: listas explícitas de padrões a evitar em prompts de geração |
+| Awwwards | https://www.awwwards.com | Galeria de sites premiados (SOTD) — vocabulário de layout/motion de elite |
+| Muzli | https://muz.li | Feed de inspiração UI/UX atualizado (dark mode, dashboards, trends 2026) |
+
+## Orquestração Multi-Agente (padrões de produção 2026)
+
+| Recurso | URL | O que extrair |
+|---|---|---|
+| Fastio — Multi-Agent Patterns | https://fast.io/resources/multi-agent-orchestration-patterns | 4 padrões (Supervisor, Pipeline, Swarm, Hierarchical), quando usar cada um, coordenação por shared storage |
+| AgentBrisk — Orchestration 2026 | https://agentbrisk.com/blog/multi-agent-orchestration-guide-2026/ | Por que single agent degrada; paralelização; isolamento de contexto por agente |
+| Odea Works — Orchestration | https://odeaworks.com/blog/2026-04-05-llm-agent-orchestration-patterns/ | Fan-out paralelo, agregação (votação, weighted score, data fusion), custo vs qualidade |
+| Anthropic — Building Effective Agents | https://www.anthropic.com/research/building-effective-agents | Padrão canônico: orchestrator delega a workers e sintetiza outputs |
+
+## Otimização de Tokens & Context Engineering (2026)
+
+| Recurso | URL | O que extrair |
+|---|---|---|
+| mem0 — Context Engineering | https://mem0.ai/blog/context-engineering-ai-agents-guide | Escrever seletivamente, comprimir, isolar por tipo de contexto |
+| Redis — Context Window Management | https://redis.io/blog/context-window-management-llm-apps-developer-guide/ | Custo/latência vs tamanho de contexto; lost-in-the-middle (~32K tokens) |
+| Fastio — Token Cost Optimization | https://fast.io/resources/ai-agent-token-cost-optimization | Prompt caching: estático primeiro, pesado no meio, dinâmico por último (cache hit) |
+| Token Optimize — Strategies 2026 | https://www.tokenoptimize.dev/guides/llm-token-optimization-strategies | 7 estratégias: compressão, sliding window, model routing, caching, output constraints |
+| AI University — Token Optimization | https://theaiuniversity.com/docs/cost-optimization/token-optimization | Redução de 70%: sliding window, o que sempre manter (system prompt, tarefa atual, últimos tool results) |
+
 ## Como usar no Izanagi
 
 - **Discovery (Fase 3 — pesquisa técnica)**: consultar `references/repos-ai-agents.md` para citar fontes de componentes reais no prompt rico (ex: "hero section no padrão 21st.dev + shaders; componentes de `shadcn add`; texto com easing do WebsitesPrompts").

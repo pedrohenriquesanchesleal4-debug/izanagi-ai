@@ -5,7 +5,7 @@
 
 ---
 
-## Available Agents (13 Specialized Agents)
+## Available Agents (14 Specialized Agents)
 
 | Agent | Command | Role | File |
 |-------|---------|------|------|
@@ -18,6 +18,7 @@
 | **Security Engineer** | `/security` | Mitigação OWASP Top 10, auth, secure coding e secrets | `security-agent.json` |
 | **DevOps Engineer** | `/devops` | Pipelines CI/CD, Docker, Kubernetes, IaC e observabilidade | `devops-agent.json` |
 | **Database Engineer** | `/database` | Modelagem de dados, otimização SQL, PostgreSQL, Redis | `database-agent.json` |
+| **QA & Test Automation Engineer** | `/qa` | Testes unitários, integração, E2E (Playwright), acessibilidade (WCAG), quality gates 🆕 | `qa-agent.json` |
 | **Bug Hunter** | `/bug-hunter` | Debugging sistemático e análise de causa raiz | `bug-hunter-agent.json` |
 | **Documentation Writer** | `/docs` | Documentação técnica, READMEs e diagramas UML | `docs-agent.json` |
 | **Project Manager** | `/pm` | Sprints, milestones, análise de riscos técnicos | `pm-agent.json` |

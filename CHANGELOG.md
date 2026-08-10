@@ -4,6 +4,28 @@
 
 ---
 
+## [2.8.0] — 2026-08-10
+
+### Added
+- **14th Specialized Agent (`/qa`)**: QA & Test Automation Engineer (`agents/qa-agent.json` + `.opencode/agent/qa.md`) for automated unit testing, integration tests, E2E (Playwright), accessibility (WCAG), and quality gates.
+- **Multi-Agent Swarm Default & Orchestrator Hardening**: Enforced parallel concurrent multi-agent delegation as default in Agents Orchestrator (`/agents`), forbidding monolithic single-agent execution on complex SaaS/application requests.
+- **Advanced GitHub & AI Agent Curadoria**: Expanded `references/repos-ai-agents.md` with top open-source AI agent standards, prompt banks (grill-me, humanizer, websiteprompts), and modern UI component systems (21st.dev, Cult UI, Skiper UI, React Bits).
+- **Persistent Memory Protection**: Automated persistent session checkpoints in `.agents/memoria/` to guarantee zero loss on hardware or application crashes.
+- **New skill `design-directions`** (Style Selector): presents 3-5 BESPOKE design directions per industry (palette, typography, layout signature, motion signature) for the user to choose BEFORE any code — never a single template.
+- **New skill `anti-ai-slop`**: full catalog of AI-generated design tells (Inter default, purple gradients, hero + 3 cards, rounded-2xl uniformity, "Build the future" copy) with detect/fix workflow and the identity test.
+- **New skill references** for `design-directions` and `anti-ai-slop` (2026 curated sources: avoid-ai-design, Superdesign, 925studios, BSWEN/Anthropic grading).
+
+### Enhanced
+- **`economia-tokens` rewritten with real context engineering**: prompt caching (static first, dynamic last), lost-in-the-middle awareness (~32K), sliding window, model routing, output constraints, and a conscious exception (economy never sacrifices deliverable depth).
+- **Agents Orchestrator rewritten as Supervisor + Swarm**: task decomposition, parallel dispatch with isolated context per agent, coordination via on-disk artifacts, aggregation, and mandatory Design Experience Flow (Style Selector → Anti AI-Slop → experience over speed).
+- **Skill chains updated** (`web_cinematic`, `webgl_experience`, `fullstack_crud` + animation/senior-engineer/discovery agents) to include `design-directions` first and `anti-ai-slop` before QA.
+- **RULES.md rules 13-16**: detailed anti-AI-slop catalog, dynamic industry-tailored design system, mandatory Style Selector, and AI-tells audit.
+- **SYSTEM.md principles 13-15**: Style Selector, Anti AI-Slop, Token Economy.
+- **Blueprint Engine & Materialization Contracts** synchronized across all 14 agents to enforce zero stubs, zero checklists, and full vertical-slice SaaS delivery (Landing Page + Auth + Dashboard + Backend + README + QA).
+- **agents/INDEX.md** updated to 14 agents.
+
+---
+
 ## [2.3.3] — 2026-08-03
 
 ### Fixed

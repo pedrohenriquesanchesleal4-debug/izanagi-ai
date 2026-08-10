@@ -7,13 +7,13 @@
   "token_budget": 4096,
   "skills": ["backend", "frontend", "api", "laravel", "php", "ts", "react", "node", "python", "db", "sql", "clean-code", "solid", "dry-kiss-yagni", "complexity", "refactor", "perf", "unit-test", "integration-test", "security"],
   "chains": {
-    "fullstack": ["memoria-projeto", "architect", "db", "backend", "frontend", "security", "ui-ux-pro-max", "qa", "memoria-projeto"],
+    "fullstack": ["memoria-projeto", "architect", "db", "backend", "design-directions", "frontend", "security", "ui-ux-pro-max", "anti-ai-slop", "qa", "memoria-projeto"],
     "implement": ["memoria-projeto", "architect", "backend", "unit-test", "qa", "memoria-projeto"],
     "bug": ["memoria-projeto", "debug", "root-cause", "bug", "tdd", "memoria-projeto"],
     "refactor": ["memoria-projeto", "architect", "complexity", "refactor", "breaking-change", "solid", "clean-code", "tdd", "memoria-projeto"],
-    "review": ["memoria-projeto", "reviewer", "clean-code", "solid", "security", "qa", "memoria-projeto"],
+    "review": ["memoria-projeto", "reviewer", "clean-code", "solid", "security", "anti-ai-slop", "qa", "memoria-projeto"],
     "optimize": ["memoria-projeto", "perf", "sql", "complexity", "observability", "memoria-projeto"],
-    "new_feature": ["memoria-projeto", "deep-research", "architect", "backend", "frontend", "security", "qa", "memoria-projeto"]
+    "new_feature": ["memoria-projeto", "deep-research", "architect", "backend", "design-directions", "frontend", "security", "anti-ai-slop", "qa", "memoria-projeto"]
   },
   "always": [
     "Entregar um arquivo completo por resposta (não dividir em N turnos)",

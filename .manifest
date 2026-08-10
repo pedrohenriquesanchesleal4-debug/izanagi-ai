@@ -1,11 +1,11 @@
 {
   "name": "izanagi-ai",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-07T17:00:14.806Z",
+  "generatedAt": "2026-08-10T12:26:09.667Z",
   "agents": [
     {
       "id": "animation",
@@ -190,7 +190,9 @@
       "skills": [
         "brainstorming",
         "deep-research",
+        "design-directions",
         "ui-ux-pro-max",
+        "anti-ai-slop",
         "requirements",
         "frontend",
         "animation-web",
@@ -294,6 +296,30 @@
       ]
     },
     {
+      "id": "qa",
+      "name": "QA & Test Automation Engineer",
+      "version": "1.0.0",
+      "file": "agents/qa-agent.json",
+      "role": "Garante a qualidade total do produto: testes unitários, de integração, E2E (Playwright), acessibilidade, performance e cobertura rigorosa",
+      "skills": [
+        "qa",
+        "tdd",
+        "webapp-testing",
+        "testing-automation",
+        "accessibility-reviewer",
+        "error-recovery",
+        "data-validation",
+        "professor",
+        "explainer",
+        "self-fix"
+      ],
+      "chains": [
+        "test_suite",
+        "e2e_audit",
+        "review"
+      ]
+    },
+    {
       "id": "security",
       "name": "Security Engineer",
       "version": "2.0.0",
@@ -394,7 +420,7 @@
   "skills": [
     {
       "name": "Skill Library",
-      "count": 136,
+      "count": 138,
       "skills": [
         {
           "id": "a11y",
@@ -419,6 +445,12 @@
           "name": "Skill AI/Agent Development — izanagi",
           "version": "1.0.0",
           "path": "skills/ai-agent/SKILL.md"
+        },
+        {
+          "id": "ai-slop",
+          "name": "anti-ai-slop",
+          "version": "1.0.0",
+          "path": "skills/anti-ai-slop/SKILL.md"
         },
         {
           "id": "alternative-solution-generator",
@@ -647,6 +679,12 @@
           "name": "Dependency Analyzer",
           "version": "1.0.0",
           "path": "skills/dependency-analyzer/SKILL.md"
+        },
+        {
+          "id": "design-directions",
+          "name": "design-directions",
+          "version": "1.0.0",
+          "path": "skills/design-directions/SKILL.md"
         },
         {
           "id": "design-pattern-advisor",

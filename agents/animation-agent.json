@@ -7,12 +7,12 @@
   "token_budget": 4096,
   "skills": ["animation-web", "motion-design", "webgl-3d", "frontend", "architect", "ux", "a11y", "perf", "reviewer"],
   "chains": {
-    "cinematic_site": ["memoria-projeto", "deep-research", "ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "web-perf-seo", "qa", "memoria-projeto"],
-    "new_feature": ["memoria-projeto", "ui-ux-pro-max", "motion-design", "animation-web", "web-perf-seo", "qa", "memoria-projeto"],
-    "implementation": ["memoria-projeto", "ui-ux-pro-max", "motion-design", "animation-web", "webgl-3d", "frontend", "web-perf-seo", "qa", "memoria-projeto"],
-    "frontend": ["memoria-projeto", "ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "a11y", "web-perf-seo", "qa", "memoria-projeto"],
-    "review": ["memoria-projeto", "ui-ux-pro-max", "a11y", "web-perf-seo", "qa", "memoria-projeto"],
-    "refine": ["memoria-projeto", "motion-design", "animation-web", "web-perf-seo", "qa", "memoria-projeto"]
+    "cinematic_site": ["memoria-projeto", "deep-research", "design-directions", "ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "web-perf-seo", "anti-ai-slop", "qa", "memoria-projeto"],
+    "new_feature": ["memoria-projeto", "design-directions", "ui-ux-pro-max", "motion-design", "animation-web", "web-perf-seo", "anti-ai-slop", "qa", "memoria-projeto"],
+    "implementation": ["memoria-projeto", "design-directions", "ui-ux-pro-max", "motion-design", "animation-web", "webgl-3d", "frontend", "web-perf-seo", "anti-ai-slop", "qa", "memoria-projeto"],
+    "frontend": ["memoria-projeto", "design-directions", "ui-ux-pro-max", "frontend", "motion-design", "animation-web", "webgl-3d", "a11y", "web-perf-seo", "anti-ai-slop", "qa", "memoria-projeto"],
+    "review": ["memoria-projeto", "ui-ux-pro-max", "anti-ai-slop", "a11y", "web-perf-seo", "qa", "memoria-projeto"],
+    "refine": ["memoria-projeto", "motion-design", "animation-web", "anti-ai-slop", "web-perf-seo", "qa", "memoria-projeto"]
   },
   "process": [
     "1. Entender o objetivo narrativo e o público (por que o usuário rola?)",

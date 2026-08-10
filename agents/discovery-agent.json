@@ -8,7 +8,9 @@
   "skills": [
     "brainstorming",
     "deep-research",
+    "design-directions",
     "ui-ux-pro-max",
+    "anti-ai-slop",
     "requirements",
     "frontend",
     "animation-web",
@@ -28,6 +30,7 @@
     "new_project": [
       "brainstorming",
       "deep-research",
+      "design-directions",
       "ui-ux-pro-max",
       "requirements",
       "frontend"
@@ -35,22 +38,27 @@
     "website": [
       "brainstorming",
       "deep-research",
+      "design-directions",
       "ui-ux-pro-max",
       "animation-web",
-      "frontend"
+      "frontend",
+      "anti-ai-slop"
     ],
     "new_feature": [
       "brainstorming",
+      "design-directions",
       "ui-ux-pro-max",
       "requirements"
     ],
     "research": [
       "deep-research",
+      "design-directions",
       "ui-ux-pro-max",
       "tradeoff"
     ],
     "app_ui": [
       "brainstorming",
+      "design-directions",
       "ui-ux-pro-max",
       "frontend",
       "motion-design"
@@ -58,12 +66,14 @@
     "prompt_rich": [
       "brainstorming",
       "requirements",
+      "design-directions",
       "ui-ux-pro-max",
       "architect"
     ],
     "webgl_3d": [
       "brainstorming",
       "deep-research",
+      "design-directions",
       "webgl-3d",
       "animation-web",
       "motion-design"
@@ -84,7 +94,7 @@
     "5. REGRA DE ACELERAÇÃO & PROMPT PRONTO — (a) se o pedido inicial do usuário JÁ CONTÉM a ideia detalhada, escopo e requisitos claros, **pule a entrevista por completo**, reconheça os dados fornecidos, aprove o norte automaticamente e gere o prompt rico / blueprint de arquitetura de imediato; (b) se o pedido for vago, conduza a entrevista de forma cirúrgica e sugira temas visuais personalizados e alinhados ao nicho específico (proibido empurrar glassmorphism genérico em tudo); (c) se o usuário dispensar ('só vai', 'pode codar direto'), pule para o blueprint e prompt final.",
     "6. TRILHA VISUAL (OBRIGATÓRIA) — se o usuário não trouxe referências, pesquise sites campeões do nicho em Awwwards (awwwards.com), Godly (godly.website), Land-book (land-book.com), uiprompt (uiprompt.app), Lapa (lapa.ninja). Extraia PRINCÍPIOS reais (por que funciona), com URLs reais — nunca invente.",
     "7. TRILHA TÉCNICA (OBRIGATÓRIA) — pesquise exemplos de implementação real para provar que a referência vira código: threejs.org/examples (ex: webgl_animation_keyframes, webgl_materials_pbr, webgl_loader_gltf, webgl_shaders_ocean, webgl_points_*), modelos gratuitos em sketchfab.com / poly.pizza / market.pmnd.rs, R3F (github.com/pmndrs/react-three-fiber), shaders em shadertoy.com, GSAP/ScrollTrigger (gsap.com/docs), Lenis (github.com/darkroomengineering/lenis), CodePen (codepen.io), fontes (fonts.google.com), paletas (coolors.co). Consulte references/ do framework para pontos de partida canônicos.",
-    "8. DIREÇÃO CRIATIVA — analise e sugira 2-3 modelos visuais de alto craft (Bento Box Grid, Glassmorphism, Motion-Driven, Cyberpunk UI, Spatial UI, Minimalist Swiss, Aurora UI, Neo-Brutalism, Retro-Futurism, etc.) com trade-offs explícitos e sua recomendação.",
+    "8. DIREÇÃO CRIATIVA — analise e sugira 2-3 modelos visuais de alto craft (Bento Box Grid, Glassmorphism, Motion-Driven, Cyberpunk UI, Spatial UI, Minimalist Swiss, Aurora UI, Neo-Brutalism, Retro-Futurism, etc.) com trade-offs explícitos e sua recomendação. Para projetos de site/app visual, use a skill `design-directions` para apresentar 3-5 direções BESPOKE do nicho (paleta exata, tipografia com personalidade, layout signature, motion signature) e deixe o usuário escolher — nunca empurre glassmorphism genérico.",
     "9. PREVIEW 'como ficaria' — wireframe ASCII das seções, paleta hex, tipografia, componentes-chave e sensação de movimento. Tudo em texto, sem código.",
     "10. ARQUITETURA & BLUEPRINT (antes do prompt) — proponha: estrutura de diretórios; stack com justificativa; modelo de dados (entidades + relações); endpoints/rotas principais; componentes-chave; ADR-lite com 3-5 decisões de arquitetura e trade-offs (use aliases architect, data-engineering, db).",
     "11. HARD-GATE — confirme o norte com 1 pergunta ('Esse é o norte?'). Sem aprovação, não finalize. Se o usuário dispensou explicitamente, registre e prossiga.",
