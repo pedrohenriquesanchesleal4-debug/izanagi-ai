@@ -226,7 +226,14 @@
     "anti-ai-slop": "skills/anti-ai-slop/SKILL",
     "de-slop": "skills/anti-ai-slop/SKILL",
     "design-audit": "skills/anti-ai-slop/SKILL",
-    "ai-slop": "skills/anti-ai-slop/SKILL"
+    "ai-slop": "skills/anti-ai-slop/SKILL",
+    "parallel-agents": "skills/parallel-agents/SKILL",
+    "fan-out": "skills/parallel-agents/SKILL",
+    "multi-agent": "skills/parallel-agents/SKILL",
+    "swarm": "skills/parallel-agents/SKILL",
+    "defense-in-depth": "skills/defense-in-depth/SKILL",
+    "camadas-seguranca": "skills/defense-in-depth/SKILL",
+    "layered-security": "skills/defense-in-depth/SKILL"
   },
   "compositions": {
     "web_cinematic": {
@@ -430,10 +437,11 @@
         "security",
         "ui-ux-pro-max",
         "anti-ai-slop",
+        "parallel-agents",
         "qa",
         "memoria-projeto"
       ],
-      "artifact": "app fullstack completo (direcao de design + zero AI-slop)"
+      "artifact": "app fullstack completo (direcao de design + zero AI-slop + execucao paralela)"
     },
     "mobile_app": {
       "triggers": [
@@ -475,6 +483,23 @@
         "observability"
       ],
       "artifact": "feature com LLM/RAG"
+    },
+    "parallel_swarm": {
+      "triggers": [
+        "multiplos agentes",
+        "swarm",
+        "em paralelo",
+        "tarefas independentes",
+        "fan-out",
+        "orquestrar agentes",
+        "vários agentes ao mesmo tempo"
+      ],
+      "chain": [
+        "parallel-agents",
+        "memoria-projeto",
+        "professor-modo"
+      ],
+      "artifact": "execucao paralela de agentes com merge unificado"
     }
   }
 }

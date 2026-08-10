@@ -2,6 +2,24 @@
 
 Curadoria de repositórios GitHub, bancos de prompts e fontes de componentes de alta qualidade para o Discovery usar como vocabulário técnico-visual. URLs canônicas verificadas — **nunca invente URLs além destas**.
 
+## Ecossistema de Skills & Frameworks (top GitHub 2026)
+
+| Recurso | URL | O que extrair |
+|---|---|---|
+| obra/superpowers | https://github.com/obra/superpowers | 266K★ — maior framework de skills agentic (brainstorming, TDD, subagents, code review). Padrões canônicos: dispatching-parallel-agents, defense-in-depth, project-planner. Base conceitual das skills `parallel-agents` e `defense-in-depth` do Izanagi |
+| addyosmani/agent-skills | https://github.com/addyosmani/agent-skills | 85K★ — production-grade engineering skills (repo analysis, web audits, coding). Estrutura com `.opencode/`, `skills/`, `AGENTS.md`, plugin.json — referência de organização |
+| anthropics/skills | https://github.com/anthropics/skills | Skills oficiais da Anthropic (docs, PDF, PPTX) — padrão de documentação de skills enterprise |
+| ComposioHQ/awesome-claude-skills | https://github.com/ComposioHQ/awesome-claude-skills | 1000+ Claude Skills curadas (índice awesome-claude-skills, 66K★) |
+| VoltAgent/awesome-agent-skills | https://github.com/VoltAgent/awesome-agent-skills | 200+ skills curadas com foco em agente único agnóstico de CLI |
+| alirezarezvani/claude-skills | https://github.com/alirezarezvani/claude-skills | 200+ skills cross-platform (Claude/Codex/Cursor) — mapas mentais e automação |
+| sickn33/antigravity-awesome-skills | https://github.com/sickn33/antigravity-awesome-skills | 1200+ skills com bundler próprio |
+| travisvn/awesome-claude-skills | https://github.com/travisvn/awesome-claude-skills | 14.5K★ — índice de skills Claude Code + listas por área |
+| jeremylongshore/claude-code-plugins-plus-skills | https://github.com/jeremylongshore/claude-code-plugins-plus-skills | 471 plugins + 3069 skills + 347 agents — maior coleção agregada |
+| Dicklesworthstone/claude_code_agent_farm | https://github.com/Dicklesworthstone/claude_code_agent_farm | 882★ — orquestração de 20+ agentes em paralelo com projetos descartáveis — base prática do padrão fan-out |
+| yusufkaraaslan/Skill_Seekers | https://github.com/yusufkaraaslan/Skill_Seekers | 14.7K★ — converter documentação web em skills reutilizáveis |
+| spences10/claude-skills-cli | https://github.com/spences10/claude-skills-cli | CLI para criar/gerenciar skills de forma padronizada |
+| Zijian-Ni/awesome-ai-agents-2026 | https://github.com/Zijian-Ni/awesome-ai-agents-2026 | Lista curada 2026 de frameworks de agentes (LangGraph, CrewAI, AutoGen/AG2, MetaGPT, Swarms, OpenAI Swarm, ADK, A2A, MCP) |
+
 ## Bancos de Prompts & Workflows de IA
 
 | Recurso | URL | O que extrair |
@@ -62,6 +80,9 @@ Curadoria de repositórios GitHub, bancos de prompts e fontes de componentes de 
 | Fastio — Token Cost Optimization | https://fast.io/resources/ai-agent-token-cost-optimization | Prompt caching: estático primeiro, pesado no meio, dinâmico por último (cache hit) |
 | Token Optimize — Strategies 2026 | https://www.tokenoptimize.dev/guides/llm-token-optimization-strategies | 7 estratégias: compressão, sliding window, model routing, caching, output constraints |
 | AI University — Token Optimization | https://theaiuniversity.com/docs/cost-optimization/token-optimization | Redução de 70%: sliding window, o que sempre manter (system prompt, tarefa atual, últimos tool results) |
+| Fastio — Orchestration Patterns | https://fast.io/resources/multi-agent-orchestration-patterns | 4 padrões de orquestração (ver seção acima) — base da composição `parallel_swarm` |
+| opendatascience — Top 10 Frameworks | https://opendatascience.com/ai-agent-frameworks-top-10-list/ | Panorama 2026 dos frameworks de orquestração multi-agente e seus trade-offs |
+| iterathon — LangGraph vs CrewAI vs AutoGen | https://iterathon.tech/ai-agent-guide-mastering-langgraph-crewai-and-autogen/ | Comparativo prático dos 3 frameworks dominantes — vocabulário de design de agentes |
 
 ## Como usar no Izanagi
 

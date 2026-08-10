@@ -5,7 +5,7 @@
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-10T12:26:09.667Z",
+  "generatedAt": "2026-08-10T12:39:42.150Z",
   "agents": [
     {
       "id": "animation",
@@ -420,7 +420,7 @@
   "skills": [
     {
       "name": "Skill Library",
-      "count": 138,
+      "count": 140,
       "skills": [
         {
           "id": "a11y",
@@ -565,6 +565,12 @@
           "name": "Bug Prevention",
           "version": "1.0.0",
           "path": "skills/bug-prevention/SKILL.md"
+        },
+        {
+          "id": "camadas-seguranca",
+          "name": "defense-in-depth",
+          "version": "1.0.0",
+          "path": "skills/defense-in-depth/SKILL.md"
         },
         {
           "id": "chaos-engineering",
@@ -751,6 +757,12 @@
           "name": "Error Recovery — Automação que Sobrevive a Falhas",
           "version": "1.0.0",
           "path": "skills/error-recovery/SKILL.md"
+        },
+        {
+          "id": "fan-out",
+          "name": "parallel-agents",
+          "version": "1.0.0",
+          "path": "skills/parallel-agents/SKILL.md"
         },
         {
           "id": "feature-flags",

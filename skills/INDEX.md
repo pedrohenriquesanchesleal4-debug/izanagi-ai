@@ -1,7 +1,7 @@
 # Skills Index
 
 > Complete registry of all skills in the Izanagi AI framework.
-> Updated: 2026-07-31 | Total: 140 skills
+> Updated: 2026-08-10 | Total: 206 skills
 
 ---
 
@@ -397,11 +397,20 @@
 
 ---
 
+## Orchestration & Security (2)
+
+| Skill | Status | File |
+|-------|--------|------|
+| Parallel Agents (fan-out/swarm) | ? v1.0.0 | `skills/parallel-agents/SKILL.md` |
+| Defense in Depth (camadas de segurança) | ? v1.0.0 | `skills/defense-in-depth/SKILL.md` |
+
+---
+
 ## Stats
 
 | Metric | Value |
 |--------|-------|
-| **Total skills** | **140** |
+| **Total skills** | **206** |
 | Core modules | 8 |
 | Architecture | 10 |
 | Coding | 13 |
@@ -438,6 +447,7 @@
 | Web Performance & SEO | 2 |
 | WebSocket & Real-Time | 1 |
 | Animation & 3D | 3 |
+| Orchestration & Security | 2 |
 
 ---
 
