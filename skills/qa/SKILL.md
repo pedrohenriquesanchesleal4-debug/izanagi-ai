@@ -1,234 +1,229 @@
 ---
 name: qa
-description: |
-  Skill de Quality Assurance para o IzanagiAI. Contém checklist completo de qualidade
-  de código, validações de acessibilidade, performance, segurança e responsividade.
-  Use esta skill para auditar código existente ou validar alterações antes de merge/deploy.
+description: "Quality Assurance completo para código de produção. 7 dimensões de auditoria: TypeScript Strict (zero `any`, props tipadas, null safety), Componentes React (SRP, hooks rules, cleanup de efeitos, derivação de estado), Performance (re-renders, memoização, lazy loading, code splitting, N+1), Acessibilidade WCAG 2.2 AA (contraste 4.5:1, labels, navegação por teclado, ARIA, focus trap, screen readers), Responsividade (mobile-first, breakpoints, touch targets 44px), Segurança (validação server-side, RLS, XSS/injection, secrets), SEO (title, meta, h1, alt, canonical, structured data). Inclui Pirâmide de Testes (unitários Vitest/Jest, integração, E2E Playwright com seletores por role/intent), checklist de code review e processo de revisão. Use ao auditar código, validar antes de merge/deploy, ou revisar PR."
 ---
 
-# Skill QA
+# Quality Assurance — Manual Operacional
 
-## ✅ Checklist de Qualidade de Código
+Manual denso de QA para código de produção. 7 dimensões de auditoria com checklists acionáveis, código de exemplo para padrões corretos vs incorretos, e Pirâmide de Testes completa.
 
-### 1. TypeScript Strict
+## Quando usar
 
-- [ ] **Zero `any`** — todos os tipos explícitos
-- [ ] **Zero `as unknown as`** — indica problema de design, refatorar
-- [ ] **Props tipadas** — toda interface de componente com `interface NomeProps`
-- [ ] **Retorno tipado** — funções com retorno explícito quando não óbvio
-- [ ] **Null safety** — uso correto de optional chaining (`?.`) e nullish coalescing (`??`)
-- [ ] **Enums ou union types** — para valores fixos (status, tipos)
+- Auditar código existente antes de merge/deploy.
+- Validar alterações em code review.
+- Verificar acessibilidade, performance, segurança de páginas/componentes.
+- Implementar testes (unitários, integração, E2E).
 
-```tsx
-// ✅ Correto
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-}
+**Pule** para `code-auditor` quando o foco é SAST de segurança profundo; `accessibility-reviewer` quando é auditoria WCAG completa; `webapp-testing` quando é teste visual com Playwright.
 
-const status: "draft" | "published" | "archived" = "draft";
+---
 
-// ❌ Problemático
-const data: any = response.data;
-const result = something as unknown as SomeType;
+## Pirâmide de Testes
+
+```
+         ╱╲
+        ╱ E2E ╲         ← Poucos (5-10): fluxos críticos end-to-end
+       ╱────────╲         Playwright com seletores por role/intent
+      ╱Integração╲       ← Médios (20-40): APIs, DB, componentes compostos
+     ╱──────────────╲     Supertest, Testing Library, MSW
+    ╱   Unitários    ╲   ← Muitos (100+): funções puras, hooks, utils
+   ╱──────────────────╲   Vitest/Jest com coverage ≥ 80%
 ```
 
-### 2. Componentes React
+### Seletores E2E (Playwright) — Ordem de preferência
 
-- [ ] **Single Responsibility** — componente faz uma coisa só
-- [ ] **Props mínimas** — sem "god components" com 15+ props
-- [ ] **Sem lógica inline pesada** — extrair para hooks ou funções
-- [ ] **Keys únicas** — em listas, usar IDs do banco, nunca index
-- [ ] **Cleanup de efeitos** — `useEffect` com cleanup quando necessário
-- [ ] **Sem estado desnecessário** — derivar valores quando possível
+| Prioridade | Seletor | Exemplo | Resiliência |
+|---|---|---|---|
+| 1 | `getByRole` | `page.getByRole('button', { name: 'Salvar' })` | ✅ Alta (semântico) |
+| 2 | `getByLabel` | `page.getByLabel('Email')` | ✅ Alta (acessibilidade) |
+| 3 | `getByText` | `page.getByText('Bem-vindo')` | ⚠️ Média (texto muda) |
+| 4 | `getByTestId` | `page.getByTestId('submit-btn')` | ⚠️ Média (acoplado) |
+| 5 | CSS selector | `page.locator('.btn-primary')` | ❌ Baixa (frágil) |
+
+### Regras de teste
+
+1. **Zero flaky tests**: Teste que falha intermitentemente deve ser corrigido, não ignorado.
+2. **Isolamento**: Cada teste roda independente. Sem dependência de ordem ou estado compartilhado.
+3. **Assertions explícitas**: Todo teste tem `expect()` com condição específica. Teste sem assertion = teste inútil.
+4. **Naming descritivo**: `it('should return 401 when token is expired')`, não `it('test auth')`.
+
+---
+
+## Dimensão 1: TypeScript Strict
+
+| Regra | Correto | Incorreto |
+|---|---|---|
+| Zero `any` | `data: UserResponse` | `data: any` |
+| Zero `as unknown as` | Refatorar o tipo | `result as unknown as SomeType` |
+| Props tipadas | `interface ButtonProps { onClick: () => void }` | Props sem interface |
+| Retorno tipado | `function getUser(id: string): Promise<User>` | Retorno implícito em funções complexas |
+| Null safety | `user?.name ?? 'Anônimo'` | `user.name` sem verificar null |
+| Enums/union types | `type Status = 'draft' \| 'published' \| 'archived'` | `status: string` |
+
+### Checklist
+
+- [ ] `strict: true` no `tsconfig.json`
+- [ ] Zero `any` — todos os tipos explícitos
+- [ ] Zero `as unknown as` — indica problema de design
+- [ ] Props tipadas com `interface NomeProps`
+- [ ] Retorno tipado em funções não-triviais
+- [ ] Optional chaining (`?.`) e nullish coalescing (`??`) corretos
+- [ ] Enums ou union types para valores fixos
+
+---
+
+## Dimensão 2: Componentes React
+
+| Regra | Correto | Incorreto |
+|---|---|---|
+| Single Responsibility | Componente faz 1 coisa | God component com 15+ props |
+| Derivar estado | `const display = format(value)` | `useState` + `useEffect` para computar |
+| Keys únicas | `key={item.id}` | `key={index}` |
+| Cleanup de efeitos | `useEffect(() => { ...; return () => cleanup() })` | Effect sem cleanup (memory leak) |
+| Hooks no topo | Hooks antes de qualquer condicional | Hook dentro de `if` |
+
+### Anti-padrões de estado
 
 ```tsx
-// ✅ Derivar em vez de estado separado
-const displayedCpf = formatCPF(cpfValue ?? "");
+// ❌ Estado redundante (re-render + bug potential)
+const [items, setItems] = useState<Item[]>([]);
+const [filteredItems, setFilteredItems] = useState<Item[]>([]);
+useEffect(() => setFilteredItems(items.filter(i => i.active)), [items]);
 
-// ❌ Estado redundante
-const [displayedCpf, setDisplayedCpf] = useState("");
-useEffect(() => setDisplayedCpf(formatCPF(cpfValue)), [cpfValue]);
-```
-
-### 3. Hooks Rules
-
-- [ ] Hooks no topo do componente (antes de qualquer condicional)
-- [ ] Sem hooks dentro de loops ou condicionais
-- [ ] Custom hooks com prefixo `use`
-- [ ] Dependencies array do `useEffect` completo e correto
-
-### 4. Performance
-
-- [ ] **Sem re-renders desnecessários** — `React.memo` quando componente recebe props estáveis
-- [ ] **Callbacks memoizados** — `useCallback` para funções passadas como props
-- [ ] **Valores memoizados** — `useMemo` para cálculos pesados
-- [ ] **Lazy loading** — imagens com `OptimizedImage` ou `loading="lazy"`
-- [ ] **Code splitting** — `dynamic()` para componentes pesados (ex: editor TipTap)
-- [ ] **Sem fetches em loop** — batching de queries quando possível
-
----
-
-## ♿ Checklist de Acessibilidade (a11y)
-
-### Imagens e Mídia
-- [ ] Toda `<img>` tem `alt` descritivo
-- [ ] Imagens decorativas têm `alt=""`
-- [ ] Vídeos embeds têm `title` no iframe
-
-### Formulários
-- [ ] Todo input tem `<label>` associado (via `htmlFor`/`id`)
-- [ ] Campos obrigatórios marcados com `required` e indicador visual
-- [ ] Mensagens de erro acessíveis (associadas ao campo)
-- [ ] `inputMode` correto para campos numéricos
-- [ ] `placeholder` não substitui `label`
-
-### Navegação
-- [ ] Links têm texto descritivo (nunca "clique aqui")
-- [ ] `aria-label` em botões de ícone sem texto
-- [ ] `target="_blank"` acompanhado de `rel="noopener noreferrer"`
-- [ ] Contraste de cor adequado (4.5:1 para texto normal)
-
-### Interatividade
-- [ ] Elementos clicáveis são `<button>` ou `<a>`, nunca `<div onClick>`
-- [ ] Modais com `Escape` para fechar
-- [ ] Focus trap em modais abertos
-- [ ] Skip links para navegação por teclado
-
----
-
-## 📱 Checklist de Responsividade
-
-### Layout
-- [ ] **Mobile-first** — classes base para mobile, breakpoints para desktop
-- [ ] Grid responsivo: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
-- [ ] Containers com `px-4` (mobile) e `container mx-auto` (desktop)
-- [ ] Sem overflow horizontal (`overflow-x: hidden` no body)
-
-### Textos
-- [ ] Fontes legíveis em mobile (mínimo `text-sm` = 14px)
-- [ ] Títulos escalam: `text-xl md:text-2xl lg:text-3xl`
-- [ ] Truncamento de texto longo com `truncate` ou `line-clamp`
-
-### Imagens
-- [ ] Imagens responsivas com `w-full` e `max-w-*`
-- [ ] Aspect ratio mantido (`object-cover`, `object-contain`)
-- [ ] Imagens de banner com `min-height` responsivo
-
-### Formulários
-- [ ] Inputs com `w-full` em mobile
-- [ ] Grids de formulário colapsam em mobile: `grid-cols-1 md:grid-cols-2`
-- [ ] Botões com `w-full` em mobile, tamanho fixo em desktop
-
----
-
-## 🎨 Checklist de Design System
-
-### Tokens Tailwind
-- [ ] Usar cores customizadas (`brand-blue`, `brand-dark-blue`) — **nunca hardcodar**
-- [ ] Usar gradientes do tema (`bg-brand-gradient`) quando disponíveis
-- [ ] Usar sombras customizadas (`shadow-modal-card`) para modais
-- [ ] Usar animações do tema (`animate-modal-in`) para transições
-
-### Consistência Visual
-- [ ] Estrutura de página: `Header → PageHeader → section → Footer`
-- [ ] Cards com `bg-white rounded-lg shadow-lg p-6/p-8`
-- [ ] Inputs com `border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue`
-- [ ] Botões com `transition-colors duration-300`
-- [ ] Espaçamento consistente: `gap-4`, `gap-8`, `space-y-4`, `space-y-6`
-
-### Cores Proibidas (Hardcoded)
-```tsx
-// ❌ NUNCA usar quando existe token
-className="bg-[#1e40af]"     // → usar bg-brand-blue
-className="bg-[#3b82f6]"     // → usar bg-brand-light-blue
-className="bg-[#1e3a8a]"     // → usar bg-brand-dark-blue
-className="bg-[#059669]"     // → usar bg-brand-green
-style={{ color: '#1e40af' }} // → usar className="text-brand-blue"
+// ✅ Derivar sempre que possível
+const [items, setItems] = useState<Item[]>([]);
+const filteredItems = useMemo(() => items.filter(i => i.active), [items]);
 ```
 
 ---
 
-## 🔒 Checklist de Segurança
+## Dimensão 3: Performance
 
-### Dados do Usuário
-- [ ] CPF, e-mail e dados sensíveis **nunca** expostos em URLs
-- [ ] Formulários com validação server-side (não só client-side)
-- [ ] `maxLength` em inputs para prevenir overflow
+| Verificação | Diagnóstico | Fix |
+|---|---|---|
+| Re-renders desnecessários | React DevTools Profiler | `React.memo` para componentes com props estáveis |
+| Callbacks recriados | Novo objeto a cada render | `useCallback` para funções passadas como props |
+| Cálculos pesados no render | Lag visível, DevTools flame chart | `useMemo` para computações O(n²) ou maiores |
+| Imagens sem lazy loading | LCP lento, bandwidth alto | `loading="lazy"` ou `next/image` com `priority` |
+| Bundle grande | Bundle analyzer > 200KB chunk | `dynamic()` para componentes pesados |
+| Fetch em loop | N+1 queries, waterfall de requests | Batching, DataLoader, ou query única |
+| DOM grande | > 1500 nodes, INP lento | Virtualização (react-virtual), paginação |
 
-### APIs
-- [ ] API Routes validam input antes de processar
-- [ ] Secrets nunca expostos no client-side (sem `NEXT_PUBLIC_` para secrets)
-- [ ] Respostas de erro genéricas (sem expor stack traces)
-- [ ] Rate limiting em endpoints críticos
+---
 
-### Supabase
-- [ ] RLS (Row Level Security) ativo em todas as tabelas
-- [ ] Queries client-side usam `anon key` (nunca `service_role`)
-- [ ] Upload com validação de tipo e tamanho
+## Dimensão 4: Acessibilidade (WCAG 2.2 AA)
 
-### XSS/Injection
-- [ ] `dangerouslySetInnerHTML` — usar com extrema cautela, sanitizar antes
-- [ ] Inputs sanitizados antes de persistir no banco
+| Área | Regra | Verificação |
+|---|---|---|
+| **Contraste** | Texto: 4.5:1, texto grande: 3:1 | DevTools → Accessibility → Contrast ratio |
+| **Imagens** | `alt` descritivo (decorativa: `alt=""`) | Grep por `<img` sem `alt` |
+| **Formulários** | Todo input tem `<label>` associado (`htmlFor`/`id`) | Grep por `<input` sem label correspondente |
+| **Botões** | Ícone-only tem `aria-label` | Verificar botões sem texto visível |
+| **Links** | Texto descritivo (nunca "clique aqui") | Grep por links genéricos |
+| **Teclado** | Tab order lógico, focus visible, sem trap | Navegar com Tab pela página inteira |
+| **Modais** | Focus trap, `Escape` fecha, `aria-modal="true"` | Testar com teclado only |
+| **Skip link** | `<a href="#main-content">Pular para conteúdo</a>` | Primeiro item focável |
+| **Motion** | `prefers-reduced-motion` respeitado | Verificar com media query ativa |
+
+### Ferramentas
+
+```bash
+# axe-core (programático)
+npx @axe-core/cli https://localhost:3000
+
+# Lighthouse accessibility audit
+npx lighthouse https://localhost:3000 --only-categories=accessibility
+```
+
+---
+
+## Dimensão 5: Responsividade
+
+| Área | Regra | Implementação |
+|---|---|---|
+| **Layout** | Mobile-first (base = mobile, breakpoints = desktop) | `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` |
+| **Touch targets** | Mínimo 44×44px com 8px spacing | `min-h-[44px] min-w-[44px]` |
+| **Textos** | Mínimo 14px em mobile, escaláveis | `text-sm md:text-base lg:text-lg` |
+| **Imagens** | Responsivas com `sizes` e `srcSet` | `w-full max-w-[1200px]` com `aspect-ratio` |
+| **Formulários** | Inputs `w-full` em mobile | `w-full md:w-auto` |
+| **Sem overflow** | Zero scroll horizontal | Testar em 375px width |
+| **Viewport meta** | `<meta name="viewport" content="width=device-width, initial-scale=1">` | Verificar no `<head>` |
+
+### Breakpoints padrão
+
+| Breakpoint | Largura | Dispositivos |
+|---|---|---|
+| (base) | < 640px | Phones |
+| `sm` | ≥ 640px | Phones landscape |
+| `md` | ≥ 768px | Tablets |
+| `lg` | ≥ 1024px | Laptops |
+| `xl` | ≥ 1280px | Desktops |
+| `2xl` | ≥ 1536px | Large screens |
+
+---
+
+## Dimensão 6: Segurança
+
+- [ ] Validação server-side em TODAS as API routes (Zod schema)
+- [ ] Secrets fora de `NEXT_PUBLIC_*` (nunca no client bundle)
+- [ ] RLS ativo em todas as tabelas (Supabase)
+- [ ] `dangerouslySetInnerHTML` só com DOMPurify sanitização
+- [ ] Inputs com `maxLength` (prevenir overflow/DoS)
 - [ ] URLs de redirect validadas (sem open redirect)
+- [ ] Rate limiting em endpoints críticos (login, password reset)
+- [ ] Respostas de erro genéricas (sem expor stack traces em produção)
 
 ---
 
-## 🔍 Checklist de SEO
+## Dimensão 7: SEO
 
-- [ ] `<title>` único e descritivo por página
-- [ ] `<meta name="description">` presente
-- [ ] Heading hierarchy correta: um `<h1>` por página
-- [ ] Imagens com `alt` text descritivo
-- [ ] URLs amigáveis (slugs legíveis)
+- [ ] `<title>` único e descritivo (50-60 chars)
+- [ ] `<meta name="description">` presente (150-160 chars)
+- [ ] Um único `<h1>` por página
+- [ ] Heading hierarchy: h1 → h2 → h3 (sem pular)
+- [ ] `alt` em todas as imagens
+- [ ] URLs amigáveis com slugs legíveis
+- [ ] `<link rel="canonical">` presente
+- [ ] Open Graph tags para redes sociais
 - [ ] Links internos com `<Link>` do Next.js (não `<a>`)
 - [ ] Conteúdo principal acessível sem JavaScript (SSG/SSR)
 
 ---
 
-## 🧪 Processo de Revisão
+## Processo de Code Review
 
-### Antes de Submeter Código
+### Antes de submeter
 
-1. **Executar lint**: `npm run lint` — zero warnings
-2. **Verificar build**: `npm run build` — sem erros
-3. **Testar mobile**: Redimensionar browser para 375px de largura
-4. **Testar navegação**: Verificar todas as rotas afetadas
-5. **Testar estados**: Loading, erro, vazio, sucesso
+1. `npm run lint` — zero warnings
+2. `npm run build` — sem erros
+3. `npm run test` — todos passando (se existir suíte)
+4. Testar mobile (375px width)
+5. Testar todos os estados: loading, erro, vazio, sucesso
+6. Navegar com Tab (acessibilidade básica)
 
-### Template de Code Review
+### Template de Review (5 dimensões)
 
 ```markdown
-## Revisão de Qualidade
+## Code Review — [PR/Feature]
 
-### ✅ Aprovado / ❌ Reprovado
+| Dimensão | ✅/❌ | Observação |
+|---|---|---|
+| TypeScript Strict | | Zero `any`, props tipadas |
+| React Patterns | | Derivação, hooks rules, cleanup |
+| Performance | | Sem re-renders, lazy loading |
+| Acessibilidade | | Labels, contraste, teclado |
+| Segurança | | Validação, RLS, secrets |
 
-**TypeScript**:
-- [ ] Sem `any`
-- [ ] Props tipadas
-- [ ] Null safety
-
-**UI/UX**:
-- [ ] Tokens do design system usados
-- [ ] Responsivo (mobile/tablet/desktop)
-- [ ] Estados de loading/erro tratados
-
-**Acessibilidade**:
-- [ ] Labels em inputs
-- [ ] Alt text em imagens
-- [ ] Contraste adequado
-
-**Performance**:
-- [ ] Sem re-renders desnecessários
-- [ ] Imagens otimizadas
-- [ ] Build sem warnings
-
-**Segurança**:
-- [ ] Validação de inputs
-- [ ] Sem dados sensíveis expostos
-- [ ] RLS respeitado
+**Aprovado** / **Ajustes necessários**
 ```
+
+---
+
+## Composição com outras skills
+
+- **Antes**: `tdd` (escrever teste antes), `requirement-analyzer` (critérios de aceite)
+- **Durante**: `accessibility-reviewer` (WCAG profundo), `code-auditor` (SAST)
+- **Depois**: `self-critique` (revisão final), `webapp-testing` (E2E visual)
 
 ## References
 

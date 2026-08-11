@@ -1,83 +1,153 @@
 ---
 name: systematic-debugging
-description: "Depuração sistemática em 6 fases (reproduzir, isolar, hipótese, corrigir, verificar, prevenir) com causa raiz comprovada — nunca chute. Use em QUALQUER erro, crash, teste falhando ou comportamento inesperado, inclusive antes de chamar o agente /bug-hunter. Inspirada na skill systematic-debugging do obra/superpowers (266k★, 60k+ usos) e nos padrões build/check/test do AnthropicEducation/claude-code-snippets (MIT)."
+description: "Depuração sistemática em 6 fases obrigatórias (Reproduzir → Isolar → Hipótese → Corrigir → Verificar → Prevenir) com causa raiz comprovada por evidência — nunca chute. Inclui: Matriz de Isolamento (bisect manual, git bisect, eliminação de variáveis), Protocolo de Coleta de Logs (stack trace completo, não truncado), Classificação de Falhas (código vs ambiente vs dados vs dependência), Limite de Hipóteses (3 hipóteses refutadas = mudar camada), Teste de Regressão obrigatório como parte do fix, e registro em `.agents/memoria/erros-corrigidos.md`. Use em QUALQUER erro, crash, teste falhando ou comportamento inesperado. Inspirada na skill systematic-debugging do obra/superpowers (266k★) e nos padrões do AnthropicEducation/claude-code-snippets (MIT)."
 ---
 
-# Systematic Debugging — Depuração Sistemática
+# Systematic Debugging — Manual Operacional
 
-## Identidade
+Depurador cirúrgico. **Nunca chuta.** Todo bug é resolvido com causa raiz comprovada por reprodução — não por tentativa e erro. Se não reproduziu, não corrigiu: apenas adivinhou.
 
-Você é um depurador cirúrgico. **Nunca chuta.** Todo bug é resolvido com causa raiz comprovada por reprodução — não por tentativa e erro. Se não reproduziu, você não corrigiu: você apenas adivinhou.
-
-## Gatilhos de uso
+## Quando usar
 
 - Erros, crashes, exceções, testes falhando, CI vermelho, comportamento inesperado.
-- O usuário pede `/bug-hunter`, "debug", "corrija", "está quebrando", "erro em", "não funciona".
-- **Antes** de qualquer correção de código que não seja uma mudança planejada de feature.
+- O usuário pede "debug", "corrija", "está quebrando", "erro em", "não funciona".
+- **Antes** de qualquer correção de código que não seja mudança planejada de feature.
 
-## Processo (6 fases obrigatórias, nesta ordem)
+**Pule** para `agentic-coding` quando é implementação de feature nova (não bug); `self-correction` quando o erro é do próprio agente (não do código do usuário).
+
+---
+
+## Classificação Rápida (Antes de Mergulhar)
+
+Antes de depurar código, elimine o óbvio:
+
+| Categoria | Sintoma típico | Verificação (5 segundos) | Fix rápido |
+|---|---|---|---|
+| **Build obsoleto** | CLI roda código antigo | `npm run build` foi rodado? | Recompilar |
+| **Cache** | Comportamento inconsistente | Browser cache, CDN cache, `.next/cache` | Limpar cache + hard refresh |
+| **Permissão/Ambiente** | `EACCES`, `ENOENT`, porta ocupada | Verificar path, `.env`, porta | Corrigir path/env/porta |
+| **Dependência** | `MODULE_NOT_FOUND`, tipo incompatível | `npm ls <pkg>`, lockfile atualizado? | `rm -rf node_modules && npm ci` |
+| **Encoding** | Caracteres estranhos, BOM, CRLF | Verificar encoding do arquivo | Salvar como UTF-8 sem BOM |
+| **Dado corrompido** | Crash em input específico | Testar com input limpo | Validar/sanitizar input |
+
+Se o problema está nesta lista, **não precisa das 6 fases** — corrija e siga.
+
+---
+
+## Processo (6 Fases Obrigatórias)
 
 ### FASE 1 — REPRODUZIR
-Sem reprodução, sem fix. O erro precisa ser visto com os próprios olhos (ou logs):
 
-- Rode o código e capture: mensagem de erro, stack trace, input que disparou, estado.
-- Reduza ao **menor caso reproduzível (MRE)** — isole a menor entrada que reproduz.
-- Se não reproduz, a fase não acabou: procure a condição real (dados, ordem, timing, ambiente).
-- Anote: versão, ambiente, dados de entrada, passos exatos.
+Sem reprodução, sem fix. O erro precisa ser visto com os próprios olhos (ou logs).
 
-### FASE 2 — ISOLAR (encontrar a causa)
-Localize a camada/função/linha exata:
+| Passo | Ação | Evidência necessária |
+|---|---|---|
+| 1a | Rode o código e capture a falha | Mensagem de erro completa + stack trace |
+| 1b | Anote o contexto | Versão, ambiente, OS, Node version, dados de entrada |
+| 1c | Reduza ao MRE (Menor Reprodução Possível) | Menor input + menor código que reproduz |
+| 1d | Se não reproduz → procure a condição real | Timing? Ordem? Dados específicos? Race condition? |
 
-- **Bisect manual**: comente metade do código, teste, repita (ou `git bisect` para achar o commit que introduziu).
-- Elimine variáveis uma a uma: input, estado, dependência, ordem de execução.
-- Pergunte: **o que mudou?** (arquivo, dependência, versão, ambiente, dados) — 80% dos bugs vêm de uma mudança.
+**Regra**: Se após 3 tentativas não reproduz, a fase não acabou. Investigue: ambiente diferente? Dados diferentes? Timing?
 
-### FASE 3 — HIPÓTESE (causa raiz, não sintoma)
-- Formule 1–3 hipóteses baseadas em **evidência**, nunca opinião.
-- Cada hipótese precisa de um teste que a prove ou refute (print/log de verificação, teste unitário mínimo, chamada isolada).
-- Prefira a hipótese que explica **todos** os sintomas.
-- Distinga **causa raiz** (o defeito) de **sintoma** (o que apareceu). Corrigir sintoma = bug volta.
+### FASE 2 — ISOLAR (Encontrar a Causa)
 
-### FASE 4 — CORRIGIR (mínimo e limpo)
-- Fix mínimo que ataca a causa raiz — nada de gambiarras, suppress silencioso, `catch {}` vazio ou `// TODO fix later`.
-- Escreva o **teste de regressão primeiro** (red → green): um teste que falha com o bug e passa com o fix.
-- Código limpo, com o mesmo padrão do projeto.
+Localize a camada/função/linha exata que falha.
+
+| Técnica | Quando usar | Como |
+|---|---|---|
+| **Bisect manual** | Bug em trecho de código | Comente metade do código, teste, repita |
+| **`git bisect`** | Bug introduzido por commit | `git bisect start`, `git bisect bad`, `git bisect good <hash>` |
+| **Eliminação de variáveis** | Múltiplas possíveis causas | Remova uma variável por vez, teste cada remoção |
+| **Logging cirúrgico** | Fluxo complexo | `console.log` em pontos estratégicos (remover depois!) |
+| **Pergunta "o que mudou?"** | Bug recente | Diff do último commit/deploy — 80% dos bugs vêm de uma mudança |
+
+### FASE 3 — HIPÓTESE (Causa Raiz, Não Sintoma)
+
+| Regra | Detalhe |
+|---|---|
+| 1-3 hipóteses baseadas em **evidência** | Nunca opinião ou "acho que" |
+| Cada hipótese tem teste que a prova ou refuta | Print de verificação, teste unitário mínimo, chamada isolada |
+| Prefira a hipótese que explica **todos** os sintomas | Hipótese que explica 1 de 3 sintomas provavelmente está errada |
+| **Causa raiz ≠ Sintoma** | Corrigir sintoma = bug volta |
+
+**Limite**: Após 3 hipóteses refutadas sem confirmação → **pare e reconsidere**. Você pode estar olhando a camada errada:
+
+| Camada a reconsiderar | Sinais |
+|---|---|
+| Rede | Timeout, CORS, DNS |
+| Permissão | EACCES, 403 |
+| Cache | Funciona em incognito mas não em normal |
+| Build velho | Código editado mas comportamento não muda |
+| Dados | Funciona com dados limpos mas não com dados reais |
+| Race condition | Falha intermitente, ordem-dependente |
+
+### FASE 4 — CORRIGIR (Mínimo e Limpo)
+
+1. **Teste de regressão PRIMEIRO** (Red → Green): escreva um teste que falha com o bug e passará com o fix.
+2. **Fix mínimo** que ataca a causa raiz — nada de gambiarras.
+3. Código limpo, com o mesmo padrão do projeto.
+
+| Proibido no fix | Por quê |
+|---|---|
+| `try/catch` vazio | Esconde a falha |
+| `// TODO fix later` | Nunca será fixado |
+| `as any` / `as unknown as` | Silencia o tipo, não resolve |
+| Desabilitar/deletar teste que falha | Esconde o problema |
+| Mudar 10 coisas de uma vez | Impossível saber qual resolveu |
 
 ### FASE 5 — VERIFICAR
-- Rode o MRE original: o erro sumiu? **Sim** → o fix funciona no caso mínimo.
-- Rode a suíte completa (ou `npm run build`/`verify`/`doctor` no Izanagi): nada quebrou?
-- Valide o cenário real de uso, não só o MRE.
 
-### FASE 6 — PREVENIR (regressão)
-- Mantenha o teste de regressão na suíte.
-- Adicione logging estruturado no ponto falho se fizer sentido.
-- Registre a causa raiz em `.agents/memoria/erros-corrigidos.md` (Izanagi: Anti-Repetição — nunca repita o mesmo debug).
+| Verificação | O que confirma |
+|---|---|
+| Rode o MRE original | O erro sumiu |
+| Rode a suíte completa (`npm run build`/`test`/`verify`/`doctor`) | Nada quebrou |
+| Valide o cenário real de uso | Fix funciona no contexto real, não só no MRE |
+| Verifique edge cases | Input vazio, null, extremos, concorrência |
 
-## Regras de ouro
+### FASE 6 — PREVENIR (Regressão)
 
-1. **Zero chute**: hipótese sem forma de ser provada não é hipótese, é palpite.
-2. **Reproduzir antes de corrigir**: um bug que você não consegue reproduzir é um bug que você não entendeu.
-3. **Uma mudança por vez**: mudou o código e apareceu um bug? Reverta a mudança e confirme que o bug some — antes de qualquer outra teoria.
-4. **Causa raiz ≠ sintoma**: pergunte "por que" até chegar no defeito subjacente.
-5. **Teste de regressão é parte do fix**, não um extra opcional.
-6. **Não conserte no escuro**: se o stack trace não aponta o problema, adicione logging e reproduza de novo — não edite arquivos aleatórios.
-7. **Tempo limite**: se após 3 hipóteses refutadas nada se confirma, reconsidere o problema — você pode estar olhando a camada errada (rede? permissão? cache? build velho?).
+1. Mantenha o teste de regressão na suíte permanentemente.
+2. Adicione logging estruturado no ponto falho se fizer sentido.
+3. Registre em `.agents/memoria/erros-corrigidos.md`:
 
-## Erros comuns que não são bugs de código
+```markdown
+- [AAAA-MM-DD] [ÁREA] Sintoma → Causa raiz → Fix aplicado (1-3 linhas)
+```
 
-Antes de mergulhar, verifique o óbvio (Izanagi: `npm run build` antes de qualquer comando CLI; `dist/` é gitignored):
+---
 
-- Código obsoleto: rodou sem recompilar (`npm run build`).
-- Cache: browser/CI/pacote velho.
-- Permissão/ambiente: path, variável de ambiente, porta ocupada.
-- Dependência: versão quebrada, lockfile desatualizado, `node_modules` corrompido (reinstale).
-- Encoding: arquivo salvo com encoding errado (especialmente no Windows).
+## Regras de Ouro
+
+1. **Zero chute**: Hipótese sem forma de ser provada não é hipótese, é palpite.
+2. **Reproduzir antes de corrigir**: Bug que não reproduz = bug não entendido.
+3. **Uma mudança por vez**: Mudou código e bug apareceu? Reverta e confirme que some.
+4. **Causa raiz ≠ sintoma**: Pergunte "por que?" até o defeito subjacente.
+5. **Teste de regressão é parte do fix**, não extra opcional.
+6. **Não conserte no escuro**: Se stack trace não aponta, adicione logging e reproduza.
+7. **3 hipóteses refutadas = mudar camada** ou escalar.
+
+---
 
 ## Anti-padrões (NUNCA)
 
-- ❌ Adicionar `try/catch` vazio para "parar o erro".
-- ❌ `console.log` espalhado e esquecido (use logging estruturado e remova).
-- ❌ Corrigir com base em "já vi esse erro antes" sem verificar a causa real.
-- ❌ Mudar 10 coisas de uma vez "pra ver o que resolve".
-- ❌ Deletar/desabilitar testes que falham.
-- ❌ Usar `any`/`as unknown` para silenciar o typechecker em vez de entender o tipo real.
+| Anti-padrão | Consequência |
+|---|---|
+| ❌ `try/catch {}` vazio para "parar o erro" | Bug escondido, reaparece em produção |
+| ❌ `console.log` espalhado e esquecido | Poluição de output, leak de dados |
+| ❌ "Já vi esse erro antes" sem verificar causa real | Causa diferente, fix errado |
+| ❌ Mudar 10 coisas de uma vez "pra ver o que resolve" | Impossível atribuir causa |
+| ❌ Deletar/desabilitar testes que falham | Regressão garantida |
+| ❌ `as any` / `as unknown` para silenciar typechecker | Esconde o tipo real do problema |
+| ❌ Persistir na mesma abordagem após 3 falhas | Insanidade do loop |
+
+---
+
+## Composição com outras skills
+
+- **Antes**: `memoria-projeto` (erros já corrigidos — não repita), `economia-tokens` (ler logs com eficiência)
+- **Durante**: `agentic-coding` (loop verificação empírica), `tdd` (teste de regressão primeiro)
+- **Depois**: `self-critique` (revisar o fix), `continuous-improvement` (registrar aprendizado)
+
+## References
+
+- Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).

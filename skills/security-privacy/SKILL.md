@@ -1,101 +1,187 @@
 ---
 name: security-privacy
-description: |
-  Skill de Seguranca e Privacidade para o Izanagi. Aborda OWASP Top 10, LGPD/GDPR,
-  seguranca de APIs, authentication, authorization, cryptography e secure coding.
-  Use esta skill para implementar ou revisar aspectos de seguranca e protecao de dados.
+description: "Segurança aplicada e privacidade para sistemas de produção. OWASP Top 10 com mitigações concretas por vulnerabilidade (Injection → Zod/prepared statements, Broken Auth → Argon2id+JWT RS256+MFA, SSRF → allowlist+URL validation), LGPD/GDPR compliance (direitos do titular, mapeamento de dados, DPO, notificação 72h), Secure Coding (CSP, CORS, rate limiting, idempotency keys), Auth & Authorization (RLS, RBAC, middleware de sessão), Criptografia (Argon2id cost 3, AES-256-GCM, TLS 1.3), API Hardening (request size limit, audit logging, anti-IDOR). Use ao implementar autenticação, autorização, validação de input, proteção de APIs, ou ao revisar código quanto a segurança antes de merge/deploy."
 ---
 
-# Skill Security & Privacy — Izanagi
+# Security & Privacy — Manual Operacional
 
-## OWASP Top 10
+Manual denso de segurança aplicada para sistemas de produção. Baseado em OWASP Top 10 2021 (atualizado 2025), LGPD (Lei 13.709/2018), GDPR, e práticas de secure coding de produção (Stripe, Linear, Vercel).
 
-| # | Risco | Prevencao |
-|---|-------|-----------|
-| 1 | Broken Access Control | RLS no Supabase, middleware de role verification |
-| 2 | Cryptographic Failures | TLS 1.3, hashing (bcrypt), encryption at rest |
-| 3 | Injection | Zod validation, prepared statements (Supabase), sanitizacao |
-| 4 | Insecure Design | Threat modeling, security review no design |
-| 5 | Security Misconfiguration | Environment-specific configs, secrets management |
-| 6 | Vulnerable Components | Dependabot, `npm audit`, renovate bot |
-| 7 | Auth Failures | Supabase Auth + MFA, rate limiting |
-| 8 | Data Integrity Failures | CSP headers, Subresource Integrity (SRI) |
-| 9 | Logging Failures | Audit logging, never log PII |
-| 10 | SSRF | URL validation, allowlist de dominios |
+## Quando usar
+
+- Implementar autenticação, autorização, validação de input, proteção de APIs.
+- Revisar código existente quanto a vulnerabilidades (SAST manual).
+- Configurar headers de segurança (CSP, CORS, HSTS).
+- Garantir compliance LGPD/GDPR (direitos do titular, consentimento, DPO).
+- Auditar secrets no código (API keys, JWT, senhas hardcoded).
+
+**Pule** para `code-auditor` quando o foco é SAST completo com relatório; `defense-in-depth` quando é arquitetura de segurança em camadas; `automation-security` quando é segurança de automações (credenciais, logs sanitizados).
 
 ---
 
-## LGPD (Lei Geral de Protecao de Dados)
+## OWASP Top 10 — Mitigações Concretas
 
-### Direitos do Titular
-- **Acesso**: API para usuario baixar seus dados
-- **Correcao**: editar dados pessoais no perfil
-- **Exclusao**: deletar conta + dados associados (anonimizar logs)
-- **Portabilidade**: exportar dados em JSON
-- **Revogacao de consentimento**: opt-out de comunicacoes
-
-### Obrigacoes Tecnicas
-- Mapeamento de dados pessoais (o que, onde, por que, por quanto tempo)
-- Consentimento explicito para coleta de dados nao essenciais
-- Aviso de privacidade claro (politica de privacidade)
-- DPO (Encarregado) com canal de contato
-- Notificacao de vazamento em 72h (ANPD)
+| # | Vulnerabilidade | Vetor de ataque | Mitigação obrigatória | Código/Ferramenta |
+|---|---|---|---|---|
+| 1 | **Broken Access Control** | IDOR, privilege escalation, path traversal | RLS (Supabase), middleware RBAC por rota, validação de ownership | `auth.uid() = resource.user_id` em RLS policies |
+| 2 | **Cryptographic Failures** | Dados sensíveis em plaintext, TLS ausente | TLS 1.3 (mín. 1.2), hashing com Argon2id, encryption at rest AES-256-GCM | `argon2.hash(password, {type: argon2.argon2id})` |
+| 3 | **Injection** | SQL injection, NoSQL injection, command injection | Prepared statements, Zod validation, sanitização de input, NUNCA string concatenation em queries | `db.query('SELECT * FROM users WHERE id = $1', [id])` |
+| 4 | **Insecure Design** | Fluxos sem threat modeling | Threat modeling no design, rate limiting em fluxos críticos (login, password reset) | `express-rate-limit: windowMs: 15*60*1000, max: 5` |
+| 5 | **Security Misconfiguration** | Headers ausentes, debug em produção, defaults inseguros | CSP restrito, HSTS, X-Content-Type-Options, remover headers de versão (X-Powered-By) | Veja seção "Security Headers" |
+| 6 | **Vulnerable Components** | Dependências com CVEs conhecidos | `npm audit`, Dependabot/Renovate, lockfile atualizado, NUNCA ignorar `npm audit` warnings de severidade high/critical | `npm audit --audit-level=high` |
+| 7 | **Auth Failures** | Brute force, credential stuffing, session fixation | MFA, rate limiting em login (5 tentativas/15min), session rotation após login, JWT com expiração curta (15min access + 7d refresh) | Supabase Auth + custom middleware |
+| 8 | **Data Integrity Failures** | Supply chain attacks, CI/CD pipeline poisoning | CSP com Subresource Integrity (SRI), assinatura de artefatos, npm lockfile integrity | `integrity="sha384-..."` em scripts externos |
+| 9 | **Logging Failures** | Falta de audit trail, PII em logs | Audit logging (quem, o que, quando, de onde), NUNCA logar PII (CPF, email, senha), structured logging (JSON) | `logger.info({action: 'login', userId: hash(id), ip: req.ip})` |
+| 10 | **SSRF** | Requisições server-side para URLs internas | URL validation com allowlist de domínios, bloquear IPs privados (10.x, 172.16-31.x, 192.168.x), resolver DNS antes de requisitar | `new URL(input).hostname` + allowlist check |
 
 ---
 
-## Secure Coding
+## Security Headers (Obrigatórios)
 
-### Input Validation (Zod)
-```tsx
-import { z } from "zod";
+```http
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
 
-const contactSchema = z.object({
-  name: z.string().min(2).max(100),
-  email: z.string().email(),
-  phone: z.string().regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/),
-  message: z.string().min(10).max(1000),
+### Checklist de headers
+
+- [ ] CSP configurado (sem `unsafe-eval`, `unsafe-inline` mínimo)
+- [ ] HSTS ativo com `preload`
+- [ ] X-Frame-Options: DENY (previne clickjacking)
+- [ ] X-Powered-By removido (`app.disable('x-powered-by')`)
+- [ ] Referrer-Policy restrito
+
+---
+
+## Validação de Input (Zod — Padrão Obrigatório)
+
+```typescript
+import { z } from 'zod';
+
+// Schema com sanitização + limites rígidos
+const userInputSchema = z.object({
+  name: z.string().min(2).max(100).trim(),
+  email: z.string().email().toLowerCase(),
+  phone: z.string().regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/).optional(),
+  message: z.string().min(10).max(2000).trim(),
+  // Anti-injection: nunca aceitar objetos aninhados sem schema explícito
 });
-```
 
-### CSP Headers
-```
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; font-src 'self'; connect-src 'self' https://*.supabase.co;
-```
-
-### API Security
-- Rate limiting (express-rate-limit ou Vercel WAF)
-- CORS restrito (allowlist de dominios)
-- Request size limiting (10kb body max)
-- Idempotency keys em mutations
-- Audit logging (quem, o que, quando)
-
----
-
-## Authentication & Authorization
-
-### Supabase Auth
-```tsx
-// Server-side middleware
-export async function middleware(req: NextRequest) {
-  const session = await supabase.auth.getSession();
-  if (!session) return NextResponse.redirect("/admin/login");
+// Validação ALWAYS server-side (client-side é UX, não segurança)
+const result = userInputSchema.safeParse(req.body);
+if (!result.success) {
+  return res.status(400).json({ error: 'Invalid input' }); // Genérico — NUNCA expor detalhes de validação
 }
+```
 
-// RLS policy
-CREATE POLICY "Admins can read all posts" ON posts
-  FOR SELECT USING (auth.role() = 'admin');
+### Regras de validação
+
+1. **Server-side ALWAYS**: Validação client-side é UX. Segurança = server-side.
+2. **Schema explícito**: Nunca aceitar `req.body` sem validação Zod/Pydantic.
+3. **Limites rígidos**: `maxLength` em TODOS os campos de texto. Sem limite = DoS por payload grande.
+4. **Erro genérico**: Respostas de erro NUNCA expõem stack traces, nomes de colunas do banco, ou detalhes de validação em produção.
+
+---
+
+## Autenticação & Autorização
+
+### Tabela de decisão: método de auth
+
+| Cenário | Método | Implementação |
+|---|---|---|
+| SaaS com contas de usuário | JWT (access 15min + refresh 7d) + MFA | Supabase Auth ou next-auth |
+| API pública | API Key + rate limiting | Header `Authorization: Bearer <key>` |
+| API interna (serviço-a-serviço) | mTLS ou JWT com audience claim | Validar `aud` claim no JWT |
+| Webhook de terceiros | HMAC signature verification | `crypto.timingSafeEqual(expected, received)` |
+
+### Criptografia
+
+| Uso | Algoritmo | Configuração |
+|---|---|---|
+| Hash de senha | Argon2id | memoryCost: 65536, timeCost: 3, parallelism: 4 |
+| JWT signing | RS256 (assimétrico) | Chave privada no servidor, pública para verificação |
+| TLS | TLS 1.3 (mín. 1.2) | Certificado válido, sem self-signed em produção |
+| Dados em repouso | AES-256-GCM | IV único por operação, key rotation a cada 90 dias |
+| Tokens temporários | crypto.randomBytes(32) | NUNCA Math.random() ou UUIDs para segurança |
+
+### RLS (Row Level Security) — Supabase
+
+```sql
+-- Usuário só acessa seus próprios dados
+CREATE POLICY "Users see own data" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+-- Admin acessa tudo
+CREATE POLICY "Admins full access" ON profiles
+  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+
+-- NUNCA: tabela sem RLS ativo (expõe todos os dados via API pública)
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ```
 
 ---
 
-## Cryptography
+## API Hardening
 
-| Uso | Algoritmo |
-|-----|-----------|
-| Hashing de senha | bcrypt (cost 12) |
-| JWT signing | RS256 (asymmetric) |
-| TLS | TLS 1.3 (min 1.2) |
-| Dados sensiveis em repouso | AES-256-GCM |
+| Controle | Implementação | Configuração |
+|---|---|---|
+| Rate limiting | express-rate-limit / Vercel WAF | Login: 5/15min, API geral: 100/min, Upload: 10/hora |
+| Request size limit | body-parser limit / payload size | 10KB para JSON, 5MB para upload |
+| CORS | allowlist de domínios | NUNCA `Access-Control-Allow-Origin: *` em produção |
+| Idempotency | Idempotency-Key header em mutations | Previne duplicação em retry/retry automático |
+| Audit logging | Structured JSON log | `{action, userId, resource, timestamp, ip}` |
+| Timeout | Request timeout | 30s para API, 5min para upload |
+
+---
+
+## LGPD (Lei Geral de Proteção de Dados)
+
+### Direitos do titular (implementação obrigatória)
+
+| Direito | API/Funcionalidade | Implementação |
+|---|---|---|
+| Acesso | `GET /api/me/data` | Endpoint que retorna todos os dados pessoais do usuário |
+| Correção | `PATCH /api/me/profile` | Editar dados pessoais no perfil |
+| Exclusão | `DELETE /api/me/account` | Deletar conta + anonimizar dados em logs e backups |
+| Portabilidade | `GET /api/me/export` | Exportar dados em JSON/CSV |
+| Revogação | `POST /api/me/consent` | Opt-out de comunicações e processamento não-essencial |
+
+### Obrigações técnicas
+
+- [ ] Mapeamento de dados pessoais (o que, onde, por que, por quanto tempo)
+- [ ] Consentimento explícito para coleta de dados não-essenciais (opt-in, não opt-out)
+- [ ] Política de privacidade clara e acessível
+- [ ] DPO (Encarregado) com canal de contato público
+- [ ] Notificação de vazamento à ANPD em até 72h
+- [ ] Dados pessoais NUNCA em logs (mascarar CPF: `***.***.***-XX`, email: `j***@***.com`)
+- [ ] Retenção definida por tipo de dado (ex: logs de acesso: 6 meses, conta: até exclusão)
+
+---
+
+## Anti-padrões (NUNCA)
+
+| Anti-padrão | Risco | Fix |
+|---|---|---|
+| `catch {}` vazio em auth | Engole falha de autenticação | Logar + retornar 401/403 |
+| `any` em payload de API | Bypass de validação de tipo | Schema Zod explícito |
+| Secret em `NEXT_PUBLIC_*` | Secret exposto no client bundle | Mover para variável server-only |
+| `dangerouslySetInnerHTML` sem sanitização | XSS | Sanitizar com DOMPurify antes |
+| JWT sem expiração | Session hijacking permanente | `exp` claim obrigatório (15min access) |
+| Comparação de token com `===` | Timing attack | `crypto.timingSafeEqual()` |
+| Log de senha/token em plaintext | Leak de credenciais | NUNCA logar dados sensíveis |
+| `SELECT *` sem RLS | Exposição de dados de outros usuários | RLS ativo + queries específicas |
+
+---
+
+## Composição com outras skills
+
+- **Antes**: `code-auditor` (SAST completo), `defense-in-depth` (arquitetura em camadas)
+- **Durante**: `automation-security` (credenciais de automação), `data-validation` (sanitização)
+- **Depois**: `qa` (verificação de segurança no checklist), `self-critique` (auditoria final)
 
 ## References
 
