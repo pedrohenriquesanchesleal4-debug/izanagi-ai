@@ -1,27 +1,24 @@
 {
   "name": "izanagi-ai",
-  "version": "2.9.0",
+  "version": "2.9.3",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-10T16:52:10.953Z",
+  "generatedAt": "2026-08-11T11:45:19.031Z",
   "agents": [
     {
       "id": "animation",
       "name": "Animation Engineer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/animation-agent.json",
-      "role": "Scrollytelling imersivo, WebGL 3D (Three.js / React Three Fiber), Motion signature (GSAP / Framer Motion) e interfaces cinematográficas Awwwards-grade",
+      "role": "Motion Engineering & Experiências Cinematográficas Web (Awwwards SOTD / Apple Grade): Scrollytelling, GSAP ScrollTrigger/SplitText, WebGL 3D (Three.js/React Three Fiber), Smooth Scroll (Lenis), Micro-interações e Motion Signature",
       "skills": [
         "animation-web",
         "motion-design",
         "webgl-3d",
-        "gsap",
-        "threejs",
-        "r3f",
-        "scrollytelling",
         "design-directions",
+        "ui-ux-pro-max",
         "anti-ai-slop",
         "memoria-projeto"
       ],
@@ -35,20 +32,17 @@
     {
       "id": "architect",
       "name": "Software Architect",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/architect-agent.json",
-      "role": "System design de alto nível, Clean Architecture, DDD, CQRS, ADRs e trade-offs técnicos robustos",
+      "role": "System Design de alta escala, Clean Architecture, DDD, CQRS, Hexagonal Architecture, ADRs, contratos de API e trade-offs operacionais",
       "skills": [
         "architecture-patterns",
-        "clean-architecture",
-        "ddd",
-        "cqrs",
-        "adrs",
-        "system-design",
-        "microservices",
-        "hexagonal-architecture",
-        "security",
-        "scalability",
+        "principal-engineer",
+        "requirement-analyzer",
+        "sequence-diagram-builder",
+        "security-privacy",
+        "deep-research",
+        "task-planner",
         "memoria-projeto"
       ],
       "chains": [
@@ -91,15 +85,16 @@
     {
       "id": "bug-hunter",
       "name": "Bug Hunter",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/bug-hunter-agent.json",
-      "role": "Debugging avançado em 6 fases, Root Cause Analysis (RCA), reprodução cirúrgica de falhas e correção com teste de regressão",
+      "role": "Debugging avançado em 6 fases (Reproduzir -> Isolar -> Hipótese -> Corrigir -> Verificar -> Prevenir), Root Cause Analysis (RCA), rastreamento empírico de stack traces e escrita de testes de regressão obrigatórios",
       "skills": [
         "systematic-debugging",
-        "bug-hunter",
+        "hallucination-detection",
         "tdd",
         "error-recovery",
         "self-correction",
+        "qa",
         "memoria-projeto"
       ],
       "chains": [
@@ -111,19 +106,15 @@
     {
       "id": "database",
       "name": "Database Engineer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/database-agent.json",
-      "role": "Modelagem de dados relacional e NoSQL, SQL avançado, PostgreSQL, Redis, indexação, migrações seguras e otimização de performance",
+      "role": "Modelagem de dados relacional e NoSQL (PostgreSQL, Redis, MongoDB), ORMs (Prisma/Drizzle/SQLAlchemy), indexação avançada, prevenção N+1, migrações atômicas sem downtime e query tuning (EXPLAIN ANALYZE)",
       "skills": [
         "data-engineering",
-        "database",
-        "sql",
-        "postgresql",
-        "redis",
-        "prisma",
-        "indexing",
-        "migrations",
-        "query-optimization",
+        "security-privacy",
+        "architecture-patterns",
+        "error-recovery",
+        "data-validation",
         "memoria-projeto"
       ],
       "chains": [
@@ -136,18 +127,17 @@
     {
       "id": "devops",
       "name": "DevOps Engineer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/devops-agent.json",
-      "role": "Infraestrutura como Código (Terraform), Docker, Kubernetes, CI/CD automatizado, observabilidade e deploys seguros",
+      "role": "Infraestrutura como Código (Terraform/OpenTofu), Docker multi-stage enxuto, Kubernetes, CI/CD automatizado (GitHub Actions), Observabilidade (OpenTelemetry/Prometheus) e deploys Zero Downtime",
       "skills": [
         "cloud-infra",
-        "devops",
-        "docker",
-        "kubernetes",
         "iac-terraform",
-        "ci-cd",
-        "observability",
         "security-privacy",
+        "automation-security",
+        "monitoring-specialist",
+        "observability-expert",
+        "sre-reliability",
         "memoria-projeto"
       ],
       "chains": [
@@ -198,14 +188,14 @@
     {
       "id": "docs",
       "name": "Documentation Writer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/docs-agent.json",
-      "role": "Documentação técnica de alto padrão, READMEs executáveis, guias Diátaxis, diagramas como código (Mermaid) e APIs",
+      "role": "Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis (Tutorials, How-to, Reference, Explanation), diagramas de arquitetura/sequência Mermaid.js, OpenAPI/Swagger e guias de onboarding",
       "skills": [
         "technical-writer",
         "readme-generator",
         "sequence-diagram-builder",
-        "docs",
+        "automation-documentation",
         "memoria-projeto"
       ],
       "chains": [
@@ -218,16 +208,16 @@
     {
       "id": "form-engineer",
       "name": "Form & UI Engineer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/form-engineer-agent.json",
-      "role": "Especialista em formulários web de altíssimo craft, validação estrita com Zod + React Hook Form, wizards multi-step e acessibilidade WCAG",
+      "role": "Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com auto-save (localStorage/IndexedDB), feedback inline instantâneo, Optimistic UI e acessibilidade WCAG 2.2 AA",
       "skills": [
         "web-forms",
         "frontend",
         "accessibility-reviewer",
         "ux-reviewer",
-        "zod",
-        "react-hook-form",
+        "data-validation",
+        "ui-ux-pro-max",
         "memoria-projeto"
       ],
       "chains": [
@@ -239,14 +229,14 @@
     {
       "id": "pm",
       "name": "Project Manager",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/pm-agent.json",
-      "role": "Gerenciamento ágil de projetos, planejamento de épicos, definição de milestones, gestão de riscos e comunicação executiva",
+      "role": "Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de User Stories em formato BDD (Given-When-Then), mapeamento de dependências críticas e matriz de riscos técnicos",
       "skills": [
         "task-planner",
         "requirement-analyzer",
-        "pm",
         "staff-engineer",
+        "technical-writer",
         "memoria-projeto"
       ],
       "chains": [
@@ -259,14 +249,14 @@
     {
       "id": "professor",
       "name": "Professor / Mentor",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/professor-agent.json",
-      "role": "Ensino adaptativo, explicações didáticas passo a passo, mentoria de código, exemplos práticos e exercícios de fixação",
+      "role": "Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos (O que mudou -> Por que mudou -> Conceito-chave), analogias intuitivas sem jargões e exercícios práticos de fixação",
       "skills": [
         "professor-modo",
         "technical-writer",
-        "professor",
-        "mentoring",
+        "clean-code",
+        "systematic-debugging",
         "memoria-projeto"
       ],
       "chains": [
@@ -279,15 +269,16 @@
     {
       "id": "qa",
       "name": "QA Engineer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/qa-agent.json",
-      "role": "QA e Automação de Testes: testes unitários, de integração, E2E com Playwright, acessibilidade WCAG e quality gates de entrega",
+      "role": "Quality Assurance & Test Automation Specialist: testes unitários (Vitest/Pytest/Jest), integração de APIs, E2E resiliente com Playwright, auditoria de acessibilidade WCAG 2.2 AA (axe-core) e Quality Gates",
       "skills": [
         "qa",
         "tdd",
         "testing-automation",
         "webapp-testing",
         "accessibility-reviewer",
+        "data-validation",
         "error-recovery",
         "memoria-projeto"
       ],
@@ -302,55 +293,44 @@
     {
       "id": "security",
       "name": "Security Engineer",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/security-agent.json",
-      "role": "Auditoria de segurança, OWASP Top 10, autenticação robusta, secure coding, gestão de segredos e conformidade LGPD",
+      "role": "Auditoria de segurança SAST/DAST, mitigação OWASP Top 10, autenticação robusta (OAuth2/JWT/Argon2), blindagem de APIs, gestão de segredos, Defense-in-Depth e conformidade LGPD/GDPR",
       "skills": [
         "security-privacy",
         "code-auditor",
-        "owasp",
-        "auth",
-        "secure-coding",
-        "secrets",
-        "lgpd",
-        "penetration-testing",
         "defense-in-depth",
+        "api-automation",
+        "automation-security",
+        "qa",
+        "systematic-debugging",
         "memoria-projeto"
       ],
       "chains": [
         "full_audit",
         "implement_auth",
         "hardening",
-        "review_pr"
+        "review_pr",
+        "api_security"
       ]
     },
     {
       "id": "senior-engineer",
       "name": "Senior Engineer",
-      "version": "2.0.0",
+      "version": "2.8.0",
       "file": "agents/senior-engineer-agent.json",
-      "role": "Full-stack de alto craft — código limpo, seguro, testado e entregue rápido (sem redundância)",
+      "role": "Full-Stack Software Engineer High-Craft — implementação profunda de ponta a ponta, Clean Code, TDD estrito, zero AI-Slop, zero stubs e ciclo vertical completo",
       "skills": [
-        "backend",
+        "agentic-coding",
+        "tdd",
         "frontend",
-        "api",
-        "laravel",
-        "php",
-        "ts",
-        "react",
-        "node",
-        "python",
-        "db",
-        "sql",
-        "clean-code",
-        "solid",
-        "dry-kiss-yagni",
-        "complexity",
-        "refactor",
-        "perf",
-        "unit-test",
-        "integration-test",
-        "security"
+        "ui-ux-pro-max",
+        "anti-ai-slop",
+        "systematic-debugging",
+        "security-privacy",
+        "qa",
+        "memoria-projeto",
+        "economia-tokens"
       ],
       "chains": [
         "fullstack",
@@ -358,23 +338,24 @@
         "bug",
         "refactor",
         "review",
-        "optimize",
-        "new_feature"
+        "optimize"
       ]
     },
     {
       "id": "techlead",
       "name": "Tech Lead",
-      "version": "2.1.0",
+      "version": "2.8.0",
       "file": "agents/techlead-agent.json",
-      "role": "Liderança técnica, code review pedagógico que ensina, governança técnica, desbloqueio de engenheiros e padrões de código",
+      "role": "Liderança técnica operacional, Code Review pedagógico em 5 dimensões (Corretude, Segurança, Performance, Manutenibilidade, DX), governança de padrões de código e desbloqueio de engenheiros",
       "skills": [
         "tech-lead",
         "principal-engineer",
         "staff-engineer",
-        "clean-code",
+        "code-auditor",
+        "security-privacy",
         "qa",
-        "memoria-projeto"
+        "memoria-projeto",
+        "professor-modo"
       ],
       "chains": [
         "review_teach",
