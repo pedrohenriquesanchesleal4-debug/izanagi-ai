@@ -1,8 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { loadSkillResolver } from '../framework.js';
+import { SkillScanner } from '../../runtime/security/skill-scanner.js';
+import { MemoryStore } from '../../runtime/memory/store.js';
+import { TraceStore } from '../../runtime/observability/tracer.js';
+import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
+import { SkillResolver } from '../../runtime/routing/resolver.js';
 
-export function doctorCommand(baseDir: string): boolean {
+export function doctorCommand(baseDir: string, args: string[] = []): boolean {
+  const deep = args.includes('--deep') || args.includes('-d');
+
   console.log('\n\x1b[36m=== Izanagi AI Doctor & Integrity Check ===\x1b[0m\n');
 
   const cwd = process.cwd();
@@ -112,6 +119,58 @@ export function doctorCommand(baseDir: string): boolean {
     }
   }
 
+  if (deep) {
+    const deepErrors = runDeepChecks(baseDir, projectRoot);
+    errors += deepErrors;
+  }
+
   console.log(`\n\x1b[1mSummary:\x1b[0m ${errors === 0 ? '\x1b[32mPASSED\x1b[0m' : '\x1b[31mFAILED\x1b[0m'} (${errors} errors, ${warnings} warnings)\n`);
   return errors === 0;
+}
+
+function runDeepChecks(baseDir: string, projectRoot: string): number {
+  let errors = 0;
+  console.log('\n\x1b[1m\x1b[36m-- Deep checks (runtime) --\x1b[0m\n');
+
+  // 7. Runtime state + memory
+  const memory = new MemoryStore({ baseDir });
+  const state = memory.raw;
+  console.log(` \x1b[32m✔\x1b[0m Memory: ${Object.keys(state.failures).length} failure patterns, ${state.learnings.length} learnings, ${Object.keys(state.agents).length} agent stats`);
+
+  // 8. Traces
+  const traceStore = new TraceStore({ baseDir });
+  const traces = traceStore.list(10);
+  console.log(` \x1b[32m✔\x1b[0m Traces: ${traces.length} execução(ões) registrada(s)`);
+
+  // 9. Benchmarks
+  const registry = new BenchmarkRegistry();
+  const cases = registry.load(baseDir);
+  console.log(` \x1b[32m✔\x1b[0m Benchmarks: ${cases.length} casos (${new Set(cases.map((c) => c.domain)).size} domínios)`);
+
+  // 10. Skill security scan
+  const scanner = new SkillScanner();
+  const scan = scanner.scanDirectory(baseDir);
+  const critical = scan.filter((s) => s.level === 'CRITICAL');
+  const high = scan.filter((s) => s.level === 'HIGH');
+  if (critical.length > 0 || high.length > 0) {
+    console.log(` \x1b[31m✖\x1b[0m Skill scan: ${critical.length} CRITICAL, ${high.length} HIGH (${scan.length} varridas)`);
+    for (const s of [...critical, ...high].slice(0, 3)) {
+      console.log(`   \x1b[31m- ${s.skill}: ${s.level}\x1b[0m`);
+    }
+    errors++;
+  } else {
+    console.log(` \x1b[32m✔\x1b[0m Skill security scan: ${scan.length} skills varridas, nenhuma CRITICAL/HIGH`);
+  }
+
+  // 11. Contracts (frontmatter das skills)
+  const resolver = new SkillResolver({ baseDir });
+  const skills = resolver.list();
+  const noMeta = skills.filter((s) => !s.description && s.version === '1.0.0').length;
+  if (noMeta > 0) {
+    console.log(` \x1b[33m⚠\x1b[0m ${noMeta} skill(s) sem frontmatter de manifesto completo`);
+  } else {
+    console.log(` \x1b[32m✔\x1b[0m Skill manifests: ${skills.length} skills com metadados`);
+  }
+
+  return errors;
 }

@@ -2,74 +2,7 @@ import readline from 'readline';
 import fs from 'fs';
 import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
-
-function classifyTask(desc: string) {
-  const lower = desc.toLowerCase();
-
-  if (
-    lower.includes('animation') || lower.includes('animação') || lower.includes('animado') ||
-    lower.includes('scrollytelling') || lower.includes('scroll animation') || lower.includes('scroll-driven') ||
-    lower.includes('cinematic') || lower.includes('gsap') || lower.includes('anime.js') || lower.includes('animejs') ||
-    lower.includes('framer motion') || lower.includes('lottie') || lower.includes('motion design') ||
-    lower.includes('3d') || lower.includes('webgl') || lower.includes('three.js') || lower.includes('threejs') ||
-    lower.includes('efeito ao rolar') || lower.includes('efeito de scroll') || lower.includes('site que parece vídeo') ||
-    lower.includes('frames que passam') || lower.includes('hero animado') || lower.includes('partículas') || lower.includes('particulas')
-  ) {
-    return { category: 'frontend', agent: 'animation' };
-  }
-  if (lower.includes('architect') || lower.includes('microservice') || lower.includes('clean arch') || lower.includes('estrutura') || lower.includes('arquitet')) {
-    return { category: 'architecture', agent: 'architect' };
-  }
-  // Páginas/componentes de UI vêm antes de security: "login page" é frontend, não auditoria
-  if (lower.includes('frontend') || lower.includes('react') || lower.includes('page') || lower.includes('component') || lower.includes('css') || lower.includes('tailwind')) {
-    return { category: 'frontend', agent: 'senior-engineer' };
-  }
-  if (lower.includes('security') || lower.includes('owasp') || lower.includes('vulnerab') || lower.includes('audit') || lower.includes('lgpd') || lower.includes('pentest')) {
-    return { category: 'security_audit', agent: 'security' };
-  }
-  if (lower.includes('bug') || lower.includes('fix') || lower.includes('error') || lower.includes('crash') || lower.includes('debug')) {
-    return { category: 'debugging', agent: 'bug-hunter' };
-  }
-  if (lower.includes('db') || lower.includes('database') || lower.includes('sql') || lower.includes('postgres') || lower.includes('migration') || lower.includes('mysql')) {
-    return { category: 'database_design', agent: 'database' };
-  }
-  if (lower.includes('docker') || lower.includes('ci/cd') || lower.includes('pipeline') || lower.includes('deploy') || lower.includes('k8s') || lower.includes('kubernetes')) {
-    return { category: 'devops_infra', agent: 'devops' };
-  }
-  if (
-    lower.includes('automation') || lower.includes('automa') || lower.includes('automatiz') ||
-    lower.includes('planilha') || lower.includes('spreadsheet') || lower.includes('excel') ||
-    lower.includes('scrap') || lower.includes('etl') || lower.includes('playwright') ||
-    lower.includes('selenium') || lower.includes('robô') || lower.includes('em massa') ||
-    lower.includes('preencher formulário') || lower.includes('webhook')
-  ) {
-    return { category: 'automacao', agent: 'automation-engineer' };
-  }
-  if (lower.includes('test') || lower.includes('qa')) {
-    return { category: 'testing', agent: 'qa' };
-  }
-  if (lower.includes('backend') || lower.includes('api') || lower.includes('endpoint') || lower.includes('laravel') || lower.includes('node')) {
-    return { category: 'backend', agent: 'senior-engineer' };
-  }
-  if (lower.includes('login') || lower.includes('auth') || lower.includes('authentication')) {
-    return { category: 'implementation', agent: 'senior-engineer' };
-  }
-  return { category: 'implementation', agent: 'senior-engineer' };
-}
-
-function resolveChainForCategory(agent: any, category: string): string[] {
-  if (agent.chains && agent.chains[category] && Array.isArray(agent.chains[category])) {
-    return agent.chains[category];
-  }
-  if (agent.chains && typeof agent.chains === 'object') {
-    const first = Object.values(agent.chains)[0];
-    if (Array.isArray(first)) return first;
-  }
-  if (Array.isArray(agent.skills) && agent.skills.length > 0) {
-    return agent.skills.slice(0, 8);
-  }
-  return ['planner', 'reviewer', 'clean-code'];
-}
+import { classifyTask, resolveChainForCategory } from './run.js';
 
 function agentLabel(agent: any): string {
   return agent.name || 'Custom agent';

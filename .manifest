@@ -1,12 +1,32 @@
 {
   "name": "izanagi-ai",
-  "version": "2.9.3",
+  "version": "2.9.5",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-11T11:45:59.900Z",
+  "generatedAt": "2026-08-11T12:44:51.097Z",
   "agents": [
+    {
+      "id": "adversarial-critic",
+      "name": "Adversarial Critic",
+      "version": "1.0.0",
+      "file": "agents/adversarial-critic-agent.json",
+      "role": "Crítica adversarial de implementações: caçar bugs, falhas de segurança, problemas de arquitetura, requisitos faltantes, problemas de performance, edge cases, suposições incorretas, overengineering e AI slop",
+      "skills": [
+        "code-auditor",
+        "security-privacy",
+        "anti-ai-slop",
+        "complexity-analyzer",
+        "qa",
+        "self-critique"
+      ],
+      "chains": [
+        "critique_code",
+        "critique_ui",
+        "critique_architecture"
+      ]
+    },
     {
       "id": "animation",
       "name": "Animation Engineer",
@@ -206,6 +226,25 @@
       ]
     },
     {
+      "id": "evaluator",
+      "name": "Evaluator",
+      "version": "1.0.0",
+      "file": "agents/evaluator-agent.json",
+      "role": "Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN), detecção de regressões e recomendações acionáveis",
+      "skills": [
+        "qa",
+        "confidence-estimator",
+        "code-auditor",
+        "self-critique",
+        "memoria-projeto"
+      ],
+      "chains": [
+        "evaluate_code",
+        "evaluate_architecture",
+        "evaluate_automation"
+      ]
+    },
+    {
       "id": "form-engineer",
       "name": "Form & UI Engineer",
       "version": "2.8.0",
@@ -291,6 +330,25 @@
       ]
     },
     {
+      "id": "researcher",
+      "name": "Researcher",
+      "version": "1.0.0",
+      "file": "agents/researcher-agent.json",
+      "role": "Pesquisa estruturada baseada em evidência: coleta de fatos com fontes citadas, distinção FACT/ASSUMPTION/INFERENCE/UNKNOWN, priorização de fontes oficiais e relatório com nível de confiança",
+      "skills": [
+        "deep-research",
+        "confidence-estimator",
+        "hallucination-detection",
+        "documentation-writer",
+        "memoria-projeto"
+      ],
+      "chains": [
+        "research_stack",
+        "research_market",
+        "research_technical"
+      ]
+    },
+    {
       "id": "security",
       "name": "Security Engineer",
       "version": "2.8.0",
@@ -368,7 +426,7 @@
   "skills": [
     {
       "name": "Skill Library",
-      "count": 142,
+      "count": 146,
       "skills": [
         {
           "id": "a11y",
@@ -381,6 +439,12 @@
           "name": "Accessibility Reviewer (WCAG 2.2 AA)",
           "version": "1.0.0",
           "path": "skills/accessibility-reviewer/SKILL.md"
+        },
+        {
+          "id": "adversarial-critic",
+          "name": "adversarial-critique",
+          "version": "1.0.0",
+          "path": "skills/adversarial-critique/SKILL.md"
         },
         {
           "id": "agentic-coding",
@@ -432,7 +496,7 @@
         },
         {
           "id": "architecture-patterns",
-          "name": "Skill Architecture Patterns — Izanagi",
+          "name": "architecture-patterns",
           "version": "1.0.0",
           "path": "skills/architecture-patterns/SKILL.md"
         },
@@ -471,6 +535,12 @@
           "name": "automation-security",
           "version": "1.0.0",
           "path": "skills/automation-security/SKILL.md"
+        },
+        {
+          "id": "avaliacao",
+          "name": "evaluation",
+          "version": "1.0.0",
+          "path": "skills/evaluation/SKILL.md"
         },
         {
           "id": "brainstorming",
@@ -713,6 +783,12 @@
           "path": "skills/error-recovery/SKILL.md"
         },
         {
+          "id": "failure-patterns",
+          "name": "failure-patterns",
+          "version": "1.0.0",
+          "path": "skills/failure-patterns/SKILL.md"
+        },
+        {
           "id": "fan-out",
           "name": "Parallel Agents (Fan-Out & Swarm Orc",
           "version": "1.0.0",
@@ -753,6 +829,12 @@
           "name": "Hallucination Det",
           "version": "1.0.0",
           "path": "skills/hallucination-detection/SKILL.md"
+        },
+        {
+          "id": "handoff",
+          "name": "handoff-protocol",
+          "version": "1.0.0",
+          "path": "skills/handoff-protocol/SKILL.md"
         },
         {
           "id": "handoff-sessao",
@@ -918,7 +1000,7 @@
         },
         {
           "id": "qa",
-          "name": "Skill QA",
+          "name": "qa",
           "version": "1.0.0",
           "path": "skills/qa/SKILL.md"
         },
@@ -1014,7 +1096,7 @@
         },
         {
           "id": "security-privacy",
-          "name": "Skill Security & Privacy — Izanagi",
+          "name": "security-privacy",
           "version": "1.0.0",
           "path": "skills/security-privacy/SKILL.md"
         },
@@ -1206,7 +1288,7 @@
         },
         {
           "id": "web-perf-engineer",
-          "name": "Skill Web Performance & SEO — Izanagi",
+          "name": "web-perf-seo",
           "version": "1.0.0",
           "path": "skills/web-perf-seo/SKILL.md"
         },

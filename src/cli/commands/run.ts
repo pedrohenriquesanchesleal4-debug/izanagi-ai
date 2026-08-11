@@ -2,15 +2,20 @@ import fs from 'fs';
 import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
 import { buildBlueprintCtx } from '../blueprint.js';
+import { Orchestrator } from '../../runtime/orchestrator.js';
+import type { GraphNode } from '../../runtime/types.js';
+import { printTrace } from './trace.js';
 
 interface RunArgs {
   agentId?: string;
   task?: string;
+  runtime?: boolean;
 }
 
 function parseRunArgs(args: string[]): RunArgs {
   let agentId: string | undefined;
   let task: string | undefined;
+  let runtime = false;
   const positionals: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -21,13 +26,15 @@ function parseRunArgs(args: string[]): RunArgs {
       i++;
     } else if (arg.startsWith('--task=')) {
       task = arg.slice(7);
+    } else if (arg === '--runtime' || arg === '-r') {
+      runtime = true;
+    } else if (arg === '--verbose' || arg === '-v') {
+      runtime = true;
     } else if (!arg.startsWith('-')) {
       positionals.push(arg);
     }
   }
 
-  // `run "task"` (sem --task): tudo que sobrou é a task
-  // `run agent "task"` (sem --task): primeiro é o agente, resto é a task
   if (!task) {
     if (positionals.length > 1) {
       agentId = positionals[0];
@@ -39,7 +46,7 @@ function parseRunArgs(args: string[]): RunArgs {
     agentId = positionals[0];
   }
 
-  return { agentId, task };
+  return { agentId, task, runtime };
 }
 
 interface TaskClassification {
@@ -47,7 +54,7 @@ interface TaskClassification {
   agent: string;
 }
 
-function classifyTask(desc: string): TaskClassification {
+export function classifyTask(desc: string): TaskClassification {
   const lower = desc.toLowerCase();
 
   if (
@@ -101,11 +108,14 @@ function classifyTask(desc: string): TaskClassification {
   if (lower.includes('create') || lower.includes('build') || lower.includes('feature') || lower.includes('implement')) {
     return { category: 'implementation', agent: 'senior-engineer' };
   }
+  if (lower.includes('saas') || lower.includes('app completo') || lower.includes('sistema completo') || lower.includes('fullstack')) {
+    return { category: 'fullstack', agent: 'senior-engineer' };
+  }
 
   return { category: 'implementation', agent: 'senior-engineer' };
 }
 
-function resolveChainForCategory(agent: any, category: string): string[] {
+export function resolveChainForCategory(agent: any, category: string): string[] {
   if (agent.chains && agent.chains[category] && Array.isArray(agent.chains[category])) {
     return agent.chains[category];
   }
@@ -128,7 +138,6 @@ function summarizeSkill(fullPath: string, maxLines: number): string {
   const content = fs.readFileSync(fullPath, 'utf-8');
   const lines = content.split('\n');
   if (lines.length <= maxLines) return content;
-  // Corta no limite e sinaliza que foi truncado
   return lines.slice(0, maxLines).join('\n') + `\n\n<!-- (skill truncada em ${maxLines} linhas — veja ${fullPath} para o conteúdo completo) -->`;
 }
 
@@ -137,7 +146,7 @@ function agentLabel(agent: any): string {
 }
 
 export function runCommand(baseDir: string, args: string[]): void {
-  const { agentId, task } = parseRunArgs(args);
+  const { agentId, task, runtime } = parseRunArgs(args);
 
   if (!task) {
     console.error('\x1b[31mError:\x1b[0m Please provide a task description.');
@@ -145,6 +154,7 @@ export function runCommand(baseDir: string, args: string[]): void {
     console.error('Examples:');
     console.error('  izanagi run "Create a login page"');
     console.error('  izanagi run architect --task "Design a microservices architecture"');
+    console.error('  izanagi run "..." --runtime   (executa via Adaptive Runtime: graph + eval + trace)');
     process.exit(1);
   }
 
@@ -287,10 +297,76 @@ export function runCommand(baseDir: string, args: string[]): void {
   console.log(`\x1b[32m✔ Ready-to-use AI prompt generated successfully!\x1b[0m`);
   console.log(`  Saved to: \x1b[36m${promptPath}\x1b[0m (copy and paste directly to your AI tool)\n`);
 
+  // 5. Modo Runtime: orquestra grafo + avaliação + trace + aprendizado
+  if (runtime) {
+    runRuntime(baseDir, { task, category, agentId: agentId ?? classifyTask(task).agent, skillChain: compactSkillChain });
+    return;
+  }
+
   console.log('\x1b[90mTips:');
+  console.log(`  \x1b[36mizanagi run "${task}" --runtime\x1b[90m — Adaptive Runtime (execution graph + evaluation + trace + learning).`);
   if (agentId && agentFile) {
     console.log(`  \x1b[36mizanagi compile ${agentId}\x1b[90m — compile the full system prompt for this agent.`);
   }
   console.log(`  \x1b[36mizanagi run <your-agent> --task "<task>"\x1b[90m — run a custom agent from ./agents.\x1b[0m`);
   console.log(`  \x1b[36mizanagi run "${task}"\x1b[90m — auto-classify with default agent (${defaultAgent}).\x1b[0m\n`);
+}
+
+/**
+ * Modo runtime: usa o Orchestrator do framework para construir o execution
+ * graph, avaliar, curar falhas e persistir trace + aprendizados.
+ */
+async function runRuntime(
+  baseDir: string,
+  opts: { task: string; category: string; agentId: string; skillChain: string[] },
+): Promise<void> {
+  console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
+
+  const orchestrator = new Orchestrator({
+    baseDir,
+    command: 'run --runtime',
+    task: opts.task,
+    category: opts.category,
+    primaryAgent: opts.agentId,
+    skillChain: opts.skillChain,
+    verbose: true,
+    produce: async (node: GraphNode) => {
+      // Producer headless: gera artefato a partir da configuração do nó.
+      // Em integração com LLM real, este ponto injeta o prompt compilado.
+      const label = node.agent ?? node.skills?.join('+') ?? node.id;
+      return {
+        content: {
+          node: node.id,
+          label,
+          task: opts.task,
+          producedAt: new Date().toISOString(),
+          summary: `Artefato produzido pelo nó "${node.id}" (${label}).`,
+        },
+        kind: node.outputs?.[0] ?? 'raw',
+        tokens: 300,
+        model: 'cli-headless',
+      };
+    },
+    consume: (node: GraphNode, artifact: { kind: string; valid: boolean }) => {
+      if (!artifact.valid) {
+        console.log(`  \x1b[33m⚠\x1b[0m Nó "${node.id}": artefato inválido (${artifact.kind})`);
+      }
+    },
+  });
+
+  const result = await orchestrator.run();
+
+  // Relatório final
+  const verdict = result.evaluation;
+  const color = result.status === 'PASS' ? '\x1b[32m' : result.status === 'PASS_WITH_WARNINGS' ? '\x1b[33m' : result.status === 'FAIL' || result.status === 'BLOCKED' ? '\x1b[31m' : '\x1b[90m';
+  console.log(`\n\x1b[1mRuntime result:\x1b[0m ${color}${result.status}\x1b[0m (score ${verdict?.score ?? '—'})`);
+  console.log(`  \x1b[90mGraph:\x1b[0m ${result.graph.nodes.length} nós, ${result.graph.parallelBatches.length} etapas (${result.graph.parallelBatches.map((b) => `[${b.join(', ')}]`).join(' → ')})`);
+  console.log(`  \x1b[90mHealing:\x1b[0m ${result.healing.length === 0 ? 'nenhuma ação necessária' : result.healing.map((h) => h.kind).join(', ')}`);
+  console.log(`  \x1b[90mDuration:\x1b[0m ${result.trace.durationMs}ms | tokens ${result.trace.tokens?.total ?? 0}`);
+
+  // Imprime o trace detalhado
+  printTrace(result.trace);
+
+  console.log(`\n\x1b[90mVer o trace completo:\x1b[0m \x1b[36mizanagi trace ${result.trace.runId}\x1b[0m`);
+  console.log(`\x1b[90mAvaliação isolada:\x1b[0m \x1b[36mizanagi eval --report ${result.trace.runId}\x1b[0m\n`);
 }

@@ -10,6 +10,14 @@ import { runCommand } from './commands/run.js';
 import { createCommand } from './commands/create.js';
 import { chatCommand } from './commands/chat.js';
 import { exportCommand } from './commands/export.js';
+import { agentCommand } from './commands/agent.js';
+import { skillCommand } from './commands/skill.js';
+import { workflowCommand } from './commands/workflow.js';
+import { traceCommand } from './commands/trace.js';
+import { evalCommand } from './commands/eval.js';
+import { benchmarkCommand } from './commands/benchmark.js';
+import { memoryCommand } from './commands/memory.js';
+import { diagnoseCommand } from './commands/diagnose.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,9 +46,43 @@ export async function runCLI(args: string[]): Promise<void> {
       break;
     }
 
+    case 'agent':
+      agentCommand(baseDir, rest);
+      break;
+
+    case 'skill':
+      await skillCommand(baseDir, rest);
+      break;
+
+    case 'workflow':
+      workflowCommand(baseDir, rest);
+      break;
+
     case 'run':
     case 'resolve':
       runCommand(baseDir, rest);
+      break;
+
+    case 'trace':
+      traceCommand(baseDir, rest);
+      break;
+
+    case 'eval':
+    case 'evaluate':
+      evalCommand(baseDir, rest);
+      break;
+
+    case 'benchmark':
+    case 'bench':
+      await benchmarkCommand(baseDir, rest);
+      break;
+
+    case 'memory':
+      memoryCommand(baseDir, rest);
+      break;
+
+    case 'diagnose':
+      diagnoseCommand(baseDir);
       break;
 
     case 'chat':
@@ -61,7 +103,7 @@ export async function runCLI(args: string[]): Promise<void> {
     case 'doctor':
     case 'check':
     case 'validate':
-      doctorCommand(baseDir);
+      doctorCommand(baseDir, rest);
       break;
 
     case 'export':
@@ -98,10 +140,19 @@ function showHelp(): void {
   \x1b[32minit [dir] [--packs a,b,c]\x1b[0m      Creates a project with selectable skill packs (.agents).
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
   \x1b[32mrun [agent] --task "<task>"\x1b[0m     Classifies task, selects Agent and Skill Chain.
+                          (--runtime executa via Adaptive Runtime: graph + eval + trace)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Creates a new agent or skill scaffold.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
   \x1b[32mlist [skills|agents]\x1b[0m           Lists all registered skills and agents.
-  \x1b[32mdoctor\x1b[0m                        Validates framework integrity, JSONs, and alias links.
+  \x1b[32mdoctor [--deep]\x1b[0m                Validates framework integrity + runtime (deep).
+  \x1b[32magent list|inspect <name>\x1b[0m      Agent Genome: lista/inspeciona agentes.
+  \x1b[32mskill list|search|inspect|create\x1b[0m Skill Manifest: lista/busca/inspeciona skills.
+  \x1b[32mworkflow list|inspect <name>\x1b[0m   Execution Graph templates e composições.
+  \x1b[32mtrace [run-id]\x1b[0m                 Observabilidade: lista/mostra execuções.
+  \x1b[32meval [file|--metrics|--report]\x1b[0m Avalia artefatos/resultados (Evaluation Engine).
+  \x1b[32mbenchmark list|run|compare\x1b[0m     Suíte de benchmarks + regression comparison.
+  \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
+  \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
   \x1b[32mexport --cli <target>\x1b[0m         Exports framework adapters for other AI CLIs
                           (claude, codex, cursor, copilot, kimi, all).
   \x1b[32mversion\x1b[0m                       Displays Izanagi AI version.
@@ -116,11 +167,18 @@ function showHelp(): void {
   izanagi init my-project
   izanagi init my-project --packs core,agents,coding,database
   izanagi run "Refactor user authentication to JWT"
+  izanagi run "Create a login page" --runtime
   izanagi run architect --task "Design a microservices architecture"
   izanagi run my-agent --task "Create a login page"
+  izanagi agent inspect architect
+  izanagi skill search database
+  izanagi workflow inspect fullstack
+  izanagi trace
+  izanagi eval --report <run-id>
+  izanagi benchmark run security
   izanagi create agent my-agent
   izanagi compile architect system_prompt.md
   izanagi list skills
-  izanagi doctor
+  izanagi doctor --deep
 `);
 }

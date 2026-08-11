@@ -1,6 +1,6 @@
 {
   "name": "izanagi-ai",
-  "version": "2.9.3",
+  "version": "2.9.5",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -46,7 +46,9 @@
   "scripts": {
     "build": "tsc && node dist/scripts/generate-manifest.js",
     "build:clean": "node dist/scripts/build-clean.js",
-    "verify": "node dist/scripts/verify-build.js",
+    "verify": "node dist/scripts/verify-build.js && node --test \"dist/runtime/tests/*.test.js\"",
+    "test": "npm run build && node --test \"dist/runtime/tests/*.test.js\"",
+    "test:only": "node --test \"dist/runtime/tests/*.test.js\"",
     "release": "node dist/scripts/release.js",
     "release:patch": "node dist/scripts/release.js patch",
     "release:minor": "node dist/scripts/release.js minor",

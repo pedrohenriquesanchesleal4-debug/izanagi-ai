@@ -238,7 +238,17 @@
     "layered-security": "skills/defense-in-depth/SKILL",
     "systematic-debugging": "skills/systematic-debugging/SKILL",
     "debug-6-fases": "skills/systematic-debugging/SKILL",
-    "six-phase-debug": "skills/systematic-debugging/SKILL"
+    "six-phase-debug": "skills/systematic-debugging/SKILL",
+    "evaluation": "skills/evaluation/SKILL",
+    "evaluator": "skills/evaluation/SKILL",
+    "avaliacao": "skills/evaluation/SKILL",
+    "adversarial-critique": "skills/adversarial-critique/SKILL",
+    "critic": "skills/adversarial-critique/SKILL",
+    "adversarial-critic": "skills/adversarial-critique/SKILL",
+    "handoff-protocol": "skills/handoff-protocol/SKILL",
+    "handoff": "skills/handoff-protocol/SKILL",
+    "failure-patterns": "skills/failure-patterns/SKILL",
+    "padroes-falha": "skills/failure-patterns/SKILL"
   },
   "compositions": {
     "web_cinematic": {
@@ -506,6 +516,43 @@
         "professor-modo"
       ],
       "artifact": "execucao paralela de agentes com merge unificado"
+    },
+    "evaluated_delivery": {
+      "triggers": [
+        "entrega avaliada",
+        "com avaliacao",
+        "verificar antes de entregar",
+        "criticar implementacao",
+        "quality gate",
+        "entrega com nota"
+      ],
+      "chain": [
+        "evaluation",
+        "adversarial-critique",
+        "handoff-protocol",
+        "failure-patterns",
+        "memoria-projeto",
+        "qa"
+      ],
+      "artifact": "implementacao avaliada (score + verdict + regressoes + recomendacoes)"
+    },
+    "research_evidence": {
+      "triggers": [
+        "pesquisar",
+        "evidencia",
+        "fontes",
+        "comparar stacks",
+        "fatos",
+        "relatorio de pesquisa"
+      ],
+      "chain": [
+        "deep-research",
+        "confidence-estimator",
+        "hallucination-detection",
+        "documentation-writer",
+        "memoria-projeto"
+      ],
+      "artifact": "research artifact com claims classificados (FACT/ASSUMPTION/INFERENCE/UNKNOWN)"
     }
   }
 }
