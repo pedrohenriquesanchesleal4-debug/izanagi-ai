@@ -1,3 +1,12 @@
+---
+name: software-architect
+description: Version 1.0.0 Priority: Critical Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [software-architect]
+token_budget: 2048
+---
+
 # Skill: Software Architect
 
 > Version 1.0.0

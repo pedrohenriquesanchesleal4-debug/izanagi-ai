@@ -36,173 +36,138 @@ Every decision, every line of code, every interaction passes through a layered e
 ## Architecture Overview
 
 ```
-User Input
+User Input / Comando CLI
     │
     ▼
-┌─────────────────────┐
-│   Decision Engine   │ ← Classifies task, routes to skills
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   Context Engine    │ ← Builds context window, loads memory
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   Skill Executor    │ ← Activates skill chain (DAG)
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   Quality Gates     │ ← Validates output (security, style, etc.)
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   Reflection Engine │ ← Self-review, logs, evolution
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   Memory Manager    │ ← Compresses, stores, updates knowledge
-└─────────────────────┘
-          │
-          ▼
-       Output
+┌────────────────────────────┐
+│  Skill Resolver            │ ← aliases → paths, frontmatter, scoring,
+│  (core/skill-resolver.json)│   composições por domínio
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│  Orchestrator Runtime      │ ← template de grafo por categoria,
+│  (src/runtime/)            │   executeBatches, hooks de execução
+│                            │   (produce: agêntico / LLM / comando)
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│  Evaluation Engine         │ ← métricas ponderadas, veredito
+│  (artifacts + thresholds)  │   PASS / PASS_WITH_WARNINGS / FAIL / BLOCKED
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│  Healing & Learning        │ ← retry, skill_replacement, fallback,
+│  (checkpoint-healing)      │   abort; stats por agente + learnings
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│  Memory & Observability    │ ← MemoryStore (JSON), TraceStore (JSONL),
+│                            │   .agents/memoria/ persistente
+└─────────────┬──────────────┘
+              ▼
+           Output / Relatório
 ```
 
----
-
-## Core Modules
+## Core Modules (runtime real em `src/runtime/`)
 
 | Module | Responsibility |
 |--------|---------------|
-| **Decision Engine** | Classifies task type, priority, urgency. Selects skill chain. |
-| **Context Engine** | Builds minimal context window. Loads relevant memory. |
-| **Skill Executor** | Executes ordered skill chain with dependency resolution. |
-| **Token Manager** | Monitors token budget. Triggers compression when needed. |
-| **Memory Manager** | Short-term, long-term, project memory. Compression and recall. |
-| **Quality Gates** | Validates every output before delivery. |
-| **Reflection Engine** | Post-task self-review. Logs improvements. |
-| **Evolution Engine** | Updates skills based on reflection data. |
+| **Orchestrator** (`orchestrator.ts`) | Executa grafos por categoria (implementation, debugging, testing, database_design, etc.), batches, retry e healing. |
+| **Evaluation Engine** (`evaluation/`) | Métricas ponderadas (correctness, completeness, security, etc.), veredito derivado, relatório com regressões e recomendações. |
+| **Artifact Contracts** (`contracts/artifacts.ts`) | 10+ schemas de artefato (requirements, architecture, database-schema, test-plan...) com validação por campos obrigatórios + tamanho mínimo, em PT-BR. |
+| **Skill Resolver** (`routing/resolver.ts`) | Alias → target (248), parse de frontmatter, scoring por relevância + histórico. |
+| **Skill Scanner** (`security/skill-scanner.ts`) | 11 regras de segurança sobre skills (INJ, DNG, SCR, PER, NET, SEC) com severidade e allowlist. |
+| **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
+| **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
+| **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSONL com spans, load/close e retry de escrita. |
+| **LLM Executor** (`llm/`) | Adapters reais OpenAI/Anthropic/OpenRouter com env key, timeout e propagação de erro HTTP. |
+| **CLI** (`src/cli/`) | Entrypoint `bin/izanagi.js` → `runCLI` (doctor, audit, resolve, export, init, run...). |
 
----
+## Routing — Classificação por Categoria
 
-## Decision Engine — Classification
+O runtime mapeia a categoria da tarefa para um template de grafo + cadeia de skills (compositions em `core/skill-resolver.json`):
 
 ```
-if task == "new_project" or task == "new_feature":
-    chain = [Planning, Architecture, Requirements, Risks, Code]
-
-elif task == "bug":
-    chain = [Debug, RootCause, Fix, Test, Reflect]
-
-elif task == "refactor":
-    chain = [Architecture, Complexity, Refactor, Test, Validate]
-
-elif task == "review":
-    chain = [Reviewer, Security, Performance, Quality, Feedback]
-
-elif task == "question" or task == "explain":
-    chain = [Professor, Mentor, Examples, Exercises]
-
-elif task == "security_audit":
-    chain = [OWASP, Pentest, Auth, Secrets, Report]
-
-else:
-    chain = [Analyze, Plan, Execute, Review, Reflect]
+implementation → [requirements, architecture, schema, optimize, implementation-plan, evaluation]
+testing        → [test-plan, execution, critic, evaluation]
+debugging      → [reproduce, isolate, hypothesis, fix, verify, prevent, evaluation]
+database_design→ [requirements, schema, optimize, review, evaluation]
 ```
 
----
+Categorias sem template específico usam o fluxo genérico (analisar → planejar → executar → avaliar). A cadeia completa de skills de cada domínio é definida pelas `compositions` do resolver.
 
-## Token Budget Rules
+## Token Economy
 
-| Scope | Limit |
-|-------|-------|
-| Per-response (soft) | 2048 tokens |
-| Per-response (hard) | 4096 tokens |
-| Context window (max) | 8192 tokens |
-| Memory load per task | 1024 tokens |
-| Compression trigger | >70% of budget used |
+Não há "compression engine" mágico: a economia de tokens é uma **skill operacional** (`skills/economia-tokens`) aplicada a toda sessão:
 
-When budget is exceeded, `Compression Engine` activates automatically.
-
----
+- contexto mínimo: carregar só o que mudou; trechos/diffs em vez de arquivos completos;
+- prompt caching (conteúdo estático primeiro, dinâmico por último);
+- coordenação entre agentes por **artefatos em disco**, nunca payloads gigantes em contexto;
+- zero releituras. Economia vale para contexto inútil — nunca para o entregável.
 
 ## Quality Gates — Every Output
 
-All outputs **must** pass these gates before delivery:
+Todo output passa por gates reais antes de ser considerado entregue:
 
-1. ✅ **Security Gate** — No secrets, no injection vectors, no hardcoded credentials.
-2. ✅ **Style Gate** — Follows project conventions. Clean code.
-3. ✅ **Clarity Gate** — Output is understandable by the intended audience.
-4. ✅ **Conciseness Gate** — No fluff. Every sentence adds value.
-5. ✅ **Completeness Gate** — Answers the question. Does not leave loose ends.
-
----
+1. ✅ **Security Gate** — sem segredos no código; `skill-scanner` varre skills por injeção, comandos destrutivos, exfiltração e hardcode (11 regras).
+2. ✅ **Validation Gate** — artefatos validados contra schema (campos obrigatórios + tamanho mínimo); inválido → healing `skill_replacement`.
+3. ✅ **Evaluation Gate** — métricas ponderadas + veredito (PASS / PASS_WITH_WARNINGS / FAIL / BLOCKED) com recomendações.
+4. ✅ **Style Gate** — segue `RULES.md`: anti-"cara de IA", design directions, high-craft.
+5. ✅ **Clarity & Conciseness Gate** — sem fluff; cada frase agrega valor.
+6. ✅ **Completeness Gate** — responde a pergunta, sem pontas soltas (Lei da Entrega Exaustiva).
 
 ## Memory Architecture
 
 ```
 ┌────────────────────────────────────────────┐
-│              Memory Manager                 │
-│                                            │
+│              Memory Store (runtime)         │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-│  │ Session  │  │ Project  │  │  Long    │ │
-│  │ Memory   │  │ Memory   │  │ Term     │ │
+│  │ Agent    │  │Learnings │  │  Runs/   │ │
+│  │ Stats    │  │ (erros   │  │  Trace   │ │
+│  │ (JSON)   │  │  evitados)│  │ (JSONL)  │ │
 │  └──────────┘  └──────────┘  └──────────┘ │
-│       │              │              │       │
-│       ▼              ▼              ▼       │
-│  ┌──────────────────────────────────────┐   │
-│  │         Knowledge Graph              │   │
-│  └──────────────────────────────────────┘   │
-│       │                                      │
-│       ▼                                      │
-│  ┌──────────────────────────────────────┐   │
-│  │         Recall Engine                │   │
-│  └──────────────────────────────────────┘   │
+│       └──────────────┬──────────────────┘ │
+│                      ▼                    │
+│        ┌─────────────────────────────┐    │
+│        │  .agents/memoria/ (projeto) │    │
+│        │  contexto · decisoes ·      │    │
+│        │  erros-corrigidos · learnings│    │
+│        └─────────────────────────────┘    │
 └────────────────────────────────────────────┘
 ```
 
----
+Memória entre sessões vive em `.agents/memoria/` (markdown curado). Memória de execução (stats, traces, learnings) vive no runtime (JSON/JSONL) — consulte `MemoryStore` e `TraceStore`.
 
 ## Evolution Cycle
 
 ```
-Task → Execute → Reflect → Log → Update Skills → Next Task
-                ↑                              │
-                └──────────────────────────────┘
-                         (feedback loop)
+Task → Executar → Avaliar (veredito) → Healing (corrigir) → Logar (stats/learning) → Próxima Task
+                ↑                                             │
+                └────────── (.agents/memoria/ atualizada) ─────┘
 ```
 
-Every task updates the skill base. The agent gets better over time.
-
----
+Melhoria contínua acontece por: healing registrado (retry/replacement/abort), stats por agente, learnings persistidos e atualização da memória curada do projeto.
 
 ## Versioning
 
-This framework uses **SemVer**. 
+Versionamento **SemVer** gerenciado pelo npm (`npm run bump:patch|minor|major` + `npm publish`; versão atual no `package.json`).
 
-- **Major**: Breaking changes to skill interface or engine.
-- **Minor**: New skills, new modules, backward compatible.
-- **Patch**: Bug fixes, compression improvements, documentation.
+- **Major**: quebra de contrato de skills, agentes ou runtime.
+- **Minor**: novas skills, agentes, módulos — compatível com versões anteriores.
+- **Patch**: correções, otimização, documentação.
 
-Current version: **2.0.0**
+## Frontmatter de Skills (Compatibility)
 
----
+Skills com `SKILL.md` declararam (quando aplicável) metadados no frontmatter:
 
-## Compatibility
-
-All skills must declare:
-
+- `name`
+- `description` (usado no scoring/resolução)
 - `version`
-- `dependencies` (list of required modules/skills)
-- `compatibility` (minimum SYSTEM version)
-- `triggers` (what activates this skill)
-- `token_budget` (estimated tokens per execution)
+- `compatibility` (versão mínima do framework)
+- `triggers`
+- `token_budget`
 
-Skills that do not declare these fields are rejected by the engine.
+O resolver **tolera** skills sem frontmatter (parse devolve `{}` e segue resolvendo pelo alias); metadados apenas aumentam a qualidade do scoring.
 
 ---
 

@@ -1,3 +1,12 @@
+---
+name: technical-debt-analyzer
+description: Version 1.0.0 | Priority: High Dependencies: Complexity Analyzer, Clean Code Validator Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [technical-debt-analyzer]
+token_budget: 2048
+---
+
 # Skill: Technical Debt Analyzer
 
 > Version 1.0.0 | Priority: High

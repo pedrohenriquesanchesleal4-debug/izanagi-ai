@@ -1,3 +1,12 @@
+---
+name: er-diagram-builder
+description: Version 1.0.0 | Priority: Low Dependencies: Database Engineer Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [er-diagram-builder]
+token_budget: 2048
+---
+
 # Skill: ER Diagram Builder
 
 > Version 1.0.0 | Priority: Low

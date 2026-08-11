@@ -1,3 +1,12 @@
+---
+name: uml-generator
+description: Version 1.0.0 | Priority: Low Dependencies: Software Architect Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [uml-generator]
+token_budget: 2048
+---
+
 # Skill: UML Generator
 
 > Version 1.0.0 | Priority: Low

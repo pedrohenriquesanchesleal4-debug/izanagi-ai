@@ -24,8 +24,7 @@ import { EvaluationEngine } from './evaluation/engine.js';
 import { Planner } from './orchestration/planner.js';
 import { ExecutionGraphBuilder } from './orchestration/graph.js';
 import { SkillResolver } from './routing/resolver.js';
-import { CandidateScorer } from './routing/scorer.js';
-import { Healer, isRecoverable } from './recovery/healing.js';
+import { Healer } from './recovery/healing.js';
 import { LearningEngine } from './evolution/learning.js';
 import { ModelRouter } from './model/router.js';
 import { validateArtifact } from './contracts/artifacts.js';
@@ -53,7 +52,7 @@ export interface ExecuteCtx {
   model: string;
   trace: Tracer;
   memory: MemoryStore;
-  artifacts: Map<string, { kind: string; content: unknown; valid: boolean }>;
+  artifacts: Map<string, { kind: string; content: unknown; valid: boolean; score: number }>;
 }
 
 export interface OrchestrationResult {
@@ -72,6 +71,7 @@ export class Orchestrator {
   /** Pontos de extensão (compatibilidade: permite injetar implementações). */
   private store?: TraceStore;
   private memory?: MemoryStore;
+  private tokensUsed = 0;
 
   setStore(store: TraceStore): void {
     this.store = store;
@@ -87,6 +87,9 @@ export class Orchestrator {
     const memory = this.memory ?? new MemoryStore({ baseDir: this.opts.baseDir });
     const trace = new Tracer(store, { task: this.opts.task, command: this.opts.command });
     const healing: HealingAction[] = [];
+    const startedAt = Date.now();
+    this.tokensUsed = 0;
+    const tokensUsed = () => this.tokensUsed;
 
     // Model Routing
     const router = new ModelRouter();
@@ -107,11 +110,8 @@ export class Orchestrator {
     const closeMem = trace.span('memory:pattern-search', 'memory', { task: this.opts.task });
     const relevant = memory.findRelevantFailures(this.opts.task);
     closeMem(true);
-    if (relevant.length > 0) {
-      trace.addTokens(0, 0);
-      if (this.opts.verbose) {
-        console.log(`  \x1b[33m⚠\x1b[0m ${relevant.length} padrão(ões) de falha conhecido(s) na memória (${relevant.map((p) => p.pattern).join(', ')})`);
-      }
+    if (relevant.length > 0 && this.opts.verbose) {
+      console.log(`  \x1b[33m⚠\x1b[0m ${relevant.length} padrão(ões) de falha conhecido(s) na memória (${relevant.map((p) => p.pattern).join(', ')})`);
     }
 
     // Planning
@@ -133,12 +133,10 @@ export class Orchestrator {
 
     // Adaptive routing: score agentes e skills
     const resolver = new SkillResolver({ baseDir: this.opts.baseDir, memory });
-    const scorer = new CandidateScorer();
     const agentScore = resolver.rankAgents(this.opts.task, agentIds(), 3);
     if (agentScore.length > 0) {
       const best = agentScore[0];
       trace.markAgent(best.candidate);
-      trace.addTokens(0, 0);
       if (this.opts.verbose) {
         console.log(`  \x1b[32m✔\x1b[0m Adaptive routing: melhor agente ${best.candidate} (score ${best.finalScore}) — ${best.reasons.join(', ')}`);
       }
@@ -170,7 +168,7 @@ export class Orchestrator {
 
       // Self-healing
       const healer = new Healer();
-      const elapsed = Date.now() - Date.parse(trace.finish({}).startedAt);
+      const elapsed = Date.now() - startedAt;
       const decision = healer.heal({
         nodeId: failure.nodeId,
         agent: failure.agent,
@@ -180,7 +178,7 @@ export class Orchestrator {
         maxAttempts,
         elapsedMs: elapsed,
         maxTimeMs: workingGraph.budget.maxTimeMs,
-        tokensUsed: trace.finish({}).tokens?.total ?? 0,
+        tokensUsed: tokensUsed(),
         maxTokens: workingGraph.budget.maxTokens,
         memory,
       });
@@ -196,6 +194,16 @@ export class Orchestrator {
         const node = workingGraph.nodes.find((n) => n.id === failure.nodeId);
         if (node) node.status = 'failed';
         break;
+      }
+
+      // skill_replacement / handoff: aplica a substituição ao nó antes de reprocessar
+      if ((decision.action.kind === 'skill_replacement' || decision.action.kind === 'handoff') && decision.replacement) {
+        const node = workingGraph.nodes.find((n) => n.id === failure.nodeId);
+        if (node) {
+          if (decision.replacement.agent) node.agent = decision.replacement.agent;
+          if (decision.replacement.skill) node.skills = [decision.replacement.skill];
+          node.error = undefined;
+        }
       }
 
       // replan: reconstrói grafo
@@ -215,22 +223,26 @@ export class Orchestrator {
       kind: a.kind as never,
       valid: a.valid,
     }));
-    const testsFailed = ctx.artifacts.has('test-results')
-      ? (ctx.artifacts.get('test-results')!.content as { failed?: number }).failed ?? 0
-      : 0;
+    const testResults = Array.from(ctx.artifacts.values()).find((a) => a.kind === 'test-results');
+    const testsFailed = testResults ? (testResults.content as { failed?: number }).failed ?? 0 : 0;
+    const scoredArtifacts = Array.from(ctx.artifacts.values()).filter((a) => a.valid);
 
     finalEvaluation = evaluator.buildReport({
       taskId: trace.runId,
       task: this.opts.task,
       agentId: this.opts.primaryAgent,
       metrics: {
-        correctness: ctx.artifacts.has('implementation') ? 0.9 : 0.5,
+        // correctness derivada do melhor artefato validado (score do validador),
+        // não de métrica inventada
+        correctness: scoredArtifacts.length > 0
+          ? Math.max(...scoredArtifacts.map((a) => a.score))
+          : ctx.artifacts.has('implementation') ? 0.5 : 0.3,
         artifactValidity: artifacts.length > 0 ? artifacts.filter((a) => a.valid).length / artifacts.length : 0.3,
         security: this.opts.category === 'security_audit' ? 0.9 : undefined,
       },
       tests: { passed: testsFailed > 0 ? 0 : 1, failed: testsFailed },
-      regressions: ctx.artifacts.has('critique') ? [] : [],
-      recommendations: ctx.artifacts.has('critique') ? ['critique consumida pelo runtime'] : [],
+      regressions: testsFailed > 0 ? [`${testsFailed} teste(s) falhando (test-results)`] : [],
+      recommendations: ctx.artifacts.has('critique') ? ['crítica adversarial consumida; revisar achados no artefato critique'] : [],
     });
     closeEval();
 
@@ -240,7 +252,7 @@ export class Orchestrator {
     learning.process(finalEvaluation, {
       agentId: this.opts.primaryAgent,
       skillIds: this.opts.skillChain,
-      tokens: trace.finish({}).tokens?.total ?? 0,
+      tokens: tokensUsed(),
     });
     closeLearn();
     memory.save();
@@ -330,12 +342,15 @@ export class Orchestrator {
       }
 
       const result = await this.opts.produce(node, ctx);
-      if (result.tokens) ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
+      if (result.tokens) {
+        ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
+        this.tokensUsed += result.tokens;
+      }
       if (result.model) ctx.trace.markTool(`model:${result.model}`);
 
       // Validação de artefato
       const validation = validateArtifact(result.kind as never, result.content);
-      ctx.artifacts.set(node.id, { kind: result.kind, content: result.content, valid: validation.valid });
+      ctx.artifacts.set(node.id, { kind: result.kind, content: result.content, valid: validation.valid, score: validation.score });
       this.opts.consume?.(node, { kind: result.kind, content: result.content, valid: validation.valid });
 
       if (!validation.valid) {

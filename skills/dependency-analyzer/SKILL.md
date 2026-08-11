@@ -1,3 +1,12 @@
+---
+name: dependency-analyzer
+description: Version 1.0.0 | Priority: Medium Dependencies: Security Engineer, DevOps Engineer Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [dependency-analyzer]
+token_budget: 2048
+---
+
 # Skill: Dependency Analyzer
 
 > Version 1.0.0 | Priority: Medium

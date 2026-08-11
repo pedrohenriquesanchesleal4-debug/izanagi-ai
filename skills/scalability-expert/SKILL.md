@@ -1,3 +1,12 @@
+---
+name: scalability-expert
+description: Version 1.0.0 | Priority: High Dependencies: Performance Optimizer, DevOps Engineer, Software Architect Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [scalability-expert]
+token_budget: 2048
+---
+
 # Skill: Scalability Expert
 
 > Version 1.0.0 | Priority: High

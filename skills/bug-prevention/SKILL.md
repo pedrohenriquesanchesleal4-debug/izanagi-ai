@@ -1,3 +1,12 @@
+---
+name: bug-prevention
+description: Version 1.0.0 | Priority: High Dependencies: Root Cause Analyzer, Unit Test Engineer Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [bug-prevention]
+token_budget: 2048
+---
+
 # Skill: Bug Prevention
 
 > Version 1.0.0 | Priority: High

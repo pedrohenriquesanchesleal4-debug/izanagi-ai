@@ -4,6 +4,25 @@
 
 ---
 
+## [2.9.6] — 2026-08-11
+
+### Fixed
+- **Healing Engine**: skill_replacement agora aplica de fato a substituicao de skill no no (reescreve node.skills com a skill de fallback) em vez de apenas registrar a intencao; validacao usa validateArtifact em PT-BR com healing por artefato invalido.
+- **Orchestrator**: avaliacao final consome o artefato test-results para reportar regressoes (testes falhando -> FAIL/BLOCKED com recomendacao); healing de validacao respeita retryNow com tentativas limitadas.
+- **Skill Scanner**: regras reais funcionando — DNG-001 (comando destrutivo), PER-001 (permissoes wildcard), SCR-001 (scripts no frontmatter), NET-001/002, SEC-001, INJ-001/003, DNG-002/003/004.
+- **LLM Executor**: adapters reais OpenAI/Anthropic/OpenRouter com validacao de env key, timeout e propagacao de erro HTTP (antes: stub inerte).
+- **Memory/Trace**: agent stats persistidos e traces JSONL com load/list/retry de escrita.
+- **Documentacao**: SYSTEM.md reescrito com a arquitetura real do runtime, AGENTS.md atualizado para 18 agentes / 212 skills / 15 composicoes, README.md reescrito.
+
+### Added
+- **122 testes de runtime** (node --test dist/runtime/tests/*.test.js): orchestrator (ciclo completo, retry, abort, skill_replacement, regressoes), evaluation, artifact contracts, resolver, scanner, memory, tracer, llm.
+- **Frontmatter de metadados** (name, description, version, compatibility, triggers, token_budget) em 27 skills que nao declaravam.
+
+### Enhanced
+- Composicoes do resolver mapeadas por categoria de runtime (implementation, testing, debugging, database_design).
+- .agents/memoria/ sincronizada com os aprendizados reais da sessao.
+
+---
 ## [2.8.0] — 2026-08-10
 
 ### Added

@@ -1,3 +1,12 @@
+---
+name: clean-code-validator
+description: Version 1.0.0 Priority: High Dependencies: Senior Code Reviewer Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [clean-code-validator]
+token_budget: 2048
+---
+
 # Skill: Clean Code Validator
 
 > Version 1.0.0

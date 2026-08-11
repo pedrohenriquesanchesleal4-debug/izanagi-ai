@@ -46,7 +46,7 @@ const RULES: ScannerRule[] = [
   {
     id: 'DNG-001',
     severity: 'CRITICAL',
-    regex: /\brm\s+(-rf\s+)?\/\s*;|\bmkfs\.|\bdd\s+if=.*of=\/dev/i,
+    regex: /\brm\s+(-rf\s+)?\//i,
     message: 'Comando destrutivo de filesystem',
   },
   {
@@ -78,6 +78,12 @@ const RULES: ScannerRule[] = [
     severity: 'HIGH',
     regex: /(api[_-]?key|password|secret).*(hardcode|in the (code|source|file))/i,
     message: 'Instrução para hardcodar segredos',
+  },
+  {
+    id: 'NET-002',
+    severity: 'LOW',
+    regex: /https?:\/\/[^\s)\]}>]+/i,
+    message: 'Referência a URL externa — verificar confiabilidade da fonte',
   },
 ];
 
@@ -116,7 +122,7 @@ export class SkillScanner {
 
     // Permissões declaradas: excesso → warning
     const permissions = Array.isArray(fm.permissions) ? (fm.permissions as string[]) : [];
-    if (permissions.includes('*') || permissions.some((p) => p.startsWith('fs:') && p.includes('delete'))) {
+    if (permissions.some((p) => p.includes('*')) || permissions.some((p) => p.startsWith('fs:') && p.includes('delete'))) {
       findings.push({
         severity: 'MEDIUM',
         rule: 'PER-001',
@@ -173,5 +179,5 @@ function levelFrom(findings: ScanFinding[]): RiskLevel {
   if (findings.some((f) => f.severity === 'CRITICAL')) return 'CRITICAL';
   if (findings.some((f) => f.severity === 'HIGH')) return 'HIGH';
   if (findings.some((f) => f.severity === 'MEDIUM')) return 'MEDIUM';
-  return findings.length > 0 ? 'LOW' : 'LOW';
+  return 'LOW';
 }

@@ -1,3 +1,12 @@
+---
+name: risk-analyzer
+description: Version 1.0.0 | Priority: High Dependencies: Requirement Analyzer, Software Architect Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [risk-analyzer]
+token_budget: 2048
+---
+
 # Skill: Risk Analyzer
 
 > Version 1.0.0 | Priority: High

@@ -1,3 +1,12 @@
+---
+name: senior-code-reviewer
+description: Version 1.0.0 Priority: High Dependencies: SOLID Validator, Clean Code Validator, Security Engineer, Performance Optimizer Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [senior-code-reviewer]
+token_budget: 2048
+---
+
 # Skill: Senior Code Reviewer
 
 > Version 1.0.0

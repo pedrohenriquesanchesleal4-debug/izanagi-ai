@@ -1,3 +1,12 @@
+---
+name: tradeoff-analyzer
+description: Version 1.0.0 | Priority: Medium Dependencies: Software Architect Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [tradeoff-analyzer]
+token_budget: 2048
+---
+
 # Skill: Trade-off Analyzer
 
 > Version 1.0.0 | Priority: Medium

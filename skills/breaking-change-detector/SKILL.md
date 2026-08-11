@@ -1,3 +1,12 @@
+---
+name: breaking-change-detector
+description: Version 1.0.0 | Priority: Medium Dependencies: API Designer, Senior Code Reviewer Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [breaking-change-detector]
+token_budget: 2048
+---
+
 # Skill: Breaking Change Detector
 
 > Version 1.0.0 | Priority: Medium

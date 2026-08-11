@@ -1,3 +1,12 @@
+---
+name: complexity-analyzer
+description: Version 1.0.0 | Priority: High Dependencies: Clean Code Validator Compatibility: ">=1.0.0"
+version: 1.0.0
+compatibility: ">= 1.0.0"
+triggers: [complexity-analyzer]
+token_budget: 2048
+---
+
 # Skill: Complexity Analyzer
 
 > Version 1.0.0 | Priority: High

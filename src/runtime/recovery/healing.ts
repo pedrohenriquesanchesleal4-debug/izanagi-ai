@@ -39,7 +39,7 @@ const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
   { regex: /timeout|timed out|etimedout|timeout/i, kind: 'recoverable' },
   { regex: /429|rate.?limit|too many requests/i, kind: 'recoverable' },
   { regex: /5\d\d|internal server|unavailable/i, kind: 'recoverable' },
-  { regex: /validation|schema|contract|invalid artifact|not valid/i, kind: 'validation' },
+  { regex: /validation|validação|schema|contract|invalid artifact|not valid/i, kind: 'validation' },
   { regex: /dependency|not found|missing module|cannot find|import/i, kind: 'dependency' },
   { regex: /plan|graph|cycle|topological/i, kind: 'planning' },
   { regex: /tool|mcp|exec|command failed|exit code/i, kind: 'tool' },

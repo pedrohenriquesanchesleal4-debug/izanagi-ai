@@ -72,15 +72,15 @@ export class BenchmarkRunner {
     const artifactRatio = c.expectedArtifacts.length > 0 ? artifactsFound.length / c.expectedArtifacts.length : 1;
     const metrics: Record<string, number> = {};
 
-    // Mapeia métricas do caso
+    // Mapeia métricas do caso: métricas de qualidade derivam da razão de
+    // artefatos encontrados (proxy honesto do output); latency/uso são reais.
     for (const m of c.metrics) {
-      if (m === 'correctness') metrics.correctness = artifactRatio;
-      if (m === 'requirementCoverage') metrics.requirementCoverage = artifactRatio;
-      if (m === 'artifactValidity') metrics.artifactValidity = artifactRatio;
-      if (m === 'performance') metrics.performance = 0.8;
+      metrics[m] = artifactRatio;
     }
+    metrics.artifactValidity = artifactRatio;
 
     const durationMs = opts.durationMs ?? Date.now() - started;
+    if (c.metrics.includes('latency')) metrics.latency = durationMs;
     const result: BenchmarkResult = {
       caseId: c.id,
       domain: c.domain,
@@ -131,11 +131,6 @@ export class BenchmarkRunner {
     const totalDurationMs = results.reduce((a, r) => a + r.durationMs, 0);
 
     const byDomain: Record<string, number> = {};
-    for (const r of results) {
-      if (byDomain[r.domain] === undefined) byDomain[r.domain] = 0;
-      byDomain[r.domain] = (byDomain[r.domain] * 0 + r.score) === 0 ? r.score : (byDomain[r.domain] + r.score) / 2;
-    }
-    // média correta por domínio
     const counts: Record<string, number> = {};
     for (const r of results) {
       counts[r.domain] = (counts[r.domain] ?? 0) + 1;

@@ -1,50 +1,20 @@
 # Izanagi AI
 
-Framework modular, skill-oriented para agentes de IA especializados em desenvolvimento de software e automação.
+Framework **meta** modular e skill-oriented para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 18 agentes especializados, 212 skills e uma CLI executável publicada no npm (`izanagi-ai`).
 
-> **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua.
+> **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
 ---
 
 ## Instalação
 
-O Izanagi AI possui uma **CLI executável** que pode ser instalada globalmente ou usada via `npx`.
-
 ```bash
-# Instalação global
-npm install -g izanagi-ai
-
-# Ou execução direta via npx (sem instalar)
-npx izanagi <comando>
-
-# Agora use diretamente os comandos izanagi / izanagi-ai
+npm install -g izanagi-ai    # instalação global
+npx izanagi <comando>        # ou execução direta sem instalar
 izanagi --version
 ```
 
-> **Nota:** o pacote é publicado como `izanagi-ai` e os bins disponíveis são `izanagi` e `izanagi-ai`.
-
----
-
-## Iniciando um projeto
-
-```bash
-# Cria o projeto com seleção interativa de packs de skills (.agents/)
-izanagi init my-project
-
-# Ou especifique os packs diretamente (core é sempre incluído)
-izanagi init my-project --packs core,agents,coding,database
-
-# Entre no projeto e comece a usar
-cd my-project
-izanagi run "Create a login page"
-```
-
-O `init` cria:
-- `.agents/` — skills, agentes e engines selecionados
-- `.izanagi/izanagi.config.json` — configuração local do projeto
-- `opencode.json` — auto-carrega o framework quando o opencode abre o projeto
-
-**Packs disponíveis:** `core` (obrigatório), `agents`, `skills`, `architecture`, `coding`, `database`, `devops`, `security`, `testing`, `memory`, `optimization`, `teaching`.
+> O pacote é publicado como `izanagi-ai`; bins: `izanagi` e `izanagi-ai`.
 
 ---
 
@@ -53,67 +23,49 @@ O `init` cria:
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e resolve a corrente de skills. |
-| `izanagi create <agent\|skill> <name>` | Cria scaffold de agente (JSON) ou skill (SKILL.md) no projeto atual. |
+| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e resolve a cadeia de skills. |
+| `izanagi create <agent\|skill> <name>` | Cria scaffold de agente (JSON) ou skill (SKILL.md). |
 | `izanagi compile <agente> [arquivo]` | Compila um System Prompt completo do agente + fundação do sistema. |
-| `izanagi list [skills\|agents]` | Lista todas as skills e agentes registrados com seus aliases. |
-| `izanagi doctor` | Valida integridade do framework, JSONs de agentes e mapeamentos de aliases. |
+| `izanagi list [skills\|agents]` | Lista skills e agentes registrados com aliases. |
+| `izanagi doctor` | Auditoria de integridade: SYSTEM/RULES, JSONs de agentes, aliases → targets. |
+| `izanagi export --cli <cli>` | Regenera adapters multi-CLI (claude, codex, cursor, copilot, kimi, all). |
 | `izanagi --version` | Exibe a versão da CLI. |
 
 ### Exemplos
 
 ```bash
-# Task simples (auto-classificação)
-izanagi run "Create a login page"
-
-# Agente específico com task explícita
+izanagi run "Criar uma landing page de um SaaS de analytics"
 izanagi run architect --task "Design a microservices architecture"
-
-# Agente customizado criado no projeto
-izanagi create agent my-agent
-izanagi run my-agent --task "Create a login page"
-
-# Compilar system prompt completo para um agente
+izanagi create skill meu-fluxo
 izanagi compile architect prompt_arquiteto.md
-
-# Listar e validar
 izanagi list skills
 izanagi doctor
 ```
 
 ---
 
-## Estrutura do Projeto
+## Estrutura do Repositório
 
 ```
 izanagi-ai/
-├── bin/            Executável da CLI (bin/izanagi.js)
-├── src/cli/        Código fonte dos comandos CLI
-├── core/           Motor central (decisão, contexto, reflexão, skill-resolver)
-├── agents/         Definições de Agentes de IA em JSON
-├── skills/         Skill base (111 skills especializadas em Markdown)
-├── memory/         Gerenciamento de memória e compressão
-├── optimization/   Redução de tokens e custos
-├── teaching/       Modo professor e aprendizado adaptativo
-├── architecture/   Padrões arquiteturais e design
-├── coding/         Skills de engenharia de software
-├── security/       OWASP, autenticação, auditoria
-├── testing/        Testes unitários, integração, E2E
-├── devops/         Docker, CI/CD, infraestrutura
-├── database/       SQL, NoSQL, otimização
-├── frontend/       Skills de frontend
-├── backend/        Skills de backend
-├── package.json    Configuração NPM para publicação CLI
-├── README.md       Documentação principal
-├── SYSTEM.md       Fundação do sistema
-└── RULES.md        Regras operacionais
+├── bin/             Executável da CLI (bin/izanagi.js → dist/cli)
+├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, tracer, llm, cli)
+├── core/            Engines (.md) + skill-resolver.json (aliases → targets + compositions)
+├── agents/          18 definições de agentes em JSON (fonte da verdade dos comandos)
+├── skills/          212 skills em skills/<name>/SKILL.md (+ references.md opcional)
+├── references/      Curadoria de referências reais por domínio (webgl-3d, scrollytelling, stack-2026...)
+├── .agents/memoria/ Memória persistente anti-repetição (contexto, decisoes, erros-corrigidos, learnings)
+├── .opencode/       Comandos slash do Opencode (adapters em .claude/, .codex/, .cursor/...)
+├── AGENTS.md        Instruções de operação do framework
+├── SYSTEM.md        Fundação do sistema (arquitetura real do runtime)
+└── RULES.md         Regras operacionais (Anti-Generic High-Craft & Cinematic UI)
 ```
 
 ---
 
 ## Agentes e Skills
 
-O framework possui **111+ skills** e **10 agentes especializados** encadeados dinamicamente via `core/skill-resolver.json`.
+O framework possui **18 agentes especializados** (`/discovery`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`) e **212 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (248 aliases, 15 composições). Ver `AGENTS.md` para a tabela completa.
 
 ---
 
@@ -121,16 +73,19 @@ O framework possui **111+ skills** e **10 agentes especializados** encadeados di
 
 ```bash
 npm install       # instala dependências
-npm run build     # compila TypeScript → dist/
-npm run doctor    # roda o doctor localmente
-npm pack          # gera o tarball do pacote
+npm run build     # tsc && regenera .manifest
+npm run doctor    # auditoria de integridade
+node --test dist/runtime/tests/*.test.js   # 122 testes do runtime
+npm run verify    # build + teste de instalação em sandbox
 ```
+
+> **Gotcha:** `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js` — rode `npm run build` antes de qualquer comando CLI local.
 
 ### Publicando no NPM
 
 ```bash
 npm run bump:patch   # ou bump:minor / bump:major
-npm publish --access public   # prepublishOnly roda o build automaticamente
+npm publish          # prepublishOnly roda o build automaticamente
 ```
 
 ---

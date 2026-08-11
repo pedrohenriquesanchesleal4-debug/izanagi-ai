@@ -81,9 +81,7 @@ export function selectPacks(
           break;
         case 'return':
         case 'enter':
-          if (options[cursor].id !== lockedId || true) {
-            cleanup(Array.from(selected));
-          }
+          cleanup(Array.from(selected));
           break;
         case 'a':
           options.forEach((o) => selected.add(o.id));

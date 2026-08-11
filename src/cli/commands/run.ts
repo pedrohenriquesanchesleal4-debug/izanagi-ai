@@ -3,19 +3,23 @@ import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
 import { buildBlueprintCtx } from '../blueprint.js';
 import { Orchestrator } from '../../runtime/orchestrator.js';
+import { LLMClient } from '../../runtime/llm/client.js';
+import { ModelRouter } from '../../runtime/model/router.js';
 import type { GraphNode } from '../../runtime/types.js';
 import { printTrace } from './trace.js';
 
 interface RunArgs {
   agentId?: string;
   task?: string;
-  runtime?: boolean;
+  runtime: boolean;
+  verbose: boolean;
 }
 
 function parseRunArgs(args: string[]): RunArgs {
   let agentId: string | undefined;
   let task: string | undefined;
   let runtime = false;
+  let verbose = false;
   const positionals: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -29,7 +33,7 @@ function parseRunArgs(args: string[]): RunArgs {
     } else if (arg === '--runtime' || arg === '-r') {
       runtime = true;
     } else if (arg === '--verbose' || arg === '-v') {
-      runtime = true;
+      verbose = true;
     } else if (!arg.startsWith('-')) {
       positionals.push(arg);
     }
@@ -46,7 +50,7 @@ function parseRunArgs(args: string[]): RunArgs {
     agentId = positionals[0];
   }
 
-  return { agentId, task, runtime };
+  return { agentId, task, runtime, verbose };
 }
 
 interface TaskClassification {
@@ -146,7 +150,7 @@ function agentLabel(agent: any): string {
 }
 
 export function runCommand(baseDir: string, args: string[]): void {
-  const { agentId, task, runtime } = parseRunArgs(args);
+  const { agentId, task, runtime, verbose } = parseRunArgs(args);
 
   if (!task) {
     console.error('\x1b[31mError:\x1b[0m Please provide a task description.');
@@ -299,12 +303,20 @@ export function runCommand(baseDir: string, args: string[]): void {
 
   // 5. Modo Runtime: orquestra grafo + avaliação + trace + aprendizado
   if (runtime) {
-    runRuntime(baseDir, { task, category, agentId: agentId ?? classifyTask(task).agent, skillChain: compactSkillChain });
+    runRuntime(baseDir, {
+      task,
+      category,
+      agentId: agentId ?? classifyTask(task).agent,
+      skillChain: compactSkillChain,
+      agent,
+      verbose,
+    });
     return;
   }
 
   console.log('\x1b[90mTips:');
   console.log(`  \x1b[36mizanagi run "${task}" --runtime\x1b[90m — Adaptive Runtime (execution graph + evaluation + trace + learning).`);
+  console.log(`  \x1b[36mizanagi run "${task}" --runtime --verbose\x1b[90m — runtime com detalhamento (routing, healing, trace).`);
   if (agentId && agentFile) {
     console.log(`  \x1b[36mizanagi compile ${agentId}\x1b[90m — compile the full system prompt for this agent.`);
   }
@@ -315,12 +327,48 @@ export function runCommand(baseDir: string, args: string[]): void {
 /**
  * Modo runtime: usa o Orchestrator do framework para construir o execution
  * graph, avaliar, curar falhas e persistir trace + aprendizados.
+ *
+ * Quando há API key configurada (IZANAGI_OPENAI_API_KEY, IZANAGI_ANTHROPIC_API_KEY,
+ * IZANAGI_GOOGLE_API_KEY), cada nó do grafo é executado por um LLM real via
+ * ModelRouter; sem chave, roda em modo headless (simulação) com aviso.
  */
 async function runRuntime(
   baseDir: string,
-  opts: { task: string; category: string; agentId: string; skillChain: string[] },
+  opts: {
+    task: string;
+    category: string;
+    agentId: string;
+    skillChain: string[];
+    agent: any;
+    verbose: boolean;
+  },
 ): Promise<void> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
+
+  const client = new LLMClient();
+  const llmProviders = client.configuredProviders();
+  if (llmProviders.length === 0) {
+    console.log('  \x1b[33m⚠ Modo headless:\x1b[0m nenhuma API key encontrada (IZANAGI_OPENAI_API_KEY /');
+    console.log('    IZANAGI_ANTHROPIC_API_KEY / IZANAGI_GOOGLE_API_KEY).');
+    console.log('    Os nós do grafo serão simulados — defina uma chave para execução real via LLM.\n');
+  } else {
+    console.log(`  \x1b[32m✔ Execução real via LLM:\x1b[0m providers configurados: ${llmProviders.join(', ')}\n`);
+  }
+
+  const router = new ModelRouter();
+  const complexity = ModelRouter.estimateComplexity(opts.task);
+  const routed = router.route({
+    task: opts.task,
+    taskComplexity: complexity,
+    reasoningRequirement: complexity >= 4 ? 'high' : complexity >= 3 ? 'medium' : 'low',
+    risk: opts.category === 'security_audit' ? 0.8 : 0.2,
+    tokenBudget: 16000,
+    requiresTools: false,
+  });
+  // Se o provider roteado não tem chave, cai para o primeiro configurado
+  const provider = client.isConfigured(routed.provider)
+    ? routed.provider
+    : llmProviders[0];
 
   const orchestrator = new Orchestrator({
     baseDir,
@@ -329,22 +377,38 @@ async function runRuntime(
     category: opts.category,
     primaryAgent: opts.agentId,
     skillChain: opts.skillChain,
-    verbose: true,
+    verbose: opts.verbose,
     produce: async (node: GraphNode) => {
-      // Producer headless: gera artefato a partir da configuração do nó.
-      // Em integração com LLM real, este ponto injeta o prompt compilado.
-      const label = node.agent ?? node.skills?.join('+') ?? node.id;
+      if (!provider) {
+        // Producer headless: simula artefato (sem LLM configurado)
+        const label = node.agent ?? node.skills?.join('+') ?? node.id;
+        return {
+          content: {
+            node: node.id,
+            label,
+            task: opts.task,
+            producedAt: new Date().toISOString(),
+            summary: `Artefato produzido pelo nó "${node.id}" (${label}).`,
+          },
+          kind: node.outputs?.[0] ?? 'raw',
+          tokens: 300,
+          model: 'cli-headless',
+        };
+      }
+
+      // Execução real: compila o prompt do nó e chama o LLM
+      const system = buildNodePrompt(node, opts, baseDir);
+      const result = await client.complete(provider, {
+        model: routed.model.id,
+        system,
+        messages: [{ role: 'user', content: opts.task }],
+        maxTokens: node.tokenBudget ?? 4000,
+      });
       return {
-        content: {
-          node: node.id,
-          label,
-          task: opts.task,
-          producedAt: new Date().toISOString(),
-          summary: `Artefato produzido pelo nó "${node.id}" (${label}).`,
-        },
+        content: result.text,
         kind: node.outputs?.[0] ?? 'raw',
-        tokens: 300,
-        model: 'cli-headless',
+        tokens: result.tokens,
+        model: result.model,
       };
     },
     consume: (node: GraphNode, artifact: { kind: string; valid: boolean }) => {
@@ -369,4 +433,46 @@ async function runRuntime(
 
   console.log(`\n\x1b[90mVer o trace completo:\x1b[0m \x1b[36mizanagi trace ${result.trace.runId}\x1b[0m`);
   console.log(`\x1b[90mAvaliação isolada:\x1b[0m \x1b[36mizanagi eval --report ${result.trace.runId}\x1b[0m\n`);
+}
+
+/**
+ * Compila o system prompt de um nó do grafo: identidade do agente do nó,
+ * regras obrigatórias, skills resolvidas (resumidas) e contrato do artefato.
+ */
+function buildNodePrompt(node: GraphNode, opts: { task: string; agent: any; skillChain: string[] }, baseDir: string): string {
+  const agent = node.agent ? findAgentJson(node.agent, baseDir) : undefined;
+  const identity = agent?.identity || agent?.role || opts.agent.identity || opts.agent.role || `Agente especialista (${node.agent ?? node.id})`;
+  const skills = (node.skills ?? opts.skillChain).slice(0, 4);
+
+  let prompt = `# IZANAGI AI — Adaptive Runtime · Nó "${node.id}"\n`;
+  prompt += `- Regra suprema: NUNCA entregar checklists, resumos ou stubs — gerar conteúdo real, completo e pronto para produção.\n`;
+  prompt += `- Artefato esperado deste nó: \`${node.outputs?.[0] ?? 'raw'}\` (conteúdo estruturado, sem markdown desnecessário).\n\n`;
+  prompt += `## IDENTIDADE & PAPEL\n${identity}\n\n`;
+  if (agent?.always?.length) prompt += `## REGRAS OBRIGATÓRIAS\n- ${agent.always.join('\n- ')}\n\n`;
+  if (agent?.never?.length) prompt += `## PROIBIDO\n- ${agent.never.join('\n- ')}\n\n`;
+  prompt += `## TAREFA\n${opts.task}\n`;
+  if (skills.length > 0) {
+    prompt += `\n## SKILLS APLICÁVEIS\n`;
+    for (const skill of skills) {
+      const sPath = resolveSkillPath(process.cwd(), baseDir, skill);
+      if (sPath && fs.existsSync(sPath)) {
+        prompt += `\n### Skill: ${skill}\n${summarizeSkill(sPath, 80)}\n`;
+      }
+    }
+  }
+  return prompt;
+}
+
+function findAgentJson(agentId: string, baseDir: string): any {
+  for (const root of [process.cwd(), baseDir]) {
+    const file = path.join(root, 'agents', `${agentId}-agent.json`);
+    if (fs.existsSync(file)) {
+      try {
+        return JSON.parse(fs.readFileSync(file, 'utf-8'));
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  return undefined;
 }

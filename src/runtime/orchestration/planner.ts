@@ -91,6 +91,32 @@ export const WORKFLOW_TEMPLATES: Record<string, (ctx: PlannerContext) => GraphNo
     node('verify', 'agent', { agent: 'qa', outputs: ['qa-report'], dependencies: ['execute'] }),
     node('evaluation', 'evaluator', { outputs: ['evaluation'], dependencies: ['verify'] }),
   ],
+
+  /** Modelagem de dados: requisitos → schema → otimização → QA → avaliação. */
+  database_design: (ctx) => [
+    node('requirements', 'agent', { agent: 'database', outputs: ['requirements'], dependencies: [] }),
+    node('schema', 'agent', { agent: 'database', outputs: ['database-schema'], dependencies: ['requirements'] }),
+    node('optimize', 'agent', { agent: 'database', outputs: ['architecture'], dependencies: ['schema'] }),
+    node('review', 'agent', { agent: 'qa', outputs: ['qa-report'], dependencies: ['optimize'] }),
+    node('evaluation', 'evaluator', { outputs: ['evaluation'], dependencies: ['review'] }),
+  ],
+
+  /** Infra/DevOps: análise → IaC → pipeline → observabilidade → avaliação. */
+  devops_infra: (ctx) => [
+    node('analysis', 'agent', { agent: 'devops', outputs: ['architecture'], dependencies: [] }),
+    node('iac', 'agent', { agent: 'devops', outputs: ['implementation'], dependencies: ['analysis'] }),
+    node('pipeline', 'agent', { agent: 'devops', outputs: ['implementation-plan'], dependencies: ['iac'] }),
+    node('observability', 'agent', { agent: 'devops', outputs: ['qa-report'], dependencies: ['pipeline'] }),
+    node('evaluation', 'evaluator', { outputs: ['evaluation'], dependencies: ['observability'] }),
+  ],
+
+  /** QA/Testes: plano → execução → cobertura → avaliação. */
+  testing: (ctx) => [
+    node('test-plan', 'agent', { agent: 'qa', outputs: ['test-plan'], dependencies: [] }),
+    node('execution', 'agent', { agent: 'qa', outputs: ['test-results'], dependencies: ['test-plan'] }),
+    node('critic', 'agent', { agent: 'adversarial-critic', outputs: ['critique'], dependencies: ['execution'] }),
+    node('evaluation', 'evaluator', { outputs: ['evaluation'], dependencies: ['critic'] }),
+  ],
 };
 
 export const TEMPLATE_ORDER: string[] = [
@@ -100,6 +126,9 @@ export const TEMPLATE_ORDER: string[] = [
   'architecture',
   'automacao',
   'frontend',
+  'database_design',
+  'devops_infra',
+  'testing',
   'implementation',
 ];
 
@@ -119,6 +148,16 @@ export function templateForCategory(category: string): string {
       return 'automacao';
     case 'frontend':
       return 'frontend';
+    case 'database_design':
+    case 'database':
+      return 'database_design';
+    case 'devops_infra':
+    case 'devops':
+      return 'devops_infra';
+    case 'testing':
+      return 'testing';
+    case 'backend':
+      return 'implementation';
     default:
       return 'implementation';
   }
