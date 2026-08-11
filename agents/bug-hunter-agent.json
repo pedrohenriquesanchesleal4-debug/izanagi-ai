@@ -15,9 +15,28 @@
     "memoria-projeto"
   ],
   "chains": {
-    "bug_debug": ["memoria-projeto", "systematic-debugging", "hallucination-detection", "tdd", "qa", "memoria-projeto"],
-    "root_cause": ["memoria-projeto", "systematic-debugging", "hallucination-detection", "memoria-projeto"],
-    "regression_fix": ["memoria-projeto", "systematic-debugging", "tdd", "qa", "continuous-improvement", "memoria-projeto"]
+    "bug_debug": [
+      "memoria-projeto",
+      "systematic-debugging",
+      "hallucination-detection",
+      "tdd",
+      "qa",
+      "memoria-projeto"
+    ],
+    "root_cause": [
+      "memoria-projeto",
+      "systematic-debugging",
+      "hallucination-detection",
+      "memoria-projeto"
+    ],
+    "regression_fix": [
+      "memoria-projeto",
+      "systematic-debugging",
+      "tdd",
+      "qa",
+      "continuous-improvement",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Inspeção silenciosa e completa do log de erro un-truncated antes de formular qualquer diagnóstico ou hipótese",
@@ -31,6 +50,60 @@
     "Mascarar exceções utilizando `try { ... } catch (e) {}` vazios, retornando arrays/objetos zerados ou suprimindo logs de erro",
     "Modificar código sem antes ter lido o stack trace ou sem um teste que reproduza a falha",
     "Encerrar a tarefa declarando correção sem rodar o teste de verificação empírica"
-  ]
+  ],
+  "purpose": "Debugging avançado em 6 fases (Reproduzir -> Isolar -> Hipótese -> Corrigir -> Verificar -> Prevenir), Root Cause Analysis (RCA), rastreamento empírico de stack traces e escrita de testes de regressão obrigatórios",
+  "capabilities": [
+    "debugging sistemático",
+    "root cause analysis",
+    "reprodução",
+    "teste de regressão"
+  ],
+  "requiredSkills": [
+    "systematic-debugging",
+    "hallucination-detection",
+    "tdd",
+    "error-recovery",
+    "self-correction",
+    "qa",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "continuous-improvement"
+  ],
+  "inputs": [
+    "erro",
+    "log",
+    "stack trace"
+  ],
+  "outputs": [
+    "diagnóstico",
+    "fix",
+    "regression test"
+  ],
+  "constraints": [
+    "Tentar 'shotgun debugging' (alterar código às cegas por tentativa e erro sem entender a causa real)",
+    "Mascarar exceções utilizando `try { ... } catch (e) {}` vazios, retornando arrays/objetos zerados ou suprimindo logs de erro",
+    "Modificar código sem antes ter lido o stack trace ou sem um teste que reproduza a falha",
+    "Encerrar a tarefa declarando correção sem rodar o teste de verificação empírica"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer-agent",
+      "reason": "implementacao"
+    }
+  ],
+  "memory": [
+    "memoria-projeto",
+    "handoff-sessao"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

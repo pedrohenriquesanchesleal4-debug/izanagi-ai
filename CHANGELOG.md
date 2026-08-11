@@ -4,6 +4,28 @@
 
 ---
 
+## [2.10.0] — 2026-08-11
+
+### Added
+- **Agent Genome (PHASE 7)**: os 18 agentes core agora declaram os 13 campos formais do genome (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility) — base para scoring e roteamento adaptativo.
+- **Agent Factory via CLI**: `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` gera agentes com genome completo em `agents/generated/`, detecta lacuna vs. os 18 core (recusa lacuna já coberta) e é descoberto automaticamente por `loadAgent`/`agent list`.
+- **Skill Factory via CLI**: `izanagi skill create <nome> --gap="..." [--force]` cria skills em `skills/generated/<nome>/SKILL.md` com frontmatter de manifesto, security scan pré-escrita (persiste só com severidade LOW) e recusa de lacuna já coberta; bug de sobrescrita entre skills corrigido (subdir por skill + mkdir do parent).
+- **Tool Registry (MCP-ready)**: `src/runtime/tools/registry.ts` — tools builtin `fs.read`/`fs.write`/`fs.ls` com fluxo discover → permission → validate → execute, sandbox de zona (anti path-traversal) e permissões least-privilege.
+- **Evaluation Engine — veredito UNKNOWN**: sem métricas mensuradas o runtime agora emite **UNKNOWN** com recomendação explícita de evidência (antes: nunca retornava o veredito).
+- **Skill Scanner — DEFENSIVE_CONTEXT**: exemplos educativos/defensivos (não/evite/auditar...) deixaram de ser falsos positivos; `izanagi doctor --deep` passou a varrer as 212 skills sem falso positivo.
+- **Testes**: 14 novos (factories: 6, tools: 7, scanner defensivo) — total 136 testes de runtime passando.
+
+### Fixed
+- **DNG-001**: regex `\/\b` nunca casava comandos destrutivos → padrão corrigido.
+- **PER-001**: `Array.includes('*')` não detectava wildcards em permissões → `some(p => p.includes('*'))`.
+- **SkillFactory**: todas as skills eram gravadas no mesmo arquivo e `writeFileSync` falhava sem subdir → subdir por skill + `mkdirSync` do parent.
+- **Resolver/CLI**: `loadAgent` e `agent list` não enxergavam `agents/generated/` → agora varrem o diretório gerado.
+
+### Documentation
+- SYSTEM.md: novas seções (Execution Pipeline, Agent Factory & Skill Factory, Benchmarks & Regression, Model Router, Tool Registry, Doctor --deep) + tabela de módulos atualizada.
+- README.md: tabela de comandos da CLI reescrita (agent create, skill create --gap, workflow, eval, benchmark, trace, memory, doctor --deep).
+
+---
 ## [2.9.6] — 2026-08-11
 
 ### Fixed

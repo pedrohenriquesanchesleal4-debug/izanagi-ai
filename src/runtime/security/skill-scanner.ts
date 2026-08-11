@@ -89,20 +89,33 @@ const RULES: ScannerRule[] = [
 
 const SUSPICIOUS_SCRIPTS = /(powershell|pwsh|cmd\.exe|bash\s+-c|sh\s+-c)\s+[^\n]{20,}/i;
 
+/** Contexto defensivo: o trecho ENSINA a evitar/detectar o padrão perigoso. */
+const DEFENSIVE_CONTEXT =
+  /\b(n[aã]o|nunca|jamais|evite|evitar|proibido|don'?t|avoid|never|instead|use\s+\.env|fora do c[oó]digo|secret manager|gestor de segredos|auditar|audit|verificar|verifique|detectar|identificar|garantir|buscar|procurar|prote[cç][aã]o|adversarial|t[ée]st[ei] adversarial|mitiga[cç][aã]o)\b/i;
+
+/** Janela de contexto (linhas antes/depois do match) para mitigação. */
+const CONTEXT_WINDOW = 2;
+
 export class SkillScanner {
   /**
    * Escaneia o conteúdo de uma skill (SKILL.md) e retorna resultado.
    * `allowlist` são regras ignoradas (ex.: skills internas curadas).
+   *
+   * Match em contexto de negação (skill ENSINANDO a evitar o padrão, ex.
+   * "nunca hardcode senhas") é tratado como informação, não instrução.
    */
   scan(skillName: string, content: string, opts: { path?: string; allowlist?: string[] } = {}): SkillScanResult {
     const findings: ScanFinding[] = [];
+    const lines = content.split(/\r?\n/);
 
     for (const rule of RULES) {
       if (opts.allowlist?.includes(rule.id)) continue;
       const m = rule.regex.exec(content);
       if (m) {
-        const line = content.slice(0, m.index).split(/\r?\n/).length;
-        findings.push({ severity: rule.severity, rule: rule.id, message: rule.message, line, match: m[0].slice(0, 80) });
+        const lineIdx = content.slice(0, m.index).split(/\r?\n/).length;
+        const window = lines.slice(Math.max(0, lineIdx - 1 - CONTEXT_WINDOW), lineIdx + CONTEXT_WINDOW).join('\n');
+        if (DEFENSIVE_CONTEXT.test(window)) continue;
+        findings.push({ severity: rule.severity, rule: rule.id, message: rule.message, line: lineIdx, match: m[0].slice(0, 80) });
       }
     }
 

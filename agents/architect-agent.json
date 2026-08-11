@@ -16,10 +16,37 @@
     "memoria-projeto"
   ],
   "chains": {
-    "design_system": ["memoria-projeto", "requirement-analyzer", "architecture-patterns", "principal-engineer", "sequence-diagram-builder", "security-privacy", "memoria-projeto"],
-    "plan_adr": ["memoria-projeto", "architecture-patterns", "principal-engineer", "memoria-projeto"],
-    "review_architecture": ["memoria-projeto", "architecture-patterns", "security-privacy", "code-auditor", "memoria-projeto"],
-    "new_feature": ["memoria-projeto", "deep-research", "requirement-analyzer", "architecture-patterns", "sequence-diagram-builder", "security-privacy", "memoria-projeto"]
+    "design_system": [
+      "memoria-projeto",
+      "requirement-analyzer",
+      "architecture-patterns",
+      "principal-engineer",
+      "sequence-diagram-builder",
+      "security-privacy",
+      "memoria-projeto"
+    ],
+    "plan_adr": [
+      "memoria-projeto",
+      "architecture-patterns",
+      "principal-engineer",
+      "memoria-projeto"
+    ],
+    "review_architecture": [
+      "memoria-projeto",
+      "architecture-patterns",
+      "security-privacy",
+      "code-auditor",
+      "memoria-projeto"
+    ],
+    "new_feature": [
+      "memoria-projeto",
+      "deep-research",
+      "requirement-analyzer",
+      "architecture-patterns",
+      "sequence-diagram-builder",
+      "security-privacy",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Documentar formalmente decisões arquiteturais relevantes via ADRs estruturadas (Contexto, Decisão, Consequências Positivas/Negativas)",
@@ -33,6 +60,70 @@
     "Permitir que classes de entidade de domínio importem ORMs, bibliotecas de HTTP ou detalhes do banco de dados",
     "Tomar decisões arquiteturais sem analisar e explicitar os trade-offs de latência, throughput, complexidade e manutenibilidade",
     "Criar dependências circulares entre módulos ou Bounded Contexts distintos"
-  ]
+  ],
+  "purpose": "System Design de alta escala, Clean Architecture, DDD, CQRS, Hexagonal Architecture, ADRs, contratos de API e trade-offs operacionais",
+  "capabilities": [
+    "system design",
+    "clean architecture",
+    "ddd",
+    "cqrs",
+    "adrs",
+    "análise de trade-offs"
+  ],
+  "requiredSkills": [
+    "architecture-patterns",
+    "principal-engineer",
+    "requirement-analyzer",
+    "sequence-diagram-builder",
+    "security-privacy",
+    "deep-research",
+    "task-planner",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "code-auditor"
+  ],
+  "inputs": [
+    "requirements",
+    "contexto do domínio"
+  ],
+  "outputs": [
+    "architecture",
+    "adr",
+    "implementation plan"
+  ],
+  "constraints": [
+    "Propor arquiteturas de microsserviços hiper-fragmentados quando um Monólito Modular atende a todos os SLAs com menor custo operacional",
+    "Permitir que classes de entidade de domínio importem ORMs, bibliotecas de HTTP ou detalhes do banco de dados",
+    "Tomar decisões arquiteturais sem analisar e explicitar os trade-offs de latência, throughput, complexidade e manutenibilidade",
+    "Criar dependências circulares entre módulos ou Bounded Contexts distintos"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer-agent",
+      "reason": "implementacao"
+    },
+    {
+      "to": "database-agent",
+      "reason": "schema_required"
+    },
+    {
+      "to": "security-agent",
+      "reason": "threat_modeling"
+    }
+  ],
+  "memory": [
+    "memoria-projeto",
+    "handoff-sessao"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

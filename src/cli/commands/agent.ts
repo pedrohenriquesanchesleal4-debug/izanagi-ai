@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { SkillResolver } from '../../runtime/routing/resolver.js';
+import { AgentFactory } from '../../runtime/factories/agent-factory.js';
 
 export function agentCommand(baseDir: string, args: string[]): void {
   const sub = args[0]?.toLowerCase() ?? 'list';
@@ -22,13 +23,31 @@ export function agentCommand(baseDir: string, args: string[]): void {
     agentInspect(baseDir, name);
     return;
   }
+  if (sub === 'create') {
+    const requirement = args
+      .slice(1)
+      .filter((a) => !a.startsWith('--'))
+      .join(' ');
+    const nameFlag = args.find((a) => a.startsWith('--name='))?.split('=')[1];
+    const skillsFlag = args.find((a) => a.startsWith('--skills='))?.split('=')[1];
+    if (!requirement) {
+      console.error('\x1b[31mUsage:\x1b[0m izanagi agent create "<requirement>" [--name=slug] [--skills=a,b]\n');
+      process.exit(1);
+    }
+    agentCreate(baseDir, requirement, { name: nameFlag, requiredSkills: skillsFlag?.split(',') });
+    return;
+  }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi agent <list|inspect> [name]\n');
+  console.error('Usage: izanagi agent <list|inspect|create> [args]\n');
   process.exit(1);
 }
 
 export function agentList(baseDir: string): void {
-  const dirs = [path.join(baseDir, 'agents'), path.join(baseDir, '.agents', 'agents')];
+  const dirs = [
+    path.join(baseDir, 'agents'),
+    path.join(baseDir, 'agents', 'generated'),
+    path.join(baseDir, '.agents', 'agents'),
+  ];
   const seen = new Set<string>();
   const agents: Array<{ id: string; genome: NonNullable<ReturnType<SkillResolver['loadAgent']>>['genome'] }> = [];
 
@@ -85,4 +104,37 @@ export function agentInspect(baseDir: string, name: string): void {
   console.log(`\n  \x1b[1mConstraints:\x1b[0m`);
   g.constraints.forEach((c) => console.log(`    • ${c}`));
   console.log('');
+}
+
+export function agentCreate(
+  baseDir: string,
+  requirement: string,
+  opts: { name?: string; requiredSkills?: string[] } = {},
+): void {
+  const resolver = new SkillResolver({ baseDir });
+  const factory = new AgentFactory(resolver);
+  try {
+    const generated = factory.generate({
+      requirement,
+      name: opts.name,
+      requiredSkills: opts.requiredSkills,
+    });
+    if (!generated.validation.valid) {
+      console.error('\x1b[31mAgent Factory: genome inválido — registro abortado:\x1b[0m');
+      generated.validation.issues.forEach((i) => console.error(`  • ${i}`));
+      process.exit(1);
+    }
+    console.log(`\n\x1b[35m=== Agent Factory: ${generated.genome.name} registrado ===\x1b[0m\n`);
+    console.log(`  \x1b[90mArquivo:\x1b[0m ${generated.file}`);
+    console.log(`  \x1b[90mPropósito:\x1b[0m ${generated.genome.purpose}`);
+    console.log(`  \x1b[90mCapabilities:\x1b[0m ${generated.genome.capabilities.join(', ')}`);
+    console.log(`  \x1b[90mSkills requeridas (${generated.genome.requiredSkills.length}):\x1b[0m ${generated.chain.join(', ')}`);
+    console.log(`  \x1b[90mHandoffs:\x1b[0m ${generated.genome.handoffs.map((h) => h.to).join(', ')}`);
+    console.log(`  \x1b[90mToken budget:\x1b[0m ${generated.genome.tokenBudget}`);
+    console.log(`  \x1b[90mValidação:\x1b[0m ${generated.validation.issues.length === 0 ? 'OK' : generated.validation.issues.join('; ')}`);
+    console.log('\n  Use: \x1b[33mizanagi run <id> --task "<tarefa>"\x1b[0m\n');
+  } catch (e) {
+    console.error(`\x1b[31mAgent Factory falhou:\x1b[0m ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(1);
+  }
 }

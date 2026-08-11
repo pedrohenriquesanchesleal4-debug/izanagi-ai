@@ -200,6 +200,7 @@ export class SkillResolver {
   loadAgent(agentId: string): { genome: import('../types.js').AgentGenome; file: string } | null {
     const candidates = [
       path.join(this.opts.baseDir, 'agents'),
+      path.join(this.opts.baseDir, 'agents', 'generated'),
       path.join(this.opts.baseDir, '.agents', 'agents'),
     ];
     const names = [`${agentId}-agent.json`, `${agentId}.json`];

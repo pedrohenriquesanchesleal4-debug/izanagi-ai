@@ -13,10 +13,30 @@
     "memoria-projeto"
   ],
   "chains": {
-    "readme": ["memoria-projeto", "readme-generator", "technical-writer", "memoria-projeto"],
-    "guide": ["memoria-projeto", "technical-writer", "sequence-diagram-builder", "memoria-projeto"],
-    "api_docs": ["memoria-projeto", "technical-writer", "qa", "memoria-projeto"],
-    "diagram": ["memoria-projeto", "sequence-diagram-builder", "technical-writer", "memoria-projeto"]
+    "readme": [
+      "memoria-projeto",
+      "readme-generator",
+      "technical-writer",
+      "memoria-projeto"
+    ],
+    "guide": [
+      "memoria-projeto",
+      "technical-writer",
+      "sequence-diagram-builder",
+      "memoria-projeto"
+    ],
+    "api_docs": [
+      "memoria-projeto",
+      "technical-writer",
+      "qa",
+      "memoria-projeto"
+    ],
+    "diagram": [
+      "memoria-projeto",
+      "sequence-diagram-builder",
+      "technical-writer",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Estruturar documentação seguindo a separação do framework Diátaxis (Tutorial, How-To, Reference, Explanation)",
@@ -29,6 +49,51 @@
     "Escrever documentações genéricas com placeholders `TODO` ou descrições vagas sem código real",
     "Fornecer exemplos de código com erros de sintaxe ou referências a pacotes e rotas que não existem",
     "Omitir a explicação das variáveis de ambiente exigidas pela aplicação"
-  ]
+  ],
+  "purpose": "Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis (Tutorials, How-to, Reference, Explanation), diagramas de arquitetura/sequência Mermaid.js, OpenAPI/Swagger e guias de onboarding",
+  "capabilities": [
+    "documentação técnica",
+    "readme",
+    "diagramas mermaid",
+    "guias",
+    "referências de api"
+  ],
+  "requiredSkills": [
+    "technical-writer",
+    "readme-generator",
+    "sequence-diagram-builder",
+    "automation-documentation",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "qa"
+  ],
+  "inputs": [
+    "código",
+    "arquitetura"
+  ],
+  "outputs": [
+    "docs",
+    "readme",
+    "diagramas"
+  ],
+  "constraints": [
+    "Escrever documentações genéricas com placeholders `TODO` ou descrições vagas sem código real",
+    "Fornecer exemplos de código com erros de sintaxe ou referências a pacotes e rotas que não existem",
+    "Omitir a explicação das variáveis de ambiente exigidas pela aplicação"
+  ],
+  "permissions": [],
+  "handoffs": [],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

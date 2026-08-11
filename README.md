@@ -23,11 +23,19 @@ izanagi --version
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e resolve a cadeia de skills. |
+| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e resolve a cadeia de skills (graph + eval + trace via `--runtime`). |
+| `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 18 core). |
+| `izanagi agent list \| inspect <name>` | Lista/inspeta agentes (inclui `agents/generated/`) com genome. |
+| `izanagi skill create <nome> --gap="<descrição>" [--force]` | Skill Factory: cria skill com frontmatter, security scan pré-escrita e recusa de lacuna já coberta. |
+| `izanagi skill list \| search <q> \| inspect <name>` | Lista, busca e detalha skills. |
 | `izanagi create <agent\|skill> <name>` | Cria scaffold de agente (JSON) ou skill (SKILL.md). |
 | `izanagi compile <agente> [arquivo]` | Compila um System Prompt completo do agente + fundação do sistema. |
-| `izanagi list [skills\|agents]` | Lista skills e agentes registrados com aliases. |
-| `izanagi doctor` | Auditoria de integridade: SYSTEM/RULES, JSONs de agentes, aliases → targets. |
+| `izanagi workflow list \| inspect <template>` | Templates de grafo de execução por categoria (11). |
+| `izanagi eval <file.json> \| --metrics ... \| --report <run-id>` | Evaluation Engine: métricas ponderadas + veredito (PASS/.../UNKNOWN). |
+| `izanagi benchmark [compare]` | 10 benchmarks builtin + comparação de regressões entre builds. |
+| `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
+| `izanagi memory inspect \| search <q>` | Estado da memória de execução e busca em `.agents/memoria/`. |
+| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 212 skills. |
 | `izanagi export --cli <cli>` | Regenera adapters multi-CLI (claude, codex, cursor, copilot, kimi, all). |
 | `izanagi --version` | Exibe a versão da CLI. |
 
@@ -36,10 +44,12 @@ izanagi --version
 ```bash
 izanagi run "Criar uma landing page de um SaaS de analytics"
 izanagi run architect --task "Design a microservices architecture"
-izanagi create skill meu-fluxo
-izanagi compile architect prompt_arquiteto.md
-izanagi list skills
-izanagi doctor
+izanagi agent create "Especialista em Laravel" --skills=php,api
+izanagi skill create rabbitmq-orchestrator --gap="Orquestração de mensageria RabbitMQ"
+izanagi workflow inspect fullstack
+izanagi eval --metrics correctness=0.9,security=0.8
+izanagi benchmark compare
+izanagi doctor --deep
 ```
 
 ---
@@ -49,7 +59,7 @@ izanagi doctor
 ```
 izanagi-ai/
 ├── bin/             Executável da CLI (bin/izanagi.js → dist/cli)
-├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, tracer, llm, cli)
+├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, factories, tools, tracer, llm, cli)
 ├── core/            Engines (.md) + skill-resolver.json (aliases → targets + compositions)
 ├── agents/          18 definições de agentes em JSON (fonte da verdade dos comandos)
 ├── skills/          212 skills em skills/<name>/SKILL.md (+ references.md opcional)
@@ -75,7 +85,7 @@ O framework possui **18 agentes especializados** (`/discovery`, `/architect`, `/
 npm install       # instala dependências
 npm run build     # tsc && regenera .manifest
 npm run doctor    # auditoria de integridade
-node --test dist/runtime/tests/*.test.js   # 122 testes do runtime
+node --test dist/runtime/tests/*.test.js   # 136 testes do runtime
 npm run verify    # build + teste de instalação em sandbox
 ```
 

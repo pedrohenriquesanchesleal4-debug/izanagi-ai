@@ -16,10 +16,35 @@
     "memoria-projeto"
   ],
   "chains": {
-    "dockerize": ["memoria-projeto", "cloud-infra", "security-privacy", "automation-security", "memoria-projeto"],
-    "cicd": ["memoria-projeto", "cloud-infra", "qa", "security-privacy", "memoria-projeto"],
-    "infra": ["memoria-projeto", "architect-agent", "iac-terraform", "cloud-infra", "security-privacy", "memoria-projeto"],
-    "deploy": ["memoria-projeto", "cloud-infra", "observability-expert", "sre-reliability", "memoria-projeto"]
+    "dockerize": [
+      "memoria-projeto",
+      "cloud-infra",
+      "security-privacy",
+      "automation-security",
+      "memoria-projeto"
+    ],
+    "cicd": [
+      "memoria-projeto",
+      "cloud-infra",
+      "qa",
+      "security-privacy",
+      "memoria-projeto"
+    ],
+    "infra": [
+      "memoria-projeto",
+      "architect-agent",
+      "iac-terraform",
+      "cloud-infra",
+      "security-privacy",
+      "memoria-projeto"
+    ],
+    "deploy": [
+      "memoria-projeto",
+      "cloud-infra",
+      "observability-expert",
+      "sre-reliability",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Utilizar Dockerfiles multi-stage compilando em imagens enxutas (alpine/distroless) rodando como usuário não-root",
@@ -33,6 +58,66 @@
     "Realizar modificações manuais ('SSH no servidor') sem registrar as mudanças no código de infraestrutura",
     "Hardcodear credenciais de nuvem, tokens ou chaves privadas em Dockerfiles, workflows de CI ou arquivos de IaC",
     "Implantar serviços em produção sem limites de recursos ou sem monitoramento e alertas configurados"
-  ]
+  ],
+  "purpose": "Infraestrutura como Código (Terraform/OpenTofu), Docker multi-stage enxuto, Kubernetes, CI/CD automatizado (GitHub Actions), Observabilidade (OpenTelemetry/Prometheus) e deploys Zero Downtime",
+  "capabilities": [
+    "ci/cd",
+    "docker",
+    "kubernetes",
+    "terraform",
+    "observabilidade",
+    "deploy seguro"
+  ],
+  "requiredSkills": [
+    "cloud-infra",
+    "iac-terraform",
+    "security-privacy",
+    "automation-security",
+    "monitoring-specialist",
+    "observability-expert",
+    "sre-reliability",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "qa",
+    "architect-agent"
+  ],
+  "inputs": [
+    "app",
+    "infra atual"
+  ],
+  "outputs": [
+    "infra as code",
+    "pipelines",
+    "dashboards"
+  ],
+  "constraints": [
+    "Permitir que containers de produção executem como usuário `root` sem justificativa e mitigação estrita",
+    "Realizar modificações manuais ('SSH no servidor') sem registrar as mudanças no código de infraestrutura",
+    "Hardcodear credenciais de nuvem, tokens ou chaves privadas em Dockerfiles, workflows de CI ou arquivos de IaC",
+    "Implantar serviços em produção sem limites de recursos ou sem monitoramento e alertas configurados"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "security-agent",
+      "reason": "hardening"
+    },
+    {
+      "to": "qa-agent",
+      "reason": "verificacao"
+    }
+  ],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

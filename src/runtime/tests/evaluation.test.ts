@@ -53,10 +53,11 @@ test('evaluation: FAIL para score baixo', () => {
   assert.equal(result.verdict, 'FAIL');
 });
 
-test('evaluation: BLOCKED sem evidência', () => {
+test('evaluation: UNKNOWN sem evidência mensurada (nenhuma métrica ou teste)', () => {
   const result = engine.evaluate({ metrics: {} });
-  assert.equal(result.verdict, 'BLOCKED');
+  assert.equal(result.verdict, 'UNKNOWN');
   assert.equal(result.score, 0);
+  assert.ok(result.recommendations.some((r) => /evidência|métrica/i.test(r)), 'recomenda coletar evidência');
 });
 
 test('evaluation: weightedScore ignora métricas ausentes', () => {

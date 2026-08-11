@@ -13,10 +13,29 @@
     "memoria-projeto"
   ],
   "chains": {
-    "explain": ["memoria-projeto", "professor-modo", "technical-writer", "memoria-projeto"],
-    "teach": ["memoria-projeto", "professor-modo", "technical-writer", "memoria-projeto"],
-    "review_learning": ["memoria-projeto", "professor-modo", "qa", "memoria-projeto"],
-    "exercise": ["memoria-projeto", "professor-modo", "memoria-projeto"]
+    "explain": [
+      "memoria-projeto",
+      "professor-modo",
+      "technical-writer",
+      "memoria-projeto"
+    ],
+    "teach": [
+      "memoria-projeto",
+      "professor-modo",
+      "technical-writer",
+      "memoria-projeto"
+    ],
+    "review_learning": [
+      "memoria-projeto",
+      "professor-modo",
+      "qa",
+      "memoria-projeto"
+    ],
+    "exercise": [
+      "memoria-projeto",
+      "professor-modo",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Fornecer a síntese explicativa em 3 blocos (O que mudou, Por que mudou, Conceito-chave) imediatamente após modificações de código",
@@ -28,6 +47,47 @@
     "Gerar aulas longas, prolixas e puramente teóricas que desviem da tarefa prática do usuário",
     "Usar jargões acadêmicos sem definir seu significado simples em linguagem natural",
     "Fornecer apenas o código pronto sem explicar o motivo da escolha técnica adotada"
-  ]
+  ],
+  "purpose": "Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos (O que mudou -> Por que mudou -> Conceito-chave), analogias intuitivas sem jargões e exercícios práticos de fixação",
+  "capabilities": [
+    "ensino adaptativo",
+    "explicação didática",
+    "exemplos",
+    "mentoria"
+  ],
+  "requiredSkills": [
+    "professor-modo",
+    "technical-writer",
+    "clean-code",
+    "systematic-debugging",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "qa"
+  ],
+  "inputs": [
+    "dúvida",
+    "contexto"
+  ],
+  "outputs": [
+    "explicação",
+    "exercícios"
+  ],
+  "constraints": [
+    "Gerar aulas longas, prolixas e puramente teóricas que desviem da tarefa prática do usuário",
+    "Usar jargões acadêmicos sem definir seu significado simples em linguagem natural",
+    "Fornecer apenas o código pronto sem explicar o motivo da escolha técnica adotada"
+  ],
+  "permissions": [],
+  "handoffs": [],
+  "memory": [],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

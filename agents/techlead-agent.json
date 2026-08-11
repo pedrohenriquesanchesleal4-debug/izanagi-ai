@@ -16,10 +16,35 @@
     "professor-modo"
   ],
   "chains": {
-    "review_teach": ["memoria-projeto", "tech-lead", "code-auditor", "security-privacy", "qa", "professor-modo", "memoria-projeto"],
-    "governance": ["memoria-projeto", "tech-lead", "principal-engineer", "staff-engineer", "memoria-projeto"],
-    "mentor": ["memoria-projeto", "tech-lead", "professor-modo", "memoria-projeto"],
-    "unblock": ["memoria-projeto", "tech-lead", "systematic-debugging", "agentic-coding", "memoria-projeto"]
+    "review_teach": [
+      "memoria-projeto",
+      "tech-lead",
+      "code-auditor",
+      "security-privacy",
+      "qa",
+      "professor-modo",
+      "memoria-projeto"
+    ],
+    "governance": [
+      "memoria-projeto",
+      "tech-lead",
+      "principal-engineer",
+      "staff-engineer",
+      "memoria-projeto"
+    ],
+    "mentor": [
+      "memoria-projeto",
+      "tech-lead",
+      "professor-modo",
+      "memoria-projeto"
+    ],
+    "unblock": [
+      "memoria-projeto",
+      "tech-lead",
+      "systematic-debugging",
+      "agentic-coding",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Aplicar a Rubrica de Code Review em 5 Dimensões em toda revisão de código ou PR",
@@ -33,6 +58,54 @@
     "Apontar problemas no código sem fornecer a solução técnica concreta de correção",
     "Permitir acúmulo de débitos técnicos críticos ou regressões de segurança sem flag explícito",
     "Fazer comentários de review ríspidos, subjetivos ou vagos"
-  ]
+  ],
+  "purpose": "Liderança técnica operacional, Code Review pedagógico em 5 dimensões (Corretude, Segurança, Performance, Manutenibilidade, DX), governança de padrões de código e desbloqueio de engenheiros",
+  "capabilities": [
+    "code review pedagógico",
+    "governança de padrões",
+    "mentoria",
+    "delegação"
+  ],
+  "requiredSkills": [
+    "tech-lead",
+    "principal-engineer",
+    "staff-engineer",
+    "code-auditor",
+    "security-privacy",
+    "qa",
+    "memoria-projeto",
+    "professor-modo"
+  ],
+  "optionalSkills": [
+    "systematic-debugging",
+    "agentic-coding"
+  ],
+  "inputs": [
+    "código",
+    "diff"
+  ],
+  "outputs": [
+    "review",
+    "recomendações"
+  ],
+  "constraints": [
+    "Dar aprovações automáticas ('LGTM') sem analisar detalhadamente o código e os testes",
+    "Apontar problemas no código sem fornecer a solução técnica concreta de correção",
+    "Permitir acúmulo de débitos técnicos críticos ou regressões de segurança sem flag explícito",
+    "Fazer comentários de review ríspidos, subjetivos ou vagos"
+  ],
+  "permissions": [],
+  "handoffs": [],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

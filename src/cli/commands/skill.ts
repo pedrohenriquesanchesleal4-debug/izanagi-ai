@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { SkillResolver } from '../../runtime/routing/resolver.js';
+import { SkillFactory } from '../../runtime/factories/skill-factory.js';
 
 export function skillCommand(baseDir: string, args: string[]): void {
   const sub = args[0]?.toLowerCase() ?? 'list';
@@ -33,11 +34,13 @@ export function skillCommand(baseDir: string, args: string[]): void {
   }
   if (sub === 'create') {
     const name = args[1];
+    const gap = args.find((a) => a.startsWith('--gap='))?.split('=')[1];
+    const force = args.includes('--force');
     if (!name) {
-      console.error('\x1b[31mUsage:\x1b[0m izanagi skill create <name>\n');
+      console.error('\x1b[31mUsage:\x1b[0m izanagi skill create <name> [--gap="<descrição da lacuna>"] [--force]\n');
       process.exit(1);
     }
-    skillCreate(baseDir, name);
+    skillCreate(baseDir, name, gap, force);
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
@@ -100,7 +103,31 @@ export function skillInspect(baseDir: string, name: string): void {
   console.log('');
 }
 
-export function skillCreate(baseDir: string, name: string): void {
+export function skillCreate(baseDir: string, name: string, gap?: string, force = false): void {
+  // Modo Skill Factory: pipeline real (detecção de lacuna + security scan + registro)
+  if (gap) {
+    const resolver = new SkillResolver({ baseDir });
+    const factory = new SkillFactory(resolver);
+    try {
+      const generated = factory.generate({ gap, name, force });
+      if (!generated.registered) {
+        console.error(`\n\x1b[31mSkill Factory recusou o registro:\x1b[0m`);
+        generated.validation.issues.forEach((i) => console.error(`  • ${i}`));
+        console.error('  Nenhum arquivo foi criado.\n');
+        process.exit(1);
+      }
+      console.log(`\n\x1b[32m? Skill criada via Skill Factory:\x1b[0m ${generated.file}`);
+      console.log(`  \x1b[90mTrigers:\x1b[0m ${generated.manifest.triggers.join(', ')}`);
+      console.log(`  \x1b[90mSecurity scan:\x1b[0m ${generated.scan.level} (${generated.scan.findings.length} findings)`);
+      console.log(`  \x1b[90mValidação:\x1b[0m ${generated.validation.valid ? 'OK' : generated.validation.issues.join('; ')}`);
+      console.log('  Registre o alias em \x1b[33mcore/skill-resolver.json\x1b[0m e rode \x1b[33mnpm run build\x1b[0m.\n');
+    } catch (e) {
+      console.error(`\x1b[31mSkill Factory falhou:\x1b[0m ${e instanceof Error ? e.message : String(e)}`);
+      console.error('  (Se a lacuna já é coberta por skills existentes, use --force para gerar mesmo assim.)\n');
+      process.exit(1);
+    }
+    return;
+  }
   const skillsDir = path.join(baseDir, 'skills', name);
   const file = path.join(skillsDir, 'SKILL.md');
   if (fs.existsSync(file)) {

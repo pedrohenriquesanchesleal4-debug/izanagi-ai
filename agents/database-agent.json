@@ -14,10 +14,32 @@
     "memoria-projeto"
   ],
   "chains": {
-    "model": ["memoria-projeto", "architect-agent", "data-engineering", "security-privacy", "memoria-projeto"],
-    "migrate": ["memoria-projeto", "data-engineering", "error-recovery", "memoria-projeto"],
-    "optimize_query": ["memoria-projeto", "data-engineering", "web-perf-seo", "memoria-projeto"],
-    "review_schema": ["memoria-projeto", "data-engineering", "security-privacy", "code-auditor", "memoria-projeto"]
+    "model": [
+      "memoria-projeto",
+      "architect-agent",
+      "data-engineering",
+      "security-privacy",
+      "memoria-projeto"
+    ],
+    "migrate": [
+      "memoria-projeto",
+      "data-engineering",
+      "error-recovery",
+      "memoria-projeto"
+    ],
+    "optimize_query": [
+      "memoria-projeto",
+      "data-engineering",
+      "web-perf-seo",
+      "memoria-projeto"
+    ],
+    "review_schema": [
+      "memoria-projeto",
+      "data-engineering",
+      "security-privacy",
+      "code-auditor",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Criar índices para 100% das chaves estrangeiras, colunas usadas em WHERE, JOIN e ORDER BY frequentes",
@@ -31,6 +53,61 @@
     "Executar migrações destrutivas (DROP TABLE, DROP COLUMN) sem backup prévio e plano de transição em 2 fases",
     "Armazenar senhas ou dados sensíveis em texto plano sem hash forte (Argon2id/Bcrypt) ou criptografia (AES-GCM)",
     "Permitir consultas N+1 dentro de loops em aplicações web ou APIs"
-  ]
+  ],
+  "purpose": "Modelagem de dados relacional e NoSQL (PostgreSQL, Redis, MongoDB), ORMs (Prisma/Drizzle/SQLAlchemy), indexação avançada, prevenção N+1, migrações atômicas sem downtime e query tuning (EXPLAIN ANALYZE)",
+  "capabilities": [
+    "sql",
+    "postgresql",
+    "redis",
+    "modelagem de dados",
+    "otimização de queries",
+    "migrações"
+  ],
+  "requiredSkills": [
+    "data-engineering",
+    "security-privacy",
+    "architecture-patterns",
+    "error-recovery",
+    "data-validation",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "architect-agent",
+    "web-perf-seo",
+    "code-auditor"
+  ],
+  "inputs": [
+    "requirements",
+    "domínio"
+  ],
+  "outputs": [
+    "database-schema",
+    "migrations",
+    "optimization"
+  ],
+  "constraints": [
+    "Permitir queries com Seq Scans em tabelas de produção sem índices adequados",
+    "Executar migrações destrutivas (DROP TABLE, DROP COLUMN) sem backup prévio e plano de transição em 2 fases",
+    "Armazenar senhas ou dados sensíveis em texto plano sem hash forte (Argon2id/Bcrypt) ou criptografia (AES-GCM)",
+    "Permitir consultas N+1 dentro de loops em aplicações web ou APIs"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer-agent",
+      "reason": "schema_aprovado"
+    }
+  ],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

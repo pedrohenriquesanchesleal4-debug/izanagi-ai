@@ -16,11 +16,40 @@
     "memoria-projeto"
   ],
   "chains": {
-    "full_audit": ["memoria-projeto", "code-auditor", "security-privacy", "qa", "memoria-projeto"],
-    "implement_auth": ["memoria-projeto", "security-privacy", "defense-in-depth", "qa", "memoria-projeto"],
-    "hardening": ["memoria-projeto", "code-auditor", "security-privacy", "automation-security", "memoria-projeto"],
-    "review_pr": ["memoria-projeto", "code-auditor", "security-privacy", "memoria-projeto"],
-    "api_security": ["memoria-projeto", "security-privacy", "api-automation", "defense-in-depth", "memoria-projeto"]
+    "full_audit": [
+      "memoria-projeto",
+      "code-auditor",
+      "security-privacy",
+      "qa",
+      "memoria-projeto"
+    ],
+    "implement_auth": [
+      "memoria-projeto",
+      "security-privacy",
+      "defense-in-depth",
+      "qa",
+      "memoria-projeto"
+    ],
+    "hardening": [
+      "memoria-projeto",
+      "code-auditor",
+      "security-privacy",
+      "automation-security",
+      "memoria-projeto"
+    ],
+    "review_pr": [
+      "memoria-projeto",
+      "code-auditor",
+      "security-privacy",
+      "memoria-projeto"
+    ],
+    "api_security": [
+      "memoria-projeto",
+      "security-privacy",
+      "api-automation",
+      "defense-in-depth",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Validar estritamente todo input externo contra schemas rigorosos Zod/Pydantic antes de qualquer processamento",
@@ -35,6 +64,62 @@
     "Permitir algoritmos fracos de hash (MD5, SHA1) ou criptografia customizada/home-made sem validação por bibliotecas padrão",
     "Usar wildcard '*' em CORS associado a credentials: true ou expor stack traces detalhados em ambiente de produção",
     "Assumir que o frontend é uma barreira de segurança confiável — a validação e autorização devem ocorrer obrigatoriamente no backend"
-  ]
+  ],
+  "purpose": "Auditoria de segurança SAST/DAST, mitigação OWASP Top 10, autenticação robusta (OAuth2/JWT/Argon2), blindagem de APIs, gestão de segredos, Defense-in-Depth e conformidade LGPD/GDPR",
+  "capabilities": [
+    "owasp top 10",
+    "autenticação",
+    "secure coding",
+    "lgpd/gdpr",
+    "auditoria de segredos"
+  ],
+  "requiredSkills": [
+    "security-privacy",
+    "code-auditor",
+    "defense-in-depth",
+    "api-automation",
+    "automation-security",
+    "qa",
+    "systematic-debugging",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [],
+  "inputs": [
+    "código",
+    "arquitetura"
+  ],
+  "outputs": [
+    "security-report",
+    "recomendações"
+  ],
+  "constraints": [
+    "Aprovar ou gerar código que contenha senhas, tokens, chaves privadas ou connection strings hardcoded em arquivos versionados",
+    "Permitir concatenação ou interpolação manual de strings em queries SQL, NoSQL ou comandos de sistema operacionais",
+    "Permitir algoritmos fracos de hash (MD5, SHA1) ou criptografia customizada/home-made sem validação por bibliotecas padrão",
+    "Usar wildcard '*' em CORS associado a credentials: true ou expor stack traces detalhados em ambiente de produção",
+    "Assumir que o frontend é uma barreira de segurança confiável — a validação e autorização devem ocorrer obrigatoriamente no backend"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer-agent",
+      "reason": "fix_necessario"
+    },
+    {
+      "to": "devops-agent",
+      "reason": "hardening"
+    }
+  ],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

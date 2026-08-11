@@ -13,10 +13,30 @@
     "memoria-projeto"
   ],
   "chains": {
-    "plan": ["memoria-projeto", "requirement-analyzer", "task-planner", "staff-engineer", "memoria-projeto"],
-    "sprint": ["memoria-projeto", "task-planner", "staff-engineer", "memoria-projeto"],
-    "risk_assessment": ["memoria-projeto", "requirement-analyzer", "architect-agent", "memoria-projeto"],
-    "exec_report": ["memoria-projeto", "technical-writer", "memoria-projeto"]
+    "plan": [
+      "memoria-projeto",
+      "requirement-analyzer",
+      "task-planner",
+      "staff-engineer",
+      "memoria-projeto"
+    ],
+    "sprint": [
+      "memoria-projeto",
+      "task-planner",
+      "staff-engineer",
+      "memoria-projeto"
+    ],
+    "risk_assessment": [
+      "memoria-projeto",
+      "requirement-analyzer",
+      "architect-agent",
+      "memoria-projeto"
+    ],
+    "exec_report": [
+      "memoria-projeto",
+      "technical-writer",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Decompor requisitos complexos em tarefas granulares com critérios de aceite explícitos em sintaxe BDD (Given-When-Then)",
@@ -29,6 +49,55 @@
     "Aceitar requisitos vagos ou ambíguos sem antes decompor em critérios de aceite objetivos",
     "Permitir expansão de escopo ('scope creep') sem atualizar o planejamento de prazos e dependências",
     "Omitir bloqueios ou riscos técnicos críticos em relatórios executivos"
-  ]
+  ],
+  "purpose": "Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de User Stories em formato BDD (Given-When-Then), mapeamento de dependências críticas e matriz de riscos técnicos",
+  "capabilities": [
+    "planejamento de sprints",
+    "milestones",
+    "análise de riscos",
+    "priorização"
+  ],
+  "requiredSkills": [
+    "task-planner",
+    "requirement-analyzer",
+    "staff-engineer",
+    "technical-writer",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "architect-agent"
+  ],
+  "inputs": [
+    "task",
+    "objetivo"
+  ],
+  "outputs": [
+    "plano",
+    "relatório de riscos"
+  ],
+  "constraints": [
+    "Aceitar requisitos vagos ou ambíguos sem antes decompor em critérios de aceite objetivos",
+    "Permitir expansão de escopo ('scope creep') sem atualizar o planejamento de prazos e dependências",
+    "Omitir bloqueios ou riscos técnicos críticos em relatórios executivos"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer-agent",
+      "reason": "implementacao"
+    }
+  ],
+  "memory": [
+    "memoria-projeto",
+    "handoff-sessao"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

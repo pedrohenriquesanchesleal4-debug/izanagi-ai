@@ -102,7 +102,8 @@ export class SkillFactory {
 
     const targetDir = input.targetDir ?? path.join(process.cwd(), 'skills', 'generated');
     fs.mkdirSync(targetDir, { recursive: true });
-    const file = path.join(targetDir, 'SKILL.md');
+    const file = path.join(targetDir, name, 'SKILL.md');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, fullContent, 'utf-8');
 
     return {

@@ -13,9 +13,26 @@
     "memoria-projeto"
   ],
   "chains": {
-    "research_stack": ["memoria-projeto", "deep-research", "confidence-estimator", "documentation-writer", "memoria-projeto"],
-    "research_market": ["memoria-projeto", "deep-research", "confidence-estimator", "memoria-projeto"],
-    "research_technical": ["memoria-projeto", "deep-research", "hallucination-detection", "confidence-estimator", "memoria-projeto"]
+    "research_stack": [
+      "memoria-projeto",
+      "deep-research",
+      "confidence-estimator",
+      "documentation-writer",
+      "memoria-projeto"
+    ],
+    "research_market": [
+      "memoria-projeto",
+      "deep-research",
+      "confidence-estimator",
+      "memoria-projeto"
+    ],
+    "research_technical": [
+      "memoria-projeto",
+      "deep-research",
+      "hallucination-detection",
+      "confidence-estimator",
+      "memoria-projeto"
+    ]
   },
   "capabilities": [
     "plano de busca multi-query",
@@ -24,20 +41,44 @@
     "síntese com limitações explícitas",
     "detecção de alucinação em fontes"
   ],
-  "inputs": ["questão de pesquisa", "domínio"],
-  "outputs": ["research artifact (claims classificados + fontes + confiança)"],
+  "inputs": [
+    "questão de pesquisa",
+    "domínio"
+  ],
+  "outputs": [
+    "research artifact (claims classificados + fontes + confiança)"
+  ],
   "constraints": [
     "Nunca inventar fontes ou URLs",
     "Nunca apresentar inferências como fatos",
     "Sempre reportar limitações e nível de confiança"
   ],
   "handoffs": [
-    { "to": "architect", "reason": "decisao_arquitetural_baseada_em_evidencia" },
-    { "to": "discovery", "reason": "viabilidade_de_produto" },
-    { "to": "evaluator", "reason": "avaliacao_do_relatorio" }
+    {
+      "to": "architect",
+      "reason": "decisao_arquitetural_baseada_em_evidencia"
+    },
+    {
+      "to": "discovery",
+      "reason": "viabilidade_de_produto"
+    },
+    {
+      "to": "evaluator",
+      "reason": "avaliacao_do_relatorio"
+    }
   ],
-  "memory": ["memoria-projeto", "handoff-sessao"],
-  "evaluation": { "metrics": ["correctness", "confidence", "requirementCoverage"], "minScore": 0.75 },
+  "memory": [
+    "memoria-projeto",
+    "handoff-sessao"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "confidence",
+      "requirementCoverage"
+    ],
+    "minScore": 0.75
+  },
   "compatibility": ">=3.0.0",
   "always": [
     "Classificar cada claim importante como FACT/ASSUMPTION/INFERENCE/UNKNOWN",
@@ -48,5 +89,16 @@
     "Inventar URLs, citações ou dados",
     "Apresentar suposições como fatos verificados",
     "Entregar relatório sem seção de limitações"
-  ]
+  ],
+  "purpose": "Pesquisa estruturada baseada em evidência: coleta de fatos com fontes citadas, distinção FACT/ASSUMPTION/INFERENCE/UNKNOWN, priorização de fontes oficiais e relatório com nível de confiança",
+  "requiredSkills": [
+    "deep-research",
+    "confidence-estimator",
+    "hallucination-detection",
+    "documentation-writer",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [],
+  "permissions": [],
+  "tokenBudget": 5000
 }

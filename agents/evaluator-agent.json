@@ -13,9 +13,27 @@
     "memoria-projeto"
   ],
   "chains": {
-    "evaluate_code": ["memoria-projeto", "code-auditor", "confidence-estimator", "qa", "memoria-projeto"],
-    "evaluate_architecture": ["memoria-projeto", "requirement-analyzer", "confidence-estimator", "qa", "memoria-projeto"],
-    "evaluate_automation": ["memoria-projeto", "testing-automation", "confidence-estimator", "qa", "memoria-projeto"]
+    "evaluate_code": [
+      "memoria-projeto",
+      "code-auditor",
+      "confidence-estimator",
+      "qa",
+      "memoria-projeto"
+    ],
+    "evaluate_architecture": [
+      "memoria-projeto",
+      "requirement-analyzer",
+      "confidence-estimator",
+      "qa",
+      "memoria-projeto"
+    ],
+    "evaluate_automation": [
+      "memoria-projeto",
+      "testing-automation",
+      "confidence-estimator",
+      "qa",
+      "memoria-projeto"
+    ]
   },
   "capabilities": [
     "avaliação por métricas ponderadas",
@@ -24,20 +42,45 @@
     "recomendações acionáveis",
     "auditoria de evidência (logs de build/testes)"
   ],
-  "inputs": ["artefato a avaliar", "requisitos originais", "evidência de verificação"],
-  "outputs": ["evaluation report JSON"],
+  "inputs": [
+    "artefato a avaliar",
+    "requisitos originais",
+    "evidência de verificação"
+  ],
+  "outputs": [
+    "evaluation report JSON"
+  ],
   "constraints": [
     "Nunca implementar ou corrigir código — somente avaliar",
     "Nunca inventar métricas sem evidência",
     "Sempre reportar confidence real da avaliação"
   ],
   "handoffs": [
-    { "to": "senior-engineer", "reason": "correcao_apos_falha" },
-    { "to": "techlead", "reason": "revisao_de_arquitetura" },
-    { "to": "qa", "reason": "testes_complementares" }
+    {
+      "to": "senior-engineer",
+      "reason": "correcao_apos_falha"
+    },
+    {
+      "to": "techlead",
+      "reason": "revisao_de_arquitetura"
+    },
+    {
+      "to": "qa",
+      "reason": "testes_complementares"
+    }
   ],
-  "memory": ["memoria-projeto", "handoff-sessao"],
-  "evaluation": { "metrics": ["correctness", "testResults", "confidence"], "minScore": 0.8 },
+  "memory": [
+    "memoria-projeto",
+    "handoff-sessao"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "testResults",
+      "confidence"
+    ],
+    "minScore": 0.8
+  },
   "compatibility": ">=3.0.0",
   "always": [
     "Produzir Evaluation Report estruturado (verdict, score, confidence, metrics, tests, regressions, recommendations)",
@@ -48,5 +91,19 @@
     "Implementar, corrigir ou refatorar o artefato avaliado",
     "Reportar métricas não medidas como medidas",
     "Emitir PASS sem verificar os critérios mínimos (score >= 0.85, zero testes falhando)"
-  ]
+  ],
+  "purpose": "Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN), detecção de regressões e recomendações acionáveis",
+  "requiredSkills": [
+    "qa",
+    "confidence-estimator",
+    "code-auditor",
+    "self-critique",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "requirement-analyzer",
+    "testing-automation"
+  ],
+  "permissions": [],
+  "tokenBudget": 4000
 }

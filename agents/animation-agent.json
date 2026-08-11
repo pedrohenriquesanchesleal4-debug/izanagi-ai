@@ -15,10 +15,31 @@
     "memoria-projeto"
   ],
   "chains": {
-    "scrollytelling": ["memoria-projeto", "animation-web", "motion-design", "anti-ai-slop", "memoria-projeto"],
-    "webgl_scene": ["memoria-projeto", "webgl-3d", "anti-ai-slop", "memoria-projeto"],
-    "motion_signature": ["memoria-projeto", "motion-design", "anti-ai-slop", "memoria-projeto"],
-    "preloader": ["memoria-projeto", "animation-web", "motion-design", "memoria-projeto"]
+    "scrollytelling": [
+      "memoria-projeto",
+      "animation-web",
+      "motion-design",
+      "anti-ai-slop",
+      "memoria-projeto"
+    ],
+    "webgl_scene": [
+      "memoria-projeto",
+      "webgl-3d",
+      "anti-ai-slop",
+      "memoria-projeto"
+    ],
+    "motion_signature": [
+      "memoria-projeto",
+      "motion-design",
+      "anti-ai-slop",
+      "memoria-projeto"
+    ],
+    "preloader": [
+      "memoria-projeto",
+      "animation-web",
+      "motion-design",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps",
@@ -32,6 +53,57 @@
     "Usar animações genéricas sem propósito ou temporizações robóticas lineares sem curva de easing personalizada",
     "Deixar loops de renderização WebGL ou ScrollTriggers executando em segundo plano quando os elementos estão fora da viewport",
     "Compromover a acessibilidade ou legibilidade de texto em prol de efeitos visuais excessivos"
-  ]
+  ],
+  "purpose": "Motion Engineering & Experiências Cinematográficas Web (Awwwards SOTD / Apple Grade): Scrollytelling, GSAP ScrollTrigger/SplitText, WebGL 3D (Three.js/React Three Fiber), Smooth Scroll (Lenis), Micro-interações e Motion Signature",
+  "capabilities": [
+    "scrollytelling",
+    "webgl",
+    "three.js",
+    "motion design",
+    "gsap",
+    "transições de página"
+  ],
+  "requiredSkills": [
+    "animation-web",
+    "motion-design",
+    "webgl-3d",
+    "design-directions",
+    "ui-ux-pro-max",
+    "anti-ai-slop",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [],
+  "inputs": [
+    "task",
+    "design direction"
+  ],
+  "outputs": [
+    "implementação animada",
+    "motion signature"
+  ],
+  "constraints": [
+    "Animar propriedades que forçam repintura de layout (Layout Thrashing: `width`, `height`, `top`, `left`, `margin`)",
+    "Usar animações genéricas sem propósito ou temporizações robóticas lineares sem curva de easing personalizada",
+    "Deixar loops de renderização WebGL ou ScrollTriggers executando em segundo plano quando os elementos estão fora da viewport",
+    "Compromover a acessibilidade ou legibilidade de texto em prol de efeitos visuais excessivos"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "qa-agent",
+      "reason": "verificacao"
+    }
+  ],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

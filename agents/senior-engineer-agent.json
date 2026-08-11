@@ -18,12 +18,53 @@
     "economia-tokens"
   ],
   "chains": {
-    "fullstack": ["memoria-projeto", "architect-agent", "database-agent", "frontend", "ui-ux-pro-max", "anti-ai-slop", "security-privacy", "qa", "memoria-projeto"],
-    "implement": ["memoria-projeto", "tdd", "agentic-coding", "qa", "memoria-projeto"],
-    "bug": ["memoria-projeto", "systematic-debugging", "tdd", "agentic-coding", "memoria-projeto"],
-    "refactor": ["memoria-projeto", "systematic-debugging", "tdd", "qa", "memoria-projeto"],
-    "review": ["memoria-projeto", "code-auditor", "security-privacy", "anti-ai-slop", "qa", "memoria-projeto"],
-    "optimize": ["memoria-projeto", "web-perf-seo", "agentic-coding", "qa", "memoria-projeto"]
+    "fullstack": [
+      "memoria-projeto",
+      "architect-agent",
+      "database-agent",
+      "frontend",
+      "ui-ux-pro-max",
+      "anti-ai-slop",
+      "security-privacy",
+      "qa",
+      "memoria-projeto"
+    ],
+    "implement": [
+      "memoria-projeto",
+      "tdd",
+      "agentic-coding",
+      "qa",
+      "memoria-projeto"
+    ],
+    "bug": [
+      "memoria-projeto",
+      "systematic-debugging",
+      "tdd",
+      "agentic-coding",
+      "memoria-projeto"
+    ],
+    "refactor": [
+      "memoria-projeto",
+      "systematic-debugging",
+      "tdd",
+      "qa",
+      "memoria-projeto"
+    ],
+    "review": [
+      "memoria-projeto",
+      "code-auditor",
+      "security-privacy",
+      "anti-ai-slop",
+      "qa",
+      "memoria-projeto"
+    ],
+    "optimize": [
+      "memoria-projeto",
+      "web-perf-seo",
+      "agentic-coding",
+      "qa",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "GERAÇÃO DE CÓDIGO REAL E ZERO LISTAS: gerar código-fonte 100% completo para cada arquivo necessário — proibidíssimo usar resumos em checklist ([✓]) ou esqueletos vazios",
@@ -38,5 +79,74 @@
     "Utilizar placeholders genéricos 'cara de IA' (Inter font default, gradientes roxos sem contexto, copy clichê 'Build the future')",
     "Ignorar tratamento de erros, validação de tipos de dados ou deixar exceções silenciosamente capturadas com `catch {}` vazios",
     "Narrar a intenção sem executar o código — implementar, testar e relatar o resultado real obtido"
-  ]
+  ],
+  "purpose": "Full-Stack Software Engineer High-Craft — implementação profunda de ponta a ponta, Clean Code, TDD estrito, zero AI-Slop, zero stubs e ciclo vertical completo",
+  "capabilities": [
+    "full-stack",
+    "typescript",
+    "next.js",
+    "refatoração",
+    "tdd",
+    "clean code",
+    "api design"
+  ],
+  "requiredSkills": [
+    "agentic-coding",
+    "tdd",
+    "frontend",
+    "ui-ux-pro-max",
+    "anti-ai-slop",
+    "systematic-debugging",
+    "security-privacy",
+    "qa",
+    "memoria-projeto",
+    "economia-tokens"
+  ],
+  "optionalSkills": [
+    "architect-agent",
+    "database-agent",
+    "code-auditor",
+    "web-perf-seo"
+  ],
+  "inputs": [
+    "task",
+    "architecture",
+    "artefatos do domínio"
+  ],
+  "outputs": [
+    "implementation",
+    "testes",
+    "migration"
+  ],
+  "constraints": [
+    "Entregar stubs, esqueletos com `TODO`, `// implement here` ou código pela metade em qualquer arquivo",
+    "Responder a um pedido de sistema/SaaS com um resumo textual ou checklist sem incluir todo o código funcional necessário",
+    "Utilizar placeholders genéricos 'cara de IA' (Inter font default, gradientes roxos sem contexto, copy clichê 'Build the future')",
+    "Ignorar tratamento de erros, validação de tipos de dados ou deixar exceções silenciosamente capturadas com `catch {}` vazios",
+    "Narrar a intenção sem executar o código — implementar, testar e relatar o resultado real obtido"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "qa-agent",
+      "reason": "verificacao"
+    },
+    {
+      "to": "techlead-agent",
+      "reason": "code_review"
+    }
+  ],
+  "memory": [
+    "memoria-projeto",
+    "handoff-sessao"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }

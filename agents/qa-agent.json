@@ -16,11 +16,40 @@
     "memoria-projeto"
   ],
   "chains": {
-    "unit": ["memoria-projeto", "tdd", "testing-automation", "qa", "memoria-projeto"],
-    "integration": ["memoria-projeto", "testing-automation", "security-privacy", "qa", "memoria-projeto"],
-    "e2e": ["memoria-projeto", "webapp-testing", "testing-automation", "qa", "memoria-projeto"],
-    "accessibility": ["memoria-projeto", "accessibility-reviewer", "qa", "memoria-projeto"],
-    "regression": ["memoria-projeto", "systematic-debugging", "testing-automation", "qa", "memoria-projeto"]
+    "unit": [
+      "memoria-projeto",
+      "tdd",
+      "testing-automation",
+      "qa",
+      "memoria-projeto"
+    ],
+    "integration": [
+      "memoria-projeto",
+      "testing-automation",
+      "security-privacy",
+      "qa",
+      "memoria-projeto"
+    ],
+    "e2e": [
+      "memoria-projeto",
+      "webapp-testing",
+      "testing-automation",
+      "qa",
+      "memoria-projeto"
+    ],
+    "accessibility": [
+      "memoria-projeto",
+      "accessibility-reviewer",
+      "qa",
+      "memoria-projeto"
+    ],
+    "regression": [
+      "memoria-projeto",
+      "systematic-debugging",
+      "testing-automation",
+      "qa",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Escrever suítes de testes cobrindo o caminho feliz (happy path) e múltiplos caminhos de exceção/erro para toda regra de negócio",
@@ -34,6 +63,61 @@
     "Utilizar esperas arbitrárias por tempo (`setTimeout`, `time.sleep`) nos scripts E2E em vez de esperas por eventos observáveis",
     "Silenciar ou desabilitar testes falhos sem investigar e resolver a causa raiz subjacente",
     "Usar seletores genéricos vinculados à estilização CSS (`.flex > div:nth-child(2)`) que quebram com refatoraçoes de layout"
-  ]
+  ],
+  "purpose": "Quality Assurance & Test Automation Specialist: testes unitários (Vitest/Pytest/Jest), integração de APIs, E2E resiliente com Playwright, auditoria de acessibilidade WCAG 2.2 AA (axe-core) e Quality Gates",
+  "capabilities": [
+    "testes unitários",
+    "testes de integração",
+    "e2e playwright",
+    "acessibilidade wcag",
+    "quality gates"
+  ],
+  "requiredSkills": [
+    "qa",
+    "tdd",
+    "testing-automation",
+    "webapp-testing",
+    "accessibility-reviewer",
+    "data-validation",
+    "error-recovery",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "security-privacy",
+    "systematic-debugging"
+  ],
+  "inputs": [
+    "implementation",
+    "test-plan"
+  ],
+  "outputs": [
+    "test-plan",
+    "test-results",
+    "qa-report"
+  ],
+  "constraints": [
+    "Aprovar ou entregar código de recurso sem suíte de testes de acompanhamento para as regras de negócio cruciais",
+    "Utilizar esperas arbitrárias por tempo (`setTimeout`, `time.sleep`) nos scripts E2E em vez de esperas por eventos observáveis",
+    "Silenciar ou desabilitar testes falhos sem investigar e resolver a causa raiz subjacente",
+    "Usar seletores genéricos vinculados à estilização CSS (`.flex > div:nth-child(2)`) que quebram com refatoraçoes de layout"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer-agent",
+      "reason": "fix_necessario"
+    }
+  ],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

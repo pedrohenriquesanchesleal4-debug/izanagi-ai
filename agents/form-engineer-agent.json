@@ -15,9 +15,28 @@
     "memoria-projeto"
   ],
   "chains": {
-    "form_wizard": ["memoria-projeto", "requirement-analyzer", "web-forms", "accessibility-reviewer", "qa", "memoria-projeto"],
-    "form_audit": ["memoria-projeto", "accessibility-reviewer", "ux-reviewer", "web-forms", "memoria-projeto"],
-    "form_implement": ["memoria-projeto", "web-forms", "accessibility-reviewer", "qa", "memoria-projeto"]
+    "form_wizard": [
+      "memoria-projeto",
+      "requirement-analyzer",
+      "web-forms",
+      "accessibility-reviewer",
+      "qa",
+      "memoria-projeto"
+    ],
+    "form_audit": [
+      "memoria-projeto",
+      "accessibility-reviewer",
+      "ux-reviewer",
+      "web-forms",
+      "memoria-projeto"
+    ],
+    "form_implement": [
+      "memoria-projeto",
+      "web-forms",
+      "accessibility-reviewer",
+      "qa",
+      "memoria-projeto"
+    ]
   },
   "always": [
     "Construir formulários utilizando schemas Zod rigorosos integrados ao React Hook Form para type-safety absoluta",
@@ -31,6 +50,58 @@
     "Depender apenas da validação no envio (`onSubmit`) sem feedback inline durante a edição",
     "Permitir múltiplos cliques/submissões simultâneas que disparem requisições duplicadas à API",
     "Utilizar placeholders genéricos no lugar de labels visíveis permanentes"
-  ]
+  ],
+  "purpose": "Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com auto-save (localStorage/IndexedDB), feedback inline instantâneo, Optimistic UI e acessibilidade WCAG 2.2 AA",
+  "capabilities": [
+    "formulários high-craft",
+    "validação zod",
+    "react hook form",
+    "wizard multi-step",
+    "acessibilidade"
+  ],
+  "requiredSkills": [
+    "web-forms",
+    "frontend",
+    "accessibility-reviewer",
+    "ux-reviewer",
+    "data-validation",
+    "ui-ux-pro-max",
+    "memoria-projeto"
+  ],
+  "optionalSkills": [
+    "requirement-analyzer",
+    "qa"
+  ],
+  "inputs": [
+    "task",
+    "campos do formulário"
+  ],
+  "outputs": [
+    "form implementation"
+  ],
+  "constraints": [
+    "Criar inputs sem rótulos `<label>` explicitamente associados via `htmlFor` ou `id`",
+    "Depender apenas da validação no envio (`onSubmit`) sem feedback inline durante a edição",
+    "Permitir múltiplos cliques/submissões simultâneas que disparem requisições duplicadas à API",
+    "Utilizar placeholders genéricos no lugar de labels visíveis permanentes"
+  ],
+  "permissions": [],
+  "handoffs": [
+    {
+      "to": "qa-agent",
+      "reason": "verificacao"
+    }
+  ],
+  "memory": [
+    "memoria-projeto"
+  ],
+  "evaluation": {
+    "metrics": [
+      "correctness",
+      "requirementCoverage"
+    ],
+    "minScore": 0.7
+  },
+  "tokenBudget": 8192,
+  "compatibility": ">=2.0.0"
 }
-

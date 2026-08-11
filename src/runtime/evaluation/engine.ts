@@ -15,6 +15,7 @@ import type {
   EvaluationThresholds,
   MetricName,
   MetricWeightings,
+  Metrics,
   TestSummary,
   Verdict,
 } from '../types.js';
@@ -85,9 +86,13 @@ export class EvaluationEngine {
    */
   computeVerdict(
     score: number,
-    opts: { tests?: TestSummary; regressions?: string[]; thresholds: EvaluationThresholds },
+    opts: { tests?: TestSummary; regressions?: string[]; thresholds: EvaluationThresholds; metrics: Metrics },
   ): Verdict {
-    const { tests, regressions, thresholds } = opts;
+    const { tests, regressions, thresholds, metrics } = opts;
+
+    // UNKNOWN: nenhuma métrica mensurada e nenhum teste — não há evidência para julgar
+    const measured = WEIGHTED_METRICS.filter((m) => metrics[m] !== undefined);
+    if (measured.length === 0 && !tests) return 'UNKNOWN';
 
     // BLOCKED: falha estrutural que impede conclusão
     if (tests && tests.failed > 0 && tests.passed === 0) return 'BLOCKED';
@@ -140,9 +145,13 @@ export class EvaluationEngine {
       tests: input.tests,
       regressions: input.regressions,
       thresholds,
+      metrics,
     });
 
     const recommendations = [...(input.recommendations ?? [])];
+    if (verdict === 'UNKNOWN') {
+      recommendations.push('Sem evidência mensurada: coletar métricas (testes, validação de artefatos) antes de julgar.');
+    }
     if (verdict === 'FAIL' || verdict === 'BLOCKED') {
       if (!metrics.correctness || metrics.correctness < 0.8) {
         recommendations.push('Revisar correção: implementação divergente dos requisitos.');

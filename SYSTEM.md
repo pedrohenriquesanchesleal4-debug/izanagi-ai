@@ -75,13 +75,20 @@ User Input / Comando CLI
 | **Orchestrator** (`orchestrator.ts`) | Executa grafos por categoria (implementation, debugging, testing, database_design, etc.), batches, retry e healing. |
 | **Evaluation Engine** (`evaluation/`) | Métricas ponderadas (correctness, completeness, security, etc.), veredito derivado, relatório com regressões e recomendações. |
 | **Artifact Contracts** (`contracts/artifacts.ts`) | 10+ schemas de artefato (requirements, architecture, database-schema, test-plan...) com validação por campos obrigatórios + tamanho mínimo, em PT-BR. |
-| **Skill Resolver** (`routing/resolver.ts`) | Alias → target (248), parse de frontmatter, scoring por relevância + histórico. |
-| **Skill Scanner** (`security/skill-scanner.ts`) | 11 regras de segurança sobre skills (INJ, DNG, SCR, PER, NET, SEC) com severidade e allowlist. |
+| **Skill Resolver** (`routing/resolver.ts`) | Alias → target (248), parse de frontmatter, scoring por relevância + histórico; `loadAgent` cobre `agents/` + `agents/generated/`. |
+| **Skill Scanner** (`security/skill-scanner.ts`) | 11 regras de segurança sobre skills (INJ, DNG, SCR, PER, NET, SEC) com severidade, allowlist e `DEFENSIVE_CONTEXT` (ignora exemplos defensivos/educativos). |
+| **Agent Genome** (`agents/*.json`) | 13 campos formais por agente (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility) — preenchidos nos 18 agentes core. |
+| **Agent Factory** (`factories/agent-factory.ts`) | Gera novos agentes com genome a partir de requisito: detecção de lacuna vs. 18 core, ID slug, skills requeridas/opcionais, validação e escrita em `agents/generated/`. |
+| **Skill Factory** (`factories/skill-factory.ts`) | Cria skills novas com frontmatter, security scan pré-escrita, recusa de lacuna já coberta e escrita em `skills/generated/<name>/SKILL.md`. |
+| **Tool Registry** (`tools/registry.ts`) | Tools builtin (fs.read, fs.write, fs.ls) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → validate → execute. |
+| **Model Router** (`routing/model-router.ts`) | Seleção de modelo (claude/gpt/opus...) por custo/latência/contexto com fallback e override por env. |
 | **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
+| **Failure Memory** (`memory/store.ts`) | `recordFailure` + `findRelevantFailures` por categoria: erros reais registrados são injetados como evidência em runs futuros (anti-repetição). |
 | **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
 | **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSONL com spans, load/close e retry de escrita. |
+| **Benchmarks** (`benchmarks/`) | 10 casos builtin (parse, scoring, scanner, genome, composer...) executáveis via `izanagi benchmark` + `compare` entre builds. |
 | **LLM Executor** (`llm/`) | Adapters reais OpenAI/Anthropic/OpenRouter com env key, timeout e propagação de erro HTTP. |
-| **CLI** (`src/cli/`) | Entrypoint `bin/izanagi.js` → `runCLI` (doctor, audit, resolve, export, init, run...). |
+| **CLI** (`src/cli/`) | Entrypoint `bin/izanagi.js` → `runCLI` (doctor --deep, audit, resolve, export, init, agent create, skill create --gap, workflow, trace, eval, benchmark, memory, diagnose...). |
 
 ## Routing — Classificação por Categoria
 
@@ -109,9 +116,9 @@ Não há "compression engine" mágico: a economia de tokens é uma **skill opera
 
 Todo output passa por gates reais antes de ser considerado entregue:
 
-1. ✅ **Security Gate** — sem segredos no código; `skill-scanner` varre skills por injeção, comandos destrutivos, exfiltração e hardcode (11 regras).
+1. ✅ **Security Gate** — sem segredos no código; `skill-scanner` varre skills por injeção, comandos destrutivos, exfiltração e hardcode (11 regras), ignorando contexto defensivo/educativo.
 2. ✅ **Validation Gate** — artefatos validados contra schema (campos obrigatórios + tamanho mínimo); inválido → healing `skill_replacement`.
-3. ✅ **Evaluation Gate** — métricas ponderadas + veredito (PASS / PASS_WITH_WARNINGS / FAIL / BLOCKED) com recomendações.
+3. ✅ **Evaluation Gate** — métricas ponderadas + veredito (PASS / PASS_WITH_WARNINGS / FAIL / BLOCKED / **UNKNOWN** quando faltam evidências mensuradas) com recomendações.
 4. ✅ **Style Gate** — segue `RULES.md`: anti-"cara de IA", design directions, high-craft.
 5. ✅ **Clarity & Conciseness Gate** — sem fluff; cada frase agrega valor.
 6. ✅ **Completeness Gate** — responde a pergunta, sem pontas soltas (Lei da Entrega Exaustiva).
@@ -147,6 +154,40 @@ Task → Executar → Avaliar (veredito) → Healing (corrigir) → Logar (stats
 ```
 
 Melhoria contínua acontece por: healing registrado (retry/replacement/abort), stats por agente, learnings persistidos e atualização da memória curada do projeto.
+
+## Execution Pipeline (Runtime Adaptativo)
+
+O ciclo completo de execução — `Task → Understanding → Planning → Execution Graph → Evaluation → Self-Healing → Reflection → Memory → Evolution` — é suportado por módulos reais:
+
+1. **Understanding & Planning** — `requirements` decomposição de requisitos (artefatos em `contracts/artifacts.ts`), classificação da tarefa em categoria.
+2. **Execution Graph** — o Orchestrator monta um grafo por categoria (11 templates: implementation, testing, debugging, database_design...) com `parallelBatches` (nós independentes em paralelo, nós dependentes em sequência) e hooks de execução (`produce`: agêntico / LLM / comando).
+3. **Adaptive Routing** — o resolver pontua skills por relevância + histórico de uso por categoria (scorer com decaimento temporal), nunca lista estática; agents são resolvidos pelo mesmo scoring.
+4. **Evaluation** — métricas ponderadas (correctness, completeness, security, performance, requirementCoverage) com thresholds e veredito derivado; sem métricas mensuradas → **UNKNOWN** com recomendação explícita de evidência.
+5. **Self-Healing & Classification** — healing classificado (retry para transitório, `skill_replacement` para artefato inválido, fallback de modelo, abort por limite); cada healing é registrado com stats por agente.
+6. **Memory & Evolution** — `recordFailure` + `findRelevantFailures` (memória de falhas por categoria), learnings e traces; a memória curada `.agents/memoria/` é atualizada ao fim do ciclo.
+
+## Agent Factory & Skill Factory
+
+Novos agentes e skills são **gerados, não escritos à mão**:
+
+- `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` — o Agent Factory detecta lacuna vs. os 18 agentes core (recusa se o core já cobre), deriva ID slug, mapeia skills requeridas/opcionais, monta o genome completo (purpose, capabilities, inputs, outputs, handoffs, memory, evaluation, tokenBudget, compatibility), valida e escreve em `agents/generated/<id>.json` — descoberto automaticamente por `loadAgent`/`agent list`.
+- `izanagi skill create <nome> --gap="<descrição>" [--force]` — o Skill Factory recusa lacunas já cobertas, gera `skills/generated/<nome>/SKILL.md` com frontmatter de manifesto (name, description, version, compatibility, triggers, token_budget), roda o security scanner antes da escrita e só persiste com severidade LOW.
+
+## Benchmarks & Regression
+
+`izanagi benchmark` executa 10 casos builtin (resolver parse, scoring, skill scanner, genome, composer, artifact validation...); `izanagi benchmark compare` mede regressões entre builds (ex.: `2.9.6 → 2.10.0`) com delta por caso.
+
+## Model Router
+
+`src/runtime/routing/model-router.ts` seleciona o modelo por custo/latência/contexto (claude/gpt/opus...), com fallback em cadeia e override por env (`IZANAGI_MODEL`). O token budget de cada agente é declarado no genome e respeitado pelo runtime.
+
+## Tool Registry (Tools/MCP-ready)
+
+`src/runtime/tools/registry.ts` expõe tools builtin (`fs.read`, `fs.write`, `fs.ls`) atrás de um fluxo `discover → permission → validate → execute`: sandbox de zona (bloqueia path traversal via `..`), permissões least-privilege por tool, e schemas prontos para exposição a agentes externos (MCP-ready).
+
+## Doctor
+
+`izanagi doctor` audita integridade (SYSTEM.md/RULES.md, JSONs de agentes, aliases do resolver → targets); `izanagi doctor --deep` adiciona a varredura de segurança das 212 skills com `DEFENSIVE_CONTEXT` (exemplos educativos de segurança não são falsos positivos).
 
 ## Versioning
 
