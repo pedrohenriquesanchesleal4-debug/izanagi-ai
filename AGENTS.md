@@ -1,6 +1,6 @@
 # AGENTS.md — Izanagi AI Framework Reference
 
-> Version 2.8.0
+> Version 2.10.3
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
 > Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi (Smart Auto-Detection & Selective Generation)
 
@@ -8,19 +8,19 @@
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas, **Skill Composer** (15 composições de skills encadeadas por domínio), **21 agentes especializados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas, **Skill Composer** (15 composições de skills encadeadas por domínio), **21 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
 
 ---
 
-## 2. Os 18 Agentes & Comandos Opencode (`/`)
+## 2. Os 21 Agentes Especializados & Comandos Opencode (`/`)
 
-O framework conta com **21 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Por padrão, tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas).
+O framework conta com **21 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas com isolamento de contexto).
 
 | Comando | Arquivo | Papel & Especialidade |
 |---|---|---|
 | `/agents` | `.opencode/agent/agents.md` | Orquestrador Multi-Agente (Swarm Mode padrão / Paralelo) |
 | `/discovery` | `agents/discovery-agent.json` | Pré-produção: entrevista condicional, pesquisa web, preview, prompt rico ⭐ |
-| `/product-reasoner` | `agents/product-reasoner-agent.json` | Entendimento: requisitos com evidências (FACT/ASSUMPTION/UNKNOWN), critérios BDD 🆕 |
+| `/product-reasoner` | `agents/product-reasoner-agent.json` | Entendimento: requisitos com evidências (FACT/ASSUMPTION/UNKNOWN), critérios BDD |
 | `/animation` | `agents/animation-agent.json` | Scrollytelling, 3D WebGL, motion signature |
 | `/architect` | `agents/architect-agent.json` | System design, Clean Arch, DDD, CQRS, ADRs |
 | `/senior-engineer` | `agents/senior-engineer-agent.json` | Full-stack dev, refactoring, código limpo/testável |
@@ -29,7 +29,7 @@ O framework conta com **21 agentes especializados** em `agents/*.json` + orquest
 | `/security` | `agents/security-agent.json` | OWASP Top 10, auth, secure coding |
 | `/devops` | `agents/devops-agent.json` | CI/CD, Docker, K8s, IaC, observabilidade |
 | `/database` | `agents/database-agent.json` | SQL, PostgreSQL, Redis, modelagem de dados |
-| `/qa` | `agents/qa-agent.json` | QA & Test Automation: unitários, integração, E2E (Playwright), acessibilidade (WCAG) 🆕 |
+| `/qa` | `agents/qa-agent.json` | QA & Test Automation: unitários, integração, E2E (Playwright), acessibilidade (WCAG) |
 | `/bug-hunter` | `agents/bug-hunter-agent.json` | Debug, root cause analysis |
 | `/docs` | `agents/docs-agent.json` | Docs técnicos, READMEs, diagramas |
 | `/pm` | `agents/pm-agent.json` | Sprints, milestones, riscos |
@@ -38,8 +38,9 @@ O framework conta com **21 agentes especializados** em `agents/*.json` + orquest
 | `/evaluator` | `agents/evaluator-agent.json` | Critério técnico, avaliação objetiva de entregas |
 | `/adversarial-critic` | `agents/adversarial-critic-agent.json` | Crítica destrutiva-construtiva, pontos cegos |
 | `/form-engineer` | `agents/form-engineer-agent.json` | Formulários high-craft: validação, wizard, acessibilidade |
-| `/agent-architect` | `agents/agent-architect-agent.json` | Projeta novos agentes (Genome, guardrails, avaliação) por lacuna real 🆕 |
-| `/skill-architect` | `agents/skill-architect-agent.json` | Curadoria de skills: security scan, anti-duplicação, lacunas comprovadas 🆕 |
+| `/agent-architect` | `agents/agent-architect-agent.json` | Projeta novos agentes (Genome, guardrails, avaliação) por lacuna real |
+| `/skill-architect` | `agents/skill-architect-agent.json` | Curadoria de skills: security scan, anti-duplicação, lacunas comprovadas |
+| *Dinâmico* | `agents/generated/c-systems-engineer.json` | Engenharia C & Baixo Nível: gestão de memória, ponteiros, GCC/CMake, Valgrind |
 
 ---
 
@@ -64,20 +65,22 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 ## 4. Estrutura do Framework
 
-- `core/` — 10 engines (.md, incluindo `skill-composer.md` e `checkpoint-healing-engine.md`) + **`skill-resolver.json`** (mapa alias → target + seção `compositions`)
-- `agents/` — 21 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos)
+- `core/` — 10+ engines (.md, incluindo `skill-composer.md`, `checkpoint-healing-engine.md`, `quality-gates.md`) + **`skill-resolver.json`** (mapa alias → target + seção `compositions`)
+- `agents/` — Definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos)
 - `skills/` — 212 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria), `ui-ux-pro-max` (design system com motor BM25 offline em Node) e `anti-ai-slop` (auditoria zero "cara de IA")
 - `references/` — curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
 - `.agents/memoria/` — memória persistente anti-repetição: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`
-- `.opencode/agent/` — comandos slash do Opencode; adapters equivalentes gerados sob demanda em `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`
+- `.opencode/agent/` — comandos slash do Opencode; adapters gerados sob demanda em `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`
 - `src/` — CLI TypeScript (entrypoint: `src/cli/index.ts` → `runCLI`; multi-CLI export: `src/exporters.ts`)
-- `SYSTEM.md` & `RULES.md` — fundação e regras operacionais (Anti-Generic High-Craft & Cinematic UI)
+- `SYSTEM.md` & `RULES.md` — fundação e regras operacionais (Anti-Generic High-Craft, Masterpiece Gate & Cinematic UI)
 
 ---
 
-## 5. Regras de Execução & Autonomia
+## 5. Regras de Execução, Autonomia & Masterpiece Gate
 
-- **Estudo Antes de Codar (Study-First):** toda tarefa começa (1) carregando `.agents/memoria/` (aprendizados, erros já corrigidos, decisões — nunca repita um erro já resolvido), (2) consultando `references/` e/ou `deep-research` quando a tarefa exigir informação externa, e só então (3) arquitetar e implementar. Nunca programe no escuro.
+- **Estudo Antes de Codar (Study-First):** toda tarefa começa (1) carregando `.agents/memoria/`, (2) consultando `references/` e/ou `deep-research` quando a tarefa exigir informação externa, e só então (3) arquitetar e implementar. Nunca programe no escuro.
+- **Lei da Fidelidade Absoluta a Referências (Anti-Rush):** Quando solicitado clonagem, inspiração ou replicação de uma referência visual/técnica (ex: `igloo.inc`), os agentes têm **estritamente proibido** retornar respostas apressadas ou fingir estudo superficial. É obrigatório decompor rigorosamente a estrutura, tipografia, grid, animações e micro-interações da referência e entregar uma obra de excelência artesanal (*High-Craft*) idêntica ou superior.
+- **Zero Falsificação de Pesquisa (Anti-Fake-Research):** Nunca afirme ter estudado ou analisado um site ou documento sem processá-lo com profundidade real. Cada entrega reflete estudo genuíno e maestria técnica.
 - **Composição de Skills Obrigatória:** skills nunca são usadas isoladas. O `core/skill-composer.md` + `compositions` do `skill-resolver.json` definem cadeias encadeadas por domínio.
 - **Execução Paralela Concorrente:** Ative múltiplos agentes especializados simultaneamente para frentes distintas.
 - **Pré-instalação de Dependências:** Baixe e instale pacotes necessários (`npm install`) **antes** de criar ou alterar arquivos de código. Nunca espere o usuário fazer.
@@ -85,7 +88,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 - **Lei da Entrega Exaustiva e Profunda (Anti-Stub / Anti-Lazy-Code):** Em QUALQUER solicitação (feature, componente, tela ou script), é **estritamente proibido** escrever código esparso, stubs vazios (`TODO`, `// implement later`) ou arquivos mínimos. Toda entrega deve ser **profunda, rica, robusta e completa de primeira**, com tipagem estrita, estados reais, tratamento de erros e lógica funcional pronta para produção.
 - **Lei da Geração de Código Real e Zero Listas (Anti-Checklist / Anti-Summary):** É estritamente proibido responder a pedidos de sistemas, apps ou SaaS com listas de tarefas resumidas (`[✓] 1. Criar banco...`), resumos textuais ou stubs vagos. O Izanagi exige a **geração de código real, completo e produtivo** para cada arquivo necessário (Schema Prisma, Rotas de API, Componentes React/Next.js com Tailwind, Middlewares de Auth, README de execução). Cada arquivo deve vir com seu código fonte 100% implementado, sem atalhos.
 - **Discovery Condicional:** Se o prompt do usuário já estiver detalhado e estruturado, o `/discovery` aprova automaticamente e gera o blueprint/prompt rico de imediato, sem entrevistas desnecessárias. Se for vago, conduz a entrevista sugerindo temas personalizados ao nicho.
-- **Style Selector Obrigatório (Design Directions First):** Em todo pedido de site/app/landing, o framework apresenta 3-5 direções de design BESPOKE para o nicho (`design-directions`) — paleta exata, tipografia com personalidade, layout e motion signature — e o usuário escolhe antes de codar. Nunca template único.
+- **Style Selector Obrigatório (Design Directions First):** Em todo pedido de site/app/landing, apresente 3-5 direções de design BESPOKE para o nicho (`design-directions`) — paleta exata, tipografia com personalidade, layout e motion signature — e o usuário escolhe antes de codar. Nunca template único.
 - **Anti AI-Slop (Zero "Cara de IA"):** toda UI entregue passa pela auditoria `anti-ai-slop` (ZERO tells: Inter default, gradientes roxo, hero + 3 cards, rounded-2xl uniforme, copy "Build the future"). Substituir por escolhas intencionais: tipografia distinta, cor dominante + acento, layout assimétrico, motion em 1-2 momentos-chave.
 - **Token Economy Ativa por Padrão:** a skill `economia-tokens` vale para toda sessão — contexto mínimo, prompt caching (estático primeiro, dinâmico por último), sliding window, coordenar agentes por artefatos em disco (nunca passar payloads gigantes entre agentes) e zero releituras. Economia se aplica a contexto inútil, nunca ao entregável.
 
