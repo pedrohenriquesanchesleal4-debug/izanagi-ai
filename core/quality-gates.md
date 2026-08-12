@@ -178,6 +178,19 @@ if completeness_ratio < 1.0:
 
 ---
 
+## Gate 6: Masterpiece & High-Craft (Anti-Slop & Reference Fidelity)
+
+**Fatal for visual/architecture tasks** — if this fails, output is rejected and reworked with rigorous craftsmanship.
+
+### Checks
+
+- [ ] Zero AI-Slop: no generic gray cards, no default Inter font, no cliché purple/violet gradients, no cookie-cutter layouts.
+- [ ] Absolute Reference Fidelity: when referencing a site or design (e.g., `igloo.inc`), typography, layout grid, motion, and micro-interactions match with exquisite precision.
+- [ ] Exhaustive Depth: zero stubs, zero placeholder functions (`// TODO`), zero shortcut artifacts.
+- [ ] Production-Ready: fully typed, rigorously structured, handling edge cases gracefully.
+
+---
+
 ## Combined Result
 
 ```yaml

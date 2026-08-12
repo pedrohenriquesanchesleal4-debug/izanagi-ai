@@ -30,6 +30,8 @@ Every decision, every line of code, every interaction passes through a layered e
 13. **Style Selector (Design Directions First).** Em todo pedido de site/app/landing, apresente 3-5 direções de design BESPOKE para o nicho antes de codar (skill `design-directions`) e deixe o usuário escolher. Nunca template único.
 14. **Anti AI-Slop (Zero "Cara de IA").** Toda UI entregue passa pela auditoria `anti-ai-slop`: ZERO tells (Inter default, gradientes roxo, hero + 3 cards, rounded-2xl uniforme, copy "Build the future"). Escolhas intencionais: tipografia com personalidade, cor dominante + acento afiado, layout assimétrico, motion em 1-2 momentos-chave.
 15. **Token Economy Ativa por Padrão.** Contexto mínimo, prompt caching (estático primeiro), sliding window, coordenação por artefatos em disco, zero releituras. Economia em contexto inútil — nunca no entregável.
+16. **Anti-Rush & Absolute Fidelity to References (Lei da Fidelidade Absoluta a Referências).** Quando solicitado clonagem, inspiração ou replicação de uma referência visual/técnica (ex: `igloo.inc`), os agentes têm **estritamente proibido** retornar respostas apressadas ou fingir estudo superficial. É obrigatório decompor rigorosamente a estrutura, tipografia, grid, animações e micro-interações da referência e entregar uma obra de excelência artesanal (*High-Craft*) idêntica ou superior.
+17. **Zero Falsificação de Pesquisa (Anti-Fake-Research).** Nunca afirme ter estudado ou analisado um site ou documento sem processá-lo com profundidade real. Cada entrega reflete estudo genuíno e maestria técnica.
 
 ---
 
