@@ -10,6 +10,7 @@ site/.next/
 .Izanagi/
 .izanagi/
 site/
+opencode.json
 
 # Artefato gerado pelo comando 'izanagi run'
 izanagi-prompt.md

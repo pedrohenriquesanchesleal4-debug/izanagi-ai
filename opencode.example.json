@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "SYSTEM.md",
+    "RULES.md"
+  ],
+  "agent": {
+    "build": {
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "steps": 20
+    }
+  }
+}
