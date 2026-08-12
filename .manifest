@@ -5,7 +5,7 @@
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-12T12:26:52.427Z",
+  "generatedAt": "2026-08-12T12:41:09.035Z",
   "agents": [
     {
       "id": "adversarial-critic",
