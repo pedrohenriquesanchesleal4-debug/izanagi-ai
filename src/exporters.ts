@@ -101,7 +101,7 @@ export function resolveSourceDir(baseDir: string): string {
   return baseDir;
 }
 
-/** Lê os 12 agentes reais de agents/*.json. */
+/** Lê todos os agentes reais de agents/*.json. */
 export function loadIzanagiAgents(baseDir: string): IzanagiAgentInfo[] {
   const sourceDir = resolveSourceDir(baseDir);
   const agentsDir = path.join(sourceDir, 'agents');
@@ -280,7 +280,7 @@ function claudeMainTemplate(baseDir: string, agents: IzanagiAgentInfo[], skills:
 
   return `# Izanagi AI — Claude Code Integration
 
-Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e 12 agentes pré-definidos.
+Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e 21 agentes pré-definidos.
 
 ## Fonte da verdade
 
@@ -311,11 +311,11 @@ ${skillList}
 - **Auto-correção e ensino.** Reflita após cada tarefa; ensine de forma adaptativa.
 - **Segurança não é opcional.** Sem secrets no código, sem credenciais hardcoded.
 
-## Sempre (consolidado dos 12 agentes)
+## Sempre (consolidado de todos os agentes)
 
 ${always.length > 0 ? bullet([...new Set(always)].slice(0, 12)) : '- n/a'}
 
-## Nunca (consolidado dos 12 agentes)
+## Nunca (consolidado de todos os agentes)
 
 ${never.length > 0 ? bullet([...new Set(never)].slice(0, 12)) : '- n/a'}
 
@@ -383,7 +383,7 @@ function codexInstructionsTemplate(baseDir: string, agents: IzanagiAgentInfo[]):
   const agentList = agents.map((a) => `- \`${a.slug}\` — ${a.role}`).join('\n');
   return `# Izanagi AI — Codex Instructions
 
-> **Fonte da verdade: \`AGENTS.md\`** (o Codex lê \`AGENTS.md\` nativamente). Este arquivo contém as regras essenciais e o índice dos 12 agentes do framework.
+> **Fonte da verdade: \`AGENTS.md\`** (o Codex lê \`AGENTS.md\` nativamente). Este arquivo contém as regras essenciais e o índice dos agentes do framework.
 
 ## Regras essenciais
 
@@ -404,7 +404,7 @@ ${agentList}
 - \`AGENTS.md\` — referência canônica (leia primeiro)
 - \`SYSTEM.md\` — fundação do sistema
 - \`RULES.md\` — regras operacionais
-- \`agents/*.json\` — definições completas dos 12 agentes
+- \`agents/*.json\` — definições completas de todos os agentes
 - \`skills/<name>/SKILL.md\` — biblioteca de skills especializadas
 - \`.opencode/agent/*.md\` — integração com opencode (compatível com Kimi CLI)
 
@@ -480,7 +480,7 @@ function cursorAgentsTemplate(agents: IzanagiAgentInfo[]): string {
     .map((a) => `| \`${a.slug}\` | ${a.name} | ${truncate(a.role, 110)} |`)
     .join('\n');
   return `---
-description: Izanagi AI — índice dos 12 agentes especializados e quando usar cada um
+description: Izanagi AI — índice dos agentes especializados e quando usar cada um
 globs: ["**/*"]
 ---
 

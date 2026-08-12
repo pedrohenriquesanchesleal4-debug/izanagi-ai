@@ -1,0 +1,18 @@
+{
+  "id": "ext-requirements-bdd",
+  "domain": "coding",
+  "task": "Dado o pedido 'app de assinaturas com trial de 14 dias e cobrança recorrente', produza o artefato `requirements` com critérios de aceite BDD (Given-When-Then) para trial, cobrança e cancelamento, rotulando suposições de negócio como FACT/ASSUMPTION/UNKNOWN.",
+  "requirements": [
+    "critérios BDD (Given-When-Then) por regra",
+    "suposições rotuladas com tipo de evidência e confiança",
+    "regras não-funcionais (dados de cobrança, PCI, LGPD)"
+  ],
+  "expectedArtifacts": ["docs/requirements.md"],
+  "validators": [
+    { "name": "has-bdd", "message": "deve conter Given-When-Then", "check": "text.toLowerCase().includes('given') && text.toLowerCase().includes('when') && text.toLowerCase().includes('then')" },
+    { "name": "labels-evidence", "message": "deve rotular evidência", "check": "text.includes('ASSUMPTION') || text.includes('FACT') || text.includes('UNKNOWN')" },
+    { "name": "no-stub", "message": "sem stub", "check": "!text.includes('TODO')" }
+  ],
+  "metrics": ["correctness", "requirementCoverage", "confidence"],
+  "tags": ["requirements", "bdd", "evidence"]
+}

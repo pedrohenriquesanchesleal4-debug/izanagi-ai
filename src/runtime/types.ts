@@ -308,6 +308,8 @@ export interface RunTrace {
   healing?: HealingAction[];
   spans: TraceSpan[];
   graph?: ExecutionGraph;
+  /** Token Budget 2.0 — gasto por fase (planning/execution/evaluation/recovery). */
+  budget?: Record<string, { spent: number; remaining: number }>;
 }
 
 /* ============================ SELF-HEALING ============================ */

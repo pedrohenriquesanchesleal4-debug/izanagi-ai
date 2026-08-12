@@ -1,6 +1,6 @@
 # Izanagi AI
 
-Framework **meta** modular e skill-oriented para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 18 agentes especializados, 212 skills e uma CLI executável publicada no npm (`izanagi-ai`).
+Framework **meta** — **Adaptive Agent & Skill Runtime** — para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 21 agentes especializados, 212 skills, execution graph, evaluation engine, self-healing e CLI executável publicada no npm (`izanagi-ai`).
 
 > **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -61,7 +61,7 @@ izanagi-ai/
 ├── bin/             Executável da CLI (bin/izanagi.js → dist/cli)
 ├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, factories, tools, tracer, llm, cli)
 ├── core/            Engines (.md) + skill-resolver.json (aliases → targets + compositions)
-├── agents/          18 definições de agentes em JSON (fonte da verdade dos comandos)
+├── agents/          21 definições de agentes em JSON (fonte da verdade dos comandos)
 ├── skills/          212 skills em skills/<name>/SKILL.md (+ references.md opcional)
 ├── references/      Curadoria de referências reais por domínio (webgl-3d, scrollytelling, stack-2026...)
 ├── .agents/memoria/ Memória persistente anti-repetição (contexto, decisoes, erros-corrigidos, learnings)
@@ -75,7 +75,7 @@ izanagi-ai/
 
 ## Agentes e Skills
 
-O framework possui **18 agentes especializados** (`/discovery`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`) e **212 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (248 aliases, 15 composições). Ver `AGENTS.md` para a tabela completa.
+O framework possui **21 agentes especializados** (`/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`) e **212 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (248 aliases, 15 composições). Ver `AGENTS.md` para a tabela completa.
 
 ---
 
@@ -85,7 +85,7 @@ O framework possui **18 agentes especializados** (`/discovery`, `/architect`, `/
 npm install       # instala dependências
 npm run build     # tsc && regenera .manifest
 npm run doctor    # auditoria de integridade
-node --test dist/runtime/tests/*.test.js   # 136 testes do runtime
+node --test dist/runtime/tests/*.test.js   # 152 testes do runtime
 npm run verify    # build + teste de instalação em sandbox
 ```
 

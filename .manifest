@@ -5,7 +5,7 @@
   "author": "Pedro Henrique Sanches Leal",
   "license": "MIT",
   "homepage": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai#readme",
-  "generatedAt": "2026-08-11T14:02:38.028Z",
+  "generatedAt": "2026-08-12T12:15:26.209Z",
   "agents": [
     {
       "id": "adversarial-critic",
@@ -25,6 +25,27 @@
         "critique_code",
         "critique_ui",
         "critique_architecture"
+      ]
+    },
+    {
+      "id": "agent-architect",
+      "name": "Agent Architect",
+      "version": "2.11.0",
+      "file": "agents/agent-architect-agent.json",
+      "role": "Projeto de novos agentes especializados: Requirements → Capability Analysis → Skill Discovery → Composition → Prompt Generation → Guardrails → Evaluation → Agent Genome → Registration",
+      "skills": [
+        "principal-engineer",
+        "prompt-engineering",
+        "architecture-patterns",
+        "handoff-protocol",
+        "hallucination-detection",
+        "confidence-estimator",
+        "economia-tokens",
+        "memoria-projeto"
+      ],
+      "chains": [
+        "projetar_agente",
+        "revisar_agente_existente"
       ]
     },
     {
@@ -286,6 +307,27 @@
       ]
     },
     {
+      "id": "product-reasoner",
+      "name": "Product Reasoner",
+      "version": "2.11.0",
+      "file": "agents/product-reasoner-agent.json",
+      "role": "Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite BDD e evidências antes de qualquer código",
+      "skills": [
+        "requirement-analyzer",
+        "brainstorming",
+        "deep-research",
+        "confidence-estimator",
+        "economia-tokens",
+        "task-planner",
+        "memoria-projeto"
+      ],
+      "chains": [
+        "entendimento_produto",
+        "requisitos_com_evidencias",
+        "critérios_bdd"
+      ]
+    },
+    {
       "id": "professor",
       "name": "Professor / Mentor",
       "version": "2.8.0",
@@ -397,6 +439,27 @@
         "refactor",
         "review",
         "optimize"
+      ]
+    },
+    {
+      "id": "skill-architect",
+      "name": "Skill Architect",
+      "version": "2.11.0",
+      "file": "agents/skill-architect-agent.json",
+      "role": "Arquitetura de novas skills: Capability Gap → Research → Draft → Examples → Tests → Security Scan → Evaluation → Register (zero skills desnecessárias)",
+      "skills": [
+        "prompt-engineering",
+        "security-privacy",
+        "hallucination-detection",
+        "confidence-estimator",
+        "deep-research",
+        "economia-tokens",
+        "evaluation",
+        "memoria-projeto"
+      ],
+      "chains": [
+        "criar_skill",
+        "auditar_skills"
       ]
     },
     {

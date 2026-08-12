@@ -220,26 +220,30 @@ export class SkillResolver {
     return null;
   }
 
-  /** Ranking de agentes para uma tarefa (relevância + histórico). */
-  rankAgents(query: string, agentIds: string[], limit = 5): CandidateScore[] {
+  /** Ranking otimizado com lazy-load e pruning por relevância e custo (Token Economy). */
+  rankAgents(query: string, agentIds: string[], limit = 3): CandidateScore[] {
     const scored: CandidateScore[] = [];
+    const q = query.toLowerCase();
     for (const id of agentIds) {
       const loaded = this.loadAgent(id);
-      const haystack = loaded
-        ? [loaded.genome.purpose, loaded.genome.role ?? '', loaded.genome.name, ...loaded.genome.capabilities, ...(loaded.genome.skills ?? [])].join(' ')
-        : id;
-      const relevance = semanticRelevance(query, haystack);
-      if (relevance === 0) continue;
+      if (!loaded) continue;
+      // Pruning por incapacidade óbvia (otimização de token e latência)
+      const haystack = [loaded.genome.purpose, loaded.genome.role ?? '', loaded.genome.name, ...loaded.genome.capabilities, ...(loaded.genome.skills ?? [])].join(' ').toLowerCase();
+      const relevance = semanticRelevance(q, haystack);
+      if (relevance < 0.15 && agentIds.length > 5) continue; // descarta candidatos irrelevantes em seleções amplas
+
       const stats = this.opts.memory?.agentStats(id);
       const historicalSuccess = stats && stats.runs > 0 ? stats.successes / stats.runs : 0.5;
+      const costPenalty = costNumber(loaded.genome.tokenBudget);
+
       scored.push(
         this.scorer.score({
           candidate: id,
           relevance,
           historicalSuccess,
-          compatibility: loaded ? 1 : 0.2,
+          compatibility: 1,
           risk: 0.1,
-          cost: loaded ? costNumber(loaded.genome.tokenBudget) : 0.5,
+          cost: costPenalty,
           latency: 0.5,
         }),
       );

@@ -8,18 +8,19 @@
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas, **Skill Composer** (15 composições de skills encadeadas por domínio), **18 agentes especializados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas, **Skill Composer** (15 composições de skills encadeadas por domínio), **21 agentes especializados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
 
 ---
 
 ## 2. Os 18 Agentes & Comandos Opencode (`/`)
 
-O framework conta com **18 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Por padrão, tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas).
+O framework conta com **21 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Por padrão, tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas).
 
 | Comando | Arquivo | Papel & Especialidade |
 |---|---|---|
 | `/agents` | `.opencode/agent/agents.md` | Orquestrador Multi-Agente (Swarm Mode padrão / Paralelo) |
 | `/discovery` | `agents/discovery-agent.json` | Pré-produção: entrevista condicional, pesquisa web, preview, prompt rico ⭐ |
+| `/product-reasoner` | `agents/product-reasoner-agent.json` | Entendimento: requisitos com evidências (FACT/ASSUMPTION/UNKNOWN), critérios BDD 🆕 |
 | `/animation` | `agents/animation-agent.json` | Scrollytelling, 3D WebGL, motion signature |
 | `/architect` | `agents/architect-agent.json` | System design, Clean Arch, DDD, CQRS, ADRs |
 | `/senior-engineer` | `agents/senior-engineer-agent.json` | Full-stack dev, refactoring, código limpo/testável |
@@ -37,6 +38,8 @@ O framework conta com **18 agentes especializados** em `agents/*.json` + orquest
 | `/evaluator` | `agents/evaluator-agent.json` | Critério técnico, avaliação objetiva de entregas |
 | `/adversarial-critic` | `agents/adversarial-critic-agent.json` | Crítica destrutiva-construtiva, pontos cegos |
 | `/form-engineer` | `agents/form-engineer-agent.json` | Formulários high-craft: validação, wizard, acessibilidade |
+| `/agent-architect` | `agents/agent-architect-agent.json` | Projeta novos agentes (Genome, guardrails, avaliação) por lacuna real 🆕 |
+| `/skill-architect` | `agents/skill-architect-agent.json` | Curadoria de skills: security scan, anti-duplicação, lacunas comprovadas 🆕 |
 
 ---
 
@@ -62,7 +65,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 ## 4. Estrutura do Framework
 
 - `core/` — 10 engines (.md, incluindo `skill-composer.md` e `checkpoint-healing-engine.md`) + **`skill-resolver.json`** (mapa alias → target + seção `compositions`)
-- `agents/` — 18 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas
+- `agents/` — 21 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos)
 - `skills/` — 212 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria), `ui-ux-pro-max` (design system com motor BM25 offline em Node) e `anti-ai-slop` (auditoria zero "cara de IA")
 - `references/` — curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
 - `.agents/memoria/` — memória persistente anti-repetição: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`

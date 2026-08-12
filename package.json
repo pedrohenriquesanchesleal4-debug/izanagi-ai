@@ -34,6 +34,7 @@
     ".github",
     ".kimi",
     "references",
+    "benchmarks",
     "SYSTEM.md",
     "RULES.md",
     "AGENTS.md",

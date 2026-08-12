@@ -26,8 +26,11 @@ import { ExecutionGraphBuilder } from './orchestration/graph.js';
 import { SkillResolver } from './routing/resolver.js';
 import { Healer } from './recovery/healing.js';
 import { LearningEngine } from './evolution/learning.js';
+import { AgentFactory } from './factories/agent-factory.js';
+import { SkillFactory } from './factories/skill-factory.js';
 import { ModelRouter } from './model/router.js';
 import { validateArtifact } from './contracts/artifacts.js';
+import { PhaseTokenBudget, defaultWeights } from './token/budget.js';
 
 export interface OrchestratorOptions {
   baseDir: string;
@@ -53,6 +56,8 @@ export interface ExecuteCtx {
   trace: Tracer;
   memory: MemoryStore;
   artifacts: Map<string, { kind: string; content: unknown; valid: boolean; score: number }>;
+  /** Token Budget 2.0 — orçamento por fase (planning/execution/evaluation/recovery). */
+  budget: PhaseTokenBudget;
 }
 
 export interface OrchestrationResult {
@@ -133,7 +138,18 @@ export class Orchestrator {
 
     // Adaptive routing: score agentes e skills
     const resolver = new SkillResolver({ baseDir: this.opts.baseDir, memory });
+    const agentFactory = new AgentFactory(resolver);
     const agentScore = resolver.rankAgents(this.opts.task, agentIds(), 3);
+    if (agentScore.length === 0 || agentScore[0].finalScore < 0.25) {
+      try {
+        const drafted = agentFactory.generate({ requirement: this.opts.task });
+        if (drafted.validation.valid && this.opts.verbose) {
+          console.log(`  \x1b[35m⚡\x1b[0m Agent Factory gerou e validou agente especializado: ${drafted.genome.name}`);
+        }
+      } catch {
+        // Ignora se não for possível gerar automaticamente
+      }
+    }
     if (agentScore.length > 0) {
       const best = agentScore[0];
       trace.markAgent(best.candidate);
@@ -143,6 +159,7 @@ export class Orchestrator {
     }
 
     // Execution com self-healing
+    const phaseBudget = new PhaseTokenBudget(graph.budget.maxTokens, defaultWeights(complexity));
     const ctx: ExecuteCtx = {
       runId: trace.runId,
       task: this.opts.task,
@@ -153,6 +170,7 @@ export class Orchestrator {
       trace,
       memory,
       artifacts: new Map(),
+      budget: phaseBudget,
     };
 
     let finalEvaluation: EvaluationReport | undefined;
@@ -165,6 +183,26 @@ export class Orchestrator {
       attempts++;
       const failure = await this.executeBatches(workingGraph, ctx);
       if (!failure) break;
+
+      // Token Budget 2.0: fase de recovery esgotada → aborta (impede loop)
+      if (phaseBudget.exhausted('recovery')) {
+        const node = workingGraph.nodes.find((n) => n.id === failure.nodeId);
+        if (node) {
+          node.status = 'failed';
+          node.error = 'orçamento de tokens da fase recovery esgotado';
+        }
+        const abortHeal: HealingAction = {
+          id: `heal-${Date.now().toString(36)}-${failure.nodeId}`,
+          kind: 'abort',
+          failureKind: 'non-recoverable',
+          message: 'orçamento de tokens da fase recovery esgotado — abortando',
+          nodeId: failure.nodeId,
+          createdAt: new Date().toISOString(),
+        };
+        healing.push(abortHeal);
+        trace.span(`healing:${abortHeal.kind}`, 'healing', { failureKind: abortHeal.failureKind, message: abortHeal.message })(false, abortHeal.message);
+        break;
+      }
 
       // Self-healing
       const healer = new Healer();
@@ -264,10 +302,16 @@ export class Orchestrator {
       healing,
       artifacts: artifacts.map((a) => ({ ...a, name: a.name })),
       model: routed.model.id,
+      budget: phaseBudget.summary(),
     });
 
     if (this.opts.verbose) {
       console.log(`\n  \x1b[90mTrace salvo:\x1b[0m ${path.relative(this.opts.baseDir, file)}`);
+      const usage = phaseBudget.usage();
+      console.log(`  \x1b[90mToken budget por fase:\x1b[0m ${usage.map((u: { phase: string; spent: number; allocated: number; exhausted: boolean }) => `${u.phase}=${u.spent}/${u.allocated}${u.exhausted ? ' (max)' : ''}`).join('  ')}`);
+      if (finalEvaluation) {
+        console.log(`  \x1b[90mAvaliação:\x1b[0m ${finalEvaluation.verdict} (score ${finalEvaluation.score.toFixed(2)})`);
+      }
     }
 
     return {
@@ -345,6 +389,14 @@ export class Orchestrator {
       if (result.tokens) {
         ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
         this.tokensUsed += result.tokens;
+        // Retry consome a fase recovery, não execution
+        const phase = node.attempts && node.attempts > 1 ? 'recovery' : 'execution';
+        if (!ctx.budget.spend(phase, result.tokens)) {
+          node.status = 'failed';
+          node.error = `orçamento de tokens da fase ${phase} excedido`;
+          closeSpan(false, node.error);
+          return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+        }
       }
       if (result.model) ctx.trace.markTool(`model:${result.model}`);
 
@@ -376,8 +428,8 @@ export class Orchestrator {
 
 function agentIds(): string[] {
   return [
-    'discovery', 'architect', 'security', 'database', 'pm', 'senior-engineer',
+    'discovery', 'product-reasoner', 'architect', 'security', 'database', 'pm', 'senior-engineer',
     'qa', 'adversarial-critic', 'bug-hunter', 'automation-engineer', 'animation',
-    'researcher', 'devops', 'techlead', 'docs', 'professor',
+    'researcher', 'devops', 'techlead', 'docs', 'professor', 'agent-architect', 'skill-architect',
   ];
 }
