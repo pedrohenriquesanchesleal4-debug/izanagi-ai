@@ -83,7 +83,7 @@ User Input / Comando CLI
 | **Agent Factory** (`factories/agent-factory.ts`) | Gera novos agentes com genome a partir de requisito: detecção de lacuna vs. 21 core, ID slug, skills requeridas/opcionais, validação e escrita em `agents/generated/`. |
 | **Skill Factory** (`factories/skill-factory.ts`) | Cria skills novas com frontmatter, security scan pré-escrita, recusa de lacuna já coberta e escrita em `skills/generated/<name>/SKILL.md`. |
 | **Tool Registry** (`tools/registry.ts`) | Tools builtin (fs.read, fs.write, fs.ls) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → validate → execute. |
-| **Model Router** (`routing/model-router.ts`) | Seleção de modelo (claude/gpt/opus...) por custo/latência/contexto com fallback e override por env. |
+| **Model Router** (`model/router.ts`) | Seleção de modelo (claude/gpt/opus...) por custo/latência/contexto com fallback e override por env. |
 | **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
 | **Failure Memory** (`memory/store.ts`) | `recordFailure` + `findRelevantFailures` por categoria: erros reais registrados são injetados como evidência em runs futuros (anti-repetição). |
 | **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
@@ -184,7 +184,7 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 
 ## Model Router
 
-`src/runtime/routing/model-router.ts` seleciona o modelo por custo/latência/contexto (claude/gpt/opus...), com fallback em cadeia e override por env (`IZANAGI_MODEL`). O token budget de cada agente é declarado no genome e respeitado pelo runtime.
+`src/runtime/model/router.ts` seleciona o modelo por custo/latência/contexto (claude/gpt/opus...), com fallback em cadeia e override por env (`IZANAGI_MODEL`). O token budget de cada agente é declarado no genome e respeitado pelo runtime.
 
 ## Tool Registry (Tools/MCP-ready)
 

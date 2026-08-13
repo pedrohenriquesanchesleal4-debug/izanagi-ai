@@ -47,8 +47,9 @@ O framework conta com **21 agentes especializados** em `agents/*.json` + orquest
 ## 3. Comandos de Desenvolvimento (ordem importa)
 
 ```
-npm install          # instala deps (self-dependency: package.json depende de "izanagi-ai")
+npm install          # instala deps
 npm run build        # tsc && node dist/scripts/generate-manifest.js
+npm test             # build + node --test dist/runtime/tests/*.test.js (165 testes)
 npm run verify       # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor       # node bin/izanagi.js doctor — auditoria de integridade
 npm run bump:patch   # npm version patch --no-git-tag-version (também minor/major)
@@ -58,7 +59,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 **Gotchas críticos:**
 - `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js` — **rode `npm run build` antes de qualquer comando CLI local**, senão roda código obsoleto ou quebra.
 - `doctor` valida: SYSTEM.md/RULES.md, JSONs de agentes e aliases do resolver → targets.
-- Não há test runner (sem `npm test`). Verificação = `npm run build` + `npm run verify` + `npm run doctor`.
+- Há test runner real (`node:test`, 165 testes em `src/runtime/tests/`). Verificação = `npm test` + `npm run verify` + `npm run doctor`.
 - Padrão de commit do repo: `chore: bump to vX.Y.Z` para bumps e `feat:`/`fix:`/`docs:` descritivos em PT-BR para mudanças.
 
 ---
