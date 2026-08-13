@@ -1,5 +1,7 @@
 # Optimization: Prompt Optimizer
 
+> **⚠️ Consolidado em `skills/prompt-engineering/SKILL.md`.** Este pack legado foi superado pelo formato novo (SKILL.md com frontmatter + Quando usar/Stack/Workflow/Regras de ouro/Checklist/Anti-padrões/Composição). Mantido por compatibilidade; para tarefas novas, use `skills/prompt-engineering/SKILL.md` como fonte primária.
+
 > Version 1.0.0
 > Priority: High
 > Dependencies: Token Manager, Compression Engine

@@ -1,5 +1,7 @@
 # Token Optimization Audit
 
+> **⚠️ Consolidado em `skills/economia-tokens/SKILL.md`.** Este pack legado foi superado pelo formato novo (SKILL.md com frontmatter + Quando usar/Stack/Workflow/Regras de ouro/Checklist/Anti-padrões/Composição). Mantido por compatibilidade; para tarefas novas, use `skills/economia-tokens/SKILL.md` como fonte primária.
+
 > Análise de consumo atual + plano de redução de 40-60%.
 
 ---

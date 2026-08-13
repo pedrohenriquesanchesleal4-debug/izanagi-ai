@@ -1,5 +1,7 @@
 # Memory: Context Recovery
 
+> **Ver também:** `skills/handoff-sessao/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em recuperação de contexto entre sessões, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: Medium
 > Dependencies: Conversation Summarizer, Memory Manager
 > Compatibility: ">=1.0.0"

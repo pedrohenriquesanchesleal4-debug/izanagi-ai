@@ -1,5 +1,7 @@
 # Architecture: DDD Specialist
 
+> **⚠️ Consolidado em `skills/architecture-patterns/SKILL.md`.** Este pack legado foi superado pelo formato novo (SKILL.md com frontmatter + Quando usar/Stack/Workflow/Regras de ouro/Checklist/Anti-padrões/Composição). Mantido por compatibilidade; para tarefas novas, use `skills/architecture-patterns/SKILL.md` como fonte primária.
+
 > Version 1.0.0 | Priority: High
 > Dependencies: Software Architect
 > Compatibility: ">=1.0.0"

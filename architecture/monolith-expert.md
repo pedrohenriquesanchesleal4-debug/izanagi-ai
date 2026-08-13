@@ -1,5 +1,7 @@
 # Architecture: Monolith Expert
 
+> **Ver também:** `skills/architecture-patterns/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em a defesa do monolito modular, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: Medium
 > Dependencies: Software Architect
 > Compatibility: ">=1.0.0"

@@ -1,5 +1,7 @@
 # Architecture: Unit of Work
 
+> **Ver também:** `skills/architecture-patterns/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em o padrão Unit of Work específico, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: Medium
 > Dependencies: Repository Pattern
 > Compatibility: ">=1.0.0"

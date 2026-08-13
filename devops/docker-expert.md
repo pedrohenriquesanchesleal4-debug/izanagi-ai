@@ -1,5 +1,7 @@
 # DevOps: Docker Expert
 
+> **Ver também:** `skills/cloud-infra/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em detalhes específicos de Docker, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: High
 > Dependencies: DevOps Engineer
 > Compatibility: ">=1.0.0"

@@ -1,5 +1,7 @@
 # Exemplo: Skill Compacta vs Atual
 
+> **⚠️ Consolidado em `skills/economia-tokens/SKILL.md`.** Este pack legado foi superado pelo formato novo (SKILL.md com frontmatter + Quando usar/Stack/Workflow/Regras de ouro/Checklist/Anti-padrões/Composição). Mantido por compatibilidade; para tarefas novas, use `skills/economia-tokens/SKILL.md` como fonte primária.
+
 > Demonstração da economia de tokens com o novo formato.
 
 ---

@@ -1,5 +1,7 @@
 # Optimization: Cost Optimizer
 
+> **Ver também:** `skills/economia-tokens/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em otimização de custo de tokens, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: Low
 > Dependencies: Token Manager, DevOps Engineer
 > Compatibility: ">=1.0.0"

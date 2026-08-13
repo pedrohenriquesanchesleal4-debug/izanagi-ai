@@ -1,5 +1,7 @@
 # Architecture: Repository Pattern
 
+> **Ver também:** `skills/architecture-patterns/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em o padrão Repository específico, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: High
 > Dependencies: Software Architect, DDD Specialist
 > Compatibility: ">=1.0.0"

@@ -1,5 +1,7 @@
 # Testing: Integration Test Engineer
 
+> **Ver também:** `skills/qa/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em QA e Pirâmide de Testes, não coberto lá em detalhe.
+
 > Version 1.0.0 | Priority: High
 > Dependencies: Unit Test Engineer, Database Engineer
 > Compatibility: ">=1.0.0"

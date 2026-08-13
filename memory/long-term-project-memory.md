@@ -1,5 +1,7 @@
 # Memory: Long-Term Project Memory
 
+> **⚠️ Consolidado em `skills/memoria-projeto/SKILL.md`.** Este pack legado foi superado pelo formato novo (SKILL.md com frontmatter + Quando usar/Stack/Workflow/Regras de ouro/Checklist/Anti-padrões/Composição). Mantido por compatibilidade; para tarefas novas, use `skills/memoria-projeto/SKILL.md` como fonte primária.
+
 > Version 1.0.0 | Priority: Medium
 > Dependencies: Memory Manager
 > Compatibility: ">=1.0.0"

@@ -1,5 +1,7 @@
 # DevOps: DevOps Engineer
 
+> **Ver também:** `skills/cloud-infra/SKILL.md` cobre boa parte deste domínio no formato novo (SKILL.md). Este arquivo mantém foco em a visão geral de DevOps, não coberto lá em detalhe.
+
 > Version 1.0.0
 > Priority: High
 > Dependencies: Security Engineer, Docker Expert

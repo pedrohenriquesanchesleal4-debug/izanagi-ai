@@ -15,7 +15,12 @@
 
 ---
 
-## Sugestão de Reorganização
+> **Nota (auditoria 2026-08):** a "reorganização para 2.0" sugerida abaixo nunca aconteceu — os arquivos
+> continuam em `coding/`. Nenhuma das skills desta lista tem equivalente em `skills/<name>/SKILL.md`
+> (o formato novo cobre capacidades transversais, não personas por linguagem/framework), então não
+> há depreciação a fazer aqui: `coding/*.md` seguem sendo a fonte real para essas personas.
+
+## Sugestão de Reorganização (não implementada)
 
 Para versão futura (2.0), mover:
 

@@ -1,7 +1,17 @@
 # Skills Index
 
 > Complete registry of all skills in the Izanagi AI framework.
-> Updated: 2026-08-10 | Total: 206 skills
+> Contagem real e versionada: `.manifest` (gerado por `npm run build`) — não confie em números
+> fixos neste arquivo, eles ficam desatualizados entre releases.
+
+> **Dois sistemas coexistindo** (auditoria 2026-08): os pacotes abaixo com caminho `architecture/`,
+> `coding/`, `database/`, `devops/`, `frontend/`, `memory/`, `optimization/`, `security/`, `teaching/`,
+> `testing/` são o formato **legado** (arquivo `.md` solto). O formato atual/fonte de verdade é
+> `skills/<name>/SKILL.md` (frontmatter + Quando usar/Stack/Workflow/Regras/Checklist/Anti-padrões) —
+> é o que os agentes reais (`agents/*.json`) referenciam. Entradas legadas com equivalente direto em
+> `skills/` têm um aviso `⚠️ Consolidado em skills/<slug>/SKILL.md` no topo do próprio arquivo; as sem
+> equivalente (a maioria — personas por linguagem/framework/banco que `skills/` não cobre nesse nível)
+> seguem sendo a fonte real para esses tópicos.
 
 ---
 
