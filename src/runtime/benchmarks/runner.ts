@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import type { BenchmarkCase, BenchmarkReport, BenchmarkResult } from '../types.js';
 import { EvaluationEngine } from '../evaluation/engine.js';
 import { makeArtifact, validateArtifact } from '../contracts/artifacts.js';
+import { safeEvaluate } from '../orchestration/safe-eval.js';
 
 export interface BenchmarkRunOptions {
   baseDir: string;
@@ -61,8 +62,7 @@ export class BenchmarkRunner {
     for (const v of c.validators ?? []) {
       let pass = true;
       try {
-        // eslint-disable-next-line no-new-func
-        pass = Boolean(new Function('text', `"use strict"; return (${v.check});`)(text));
+        pass = Boolean(safeEvaluate(v.check, { text }));
       } catch {
         pass = false;
       }

@@ -11,6 +11,7 @@
 
 import crypto from 'crypto';
 import type { ExecutionGraph, GraphNode } from '../types.js';
+import { safeEvaluate } from './safe-eval.js';
 
 export interface GraphInput {
   id?: string;
@@ -146,8 +147,7 @@ export class ExecutionGraphBuilder {
 export function evaluateCondition(cond: string | undefined, state: Record<string, unknown>): boolean {
   if (!cond) return true;
   try {
-    // eslint-disable-next-line no-new-func
-    return Boolean(new Function(...Object.keys(state), `"use strict"; return (${cond});`)(...Object.values(state)));
+    return Boolean(safeEvaluate(cond, state));
   } catch {
     return false;
   }
