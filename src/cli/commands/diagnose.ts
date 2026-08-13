@@ -18,6 +18,7 @@ import {
   checkSkillSecurityScan,
   checkSkillManifest,
   checkArtifactContracts,
+  checkSkillLifecycle,
   type CheckResult,
 } from '../checks.js';
 
@@ -85,6 +86,9 @@ export function diagnoseCommand(baseDir: string): void {
 
   // 9. Contracts
   checks.push(checkArtifactContracts(skills));
+
+  // 10. Skill lifecycle
+  checks.push(checkSkillLifecycle(skills));
 
   // Output
   for (const c of checks) {

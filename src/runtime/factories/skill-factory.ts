@@ -70,6 +70,9 @@ export class SkillFactory {
       name,
       version: '1.0.0',
       description,
+      // Gerada sob demanda: passou no scan mas ainda não tem histórico de uso
+      // real — nunca "Generate → Automatically trust" (promoção é um passo à parte).
+      lifecycle: 'draft',
       capabilities,
       triggers,
       dependencies: [],
@@ -84,7 +87,7 @@ export class SkillFactory {
     };
 
     const body = buildSkillBody(manifest);
-    const fullContent = `---\nname: ${manifest.name}\ndescription: "${manifest.description}"\nversion: ${manifest.version}\ntriggers:\n${manifest.triggers.map((t) => `  - ${t}`).join('\n')}\ncapabilities:\n${manifest.capabilities.map((c) => `  - ${c}`).join('\n')}\ntoken_budget: ${manifest.tokenBudget}\ncompatibility: "${manifest.compatibility}"\n---\n\n${body}`;
+    const fullContent = `---\nname: ${manifest.name}\ndescription: "${manifest.description}"\nversion: ${manifest.version}\nlifecycle: ${manifest.lifecycle}\ntriggers:\n${manifest.triggers.map((t) => `  - ${t}`).join('\n')}\ncapabilities:\n${manifest.capabilities.map((c) => `  - ${c}`).join('\n')}\ntoken_budget: ${manifest.tokenBudget}\ncompatibility: "${manifest.compatibility}"\n---\n\n${body}`;
 
     // Security Scan — skills novas são não-confiáveis por default
     const scan = this.scanner.scan(name, fullContent);

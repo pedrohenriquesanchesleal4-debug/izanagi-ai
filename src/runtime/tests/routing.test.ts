@@ -146,6 +146,15 @@ test('factory: SkillFactory gera manifest completo em targetDir', () => {
   const content = fs.readFileSync(out.file, 'utf-8');
   assert.ok(content.startsWith('---'));
   assert.ok(content.includes('compatibility'));
+  assert.equal(out.manifest.lifecycle, 'draft', 'skill gerada nunca nasce "active" — precisa de promoção');
+  assert.ok(content.includes('lifecycle: draft'), 'frontmatter persiste o lifecycle');
+});
+
+test('resolver: skill curada real sem `lifecycle` no frontmatter tem default "active"', () => {
+  const resolver = new SkillResolver({ baseDir: process.cwd() });
+  const loaded = resolver.loadSkill('tdd');
+  assert.ok(loaded, 'skill tdd deve carregar');
+  assert.equal(loaded?.manifest.lifecycle, 'active', 'skills curadas pré-existentes (sem o campo) são tratadas como active');
 });
 
 test('factory: SkillFactory detecta lacuna já coberta (anti-poluição)', () => {

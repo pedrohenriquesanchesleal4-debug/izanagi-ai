@@ -123,6 +123,7 @@ export class SkillResolver {
       name: (fm.name as string) ?? alias,
       version: (fm.version as string) ?? '1.0.0',
       description: (fm.description as string) ?? '',
+      lifecycle: ((fm.lifecycle as string) ?? 'active') as SkillManifest['lifecycle'],
       capabilities: (fm.capabilities as string[]) ?? [],
       triggers,
       dependencies: deps,

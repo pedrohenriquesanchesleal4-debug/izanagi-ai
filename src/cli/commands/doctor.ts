@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest } from '../checks.js';
+import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest, checkSkillLifecycle } from '../checks.js';
 
 export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   const deep = args.includes('--deep') || args.includes('-d');
@@ -154,6 +154,9 @@ function runDeepChecks(baseDir: string): number {
   } else {
     console.log(` \x1b[32m✔\x1b[0m Skill manifest: ${manifest.detail}`);
   }
+
+  const lifecycle = checkSkillLifecycle(manifest.skills);
+  console.log(` \x1b[32m✔\x1b[0m Skill lifecycle: ${lifecycle.detail}`);
 
   return errors;
 }

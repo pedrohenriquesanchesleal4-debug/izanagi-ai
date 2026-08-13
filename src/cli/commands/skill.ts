@@ -48,12 +48,30 @@ export function skillCommand(baseDir: string, args: string[]): void {
   process.exit(1);
 }
 
+/** Badge de lifecycle — só exibe algo quando foge do caso comum ('active'). */
+function lifecycleBadge(lifecycle?: string): string {
+  switch (lifecycle) {
+    case 'draft':
+      return ' \x1b[35m[draft]\x1b[0m';
+    case 'discovered':
+      return ' \x1b[90m[discovered]\x1b[0m';
+    case 'validated':
+      return ' \x1b[36m[validated]\x1b[0m';
+    case 'deprecated':
+      return ' \x1b[33m[deprecated]\x1b[0m';
+    case 'archived':
+      return ' \x1b[90m[archived]\x1b[0m';
+    default:
+      return '';
+  }
+}
+
 export function skillList(baseDir: string): void {
   const resolver = new SkillResolver({ baseDir });
   const skills = resolver.list().sort((a, b) => a.name.localeCompare(b.name));
   console.log(`\n\x1b[35m=== Izanagi AI Skills (${skills.length}) ===\x1b[0m\n`);
   for (const s of skills) {
-    console.log(`\x1b[1m\x1b[36m• ${s.name}\x1b[0m \x1b[90m(v${s.version}, ${s.tokenBudget} tok, risco ${s.risk})\x1b[0m`);
+    console.log(`\x1b[1m\x1b[36m• ${s.name}\x1b[0m \x1b[90m(v${s.version}, ${s.tokenBudget} tok, risco ${s.risk})\x1b[0m${lifecycleBadge(s.lifecycle)}`);
     console.log(`  \x1b[90m${(s.description ?? '').slice(0, 140)}\x1b[0m`);
   }
   console.log('\nDica: \x1b[33mizanagi skill inspect <name>\x1b[0m | \x1b[33mizanagi skill search <query>\x1b[0m\n');
@@ -82,6 +100,7 @@ export function skillInspect(baseDir: string, name: string): void {
   console.log(`\n\x1b[35m=== Skill Manifest: ${m.name} ===\x1b[0m\n`);
   console.log(`  \x1b[90mArquivo:\x1b[0m ${m.path}`);
   console.log(`  \x1b[90mVersão:\x1b[0m ${m.version}`);
+  console.log(`  \x1b[90mLifecycle:\x1b[0m ${m.lifecycle ?? 'active'}${lifecycleBadge(m.lifecycle)}`);
   console.log(`  \x1b[90mRisco:\x1b[0m ${m.risk}`);
   console.log(`  \x1b[90mToken budget:\x1b[0m ${m.tokenBudget}`);
   console.log(`  \x1b[90mCompatibilidade:\x1b[0m ${m.compatibility}`);

@@ -215,10 +215,20 @@ export interface AgentGenome {
   never?: string[];
 }
 
+/**
+ * Ciclo de vida de uma skill. Skills curadas do framework nascem `active`;
+ * skills geradas pela Skill Factory nascem `draft` (passaram no security
+ * scan mas ainda não têm histórico de uso real) — nunca "Generate →
+ * Automatically trust".
+ */
+export type SkillLifecycle = 'discovered' | 'draft' | 'validated' | 'active' | 'deprecated' | 'archived';
+
 export interface SkillManifest {
   name: string;
   version: string;
   description: string;
+  /** Default 'active' (skills curadas pré-existentes) quando não declarado no frontmatter. */
+  lifecycle?: SkillLifecycle;
   capabilities: string[];
   triggers: string[];
   dependencies: string[];

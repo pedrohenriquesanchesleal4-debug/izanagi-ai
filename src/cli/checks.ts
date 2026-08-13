@@ -87,3 +87,19 @@ export function checkArtifactContracts(skills: SkillManifest[]): CheckResult {
   const withContracts = skills.filter((s) => s.outputs.length > 0 || s.inputs.length > 0);
   return { name: 'Artifact contracts', ok: true, detail: `${withContracts.length}/${skills.length} skills declaram inputs/outputs` };
 }
+
+/** Distribuição de lifecycle das skills — sinaliza draft/deprecated (nunca é erro, só visibilidade). */
+export function checkSkillLifecycle(skills: SkillManifest[]): CheckResult {
+  const counts: Record<string, number> = {};
+  for (const s of skills) {
+    const key = s.lifecycle ?? 'active';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  const draft = counts.draft ?? 0;
+  const deprecated = counts.deprecated ?? 0;
+  const parts = Object.entries(counts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([k, v]) => `${k}=${v}`);
+  const detail = parts.join(', ') + (draft > 0 ? ` — ${draft} draft ainda sem promoção` : '') + (deprecated > 0 ? ` — ${deprecated} deprecated` : '');
+  return { name: 'Skill lifecycle', ok: true, detail };
+}
