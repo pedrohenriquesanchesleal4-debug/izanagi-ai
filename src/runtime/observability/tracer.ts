@@ -88,7 +88,10 @@ export class TraceStore {
         }
       })
       .filter((t): t is RunTrace => t !== null)
-      .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1))
+      .sort((a, b) => {
+        if (a.startedAt !== b.startedAt) return a.startedAt < b.startedAt ? 1 : -1;
+        return (b.seq ?? 0) - (a.seq ?? 0);
+      })
       .slice(0, limit);
   }
 }
@@ -106,6 +109,9 @@ export interface TraceContext {
   spans: TraceSpan[];
 }
 
+/** Contador monotônico do processo — desempata runs criados no mesmo milissegundo. */
+let seqCounter = 0;
+
 /**
  * Sessão de tracing ativa durante um run. Fecha o span ao finalizar e
  * produz um RunTrace persistível.
@@ -113,11 +119,13 @@ export interface TraceContext {
 export class Tracer {
   private readonly ctx: TraceContext;
   private readonly store: TraceStore;
+  private readonly seq: number;
   private tokensIn = 0;
   private tokensOut = 0;
 
   constructor(store: TraceStore, opts: { runId?: string; task: string; command: string }) {
     this.store = store;
+    this.seq = seqCounter++;
     this.ctx = {
       runId: opts.runId || TraceStore.newRunId(),
       task: opts.task,
@@ -201,6 +209,7 @@ export class Tracer {
     const trace: RunTrace = {
       runId: this.ctx.runId,
       task: this.ctx.task,
+      seq: this.seq,
       startedAt: this.ctx.startedAt,
       endedAt: nowIso(),
       durationMs: ended - startedMs,
