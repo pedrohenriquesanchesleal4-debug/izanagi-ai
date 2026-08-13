@@ -89,10 +89,15 @@ User Input / Comando CLI
 | **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
 | **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSONL com spans, load/close e retry de escrita. |
 | **Benchmarks** (`benchmarks/`) | 10 casos builtin (parse, scoring, scanner, genome, composer...) executáveis via `izanagi benchmark` + `compare` entre builds. |
-| **LLM Executor** (`llm/`) | Adapters reais OpenAI/Anthropic/OpenRouter com env key, timeout e propagação de erro HTTP. |
+| **LLM Executor** (`llm/`) | Adapters reais OpenAI/Anthropic/Google com env key, timeout e propagação de erro HTTP. |
 | **Evidence System** (`research/evidence.ts`) | Claims FACT/ASSUMPTION/INFERENCE/UNKNOWN com fonte, confiança e hierarquia de sourceType (official docs > source code > tests > package metadata > reliable tech > community); relatório de claims críticas. |
 | **Token Budget 2.0** (`token/budget.ts`) | Orçamento por fase (planning/execution/evaluation/recovery) com tetos, pesos por complexidade e abort de fase — retry consome a fase recovery, nunca o execution. |
-| **CLI** (`src/cli/`) | Entrypoint `bin/izanagi.js` → `runCLI` (doctor --deep, audit, resolve, export, init, agent create, skill create --gap, workflow, trace, eval, benchmark, memory, diagnose...). |
+| **Policy Engine** (`security/policy.ts`) | Permissão CONTEXTUAL (ambiente dev/ci/produção, trust tier builtin/generated/community) — distinto do Skill Scanner (que detecta conteúdo perigoso, não decide permissão). Wired em `ToolRegistry.execute()`. |
+| **Checkpoint Store** (`recovery/checkpoint.ts`) | Progresso salvo a cada rodada de batches (grafo, artefatos, budget, tentativas); `resumeRunId` retoma sem replanejar nem reexecutar nós concluídos. |
+| **Approval Store** (`recovery/approvals.ts`) | Human-in-the-loop real: nó `kind: 'approval'` pausa a execução até `izanagi approve`/`reject`, sem acionar self-healing. |
+| **Decision Journal** (`memory/decisions.ts`) | Decisão + alternativas REALMENTE consideradas (com score) + razão + confiança, para model-routing e agent-routing — base do `izanagi explain`. |
+| **Artifact Registry** (`artifacts/registry.ts`) | Artefatos rastreáveis: produtor (agent/skill/run/nó), hash, dependências e versão (retry/replan do mesmo nó gera nova versão, não duplicata). |
+| **CLI** (`src/cli/`) | Entrypoint `bin/izanagi.js` → `runCLI` (doctor --deep, resume, approve, reject, explain, resolve, export, init, agent create, skill create --gap, workflow, trace, eval, benchmark, memory, diagnose...). |
 
 ## Routing — Classificação por Categoria
 
@@ -171,6 +176,28 @@ O ciclo completo de execução — `Task → Understanding → Planning → Exec
 5. **Self-Healing & Classification** — healing classificado (retry para transitório, `skill_replacement` para artefato inválido, fallback de modelo, abort por limite); cada healing é registrado com stats por agente.
 6. **Memory & Evolution** — `recordFailure` + `findRelevantFailures` (memória de falhas por categoria), learnings e traces; a memória curada `.agents/memoria/` é atualizada ao fim do ciclo.
 
+Toda rodada de batches persiste um checkpoint (§ Checkpoint & Resume) e cada decisão de roteamento vai para o Decision Journal (§ Decision Journal & Explainability) — o pipeline não é só "executa e esquece": o estado intermediário e o motivo de cada escolha ficam rastreáveis.
+
+## Checkpoint & Resume
+
+`src/runtime/recovery/checkpoint.ts` persiste, a cada rodada de batches do Orchestrator, o grafo (status por nó), artefatos, budget gasto por fase, tentativas e tokens. `izanagi resume <run-id>` reconstrói a execução a partir daí — sem replanejar, sem reexecutar nós `succeeded`/`skipped`, reusando o modelo/provider originais. O checkpoint é apagado ao chegar a um veredito terminal (PASS ou FAIL); só sobrevive uma interrupção real (crash) ou uma pausa de aprovação humana.
+
+## Human-in-the-Loop
+
+`GraphNode.kind: 'approval'` pausa a execução (não é falha — não aciona self-healing) até uma decisão humana via `izanagi approve <run-id>` ou `izanagi reject <run-id> --reason="..."`. Decisões ficam no Approval Store (`recovery/approvals.ts`), por run + nó; aprovar retoma normalmente, rejeitar falha o nó com o motivo e segue o fluxo normal de healing/abort a partir daí.
+
+## Decision Journal & Explainability
+
+`src/runtime/memory/decisions.ts` registra cada decisão de roteamento (model-routing, agent-routing) com a opção escolhida, as alternativas REALMENTE consideradas (com score) e a confiança (derivada da distância entre a escolhida e a melhor concorrente). `izanagi explain <run-id>` junta o journal + o self-healing + o veredito do trace para responder "por que o Izanagi decidiu isso" — só metadados/razões estruturadas, nunca chain-of-thought.
+
+## Artifact Registry
+
+`src/runtime/artifacts/registry.ts` torna artefatos rastreáveis além do `Map` efêmero de `ExecuteCtx`: cada nó bem-sucedido vira um registro com produtor (agent/skill/run/nó), hash, dependências (artefatos upstream) e versão — retry/replan do mesmo nó gera nova versão, não uma duplicata perdida.
+
+## Policy Engine
+
+`src/runtime/security/policy.ts` responde "isso é permitido NESTE CONTEXTO?" — distinto do Skill Scanner, que responde "isso parece perigoso?". A mesma permissão pode ser negada em produção e liberada em desenvolvimento, ou negada para uma skill de trust tier `community` e liberada para `builtin`. Regras default: deploy de produção e operações destrutivas em produção exigem aprovação humana; `community` nunca recebe `fs:write`/`shell` por default. Wired em `ToolRegistry.execute()` — a permissão bruta (least-privilege) e a política contextual são camadas distintas, ambas aplicadas.
+
 ## Agent Factory & Skill Factory
 
 Novos agentes e skills são **gerados, não escritos à mão**:
@@ -192,7 +219,7 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 
 ## Doctor
 
-`izanagi doctor` audita integridade (SYSTEM.md/RULES.md, JSONs de agentes, aliases do resolver → targets); `izanagi doctor --deep` adiciona a varredura de segurança das 212 skills com `DEFENSIVE_CONTEXT` (exemplos educativos de segurança não são falsos positivos).
+`izanagi doctor` audita integridade (SYSTEM.md/RULES.md, JSONs de agentes, aliases do resolver → targets); `izanagi doctor --deep` adiciona memória/traces/benchmarks, a varredura de segurança das skills com `DEFENSIVE_CONTEXT` (exemplos educativos de segurança não são falsos positivos), manifesto de skills e a distribuição de skill lifecycle. `izanagi diagnose` cobre o mesmo terreno de runtime com foco em investigação de execução (agent genome, contratos de artifact) — os checks são computados uma vez só (`src/cli/checks.ts`), sem duplicação entre os dois comandos.
 
 ## Versioning
 
@@ -209,11 +236,20 @@ Skills com `SKILL.md` declararam (quando aplicável) metadados no frontmatter:
 - `name`
 - `description` (usado no scoring/resolução)
 - `version`
+- `lifecycle` (discovered/draft/validated/active/deprecated/archived — default `active` quando ausente)
 - `compatibility` (versão mínima do framework)
 - `triggers`
 - `token_budget`
 
-O resolver **tolera** skills sem frontmatter (parse devolve `{}` e segue resolvendo pelo alias); metadados apenas aumentam a qualidade do scoring.
+O resolver **tolera** skills sem frontmatter (parse devolve `{}` e segue resolvendo pelo alias); metadados apenas aumentam a qualidade do scoring. **Só `name` e `description` são exigidos** — o mesmo mínimo do padrão aberto [agentskills.io](https://www.agensi.io/learn/skill-md-specification-open-standard), o que torna as skills do Izanagi portáveis para qualquer ferramenta compatível (Cursor, Copilot, Codex, VS Code...) sem modificação.
+
+### Skill Lifecycle
+
+```
+DISCOVERED → DRAFT → VALIDATED → ACTIVE → DEPRECATED → ARCHIVED
+```
+
+Skills curadas do framework nascem `active`. Skills geradas pela Skill Factory (`izanagi skill create`) nascem `draft` — passaram no security scan mas não têm histórico de uso real; promoção a `active` é uma decisão separada (nunca "Generate → Automatically trust"). `izanagi skill list`/`inspect` mostram o estado; `doctor --deep`/`diagnose` reportam a distribuição.
 
 ---
 

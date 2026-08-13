@@ -57,11 +57,30 @@
 - [x] **Agent Architect** — projeto de novos agentes (Genome + guardrails + avaliação) por lacuna real
 - [x] **Skill Architect** — curadoria de skills com security scan e anti-duplicação por lacuna comprovada
 - [x] **Benchmarks externos** — `benchmarks/*.json` carregados pelo registry sem duplicar IDs embutidos
-- [ ] **Plugin System** — skills de terceiros com sandbox e cadeia de confiança (usa o security scanner como porta de entrada) 📋
+- [x] **Plugin System (base)** — trust tiers (builtin/generated/community) no Skill Scanner com bloqueio escalonado + Policy Engine para permissão contextual; ainda falta sandbox de execução isolada para skills de terceiros 🔧
 - [ ] **Skill Marketplace** — compartilhar e instalar skills 📋
 - [ ] **Izanagi API** — interface REST para interrogção do framework 💡
 - [ ] **Web UI** — editor visual de skills e monitor de execuções 📋
 - [ ] **Analytics Dashboard** — token usage, custo e evolução por execução 📋
+
+## Fase 5 — Runtime de Produção v2.11 ✅
+
+Auditoria completa do framework + consolidação arquitetural (unificação de caminhos de execução, eliminação de duplicações) + as primitives que faltavam para o runtime ser "production-grade" pelos critérios de mercado 2026 (checkpoint/resume, observabilidade de decisão, rastreabilidade de artefato, human-in-the-loop real).
+
+- [x] **`izanagi run` unificado** — Adaptive Runtime (graph + routing + evaluation + trace + healing + memória) é o único caminho de execução, por padrão; eliminado o modo estático paralelo que só imprimia um plano sem executar. `--prompt-only` preserva a geração de prompt para colar em outra ferramenta.
+- [x] **Safe Expression Evaluator** (`src/runtime/orchestration/safe-eval.ts`) — substitui `new Function()`/eval sobre `GraphNode.condition` e `BenchmarkValidator.check`, que podiam vir de dados de terceiros (benchmarks externos).
+- [x] **Model Router com histórico e extensibilidade real** — `historicalPerformance` (antes um campo morto) agora é preenchido via `MemoryStore.recordModelRun`; `IZANAGI_MODEL` (override manual) e `.izanagi/izanagi.config.json → models` (catálogo por projeto) implementados.
+- [x] **Policy Engine** (`src/runtime/security/policy.ts`) — permissão CONTEXTUAL (ambiente dev/ci/produção, trust tier), distinta do Security Scanner (detecção de conteúdo perigoso). Wired em `ToolRegistry`.
+- [x] **Trust tiers no Skill Scanner** — builtin/generated/community com bloqueio escalonado por origem.
+- [x] **Checkpoint/Resume real** (`src/runtime/recovery/checkpoint.ts`) — progresso salvo a cada rodada de batches; `izanagi resume <run-id>` continua sem replanejar nem reexecutar nós concluídos, restaurando budget/artefatos/modelo.
+- [x] **Decision Journal** (`src/runtime/memory/decisions.ts`) — decisão + alternativas realmente consideradas + razão + confiança, para model-routing e agent-routing.
+- [x] **Artifact Registry** (`src/runtime/artifacts/registry.ts`) — artefatos rastreáveis (produtor, hash, dependências, versão em retry/replan).
+- [x] **Human-in-the-loop real** — `GraphNode.kind: 'approval'` pausa a execução (não é falha) até `izanagi approve`/`izanagi reject`, retomando via checkpoint.
+- [x] **CLI**: `izanagi resume`, `izanagi approve`, `izanagi reject`, `izanagi explain`.
+- [x] **Skill Lifecycle** — `discovered → draft → validated → active → deprecated → archived`; skills geradas pela Factory nascem `draft` (nunca "Generate → Automatically trust").
+- [x] **`doctor`/`diagnose` sem duplicação** — checks compartilhados (`src/cli/checks.ts`) computados uma vez, cada comando decide o que exibir.
+- [x] **Confirmado**: as 102 skills em `skills/*/SKILL.md` são 100% compliant com o padrão aberto agentskills.io (frontmatter `name`+`description`) — portáveis para ~40 ferramentas de mercado (Cursor, Copilot, Codex, VS Code...) sem modificação.
+- [ ] **Consolidação dos packs de skills legados** (`architecture/`, `coding/`, `security/`... vs. `skills/`) — depreciação com apontamento para o equivalente novo, em andamento 🔧
 
 ---
 
