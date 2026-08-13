@@ -8,73 +8,54 @@
 
 import fs from 'fs';
 import path from 'path';
-import { TraceStore } from '../../runtime/observability/tracer.js';
-import { MemoryStore } from '../../runtime/memory/store.js';
-import { SkillScanner } from '../../runtime/security/skill-scanner.js';
-import { SkillResolver, parseFrontmatter } from '../../runtime/routing/resolver.js';
-import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
+import { SkillResolver } from '../../runtime/routing/resolver.js';
 import { validateGenome } from '../../runtime/factories/agent-factory.js';
+import {
+  checkMemory,
+  checkTraces,
+  checkBenchmarkSuite,
+  checkBenchmarkReports,
+  checkSkillSecurityScan,
+  checkSkillManifest,
+  checkArtifactContracts,
+  type CheckResult,
+} from '../checks.js';
 
 export function diagnoseCommand(baseDir: string): void {
   console.log('\n\x1b[36m=== Izanagi AI Runtime Diagnosis ===\x1b[0m\n');
 
-  const checks: Array<{ name: string; ok: boolean; detail: string }> = [];
+  const checks: CheckResult[] = [];
   let errors = 0;
   let warnings = 0;
 
   // 1. Runtime state
   const stateFile = path.join(baseDir, '.izanagi', 'state', 'runtime-state.json');
-  if (fs.existsSync(stateFile)) {
-    checks.push({ name: 'Runtime state', ok: true, detail: 'presente' });
-  } else {
-    checks.push({ name: 'Runtime state', ok: true, detail: 'ainda não criado (cria no primeiro run)' });
-  }
+  checks.push({
+    name: 'Runtime state',
+    ok: true,
+    detail: fs.existsSync(stateFile) ? 'presente' : 'ainda não criado (cria no primeiro run)',
+  });
 
   // 2. Traces
-  const store = new TraceStore({ baseDir });
-  const traces = store.list(50);
-  checks.push({ name: 'Traces', ok: true, detail: `${traces.length} no diretório ${store.directory}` });
+  checks.push(checkTraces(baseDir, 50));
 
   // 3. Memória
-  const memory = new MemoryStore({ baseDir });
-  const state = memory.raw;
-  const entries = memory.listEntries();
-  checks.push({
-    name: 'Memory',
-    ok: true,
-    detail: `${entries.length} categorias markdown, ${Object.keys(state.failures).length} padrões de falha, ${state.learnings.length} learnings, ${Object.keys(state.agents).length} agentes com histórico`,
-  });
+  checks.push(checkMemory(baseDir));
 
-  // 4. Evaluation
-  const benchDir = path.join(baseDir, '.izanagi', 'state', 'benchmarks');
-  const benchReports = fs.existsSync(benchDir) ? fs.readdirSync(benchDir).filter((f) => f.endsWith('.json')) : [];
-  checks.push({ name: 'Benchmark reports', ok: true, detail: `${benchReports.length} relatório(s)` });
+  // 4. Relatórios de benchmark persistidos (execuções passadas)
+  checks.push(checkBenchmarkReports(baseDir));
 
   // 5. Skill frontmatter (contrato)
-  const resolver = new SkillResolver({ baseDir });
-  const skills = resolver.list();
-  let fmMissing = 0;
-  for (const s of skills) {
-    if (s.version === '1.0.0' && !s.description) fmMissing++;
-  }
-  checks.push({
-    name: 'Skill manifest',
-    ok: fmMissing === 0,
-    detail: `${skills.length} skills resolvíveis, ${fmMissing} sem frontmatter completo`,
-  });
+  const manifest = checkSkillManifest(baseDir);
+  checks.push(manifest);
+  const skills = manifest.skills;
 
-  // 6. Security scan das skills
-  const scanner = new SkillScanner();
-  const scanResults = scanner.scanDirectory(baseDir, ['INJ-001', 'INJ-002', 'INJ-003']);
-  const critical = scanResults.filter((r) => r.level === 'CRITICAL');
-  const high = scanResults.filter((r) => r.level === 'HIGH');
-  checks.push({
-    name: 'Skill security scan',
-    ok: critical.length === 0,
-    detail: `${scanResults.length} skills varridas, ${critical.length} CRITICAL, ${high.length} HIGH, ${scanResults.length - critical.length - high.length} limpas/baixo`,
-  });
+  // 6. Security scan das skills (aliases de prompt-injection são esperados em
+  // exemplos de skills de segurança — mesma allowlist que o diagnose já usava)
+  checks.push(checkSkillSecurityScan(baseDir, ['INJ-001', 'INJ-002', 'INJ-003']));
 
   // 7. Agent genome
+  const resolver = new SkillResolver({ baseDir });
   const agentDirs = [path.join(baseDir, 'agents'), path.join(baseDir, '.agents', 'agents')];
   let agentCount = 0;
   let genomeIssues = 0;
@@ -99,14 +80,11 @@ export function diagnoseCommand(baseDir: string): void {
   }
   checks.push({ name: 'Agent genome', ok: genomeIssues === 0, detail: `${agentCount} agentes, ${genomeIssues} com problemas de genome` });
 
-  // 8. Benchmarks disponíveis
-  const registry = new BenchmarkRegistry();
-  const benchCases = registry.load(baseDir);
-  checks.push({ name: 'Benchmark suite', ok: true, detail: `${benchCases.length} casos embutidos (10 domínios)` });
+  // 8. Benchmarks disponíveis (suíte embutida + custom do projeto)
+  checks.push(checkBenchmarkSuite(baseDir));
 
   // 9. Contracts
-  const contractSkills = skills.filter((s) => s.outputs.length > 0 || s.inputs.length > 0);
-  checks.push({ name: 'Artifact contracts', ok: true, detail: `${contractSkills.length} skills declaram inputs/outputs` });
+  checks.push(checkArtifactContracts(skills));
 
   // Output
   for (const c of checks) {

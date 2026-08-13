@@ -1,11 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { loadSkillResolver } from '../framework.js';
-import { SkillScanner } from '../../runtime/security/skill-scanner.js';
-import { MemoryStore } from '../../runtime/memory/store.js';
-import { TraceStore } from '../../runtime/observability/tracer.js';
-import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
-import { SkillResolver } from '../../runtime/routing/resolver.js';
+import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest } from '../checks.js';
 
 export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   const deep = args.includes('--deep') || args.includes('-d');
@@ -120,7 +115,7 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   }
 
   if (deep) {
-    const deepErrors = runDeepChecks(baseDir, projectRoot);
+    const deepErrors = runDeepChecks(baseDir);
     errors += deepErrors;
   }
 
@@ -128,48 +123,36 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   return errors === 0;
 }
 
-function runDeepChecks(baseDir: string, projectRoot: string): number {
+function runDeepChecks(baseDir: string): number {
   let errors = 0;
   console.log('\n\x1b[1m\x1b[36m-- Deep checks (runtime) --\x1b[0m\n');
 
-  // 7. Runtime state + memory
-  const memory = new MemoryStore({ baseDir });
-  const state = memory.raw;
-  console.log(` \x1b[32m✔\x1b[0m Memory: ${Object.keys(state.failures).length} failure patterns, ${state.learnings.length} learnings, ${Object.keys(state.agents).length} agent stats`);
+  const memory = checkMemory(baseDir);
+  console.log(` \x1b[32m✔\x1b[0m Memory: ${memory.detail}`);
 
-  // 8. Traces
-  const traceStore = new TraceStore({ baseDir });
-  const traces = traceStore.list(10);
-  console.log(` \x1b[32m✔\x1b[0m Traces: ${traces.length} execução(ões) registrada(s)`);
+  const traces = checkTraces(baseDir, 10);
+  console.log(` \x1b[32m✔\x1b[0m Traces: ${traces.detail}`);
 
-  // 9. Benchmarks
-  const registry = new BenchmarkRegistry();
-  const cases = registry.load(baseDir);
-  console.log(` \x1b[32m✔\x1b[0m Benchmarks: ${cases.length} casos (${new Set(cases.map((c) => c.domain)).size} domínios)`);
+  const benchmarks = checkBenchmarkSuite(baseDir);
+  console.log(` \x1b[32m✔\x1b[0m Benchmarks: ${benchmarks.detail}`);
 
-  // 10. Skill security scan
-  const scanner = new SkillScanner();
-  const scan = scanner.scanDirectory(baseDir);
-  const critical = scan.filter((s) => s.level === 'CRITICAL');
-  const high = scan.filter((s) => s.level === 'HIGH');
-  if (critical.length > 0 || high.length > 0) {
-    console.log(` \x1b[31m✖\x1b[0m Skill scan: ${critical.length} CRITICAL, ${high.length} HIGH (${scan.length} varridas)`);
-    for (const s of [...critical, ...high].slice(0, 3)) {
+  const scan = checkSkillSecurityScan(baseDir);
+  if (!scan.ok) {
+    console.log(` \x1b[31m✖\x1b[0m Skill scan: ${scan.detail}`);
+    const offenders = scan.results.filter((s) => s.level === 'CRITICAL' || s.level === 'HIGH').slice(0, 3);
+    for (const s of offenders) {
       console.log(`   \x1b[31m- ${s.skill}: ${s.level}\x1b[0m`);
     }
     errors++;
   } else {
-    console.log(` \x1b[32m✔\x1b[0m Skill security scan: ${scan.length} skills varridas, nenhuma CRITICAL/HIGH`);
+    console.log(` \x1b[32m✔\x1b[0m Skill security scan: ${scan.detail}`);
   }
 
-  // 11. Contracts (frontmatter das skills)
-  const resolver = new SkillResolver({ baseDir });
-  const skills = resolver.list();
-  const noMeta = skills.filter((s) => !s.description && s.version === '1.0.0').length;
-  if (noMeta > 0) {
-    console.log(` \x1b[33m⚠\x1b[0m ${noMeta} skill(s) sem frontmatter de manifesto completo`);
+  const manifest = checkSkillManifest(baseDir);
+  if (!manifest.ok) {
+    console.log(` \x1b[33m⚠\x1b[0m Skill manifest: ${manifest.detail}`);
   } else {
-    console.log(` \x1b[32m✔\x1b[0m Skill manifests: ${skills.length} skills com metadados`);
+    console.log(` \x1b[32m✔\x1b[0m Skill manifest: ${manifest.detail}`);
   }
 
   return errors;
