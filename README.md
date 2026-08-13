@@ -36,6 +36,11 @@ izanagi --version
 | `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
 | `izanagi memory inspect \| search <q>` | Estado da memória de execução e busca em `.agents/memoria/`. |
 | `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 212 skills. |
+| `izanagi diagnose` | Diagnóstico profundo do runtime (state, agent genome, contratos de artifact). |
+| `izanagi resume <run-id>` | Retoma execução interrompida (crash) ou pausada a partir do checkpoint — sem replanejar nem reexecutar nós concluídos. |
+| `izanagi approve <run-id> [node-id]` | Aprova uma ação de alto risco pausada (nó `kind: 'approval'`) e retoma. |
+| `izanagi reject <run-id> [node-id] [--reason]` | Rejeita a ação pausada (o nó falha com o motivo) e retoma — self-healing/abort seguem normalmente. |
+| `izanagi explain <run-id>` | Por que o Izanagi decidiu isso: decisões (Decision Journal) + self-healing + veredito, sem chain-of-thought. |
 | `izanagi export --cli <cli>` | Regenera adapters multi-CLI (claude, codex, cursor, copilot, kimi, all). |
 | `izanagi --version` | Exibe a versão da CLI. |
 
@@ -44,6 +49,9 @@ izanagi --version
 ```bash
 izanagi run "Criar uma landing page de um SaaS de analytics"
 izanagi run architect --task "Design a microservices architecture"
+izanagi run "Deploy em produção" --verbose   # pausa em nós de aprovação (human-in-the-loop)
+izanagi approve <run-id>                     # aprova e retoma
+izanagi explain <run-id>                     # por que o Izanagi decidiu o que decidiu
 izanagi agent create "Especialista em Laravel" --skills=php,api
 izanagi skill create rabbitmq-orchestrator --gap="Orquestração de mensageria RabbitMQ"
 izanagi workflow inspect fullstack

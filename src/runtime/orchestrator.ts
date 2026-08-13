@@ -33,6 +33,7 @@ import { PhaseTokenBudget, defaultWeights, type PhaseId } from './token/budget.j
 import { CheckpointStore, checkpointProgress, type CheckpointData } from './recovery/checkpoint.js';
 import { ArtifactRegistry } from './artifacts/registry.js';
 import { DecisionJournal } from './memory/decisions.js';
+import { ApprovalStore } from './recovery/approvals.js';
 
 export interface OrchestratorOptions {
   baseDir: string;
@@ -73,6 +74,8 @@ export interface ExecuteCtx {
   budget: PhaseTokenBudget;
   /** Índice rastreável de artefatos (quem criou, hash, dependências, versão). */
   artifactRegistry: ArtifactRegistry;
+  /** Human-in-the-loop: nós `kind: 'approval'` consultam este store. */
+  approvals: ApprovalStore;
 }
 
 export interface OrchestrationResult {
@@ -83,6 +86,12 @@ export interface OrchestrationResult {
   healing: HealingAction[];
   status: 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'UNKNOWN';
   score: number;
+  /**
+   * Execução pausada aguardando decisão humana (`izanagi approve`/`reject`) —
+   * quando presente, `status` é 'BLOCKED' mas não é um veredito final: o run
+   * continua de onde parou assim que aprovado/rejeitado (via resumeRunId).
+   */
+  pendingApproval?: { nodeId: string; context?: string };
 }
 
 export class Orchestrator {
@@ -94,6 +103,7 @@ export class Orchestrator {
   private checkpointStore?: CheckpointStore;
   private artifactRegistry?: ArtifactRegistry;
   private decisionJournal?: DecisionJournal;
+  private approvalStore?: ApprovalStore;
   private tokensUsed = 0;
 
   setStore(store: TraceStore): void {
@@ -116,6 +126,10 @@ export class Orchestrator {
     this.decisionJournal = journal;
   }
 
+  setApprovalStore(store: ApprovalStore): void {
+    this.approvalStore = store;
+  }
+
   /** Executa o ciclo completo e retorna trace + avaliação. */
   async run(): Promise<OrchestrationResult> {
     const store = this.store ?? new TraceStore({ baseDir: this.opts.baseDir });
@@ -123,6 +137,7 @@ export class Orchestrator {
     const checkpoints = this.checkpointStore ?? new CheckpointStore({ baseDir: this.opts.baseDir });
     const artifactRegistry = this.artifactRegistry ?? new ArtifactRegistry({ baseDir: this.opts.baseDir });
     const decisions = this.decisionJournal ?? new DecisionJournal({ baseDir: this.opts.baseDir });
+    const approvals = this.approvalStore ?? new ApprovalStore({ baseDir: this.opts.baseDir });
     const healing: HealingAction[] = [];
     const startedAt = Date.now();
 
@@ -261,6 +276,7 @@ export class Orchestrator {
       ),
       budget: phaseBudget,
       artifactRegistry,
+      approvals,
     };
 
     let finalEvaluation: EvaluationReport | undefined;
@@ -273,6 +289,31 @@ export class Orchestrator {
       const failure = await this.executeBatches(workingGraph, ctx);
       checkpoints.save(this.captureCheckpoint(trace.runId, workingGraph, ctx, attempts));
       if (!failure) break;
+
+      if (failure.blockedApproval) {
+        // Não é falha: pausa aguardando decisão humana. Checkpoint já salvo acima;
+        // persiste um trace parcial (sem evaluation — o run não terminou de verdade)
+        // para que `izanagi trace`/`explain` consigam mostrar o estado atual.
+        if (this.opts.verbose) {
+          console.log(`  \x1b[33m⏸\x1b[0m Pausado aguardando aprovação humana no nó "${failure.nodeId}" — use "izanagi approve ${trace.runId}" ou "izanagi reject ${trace.runId}".`);
+        }
+        const { trace: partialTrace, file } = trace.finishAndSave({
+          graph: workingGraph,
+          healing,
+          artifacts: Array.from(ctx.artifacts.entries()).map(([id, a]) => ({ name: id, kind: a.kind as never, valid: a.valid })),
+          model: modelId,
+          budget: phaseBudget.summary(),
+        });
+        return {
+          trace: partialTrace,
+          traceFile: file,
+          graph: workingGraph,
+          healing,
+          status: 'BLOCKED',
+          score: 0,
+          pendingApproval: { nodeId: failure.nodeId, context: failure.context },
+        };
+      }
 
       // Token Budget 2.0: fase de recovery esgotada → aborta (impede loop)
       if (phaseBudget.exhausted('recovery')) {
@@ -454,11 +495,17 @@ export class Orchestrator {
   private async executeBatches(
     graph: ExecutionGraph,
     ctx: ExecuteCtx,
-  ): Promise<{ nodeId: string; agent?: string; skill?: string; error: string } | null> {
+  ): Promise<{ nodeId: string; agent?: string; skill?: string; error: string; blockedApproval?: boolean; context?: string } | null> {
     for (const batch of graph.parallelBatches) {
       const results = await Promise.all(
         batch.map((nodeId) => this.executeNode(graph, nodeId, ctx)),
       );
+      const blocked = results.find((r) => r && r.status === 'blocked_approval') as
+        | { nodeId: string; error?: string; status: string; context?: string }
+        | undefined;
+      if (blocked) {
+        return { nodeId: blocked.nodeId, error: blocked.error ?? 'aguardando aprovação humana', blockedApproval: true, context: blocked.context };
+      }
       const firstFailure = results.find((r) => r && r.status === 'error') as
         | { nodeId: string; agent?: string; skill?: string; error: string; status: string }
         | undefined;
@@ -473,7 +520,10 @@ export class Orchestrator {
     graph: ExecutionGraph,
     nodeId: string,
     ctx: ExecuteCtx,
-  ): Promise<{ status: 'ok' | 'error'; nodeId: string; agent?: string; skill?: string; error?: string } | undefined> {
+  ): Promise<
+    | { status: 'ok' | 'error' | 'blocked_approval'; nodeId: string; agent?: string; skill?: string; error?: string; context?: string }
+    | undefined
+  > {
     const node = graph.nodes.find((n) => n.id === nodeId);
     if (!node) return undefined;
     if (node.status === 'succeeded' || node.status === 'skipped') return undefined;
@@ -491,6 +541,36 @@ export class Orchestrator {
     });
 
     try {
+      if (node.kind === 'approval') {
+        // Human-in-the-loop: só passa com decisão explícita via izanagi approve/reject.
+        const depId = (node.dependencies ?? [])[0];
+        const artifact = depId ? ctx.artifacts.get(depId) : undefined;
+        if (depId && !(artifact?.valid ?? false)) {
+          node.status = 'failed';
+          node.error = `approval "${node.id}" falhou: artefato de "${depId}" inválido`;
+          closeSpan(false, node.error);
+          return { status: 'error', nodeId: node.id, error: node.error };
+        }
+        const context = typeof node.metadata?.context === 'string' ? node.metadata.context : node.validator;
+        const record = ctx.approvals.get(ctx.runId, node.id) ?? ctx.approvals.request(ctx.runId, node.id, context);
+        if (record.decision === 'approved') {
+          node.status = 'succeeded';
+          closeSpan(true, `aprovado por ${record.decidedBy ?? 'humano'}`);
+          return { status: 'ok', nodeId: node.id };
+        }
+        if (record.decision === 'rejected') {
+          node.status = 'failed';
+          node.error = `approval "${node.id}" rejeitada: ${record.reason ?? 'sem motivo informado'}`;
+          closeSpan(false, node.error);
+          return { status: 'error', nodeId: node.id, error: node.error };
+        }
+        // pending: não é falha nem sucesso — pausa a execução sem consumir tentativa.
+        node.status = 'pending';
+        node.attempts = Math.max(0, (node.attempts ?? 1) - 1);
+        closeSpan(false, 'aguardando aprovação humana');
+        return { status: 'blocked_approval', nodeId: node.id, context };
+      }
+
       if (node.kind === 'gate') {
         // Gate: valida artefato de dependências
         const depId = (node.dependencies ?? [])[0];

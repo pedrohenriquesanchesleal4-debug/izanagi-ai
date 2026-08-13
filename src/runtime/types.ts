@@ -134,7 +134,7 @@ export type RetryPolicy = {
 
 export interface GraphNode {
   id: string;
-  kind: 'agent' | 'skill' | 'tool' | 'validator' | 'evaluator' | 'aggregator' | 'parallel' | 'gate';
+  kind: 'agent' | 'skill' | 'tool' | 'validator' | 'evaluator' | 'aggregator' | 'parallel' | 'gate' | 'approval';
   agent?: string;
   skills?: string[];
   inputs?: string[];

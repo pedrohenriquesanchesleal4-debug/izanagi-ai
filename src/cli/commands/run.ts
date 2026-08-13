@@ -336,7 +336,7 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
  * IZANAGI_GOOGLE_API_KEY), cada nó do grafo é executado por um LLM real via
  * ModelRouter; sem chave, roda em modo headless (simulação) com aviso.
  */
-async function runRuntime(
+export async function runRuntime(
   baseDir: string,
   opts: {
     task: string;
@@ -345,6 +345,8 @@ async function runRuntime(
     skillChain: string[];
     agent: any;
     verbose: boolean;
+    /** Retoma um run interrompido/pausado em vez de planejar do zero (izanagi resume/approve/reject). */
+    resumeRunId?: string;
   },
 ): Promise<void> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
@@ -371,6 +373,7 @@ async function runRuntime(
     // já devolve ctx.model/ctx.provider prontos para uso, sem round-trip de roteamento
     // duplicado aqui (antes: run.ts roteava de novo e aplicava fallback manual).
     availableProviders: llmProviders,
+    resumeRunId: opts.resumeRunId,
     produce: async (node: GraphNode, ctx: ExecuteCtx) => {
       if (llmProviders.length === 0) {
         // Producer headless: simula artefato (sem LLM configurado)
@@ -414,6 +417,14 @@ async function runRuntime(
 
   const result = await orchestrator.run();
 
+  if (result.pendingApproval) {
+    console.log(`\n\x1b[1m\x1b[33m⏸ Execução pausada — aguardando aprovação humana\x1b[0m`);
+    console.log(`  \x1b[90mNó:\x1b[0m ${result.pendingApproval.nodeId}${result.pendingApproval.context ? ` — ${result.pendingApproval.context}` : ''}`);
+    console.log(`  \x1b[36mizanagi approve ${result.trace.runId}\x1b[90m — aprova e retoma a execução.`);
+    console.log(`  \x1b[36mizanagi reject ${result.trace.runId} --reason="..."\x1b[90m — rejeita (execução prossegue para falha/self-healing).\x1b[0m\n`);
+    return;
+  }
+
   // Relatório final
   const verdict = result.evaluation;
   const color = result.status === 'PASS' ? '\x1b[32m' : result.status === 'PASS_WITH_WARNINGS' ? '\x1b[33m' : result.status === 'FAIL' || result.status === 'BLOCKED' ? '\x1b[31m' : '\x1b[90m';
@@ -426,7 +437,8 @@ async function runRuntime(
   printTrace(result.trace);
 
   console.log(`\n\x1b[90mVer o trace completo:\x1b[0m \x1b[36mizanagi trace ${result.trace.runId}\x1b[0m`);
-  console.log(`\x1b[90mAvaliação isolada:\x1b[0m \x1b[36mizanagi eval --report ${result.trace.runId}\x1b[0m\n`);
+  console.log(`\x1b[90mAvaliação isolada:\x1b[0m \x1b[36mizanagi eval --report ${result.trace.runId}\x1b[0m`);
+  console.log(`\x1b[90mExplicação da execução:\x1b[0m \x1b[36mizanagi explain ${result.trace.runId}\x1b[0m\n`);
 }
 
 /**
@@ -457,7 +469,7 @@ function buildNodePrompt(node: GraphNode, opts: { task: string; agent: any; skil
   return prompt;
 }
 
-function findAgentJson(agentId: string, baseDir: string): any {
+export function findAgentJson(agentId: string, baseDir: string): any {
   for (const root of [process.cwd(), baseDir]) {
     const file = path.join(root, 'agents', `${agentId}-agent.json`);
     if (fs.existsSync(file)) {

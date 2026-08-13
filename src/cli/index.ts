@@ -18,6 +18,10 @@ import { evalCommand } from './commands/eval.js';
 import { benchmarkCommand } from './commands/benchmark.js';
 import { memoryCommand } from './commands/memory.js';
 import { diagnoseCommand } from './commands/diagnose.js';
+import { resumeCommand } from './commands/resume.js';
+import { approveCommand } from './commands/approve.js';
+import { rejectCommand } from './commands/reject.js';
+import { explainCommand } from './commands/explain.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,6 +89,22 @@ export async function runCLI(args: string[]): Promise<void> {
       diagnoseCommand(baseDir);
       break;
 
+    case 'resume':
+      await resumeCommand(baseDir, rest);
+      break;
+
+    case 'approve':
+      await approveCommand(baseDir, rest);
+      break;
+
+    case 'reject':
+      await rejectCommand(baseDir, rest);
+      break;
+
+    case 'explain':
+      explainCommand(baseDir, rest);
+      break;
+
     case 'chat':
     case 'repl':
     case 'interactive':
@@ -139,8 +159,8 @@ function showHelp(): void {
   \x1b[1mCommands:\x1b[0m
   \x1b[32minit [dir] [--packs a,b,c]\x1b[0m      Creates a project with selectable skill packs (.agents).
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
-  \x1b[32mrun [agent] --task "<task>"\x1b[0m     Classifies task, selects Agent and Skill Chain.
-                          (--runtime executa via Adaptive Runtime: graph + eval + trace)
+  \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: graph + adaptive routing + eval + trace + healing.
+                          (--prompt-only só compila izanagi-prompt.md, sem executar)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Creates a new agent or skill scaffold.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
   \x1b[32mlist [skills|agents]\x1b[0m           Lists all registered skills and agents.
@@ -153,6 +173,10 @@ function showHelp(): void {
   \x1b[32mbenchmark list|run|compare\x1b[0m     Suíte de benchmarks + regression comparison.
   \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
   \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
+  \x1b[32mresume <run-id>\x1b[0m                Retoma execução interrompida/pausada a partir do checkpoint.
+  \x1b[32mapprove <run-id> [node-id]\x1b[0m     Aprova ação de alto risco pausada (human-in-the-loop) e retoma.
+  \x1b[32mreject <run-id> [node-id] [--reason]\x1b[0m Rejeita ação pausada e retoma (nó falha com o motivo).
+  \x1b[32mexplain <run-id>\x1b[0m               Por que o Izanagi decidiu isso: decisões, healing, veredito.
   \x1b[32mexport --cli <target>\x1b[0m         Exports framework adapters for other AI CLIs
                           (claude, codex, cursor, copilot, kimi, all).
   \x1b[32mversion\x1b[0m                       Displays Izanagi AI version.
@@ -167,7 +191,7 @@ function showHelp(): void {
   izanagi init my-project
   izanagi init my-project --packs core,agents,coding,database
   izanagi run "Refactor user authentication to JWT"
-  izanagi run "Create a login page" --runtime
+  izanagi run "Create a login page" --prompt-only
   izanagi run architect --task "Design a microservices architecture"
   izanagi run my-agent --task "Create a login page"
   izanagi agent inspect architect

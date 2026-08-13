@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Added
+- **Policy Engine** (`src/runtime/security/policy.ts`): permissão contextual (ambiente dev/ci/produção, trust tier builtin/generated/community), distinta do Security Scanner (que só detecta conteúdo perigoso). Wired em `ToolRegistry.execute()`.
+- **Trust tiers no Skill Scanner**: `scanDirectory` infere builtin/generated/community pela origem e `decideByTrustTier()` aplica bloqueio escalonado (mesmo nível de risco pode ser permitido para builtin e bloqueado para community) — inspirado no modelo de tiers do Hermes Skills Hub.
+- **Checkpoint/Resume real** (`src/runtime/recovery/checkpoint.ts`): o Orchestrator salva o progresso a cada rodada de batches; `resumeRunId` retoma sem replanejar nem reexecutar nós já concluídos, restaurando budget/artefatos/modelo. `izanagi resume <run-id>`.
+- **Decision Journal** (`src/runtime/memory/decisions.ts`): decisão + alternativas realmente consideradas (com score) + razão + confiança, para model-routing e agent-routing. `izanagi explain <run-id>`.
+- **Artifact Registry** (`src/runtime/artifacts/registry.ts`): artefatos rastreáveis (produtor, hash, dependências, versão em retry/replan) — `consumers()`/`history()` respondem rastreabilidade sem reconstruir a partir do trace.
+- **Human-in-the-loop real**: novo `GraphNode.kind: 'approval'` pausa a execução (não é falha, não aciona self-healing) até decisão via `izanagi approve <run-id>` / `izanagi reject <run-id> --reason="..."`, retomando pelo mesmo mecanismo de checkpoint.
+- CLI: `izanagi resume`, `izanagi approve`, `izanagi reject`, `izanagi explain`.
+
 ### Changed
 - **BREAKING (comportamento, não API):** `izanagi run` agora executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory) **por padrão** — antes disso era necessário `--runtime`/`-r`, e sem essa flag o comando só imprimia um plano estático e gravava `izanagi-prompt.md`, sem de fato executar nada. Elimina o caminho paralelo entre "run estático" e "run --runtime". `--runtime`/`-r` continuam aceitas como no-op de compatibilidade.
 - Novo modo `izanagi run "..." --prompt-only` (`-p`) preserva o comportamento antigo de só compilar `izanagi-prompt.md` para colar em outra ferramenta de IA, sem executar nada.
