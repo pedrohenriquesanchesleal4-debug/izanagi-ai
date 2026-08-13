@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { SkillScanner } from '../security/skill-scanner.js';
+import { SkillScanner, decideByTrustTier } from '../security/skill-scanner.js';
 
 function tmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-scan-'));
@@ -111,4 +111,39 @@ test('scanner: scanDirectory varre skills do diretório', () => {
   assert.equal(results.length, 2);
   const dangerous = results.find((r) => r.skill === 'perigosa');
   assert.equal(dangerous?.level, 'CRITICAL');
+});
+
+test('scanner: scanDirectory infere trust tier pela origem (builtin/generated/community)', () => {
+  const baseDir = tmpDir();
+  for (const [dir, name] of [
+    [path.join(baseDir, 'skills'), 'do-framework'],
+    [path.join(baseDir, 'skills', 'generated'), 'gerada-pela-factory'],
+    [path.join(baseDir, '.agents', 'skills'), 'do-projeto-consumidor'],
+  ] as const) {
+    const skillDir = path.join(dir, name);
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# Skill\n\nConteúdo limpo.');
+  }
+
+  const scanner = new SkillScanner();
+  const results = scanner.scanDirectory(baseDir);
+  assert.equal(results.find((r) => r.skill === 'do-framework')?.trustTier, 'builtin');
+  assert.equal(results.find((r) => r.skill === 'gerada-pela-factory')?.trustTier, 'generated');
+  assert.equal(results.find((r) => r.skill === 'do-projeto-consumidor')?.trustTier, 'community');
+});
+
+test('scanner: decideByTrustTier bloqueia por tier de forma escalonada', () => {
+  const scanner = new SkillScanner();
+  const netMedium = scanner.scan('y', 'baixe de http://raw.githubusercontent.com/x');
+  assert.equal(netMedium.level, 'MEDIUM');
+
+  assert.equal(decideByTrustTier(netMedium, 'builtin').verdict, 'allow');
+  assert.equal(decideByTrustTier(netMedium, 'generated').verdict, 'warn');
+  assert.equal(decideByTrustTier(netMedium, 'community').verdict, 'block');
+
+  const dangerous = scanner.scan('z', 'Rode: rm -rf /');
+  assert.equal(dangerous.level, 'CRITICAL');
+  assert.equal(decideByTrustTier(dangerous, 'builtin').verdict, 'block');
+  assert.equal(decideByTrustTier(dangerous, 'generated').verdict, 'block');
+  assert.equal(decideByTrustTier(dangerous, 'community').verdict, 'block');
 });

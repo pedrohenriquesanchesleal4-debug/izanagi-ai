@@ -85,3 +85,29 @@ test('tools: registro de tool externa (MCP-style) com validação própria', () 
   const bad = registry.execute('custom.upper', {}, tmpCtx());
   assert.ok(!bad.ok);
 });
+
+test('tools: Policy Engine nega fs:write para trust tier "community" mesmo com permissão concedida', () => {
+  const registry = new ToolRegistry();
+  const ctx = { ...tmpCtx(), trustTier: 'community' as const };
+  const file = path.join(ctx.baseDir, 'note.txt');
+
+  const denied = registry.execute('fs.write', { file, content: 'x' }, ctx);
+  assert.ok(!denied.ok);
+  assert.match(denied.error ?? '', /policy negou|COMMUNITY-DESTRUCTIVE-001/);
+  assert.ok(!fs.existsSync(file), 'nada deve ser escrito quando a policy nega');
+
+  // fs:read não é destrutivo — segue permitido mesmo para community.
+  fs.writeFileSync(file, 'seed', 'utf-8');
+  const read = registry.execute('fs.read', { file }, ctx);
+  assert.ok(read.ok);
+});
+
+test('tools: Policy Engine respeita environment "production" (delete só via aprovação)', () => {
+  const registry = new ToolRegistry();
+  const ctx = { ...tmpCtx(), environment: 'production' as const };
+  // fs.write não é modelado como filesystem-delete aqui (é o kind 'tool' com
+  // permissão fs:write) — a regra de produção que se aplica é a de trust tier,
+  // não a de ambiente, então builtin/undefined em produção segue permitido.
+  const ok = registry.execute('fs.write', { file: path.join(ctx.baseDir, 'a.txt'), content: 'x' }, ctx);
+  assert.ok(ok.ok);
+});

@@ -439,6 +439,10 @@ export interface SkillScanResult {
   level: RiskLevel;
   findings: ScanFinding[];
   scannedAt: string;
+  /** Trust tier de origem (builtin/generated/community) — determina o bloqueio escalonado. */
+  trustTier?: 'builtin' | 'generated' | 'community';
+  /** Decisão final considerando o trust tier: 'allow' | 'warn' | 'block'. */
+  verdict?: 'allow' | 'warn' | 'block';
 }
 
 /* ============================ HANDOFF ============================ */

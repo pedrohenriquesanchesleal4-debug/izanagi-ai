@@ -8,6 +8,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { PolicyEngine, type PolicyEnvironment, type TrustTier } from '../security/policy.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
 
@@ -18,6 +19,10 @@ export interface ToolContext {
   baseDir: string;
   /** Diretórios permitidos para leitura/escrita fora do baseDir. */
   allowedDirs?: string[];
+  /** Contexto de execução para o Policy Engine (default: 'development'). */
+  environment?: PolicyEnvironment;
+  /** Trust tier de quem está solicitando a tool (skill/agent builtin/generated/community). */
+  trustTier?: TrustTier;
 }
 
 export interface ToolDefinition {
@@ -107,9 +112,11 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
 
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolDefinition>();
+  private readonly policy: PolicyEngine;
 
-  constructor() {
+  constructor(policy: PolicyEngine = new PolicyEngine()) {
     for (const [id, def] of Object.entries(BUILTIN_TOOLS)) this.tools.set(id, def);
+    this.policy = policy;
   }
 
   /** Registra uma tool externa (MCP/plugin). */
@@ -140,6 +147,20 @@ export class ToolRegistry {
       const permIssues = checkPermissions(ctx, tool.requiredPermission);
       if (permIssues.length > 0) {
         return { ok: false, error: permIssues.join('; '), durationMs: Date.now() - start };
+      }
+      const decision = this.policy.evaluate({
+        kind: 'tool',
+        environment: ctx.environment ?? 'development',
+        permission: tool.requiredPermission,
+        trustTier: ctx.trustTier,
+        target: toolId,
+      });
+      if (!decision.allowed) {
+        return {
+          ok: false,
+          error: `policy negou "${toolId}" (${decision.ruleId}): ${decision.reason}`,
+          durationMs: Date.now() - start,
+        };
       }
       const inputIssues = tool.validateInput(input);
       if (inputIssues.length > 0) {

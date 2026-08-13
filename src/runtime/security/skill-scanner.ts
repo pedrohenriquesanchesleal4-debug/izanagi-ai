@@ -16,6 +16,45 @@ import fs from 'fs';
 import path from 'path';
 import type { RiskLevel, ScanFinding, SkillScanResult } from '../types.js';
 import { parseFrontmatter } from '../routing/resolver.js';
+import type { TrustTier } from './policy.js';
+
+export type { TrustTier };
+
+/**
+ * Bloqueio escalonado por trust tier (inspirado no modelo de tiers do Hermes
+ * Skills Hub): quanto menos curada a fonte, mais baixo o nível de risco que
+ * já basta para bloquear. `builtin` = skills do próprio framework; `generated`
+ * = passou pela Factory (scan prévio); `community` = fonte externa/menos curada.
+ */
+const BLOCK_THRESHOLD: Record<TrustTier, RiskLevel[]> = {
+  builtin: ['CRITICAL'],
+  generated: ['CRITICAL', 'HIGH'],
+  community: ['CRITICAL', 'HIGH', 'MEDIUM'],
+};
+
+const WARN_THRESHOLD: Record<TrustTier, RiskLevel[]> = {
+  builtin: ['HIGH'],
+  generated: ['MEDIUM'],
+  community: ['LOW'],
+};
+
+export interface TrustDecision {
+  verdict: 'allow' | 'warn' | 'block';
+  reason: string;
+}
+
+/** Decide se um SkillScanResult deve ser permitido/avisado/bloqueado para o trust tier dado. */
+export function decideByTrustTier(result: SkillScanResult, tier: TrustTier): TrustDecision {
+  const blockLevels = BLOCK_THRESHOLD[tier];
+  const warnLevels = WARN_THRESHOLD[tier];
+  if (blockLevels.includes(result.level)) {
+    return { verdict: 'block', reason: `nível ${result.level} excede o limite permitido para trust tier "${tier}"` };
+  }
+  if (warnLevels.includes(result.level)) {
+    return { verdict: 'warn', reason: `nível ${result.level} é aceito para "${tier}" mas merece revisão manual` };
+  }
+  return { verdict: 'allow', reason: `nível ${result.level} dentro do aceitável para trust tier "${tier}"` };
+}
 
 export interface ScannerRule {
   id: string;
@@ -104,7 +143,7 @@ export class SkillScanner {
    * Match em contexto de negação (skill ENSINANDO a evitar o padrão, ex.
    * "nunca hardcode senhas") é tratado como informação, não instrução.
    */
-  scan(skillName: string, content: string, opts: { path?: string; allowlist?: string[] } = {}): SkillScanResult {
+  scan(skillName: string, content: string, opts: { path?: string; allowlist?: string[]; trustTier?: TrustTier } = {}): SkillScanResult {
     const findings: ScanFinding[] = [];
     const lines = content.split(/\r?\n/);
 
@@ -143,38 +182,51 @@ export class SkillScanner {
       });
     }
 
-    return {
+    const level = levelFrom(findings);
+    const tier = opts.trustTier;
+    const result: SkillScanResult = {
       skill: skillName,
       path: opts.path ?? '',
       score: scoreFrom(findings),
-      level: levelFrom(findings),
+      level,
       findings,
       scannedAt: new Date().toISOString(),
     };
+    if (tier) {
+      result.trustTier = tier;
+      result.verdict = decideByTrustTier(result, tier).verdict;
+    }
+    return result;
   }
 
   /** Escaneia uma skill no disco. */
-  scanFile(skillName: string, file: string, allowlist?: string[]): SkillScanResult {
+  scanFile(skillName: string, file: string, allowlist?: string[], trustTier?: TrustTier): SkillScanResult {
     const content = fs.readFileSync(file, 'utf-8');
-    return this.scan(skillName, content, { path: file, allowlist });
+    return this.scan(skillName, content, { path: file, allowlist, trustTier });
   }
 
-  /** Escaneia todas as skills resolvíveis do diretório base. */
+  /**
+   * Escaneia todas as skills resolvíveis do diretório base. Trust tier é
+   * inferido pela origem: `skills/generated/` → generated, `skills/` (curada
+   * pelo framework) → builtin, `.agents/skills/` (skills locais do projeto
+   * consumidor, potencialmente de terceiros) → community.
+   */
   scanDirectory(baseDir: string, allowlist?: string[]): SkillScanResult[] {
-    const dirs = [
-      path.join(baseDir, 'skills'),
-      path.join(baseDir, '.agents', 'skills'),
+    const dirs: Array<{ dir: string; tier: TrustTier }> = [
+      { dir: path.join(baseDir, 'skills', 'generated'), tier: 'generated' },
+      { dir: path.join(baseDir, 'skills'), tier: 'builtin' },
+      { dir: path.join(baseDir, '.agents', 'skills'), tier: 'community' },
     ];
     const results: SkillScanResult[] = [];
     const seen = new Set<string>();
-    for (const dir of dirs) {
+    for (const { dir, tier } of dirs) {
       if (!fs.existsSync(dir)) continue;
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         if (!entry.isDirectory() || seen.has(entry.name)) continue;
         seen.add(entry.name);
         const skillFile = path.join(dir, entry.name, 'SKILL.md');
         if (fs.existsSync(skillFile)) {
-          results.push(this.scanFile(entry.name, skillFile, allowlist));
+          results.push(this.scanFile(entry.name, skillFile, allowlist, tier));
         }
       }
     }
