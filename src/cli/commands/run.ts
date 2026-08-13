@@ -2,23 +2,23 @@ import fs from 'fs';
 import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
 import { buildBlueprintCtx } from '../blueprint.js';
-import { Orchestrator } from '../../runtime/orchestrator.js';
+import { Orchestrator, type ExecuteCtx } from '../../runtime/orchestrator.js';
 import { LLMClient } from '../../runtime/llm/client.js';
-import { ModelRouter } from '../../runtime/model/router.js';
 import type { GraphNode } from '../../runtime/types.js';
 import { printTrace } from './trace.js';
 
 interface RunArgs {
   agentId?: string;
   task?: string;
-  runtime: boolean;
+  /** Só compila e salva izanagi-prompt.md — não executa (sem graph/eval/trace). */
+  promptOnly: boolean;
   verbose: boolean;
 }
 
 function parseRunArgs(args: string[]): RunArgs {
   let agentId: string | undefined;
   let task: string | undefined;
-  let runtime = false;
+  let promptOnly = false;
   let verbose = false;
   const positionals: string[] = [];
 
@@ -30,8 +30,11 @@ function parseRunArgs(args: string[]): RunArgs {
       i++;
     } else if (arg.startsWith('--task=')) {
       task = arg.slice(7);
+    } else if (arg === '--prompt-only' || arg === '-p') {
+      promptOnly = true;
     } else if (arg === '--runtime' || arg === '-r') {
-      runtime = true;
+      // Compatibilidade: execução via runtime é o comportamento default desde a
+      // unificação dos caminhos de 'run' — a flag é aceita e ignorada (no-op).
     } else if (arg === '--verbose' || arg === '-v') {
       verbose = true;
     } else if (!arg.startsWith('-')) {
@@ -50,7 +53,7 @@ function parseRunArgs(args: string[]): RunArgs {
     agentId = positionals[0];
   }
 
-  return { agentId, task, runtime, verbose };
+  return { agentId, task, promptOnly, verbose };
 }
 
 interface TaskClassification {
@@ -149,16 +152,16 @@ function agentLabel(agent: any): string {
   return agent.name || 'Custom agent';
 }
 
-export function runCommand(baseDir: string, args: string[]): void {
-  const { agentId, task, runtime, verbose } = parseRunArgs(args);
+export async function runCommand(baseDir: string, args: string[]): Promise<void> {
+  const { agentId, task, promptOnly, verbose } = parseRunArgs(args);
 
   if (!task) {
     console.error('\x1b[31mError:\x1b[0m Please provide a task description.');
     console.error('Usage: \x1b[1mizanagi run [agent] --task "<description>"\x1b[0m');
     console.error('Examples:');
-    console.error('  izanagi run "Create a login page"');
+    console.error('  izanagi run "Create a login page"   (Adaptive Runtime: graph + eval + trace + recovery + memory)');
     console.error('  izanagi run architect --task "Design a microservices architecture"');
-    console.error('  izanagi run "..." --runtime   (executa via Adaptive Runtime: graph + eval + trace)');
+    console.error('  izanagi run "..." --prompt-only   (só compila izanagi-prompt.md, sem executar)');
     process.exit(1);
   }
 
@@ -226,102 +229,103 @@ export function runCommand(baseDir: string, args: string[]): void {
     agent.always.forEach((a: string) => console.log(`  • ${a}`));
   }
 
-  // 4. Plano de execução e Geração de Prompt Pronto para a IA
   const defaultAgent = (projectConfig && (projectConfig.defaultAgent as string)) || 'senior-engineer';
-  console.log('\n\x1b[1mExecution Plan:\x1b[0m');
-  console.log('  1. Load Context & System Rules (SYSTEM.md / RULES.md)');
-  console.log(`  2. Activate Agent [${agentLabel(agent)}] with ${resolvedCount}/${skillChain.length} skills resolved`);
-  console.log('  3. Execute Skill Chain (sequential, dependency-aware)');
-  console.log('  4. Apply Quality Gates: Security -> Style -> Clarity -> Conciseness -> Completeness');
-  console.log('  5. Generate Output & Reflection Log\n');
 
-  // Compila e salva o prompt pronto para a IA
-  const roots = [path.join(cwd, '.agents'), baseDir];
-  const findDoc = (name: string): string =>
-    roots.map((r) => path.join(r, name)).find((p) => fs.existsSync(p)) || '';
+  // --prompt-only: só compila e salva izanagi-prompt.md (sem executar nada) — modo
+  // explícito para quem quer colar o prompt manualmente em outra ferramenta de IA.
+  if (promptOnly) {
+    console.log('\n\x1b[1mExecution Plan (prompt-only — nada será executado):\x1b[0m');
+    console.log('  1. Load Context & System Rules (SYSTEM.md / RULES.md)');
+    console.log(`  2. Activate Agent [${agentLabel(agent)}] with ${resolvedCount}/${skillChain.length} skills resolved`);
+    console.log('  3. Execute Skill Chain (sequential, dependency-aware)');
+    console.log('  4. Apply Quality Gates: Security -> Style -> Clarity -> Conciseness -> Completeness');
+    console.log('  5. Generate Output & Reflection Log\n');
 
-  const systemContent = findDoc('SYSTEM.md');
-  const rulesContent = findDoc('RULES.md');
+    const roots = [path.join(cwd, '.agents'), baseDir];
+    const findDoc = (name: string): string =>
+      roots.map((r) => path.join(r, name)).find((p) => fs.existsSync(p)) || '';
 
-  const compact = process.argv.includes('--compact') || !!(process.env.IZANAGI_COMPACT);
+    const systemContent = findDoc('SYSTEM.md');
+    const rulesContent = findDoc('RULES.md');
 
-  let fullPrompt = `<!-- IZANAGI AI READY-TO-USE PROMPT -->\n`;
-  fullPrompt += `<!-- TASK: ${task} -->\n`;
-  fullPrompt += `<!-- AGENT: ${agent.name} (v${agent.version || '1.0.0'}) -->\n`;
-  fullPrompt += `<!-- MODE: ${compact ? 'compact (economia de tokens)' : 'full'} -->\n\n`;
+    const compact = process.argv.includes('--compact') || !!(process.env.IZANAGI_COMPACT);
 
-  fullPrompt += `## 🚨 CRITICAL EXECUTION MANDATE (ZERO CHECKLISTS / FULL-STACK REAL CODE)\n`;
-  fullPrompt += `- **ABSOLUTELY FORBIDDEN:** Writing lazy task lists, checklists ([✓]), summary-only responses, or empty stubs/placeholders (TODO, // implement later).\n`;
-  fullPrompt += `- **MANDATORY:** Generate 100% real, complete, production-ready code files for every layer requested (Landing Page + Auth + Dashboard/CRUD + Backend/Prisma Schema + README).\n`;
-  fullPrompt += `- **HIGH-CRAFT UI:** Rich dark aesthetics (bg-zinc-950), glassmorphism, bento grids, micro-interactions, and robust TypeScript typing.\n\n`;
+    let fullPrompt = `<!-- IZANAGI AI READY-TO-USE PROMPT -->\n`;
+    fullPrompt += `<!-- TASK: ${task} -->\n`;
+    fullPrompt += `<!-- AGENT: ${agent.name} (v${agent.version || '1.0.0'}) -->\n`;
+    fullPrompt += `<!-- MODE: ${compact ? 'compact (economia de tokens)' : 'full'} -->\n\n`;
 
-  // Blueprint Engine: manifiesto de arquivos + contrato de materialização + gates
-  const bp = buildBlueprintCtx(task, baseDir);
-  if (bp.scope !== 'other') {
-    fullPrompt += bp.blueprint + `\n`;
-  }
+    fullPrompt += `## 🚨 CRITICAL EXECUTION MANDATE (ZERO CHECKLISTS / FULL-STACK REAL CODE)\n`;
+    fullPrompt += `- **ABSOLUTELY FORBIDDEN:** Writing lazy task lists, checklists ([✓]), summary-only responses, or empty stubs/placeholders (TODO, // implement later).\n`;
+    fullPrompt += `- **MANDATORY:** Generate 100% real, complete, production-ready code files for every layer requested (Landing Page + Auth + Dashboard/CRUD + Backend/Prisma Schema + README).\n`;
+    fullPrompt += `- **HIGH-CRAFT UI:** Rich dark aesthetics (bg-zinc-950), glassmorphism, bento grids, micro-interactions, and robust TypeScript typing.\n\n`;
 
-  fullPrompt += `## USER TASK\n${task}\n\n`;
-  fullPrompt += `## AGENT IDENTITY & ROLE\n${agent.identity || agent.role}\n\n`;
-
-  if (agent.always && agent.always.length > 0) {
-    fullPrompt += `## MANDATORY AGENT RULES (ALWAYS)\n` + agent.always.map((a: string) => `- ${a}`).join('\n') + `\n\n`;
-  }
-  if (agent.never && agent.never.length > 0) {
-    fullPrompt += `## PROHIBITED ACTIONS (NEVER)\n` + agent.never.map((n: string) => `- ${n}`).join('\n') + `\n\n`;
-  }
-
-  // Auto-injeta referências curadas (stack, ui, scrollytelling)
-  const refDir = path.join(baseDir, 'references');
-  const refFiles = ['stack-2026.md', 'ui-design-systems.md', 'scrollytelling.md'];
-  for (const refFile of refFiles) {
-    const refPath = path.join(refDir, refFile);
-    if (fs.existsSync(refPath)) {
-      fullPrompt += `## CURATED REFERENCE: ${refFile}\n` + summarizeSkill(refPath, 80) + `\n\n`;
+    // Blueprint Engine: manifiesto de arquivos + contrato de materialização + gates
+    const bp = buildBlueprintCtx(task, baseDir);
+    if (bp.scope !== 'other') {
+      fullPrompt += bp.blueprint + `\n`;
     }
-  }
 
-  fullPrompt += `## COMPUTED SKILL CHAIN (${compactSkillChain.join(' -> ')})\n\n`;
-  for (const skill of compactSkillChain) {
-    const sPath = resolveSkillPath(cwd, baseDir, skill);
-    if (sPath && fs.existsSync(sPath)) {
-      fullPrompt += `### SKILL: ${skill}\n` + summarizeSkill(sPath, compact ? 60 : 160) + `\n\n`;
+    fullPrompt += `## USER TASK\n${task}\n\n`;
+    fullPrompt += `## AGENT IDENTITY & ROLE\n${agent.identity || agent.role}\n\n`;
+
+    if (agent.always && agent.always.length > 0) {
+      fullPrompt += `## MANDATORY AGENT RULES (ALWAYS)\n` + agent.always.map((a: string) => `- ${a}`).join('\n') + `\n\n`;
     }
-  }
+    if (agent.never && agent.never.length > 0) {
+      fullPrompt += `## PROHIBITED ACTIONS (NEVER)\n` + agent.never.map((n: string) => `- ${n}`).join('\n') + `\n\n`;
+    }
 
-  if (systemContent && fs.existsSync(systemContent)) {
-    fullPrompt += `## SYSTEM FOUNDATION\n` + summarizeSkill(systemContent, compact ? 80 : 400) + `\n\n`;
-  }
-  if (rulesContent && fs.existsSync(rulesContent)) {
-    fullPrompt += `## OPERATIONAL RULES\n` + summarizeSkill(rulesContent, compact ? 60 : 400) + `\n\n`;
-  }
+    // Auto-injeta referências curadas (stack, ui, scrollytelling)
+    const refDir = path.join(baseDir, 'references');
+    const refFiles = ['stack-2026.md', 'ui-design-systems.md', 'scrollytelling.md'];
+    for (const refFile of refFiles) {
+      const refPath = path.join(refDir, refFile);
+      if (fs.existsSync(refPath)) {
+        fullPrompt += `## CURATED REFERENCE: ${refFile}\n` + summarizeSkill(refPath, 80) + `\n\n`;
+      }
+    }
 
-  const promptPath = path.resolve(cwd, 'izanagi-prompt.md');
-  fs.writeFileSync(promptPath, fullPrompt, 'utf-8');
-  console.log(`\x1b[32m✔ Ready-to-use AI prompt generated successfully!\x1b[0m`);
-  console.log(`  Saved to: \x1b[36m${promptPath}\x1b[0m (copy and paste directly to your AI tool)\n`);
+    fullPrompt += `## COMPUTED SKILL CHAIN (${compactSkillChain.join(' -> ')})\n\n`;
+    for (const skill of compactSkillChain) {
+      const sPath = resolveSkillPath(cwd, baseDir, skill);
+      if (sPath && fs.existsSync(sPath)) {
+        fullPrompt += `### SKILL: ${skill}\n` + summarizeSkill(sPath, compact ? 60 : 160) + `\n\n`;
+      }
+    }
 
-  // 5. Modo Runtime: orquestra grafo + avaliação + trace + aprendizado
-  if (runtime) {
-    runRuntime(baseDir, {
-      task,
-      category,
-      agentId: agentId ?? classifyTask(task).agent,
-      skillChain: compactSkillChain,
-      agent,
-      verbose,
-    });
+    if (systemContent && fs.existsSync(systemContent)) {
+      fullPrompt += `## SYSTEM FOUNDATION\n` + summarizeSkill(systemContent, compact ? 80 : 400) + `\n\n`;
+    }
+    if (rulesContent && fs.existsSync(rulesContent)) {
+      fullPrompt += `## OPERATIONAL RULES\n` + summarizeSkill(rulesContent, compact ? 60 : 400) + `\n\n`;
+    }
+
+    const promptPath = path.resolve(cwd, 'izanagi-prompt.md');
+    fs.writeFileSync(promptPath, fullPrompt, 'utf-8');
+    console.log(`\x1b[32m✔ Ready-to-use AI prompt generated successfully!\x1b[0m`);
+    console.log(`  Saved to: \x1b[36m${promptPath}\x1b[0m (copy and paste directly to your AI tool)\n`);
+
+    console.log('\x1b[90mTips:');
+    console.log(`  \x1b[36mizanagi run "${task}"\x1b[90m — Adaptive Runtime (execution graph + evaluation + trace + recovery + memory).`);
+    if (agentId && agentFile) {
+      console.log(`  \x1b[36mizanagi compile ${agentId}\x1b[90m — compile the full system prompt for this agent.`);
+    }
+    console.log(`  \x1b[36mizanagi run <your-agent> --task "<task>"\x1b[90m — run a custom agent from ./agents.\x1b[0m`);
+    console.log(`  \x1b[36mizanagi run "${task}"\x1b[90m — auto-classify with default agent (${defaultAgent}).\x1b[0m\n`);
     return;
   }
 
-  console.log('\x1b[90mTips:');
-  console.log(`  \x1b[36mizanagi run "${task}" --runtime\x1b[90m — Adaptive Runtime (execution graph + evaluation + trace + learning).`);
-  console.log(`  \x1b[36mizanagi run "${task}" --runtime --verbose\x1b[90m — runtime com detalhamento (routing, healing, trace).`);
-  if (agentId && agentFile) {
-    console.log(`  \x1b[36mizanagi compile ${agentId}\x1b[90m — compile the full system prompt for this agent.`);
-  }
-  console.log(`  \x1b[36mizanagi run <your-agent> --task "<task>"\x1b[90m — run a custom agent from ./agents.\x1b[0m`);
-  console.log(`  \x1b[36mizanagi run "${task}"\x1b[90m — auto-classify with default agent (${defaultAgent}).\x1b[0m\n`);
+  // Adaptive Runtime — único caminho de execução real: planner + graph + adaptive
+  // routing + evaluation + tracing + self-healing + memory. Sem modo estático paralelo.
+  await runRuntime(baseDir, {
+    task,
+    category,
+    agentId: agentId ?? classifyTask(task).agent,
+    skillChain: compactSkillChain,
+    agent,
+    verbose,
+  });
 }
 
 /**
@@ -355,31 +359,20 @@ async function runRuntime(
     console.log(`  \x1b[32m✔ Execução real via LLM:\x1b[0m providers configurados: ${llmProviders.join(', ')}\n`);
   }
 
-  const router = new ModelRouter();
-  const complexity = ModelRouter.estimateComplexity(opts.task);
-  const routed = router.route({
-    task: opts.task,
-    taskComplexity: complexity,
-    reasoningRequirement: complexity >= 4 ? 'high' : complexity >= 3 ? 'medium' : 'low',
-    risk: opts.category === 'security_audit' ? 0.8 : 0.2,
-    tokenBudget: 16000,
-    requiresTools: false,
-  });
-  // Se o provider roteado não tem chave, cai para o primeiro configurado
-  const provider = client.isConfigured(routed.provider)
-    ? routed.provider
-    : llmProviders[0];
-
   const orchestrator = new Orchestrator({
     baseDir,
-    command: 'run --runtime',
+    command: 'run',
     task: opts.task,
     category: opts.category,
     primaryAgent: opts.agentId,
     skillChain: opts.skillChain,
     verbose: opts.verbose,
-    produce: async (node: GraphNode) => {
-      if (!provider) {
+    // Restringe o roteamento aos providers realmente configurados — o Orchestrator
+    // já devolve ctx.model/ctx.provider prontos para uso, sem round-trip de roteamento
+    // duplicado aqui (antes: run.ts roteava de novo e aplicava fallback manual).
+    availableProviders: llmProviders,
+    produce: async (node: GraphNode, ctx: ExecuteCtx) => {
+      if (llmProviders.length === 0) {
         // Producer headless: simula artefato (sem LLM configurado)
         const label = node.agent ?? node.skills?.join('+') ?? node.id;
         return {
@@ -396,10 +389,11 @@ async function runRuntime(
         };
       }
 
-      // Execução real: compila o prompt do nó e chama o LLM
+      // Execução real: compila o prompt do nó e chama o LLM com o modelo/provider
+      // já roteados pelo Orchestrator (mesma fonte de verdade, sem recomputar aqui).
       const system = buildNodePrompt(node, opts, baseDir);
-      const result = await client.complete(provider, {
-        model: routed.model.id,
+      const result = await client.complete(ctx.provider, {
+        model: ctx.model,
         system,
         messages: [{ role: 'user', content: opts.task }],
         maxTokens: node.tokenBudget ?? 4000,

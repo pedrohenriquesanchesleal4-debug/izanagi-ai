@@ -43,6 +43,13 @@ export interface OrchestratorOptions {
   produce: (node: GraphNode, ctx: ExecuteCtx) => Promise<{ content: unknown; kind: string; tokens?: number; model?: string }> | { content: unknown; kind: string; tokens?: number; model?: string };
   /** Consumer de artefato validado (ex.: salvar em disco). */
   consume?: (node: GraphNode, artifact: { kind: string; content: unknown; valid: boolean }) => void;
+  /**
+   * Providers de LLM realmente utilizáveis no ambiente atual (ex.: com API key
+   * configurada). Quando informado, restringe o catálogo do ModelRouter a
+   * esses providers, então `ctx.provider`/`ctx.model` já saem prontos para uso
+   * real — o caller não precisa rotear de novo nem aplicar fallback manual.
+   */
+  availableProviders?: string[];
   verbose?: boolean;
 }
 
@@ -53,6 +60,8 @@ export interface ExecuteCtx {
   primaryAgent: string;
   skillChain: string[];
   model: string;
+  /** Provider do modelo roteado (ex.: 'anthropic') — mesma fonte de verdade do routing. */
+  provider: string;
   trace: Tracer;
   memory: MemoryStore;
   artifacts: Map<string, { kind: string; content: unknown; valid: boolean; score: number }>;
@@ -96,8 +105,12 @@ export class Orchestrator {
     this.tokensUsed = 0;
     const tokensUsed = () => this.tokensUsed;
 
-    // Model Routing
-    const router = new ModelRouter(ModelRouter.loadProjectProviders(this.opts.baseDir));
+    // Model Routing — restringe ao que é realmente utilizável no ambiente, se informado.
+    const loadedProviders = ModelRouter.loadProjectProviders(this.opts.baseDir);
+    const usableProviders = this.opts.availableProviders && this.opts.availableProviders.length > 0
+      ? loadedProviders.filter((p) => this.opts.availableProviders!.includes(p.id))
+      : loadedProviders;
+    const router = new ModelRouter(usableProviders.length > 0 ? usableProviders : loadedProviders);
     const complexity = ModelRouter.estimateComplexity(this.opts.task);
     const routed = router.route({
       task: this.opts.task,
@@ -168,6 +181,7 @@ export class Orchestrator {
       primaryAgent: this.opts.primaryAgent,
       skillChain: this.opts.skillChain,
       model: routed.model.id,
+      provider: routed.provider,
       trace,
       memory,
       artifacts: new Map(),

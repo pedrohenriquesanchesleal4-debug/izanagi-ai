@@ -23,7 +23,7 @@ izanagi --version
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e resolve a cadeia de skills (graph + eval + trace via `--runtime`). |
+| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory) — caminho único, sem modo estático paralelo. `--prompt-only` só compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. |
 | `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 21 core). |
 | `izanagi agent list \| inspect <name>` | Lista/inspeta agentes (inclui `agents/generated/`) com genome. |
 | `izanagi skill create <nome> --gap="<descrição>" [--force]` | Skill Factory: cria skill com frontmatter, security scan pré-escrita e recusa de lacuna já coberta. |

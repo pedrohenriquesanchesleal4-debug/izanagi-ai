@@ -4,6 +4,26 @@
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **BREAKING (comportamento, não API):** `izanagi run` agora executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory) **por padrão** — antes disso era necessário `--runtime`/`-r`, e sem essa flag o comando só imprimia um plano estático e gravava `izanagi-prompt.md`, sem de fato executar nada. Elimina o caminho paralelo entre "run estático" e "run --runtime". `--runtime`/`-r` continuam aceitas como no-op de compatibilidade.
+- Novo modo `izanagi run "..." --prompt-only` (`-p`) preserva o comportamento antigo de só compilar `izanagi-prompt.md` para colar em outra ferramenta de IA, sem executar nada.
+- `ModelRouter.route()` respeita `IZANAGI_MODEL` (override manual) e `ModelRouter.loadProjectProviders()` lê `.izanagi/izanagi.config.json → models` — extensibilidade de catálogo que já era documentada mas nunca implementada.
+- `MemoryStore` passa a rastrear performance por modelo (`recordModelRun`/`modelStats`/`historicalPerformance()`), preenchendo `RoutingContext.historicalPerformance`, que antes existia no tipo mas nunca era populado.
+
+### Fixed
+- `GraphNode.condition` e `BenchmarkValidator.check` eram avaliados via `new Function(...)` — execução de código arbitrário sobre dados que podem vir de `.agents/benchmarks/*.json` de terceiros. Substituído por um avaliador de expressão seguro (parser/AST próprio, sem `eval`).
+- `TraceStore.list()` tinha um comparador de sort inconsistente (nunca retornava 0), causando ordenação não-determinística de runs com o mesmo timestamp — corrigido com desempate por sequência monotônica.
+- Removida a duplicação de roteamento de modelo entre `Orchestrator` e `cli/commands/run.ts` — o producer da CLI agora consome `ctx.model`/`ctx.provider` do próprio Orchestrator em vez de rotear de novo e aplicar fallback manual.
+- `izanagi run`/`resolve` não era `await`ado no dispatcher da CLI (fire-and-forget em uma função async) — corrigido.
+- Removida autodependência de `izanagi-ai` no próprio `package.json`.
+
+### Removed
+- 5 agentes placeholder de teste comitados por engano em `agents/generated/`.
+
+---
+
 ## [2.10.0] — 2026-08-11
 
 ### Added

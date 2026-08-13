@@ -60,7 +60,7 @@ export async function runCLI(args: string[]): Promise<void> {
 
     case 'run':
     case 'resolve':
-      runCommand(baseDir, rest);
+      await runCommand(baseDir, rest);
       break;
 
     case 'trace':
