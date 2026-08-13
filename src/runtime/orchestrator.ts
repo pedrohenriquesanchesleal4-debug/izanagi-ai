@@ -22,15 +22,17 @@ import { TraceStore, Tracer } from './observability/tracer.js';
 import { MemoryStore } from './memory/store.js';
 import { EvaluationEngine } from './evaluation/engine.js';
 import { Planner } from './orchestration/planner.js';
-import { ExecutionGraphBuilder } from './orchestration/graph.js';
 import { SkillResolver } from './routing/resolver.js';
 import { Healer } from './recovery/healing.js';
 import { LearningEngine } from './evolution/learning.js';
 import { AgentFactory } from './factories/agent-factory.js';
 import { SkillFactory } from './factories/skill-factory.js';
 import { ModelRouter } from './model/router.js';
-import { validateArtifact } from './contracts/artifacts.js';
-import { PhaseTokenBudget, defaultWeights } from './token/budget.js';
+import { validateArtifact, hashContent } from './contracts/artifacts.js';
+import { PhaseTokenBudget, defaultWeights, type PhaseId } from './token/budget.js';
+import { CheckpointStore, checkpointProgress, type CheckpointData } from './recovery/checkpoint.js';
+import { ArtifactRegistry } from './artifacts/registry.js';
+import { DecisionJournal } from './memory/decisions.js';
 
 export interface OrchestratorOptions {
   baseDir: string;
@@ -50,6 +52,8 @@ export interface OrchestratorOptions {
    * real — o caller não precisa rotear de novo nem aplicar fallback manual.
    */
   availableProviders?: string[];
+  /** Retoma um run interrompido a partir do checkpoint salvo com este runId, em vez de planejar do zero. */
+  resumeRunId?: string;
   verbose?: boolean;
 }
 
@@ -67,6 +71,8 @@ export interface ExecuteCtx {
   artifacts: Map<string, { kind: string; content: unknown; valid: boolean; score: number }>;
   /** Token Budget 2.0 — orçamento por fase (planning/execution/evaluation/recovery). */
   budget: PhaseTokenBudget;
+  /** Índice rastreável de artefatos (quem criou, hash, dependências, versão). */
+  artifactRegistry: ArtifactRegistry;
 }
 
 export interface OrchestrationResult {
@@ -85,6 +91,9 @@ export class Orchestrator {
   /** Pontos de extensão (compatibilidade: permite injetar implementações). */
   private store?: TraceStore;
   private memory?: MemoryStore;
+  private checkpointStore?: CheckpointStore;
+  private artifactRegistry?: ArtifactRegistry;
+  private decisionJournal?: DecisionJournal;
   private tokensUsed = 0;
 
   setStore(store: TraceStore): void {
@@ -95,35 +104,79 @@ export class Orchestrator {
     this.memory = memory;
   }
 
+  setCheckpointStore(store: CheckpointStore): void {
+    this.checkpointStore = store;
+  }
+
+  setArtifactRegistry(registry: ArtifactRegistry): void {
+    this.artifactRegistry = registry;
+  }
+
+  setDecisionJournal(journal: DecisionJournal): void {
+    this.decisionJournal = journal;
+  }
+
   /** Executa o ciclo completo e retorna trace + avaliação. */
   async run(): Promise<OrchestrationResult> {
     const store = this.store ?? new TraceStore({ baseDir: this.opts.baseDir });
     const memory = this.memory ?? new MemoryStore({ baseDir: this.opts.baseDir });
-    const trace = new Tracer(store, { task: this.opts.task, command: this.opts.command });
+    const checkpoints = this.checkpointStore ?? new CheckpointStore({ baseDir: this.opts.baseDir });
+    const artifactRegistry = this.artifactRegistry ?? new ArtifactRegistry({ baseDir: this.opts.baseDir });
+    const decisions = this.decisionJournal ?? new DecisionJournal({ baseDir: this.opts.baseDir });
     const healing: HealingAction[] = [];
     const startedAt = Date.now();
-    this.tokensUsed = 0;
+
+    // Resume: carrega o checkpoint salvo e pula planning/routing — reusa exatamente
+    // o grafo, artefatos e modelo/provider da execução original interrompida.
+    let resumed: CheckpointData | null = null;
+    if (this.opts.resumeRunId) {
+      resumed = checkpoints.load(this.opts.resumeRunId);
+      if (!resumed) {
+        throw new Error(`Orchestrator: nenhum checkpoint encontrado para o run "${this.opts.resumeRunId}" — não há o que retomar.`);
+      }
+    }
+
+    const trace = new Tracer(store, { runId: resumed?.runId, task: this.opts.task, command: this.opts.command });
+    this.tokensUsed = resumed?.tokensUsed ?? 0;
     const tokensUsed = () => this.tokensUsed;
 
     // Model Routing — restringe ao que é realmente utilizável no ambiente, se informado.
-    const loadedProviders = ModelRouter.loadProjectProviders(this.opts.baseDir);
-    const usableProviders = this.opts.availableProviders && this.opts.availableProviders.length > 0
-      ? loadedProviders.filter((p) => this.opts.availableProviders!.includes(p.id))
-      : loadedProviders;
-    const router = new ModelRouter(usableProviders.length > 0 ? usableProviders : loadedProviders);
+    // Em resume, reusa o modelo/provider originais (sem round-trip de roteamento de novo).
     const complexity = ModelRouter.estimateComplexity(this.opts.task);
-    const routed = router.route({
-      task: this.opts.task,
-      taskComplexity: complexity,
-      reasoningRequirement: complexity >= 4 ? 'high' : complexity >= 3 ? 'medium' : 'low',
-      risk: this.opts.category === 'security_audit' ? 0.8 : 0.2,
-      tokenBudget: 16000,
-      requiresTools: false,
-      historicalPerformance: memory.historicalPerformance(),
-    });
-    trace.markTool(`model:${routed.provider}`);
-    const closeModel = trace.span(`model-router:${routed.model.id}`, 'decision', { reasons: routed.reasons });
-    closeModel();
+    let modelId: string;
+    let providerId: string;
+    if (resumed) {
+      modelId = resumed.model;
+      providerId = resumed.provider;
+      trace.markTool(`model:${providerId}`);
+      trace.span(`model-router:${modelId}`, 'decision', { reasons: ['retomado de checkpoint'] })();
+    } else {
+      const loadedProviders = ModelRouter.loadProjectProviders(this.opts.baseDir);
+      const usableProviders = this.opts.availableProviders && this.opts.availableProviders.length > 0
+        ? loadedProviders.filter((p) => this.opts.availableProviders!.includes(p.id))
+        : loadedProviders;
+      const router = new ModelRouter(usableProviders.length > 0 ? usableProviders : loadedProviders);
+      const routed = router.route({
+        task: this.opts.task,
+        taskComplexity: complexity,
+        reasoningRequirement: complexity >= 4 ? 'high' : complexity >= 3 ? 'medium' : 'low',
+        risk: this.opts.category === 'security_audit' ? 0.8 : 0.2,
+        tokenBudget: 16000,
+        requiresTools: false,
+        historicalPerformance: memory.historicalPerformance(),
+      });
+      modelId = routed.model.id;
+      providerId = routed.provider;
+      trace.markTool(`model:${providerId}`);
+      trace.span(`model-router:${modelId}`, 'decision', { reasons: routed.reasons })();
+      decisions.record({
+        kind: 'model-routing',
+        chosen: modelId,
+        alternatives: routed.candidates,
+        reason: routed.reasons.join('; '),
+        runId: trace.runId,
+      });
+    }
 
     // Failure Memory check — padrões conhecidos antes de executar
     const closeMem = trace.span('memory:pattern-search', 'memory', { task: this.opts.task });
@@ -133,21 +186,30 @@ export class Orchestrator {
       console.log(`  \x1b[33m⚠\x1b[0m ${relevant.length} padrão(ões) de falha conhecido(s) na memória (${relevant.map((p) => p.pattern).join(', ')})`);
     }
 
-    // Planning
+    // Planning — em resume, reusa o grafo já em progresso (não replaneja do zero).
     const planner = new Planner();
-    const closePlan = trace.span('planner', 'decision', { category: this.opts.category, complexity });
     let graph: ExecutionGraph;
-    try {
-      graph = planner.plan({
-        task: this.opts.task,
-        category: this.opts.category,
-        primaryAgent: this.opts.primaryAgent,
-        skillChain: this.opts.skillChain,
-      });
-      closePlan();
-    } catch (err) {
-      closePlan(false, err instanceof Error ? err.message : String(err));
-      throw err;
+    if (resumed) {
+      graph = resumed.graph;
+      const progress = checkpointProgress(resumed);
+      trace.span('checkpoint:resume', 'decision', { done: progress.done, total: progress.total, pending: progress.pendingNodeIds })();
+      if (this.opts.verbose) {
+        console.log(`  \x1b[36m↻\x1b[0m Retomando run ${resumed.runId}: ${progress.done}/${progress.total} nós concluídos, pendentes: ${progress.pendingNodeIds.join(', ') || 'nenhum'}`);
+      }
+    } else {
+      const closePlan = trace.span('planner', 'decision', { category: this.opts.category, complexity });
+      try {
+        graph = planner.plan({
+          task: this.opts.task,
+          category: this.opts.category,
+          primaryAgent: this.opts.primaryAgent,
+          skillChain: this.opts.skillChain,
+        });
+        closePlan();
+      } catch (err) {
+        closePlan(false, err instanceof Error ? err.message : String(err));
+        throw err;
+      }
     }
 
     // Adaptive routing: score agentes e skills
@@ -167,6 +229,15 @@ export class Orchestrator {
     if (agentScore.length > 0) {
       const best = agentScore[0];
       trace.markAgent(best.candidate);
+      if (!resumed) {
+        decisions.record({
+          kind: 'agent-routing',
+          chosen: best.candidate,
+          alternatives: agentScore.map((c) => ({ option: c.candidate, score: c.finalScore, reason: c.reasons.join('; ') })),
+          reason: best.reasons.join('; '),
+          runId: trace.runId,
+        });
+      }
       if (this.opts.verbose) {
         console.log(`  \x1b[32m✔\x1b[0m Adaptive routing: melhor agente ${best.candidate} (score ${best.finalScore}) — ${best.reasons.join(', ')}`);
       }
@@ -174,29 +245,33 @@ export class Orchestrator {
 
     // Execution com self-healing
     const phaseBudget = new PhaseTokenBudget(graph.budget.maxTokens, defaultWeights(complexity));
+    if (resumed) phaseBudget.restore(resumed.budgetSpent);
     const ctx: ExecuteCtx = {
       runId: trace.runId,
       task: this.opts.task,
       category: this.opts.category,
       primaryAgent: this.opts.primaryAgent,
       skillChain: this.opts.skillChain,
-      model: routed.model.id,
-      provider: routed.provider,
+      model: modelId,
+      provider: providerId,
       trace,
       memory,
-      artifacts: new Map(),
+      artifacts: new Map(
+        resumed ? resumed.artifacts.map((a) => [a.nodeId, { kind: a.kind, content: a.content, valid: a.valid, score: a.score }]) : [],
+      ),
       budget: phaseBudget,
+      artifactRegistry,
     };
 
     let finalEvaluation: EvaluationReport | undefined;
-    const builder = new ExecutionGraphBuilder();
-    let attempts = 0;
+    let attempts = resumed?.attempts ?? 0;
     const maxAttempts = graph.budget.maxAttempts;
     let workingGraph = graph;
 
     while (attempts < maxAttempts) {
       attempts++;
       const failure = await this.executeBatches(workingGraph, ctx);
+      checkpoints.save(this.captureCheckpoint(trace.runId, workingGraph, ctx, attempts));
       if (!failure) break;
 
       // Token Budget 2.0: fase de recovery esgotada → aborta (impede loop)
@@ -300,7 +375,7 @@ export class Orchestrator {
     closeEval();
 
     // Histórico de performance do modelo roteado (alimenta futuras decisões do router)
-    memory.recordModelRun(routed.model.id, {
+    memory.recordModelRun(modelId, {
       success: finalEvaluation.verdict === 'PASS' || finalEvaluation.verdict === 'PASS_WITH_WARNINGS',
       score: finalEvaluation.score,
       tokens: tokensUsed(),
@@ -317,13 +392,16 @@ export class Orchestrator {
     closeLearn();
     memory.save();
 
+    // Run chegou a um veredito terminal (PASS/FAIL/...) — não há mais o que retomar.
+    checkpoints.delete(trace.runId);
+
     // Trace persistido
     const { trace: finalTrace, file } = trace.finishAndSave({
       graph: workingGraph,
       evaluation: finalEvaluation,
       healing,
       artifacts: artifacts.map((a) => ({ ...a, name: a.name })),
-      model: routed.model.id,
+      model: modelId,
       budget: phaseBudget.summary(),
     });
 
@@ -344,6 +422,28 @@ export class Orchestrator {
       healing,
       status: finalEvaluation.verdict,
       score: finalEvaluation.score,
+    };
+  }
+
+  /** Monta o snapshot persistível do progresso atual — chamado a cada rodada de batches. */
+  private captureCheckpoint(runId: string, graph: ExecutionGraph, ctx: ExecuteCtx, attempts: number): CheckpointData {
+    const budgetSpent = Object.fromEntries(
+      ctx.budget.usage().map((u) => [u.phase, u.spent]),
+    ) as Partial<Record<PhaseId, number>>;
+    return {
+      runId,
+      task: this.opts.task,
+      category: this.opts.category,
+      primaryAgent: this.opts.primaryAgent,
+      skillChain: this.opts.skillChain,
+      model: ctx.model,
+      provider: ctx.provider,
+      graph,
+      artifacts: Array.from(ctx.artifacts.entries()).map(([nodeId, a]) => ({ nodeId, ...a })),
+      budgetSpent,
+      attempts,
+      tokensUsed: this.tokensUsed,
+      savedAt: new Date().toISOString(),
     };
   }
 
@@ -426,6 +526,19 @@ export class Orchestrator {
       const validation = validateArtifact(result.kind as never, result.content);
       ctx.artifacts.set(node.id, { kind: result.kind, content: result.content, valid: validation.valid, score: validation.score });
       this.opts.consume?.(node, { kind: result.kind, content: result.content, valid: validation.valid });
+
+      // Artifact Registry: rastreabilidade (produtor, hash, dependências, versão em replan/retry)
+      const artifactText = typeof result.content === 'string' ? result.content : JSON.stringify(result.content ?? {});
+      ctx.artifactRegistry.register({
+        kind: result.kind,
+        name: node.id,
+        producer: { runId: ctx.runId, nodeId: node.id, agent: node.agent, skill: node.skills?.[0] },
+        hash: hashContent(artifactText),
+        size: artifactText.length,
+        valid: validation.valid,
+        score: validation.score,
+        dependencies: (node.dependencies ?? []).map((depId) => `${ctx.runId}:${depId}`),
+      });
 
       if (!validation.valid) {
         node.status = 'failed';

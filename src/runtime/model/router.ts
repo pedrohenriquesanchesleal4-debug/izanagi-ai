@@ -93,7 +93,7 @@ export class ModelRouter {
   }
 
   /** Roteia o modelo mais adequado para o contexto. */
-  route(ctx: RoutingContext): { model: ModelSpec; provider: string; reasons: string[] } {
+  route(ctx: RoutingContext): { model: ModelSpec; provider: string; reasons: string[]; candidates: Array<{ option: string; score: number }> } {
     const complexity = ctx.taskComplexity;
     const reasoning = ctx.reasoningRequirement;
     const reasons: string[] = [];
@@ -107,6 +107,7 @@ export class ModelRouter {
           model: forced,
           provider: this.providerOf(forced.id),
           reasons: [`override manual via IZANAGI_MODEL=${override}`],
+          candidates: [{ option: forced.id, score: 1 }],
         };
       }
       reasons.push(`IZANAGI_MODEL=${override} não encontrado no catálogo — ignorando override`);
@@ -128,7 +129,12 @@ export class ModelRouter {
     if (ctx.risk > 0.6) reasons.push('risco alto — modelo premium justificado');
     if (complexity <= 2) reasons.push('tarefa simples — modelo fast para economizar custo');
 
-    return { model: best.model, provider: best.provider, reasons };
+    return {
+      model: best.model,
+      provider: best.provider,
+      reasons,
+      candidates: candidates.slice(0, 5).map((c) => ({ option: c.model.id, score: Math.round(c.perf * 1000) / 1000 })),
+    };
   }
 
   private scoreModel(model: ModelSpec, ctx: RoutingContext): number {

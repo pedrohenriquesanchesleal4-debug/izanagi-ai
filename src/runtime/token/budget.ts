@@ -71,6 +71,16 @@ export class PhaseTokenBudget {
     };
   }
 
+  /** Restaura gasto persistido (ex.: retomando de um checkpoint) — clampado ao teto de cada fase. */
+  restore(spent: Partial<Record<PhaseId, number>>): void {
+    for (const phase of PHASES) {
+      const v = spent[phase];
+      if (typeof v === 'number' && v >= 0) {
+        this.spent[phase] = Math.min(v, this.allocation[phase]);
+      }
+    }
+  }
+
   /** Gasta tokens da fase; false quando excede o teto da fase. */
   spend(phase: PhaseId, tokens: number): boolean {
     if (tokens <= 0) return true;

@@ -8,6 +8,8 @@ import type { ExecuteCtx } from '../orchestrator.js';
 import type { GraphNode } from '../types.js';
 import { MemoryStore } from '../memory/store.js';
 import { TraceStore } from '../observability/tracer.js';
+import { ArtifactRegistry } from '../artifacts/registry.js';
+import { DecisionJournal } from '../memory/decisions.js';
 
 function tmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-orb-'));
@@ -172,4 +174,53 @@ test('orchestrator: teste falhando → regressão reportada na avaliação', asy
 
   assert.equal(result.evaluation?.regressions.length ?? 0, 1, 'regressão reportada');
   assert.equal(result.status, 'BLOCKED');
+});
+
+test('orchestrator: run real popula Artifact Registry e Decision Journal (rastreabilidade)', async () => {
+  const baseDir = tmpDir();
+  // Fixture isolada de agente — necessária para que rankAgents() encontre um
+  // candidato real e a decisão de agent-routing tenha o que comparar.
+  fs.mkdirSync(path.join(baseDir, 'agents'), { recursive: true });
+  fs.writeFileSync(
+    path.join(baseDir, 'agents', 'senior-engineer-agent.json'),
+    JSON.stringify({ name: 'Senior Engineer', role: 'Full-stack development, login features, frontend e backend', skills: ['frontend', 'backend'] }),
+  );
+  const memory = new MemoryStore({ baseDir });
+  const registry = new ArtifactRegistry({ baseDir });
+  const journal = new DecisionJournal({ baseDir });
+  const orchestrator = new Orchestrator({
+    baseDir,
+    command: 'test',
+    task: 'Criar uma feature de login',
+    category: 'implementation',
+    primaryAgent: 'senior-engineer',
+    skillChain: ['frontend'],
+    produce: (node: GraphNode) =>
+      validArtifact(node.outputs?.[0] ?? 'raw', validContentFor(node.outputs?.[0])),
+  });
+  orchestrator.setMemory(memory);
+  orchestrator.setArtifactRegistry(registry);
+  orchestrator.setDecisionJournal(journal);
+
+  const result = await orchestrator.run();
+  assert.equal(result.status, 'PASS');
+
+  // Artifact Registry: todo nó com produce bem-sucedido vira um artefato rastreável
+  const produced = registry.forRun(result.trace.runId);
+  assert.ok(produced.length >= 3, 'artefatos de execute/verify/evaluation registrados');
+  const execute = produced.find((a) => a.name === 'execute');
+  assert.ok(execute?.hash);
+  assert.equal(execute?.producer.agent, 'senior-engineer');
+  const verify = produced.find((a) => a.name === 'verify');
+  assert.ok(verify?.dependencies.includes(`${result.trace.runId}:execute`), 'dependência rastreada entre nós');
+  assert.deepEqual(registry.consumers(execute!.id).map((c) => c.name), [verify!.name]);
+
+  // Decision Journal: roteamento de modelo e de agente ficam registrados com alternativas
+  const runDecisions = journal.forRun(result.trace.runId);
+  const modelDecision = runDecisions.find((d) => d.kind === 'model-routing');
+  const agentDecision = runDecisions.find((d) => d.kind === 'agent-routing');
+  assert.ok(modelDecision, 'decisão de model-routing registrada');
+  assert.ok(modelDecision!.alternatives.length > 1, 'guarda alternativas realmente consideradas');
+  assert.ok(agentDecision, 'decisão de agent-routing registrada');
+  assert.equal(agentDecision!.chosen, 'senior-engineer');
 });
