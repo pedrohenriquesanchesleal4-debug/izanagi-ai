@@ -43,7 +43,11 @@ export class MemoryStore {
     try {
       if (fs.existsSync(this.stateFile)) {
         const raw = JSON.parse(fs.readFileSync(this.stateFile, 'utf-8')) as RuntimeState;
-        if (raw && typeof raw === 'object' && raw.schemaVersion >= 1) return raw;
+        if (raw && typeof raw === 'object' && raw.schemaVersion >= 1) {
+          // Migração leve: estado persistido antes da introdução de `models` não tem o campo.
+          raw.models ??= {};
+          return raw;
+        }
       }
     } catch {
       // estado corrompido → recomeça
@@ -52,6 +56,7 @@ export class MemoryStore {
       schemaVersion: 1,
       agents: {},
       skills: {},
+      models: {},
       failures: {},
       learnings: [],
       updatedAt: nowIso(),
@@ -99,6 +104,35 @@ export class MemoryStore {
 
   skillStats(skill: string) {
     return this.state.skills[skill];
+  }
+
+  /* ==================== MODEL STATS ==================== */
+
+  recordModelRun(modelId: string, opts: { success: boolean; score: number; tokens: number }): void {
+    const s = (this.state.models[modelId] ??= { runs: 0, successes: 0, failures: 0, avgScore: 0, avgTokens: 0 });
+    s.runs++;
+    if (opts.success) s.successes++;
+    else s.failures++;
+    s.avgScore = (s.avgScore * (s.runs - 1) + opts.score) / s.runs;
+    s.avgTokens = (s.avgTokens * (s.runs - 1) + opts.tokens) / s.runs;
+    s.lastRunAt = nowIso();
+  }
+
+  modelStats(modelId: string) {
+    return this.state.models[modelId];
+  }
+
+  /**
+   * Taxa de sucesso histórica por modelo (0-1), pronta para alimentar
+   * `RoutingContext.historicalPerformance` do ModelRouter. Modelos sem
+   * histórico ficam de fora do mapa (o router trata ausência como neutro).
+   */
+  historicalPerformance(): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const [modelId, stats] of Object.entries(this.state.models)) {
+      if (stats.runs > 0) out[modelId] = stats.successes / stats.runs;
+    }
+    return out;
   }
 
   /* ==================== FAILURE PATTERNS ==================== */

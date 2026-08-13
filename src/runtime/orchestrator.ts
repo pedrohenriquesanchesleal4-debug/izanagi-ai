@@ -97,7 +97,7 @@ export class Orchestrator {
     const tokensUsed = () => this.tokensUsed;
 
     // Model Routing
-    const router = new ModelRouter();
+    const router = new ModelRouter(ModelRouter.loadProjectProviders(this.opts.baseDir));
     const complexity = ModelRouter.estimateComplexity(this.opts.task);
     const routed = router.route({
       task: this.opts.task,
@@ -106,6 +106,7 @@ export class Orchestrator {
       risk: this.opts.category === 'security_audit' ? 0.8 : 0.2,
       tokenBudget: 16000,
       requiresTools: false,
+      historicalPerformance: memory.historicalPerformance(),
     });
     trace.markTool(`model:${routed.provider}`);
     const closeModel = trace.span(`model-router:${routed.model.id}`, 'decision', { reasons: routed.reasons });
@@ -283,6 +284,13 @@ export class Orchestrator {
       recommendations: ctx.artifacts.has('critique') ? ['crítica adversarial consumida; revisar achados no artefato critique'] : [],
     });
     closeEval();
+
+    // Histórico de performance do modelo roteado (alimenta futuras decisões do router)
+    memory.recordModelRun(routed.model.id, {
+      success: finalEvaluation.verdict === 'PASS' || finalEvaluation.verdict === 'PASS_WITH_WARNINGS',
+      score: finalEvaluation.score,
+      tokens: tokensUsed(),
+    });
 
     // Learning
     const closeLearn = trace.span('learning', 'memory');

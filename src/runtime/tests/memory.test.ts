@@ -76,6 +76,34 @@ test('memory: recordSkillRun acumula uso', () => {
   assert.equal(m.skillStats('qa')?.uses, 2);
 });
 
+test('memory: recordModelRun acumula stats e historicalPerformance reflete taxa de sucesso', () => {
+  const m = new MemoryStore({ baseDir: tmpDir() });
+  m.recordModelRun('claude-sonnet-4-5', { success: true, score: 0.9, tokens: 1000 });
+  m.recordModelRun('claude-sonnet-4-5', { success: true, score: 0.8, tokens: 500 });
+  m.recordModelRun('claude-sonnet-4-5', { success: false, score: 0.3, tokens: 700 });
+  const stats = m.modelStats('claude-sonnet-4-5')!;
+  assert.equal(stats.runs, 3);
+  assert.equal(stats.successes, 2);
+  assert.equal(stats.failures, 1);
+  const perf = m.historicalPerformance();
+  assert.equal(Math.round(perf['claude-sonnet-4-5'] * 100) / 100, 0.67);
+  assert.equal(perf['modelo-nunca-usado'], undefined);
+});
+
+test('memory: estado antigo sem campo models carrega sem quebrar (migração)', () => {
+  const dir = tmpDir();
+  const stateDir = path.join(dir, '.izanagi', 'state');
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(stateDir, 'runtime-state.json'),
+    JSON.stringify({ schemaVersion: 1, agents: {}, skills: {}, failures: {}, learnings: [], updatedAt: 'x' }),
+  );
+  const m = new MemoryStore({ baseDir: dir });
+  assert.deepEqual(m.historicalPerformance(), {});
+  m.recordModelRun('gpt-4o', { success: true, score: 1, tokens: 10 });
+  assert.equal(m.modelStats('gpt-4o')?.runs, 1);
+});
+
 test('memory: addLearning limita a 200 entradas', () => {
   const m = new MemoryStore({ baseDir: tmpDir() });
   for (let i = 0; i < 250; i++) m.addLearning(`learning ${i}`, 'test');

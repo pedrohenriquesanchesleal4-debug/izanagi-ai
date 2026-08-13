@@ -8,6 +8,8 @@
  * ser estendido via config do projeto (.izanagi/izanagi.config.json → models).
  */
 
+import fs from 'fs';
+import path from 'path';
 import type { ModelProvider, ModelSpec, RoutingContext } from '../types.js';
 
 export const DEFAULT_PROVIDERS: ModelProvider[] = [
@@ -42,6 +44,27 @@ export const DEFAULT_PROVIDERS: ModelProvider[] = [
 export class ModelRouter {
   constructor(private readonly providers: ModelProvider[] = DEFAULT_PROVIDERS) {}
 
+  /**
+   * Lê `.izanagi/izanagi.config.json` → `models` (array de ModelProvider) e
+   * mescla com o catálogo default (providers do projeto têm prioridade sobre
+   * um provider default de mesmo id). Arquivo ausente ou inválido → só o
+   * catálogo default.
+   */
+  static loadProjectProviders(baseDir: string, defaults: ModelProvider[] = DEFAULT_PROVIDERS): ModelProvider[] {
+    const configFile = path.join(baseDir, '.izanagi', 'izanagi.config.json');
+    if (!fs.existsSync(configFile)) return defaults;
+    try {
+      const raw = JSON.parse(fs.readFileSync(configFile, 'utf-8')) as { models?: ModelProvider[] };
+      const custom = Array.isArray(raw.models) ? raw.models.filter((p) => p && p.id && Array.isArray(p.models)) : [];
+      if (custom.length === 0) return defaults;
+      const byId = new Map(defaults.map((p) => [p.id, p]));
+      for (const p of custom) byId.set(p.id, p);
+      return Array.from(byId.values());
+    } catch {
+      return defaults;
+    }
+  }
+
   /** Todos os modelos disponíveis (com score calculado). */
   catalog(): ModelSpec[] {
     return this.providers.flatMap((p) => p.models);
@@ -74,6 +97,20 @@ export class ModelRouter {
     const complexity = ctx.taskComplexity;
     const reasoning = ctx.reasoningRequirement;
     const reasons: string[] = [];
+
+    // Override manual: IZANAGI_MODEL força um model id do catálogo (se existir).
+    const override = process.env.IZANAGI_MODEL;
+    if (override) {
+      const forced = this.catalog().find((m) => m.id === override);
+      if (forced) {
+        return {
+          model: forced,
+          provider: this.providerOf(forced.id),
+          reasons: [`override manual via IZANAGI_MODEL=${override}`],
+        };
+      }
+      reasons.push(`IZANAGI_MODEL=${override} não encontrado no catálogo — ignorando override`);
+    }
 
     const candidates = this.catalog().map((m) => {
       const perf = this.scoreModel(m, ctx);

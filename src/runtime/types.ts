@@ -292,6 +292,8 @@ export interface TraceSpan {
 export interface RunTrace {
   runId: string;
   task: string;
+  /** Desempate monotônico dentro do processo para runs com o mesmo startedAt (ms). */
+  seq?: number;
   startedAt: string;
   endedAt: string;
   durationMs: number;
@@ -472,10 +474,21 @@ export interface SkillStats {
   lastUsedAt?: string;
 }
 
+export interface ModelStats {
+  runs: number;
+  successes: number;
+  failures: number;
+  avgScore: number;
+  avgTokens: number;
+  lastRunAt?: string;
+}
+
 export interface RuntimeState {
   schemaVersion: number;
   agents: Record<string, AgentStats>;
   skills: Record<string, SkillStats>;
+  /** Histórico de performance por modelo (ex.: "claude-sonnet-4-5") — alimenta RoutingContext.historicalPerformance. */
+  models: Record<string, ModelStats>;
   failures: Record<string, FailurePattern>;
   learnings: Array<{ id: string; text: string; source: string; createdAt: string; confidence: number }>;
   updatedAt: string;
