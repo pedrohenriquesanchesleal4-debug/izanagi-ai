@@ -1,6 +1,6 @@
 ---
 name: er-diagram-builder
-description: Version 1.0.0 | Priority: Low Dependencies: Database Engineer Compatibility: ">=1.0.0"
+description: "Gera diagramas entidade-relacionamento (PlantUML, Mermaid) a partir de definições de schema ou descrição do domínio. Use ao documentar ou revisar a modelagem de um banco de dados."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [er-diagram-builder]

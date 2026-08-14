@@ -1,6 +1,6 @@
 ---
 name: accessibility-reviewer
-description: "Auditoria de acessibilidade WCAG 2.2 AA/AAA: contraste de cores, navegação por teclado, atributos ARIA, landmarks semânticos, leitores de tela (NVDA/VoiceOver), reduções de movimento e testes automatizados com axe-core. Use ao revisar componentes ou páginas quanto à acessibilidade antes de merge/deploy."
+description: "Audita acessibilidade WCAG 2.2 AA/AAA: contraste, navegação por teclado, ARIA e leitores de tela. Use ao revisar componentes ou páginas antes de merge/deploy."
 ---
 
 # Accessibility Reviewer (WCAG 2.2 AA)

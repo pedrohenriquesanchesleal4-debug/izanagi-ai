@@ -4,7 +4,25 @@
 
 ---
 
-## [Unreleased]
+## [2.11.0] — 2026-08-14
+
+### Added
+- **Subagents nativos do Claude Code** (`.claude/agents/*.md`): os 21 agentes agora exportam no formato nativo (`name`/`description`/`tools`/`model`) além dos comandos slash — aparecem no Agent tool e o Claude Code delega sozinho pela `description` (padrão "Use PROACTIVELY quando..."), sem precisar chamar por nome. `tools` é escopado por papel (nunca herda acesso total).
+- Cada `.claude/agents/<slug>.md` lista suas skills por caminho (`skills/<nome>/SKILL.md`), lidas sob demanda só quando o agente é ativado — segunda camada de progressive disclosure além da já existente (skill body só carrega quando a skill é ativada).
+
+### Changed
+- **Export de skills pro Claude Code deixa de resumir o corpo.** O resumidor (`parseSkillMarkdown`) quebrava listas/parágrafos em texto corrido ilegível; o corpo agora é cópia fiel do SKILL.md original — carregamento sob demanda já é gratuito, resumir só destruía a qualidade.
+- **Descrições de todas as 103 skills reescritas**: uma frase, gatilho de uso explícito ("Use quando..."), sem fluff de marketing ("Inspirado em X, Nk stars") — cada skill tem custo fixo (~100 tokens) em toda sessão só por existir; a descrição precisa carregar sinal, não enfeite.
+- **21 agentes tiveram a `identity` aprofundada** com pesquisa grounded em fontes reais e atuais (2026): OWASP Top 10:2025, OAuth 2.1/PKCE, Expand-Contract migrations, INVEST/BDD, ISO/IEC 25010, Cognitive Load Theory, Opportunity Solution Tree, entre outras — nomeando ferramentas/padrões/versões específicas em vez de "melhores práticas" genérico.
+- **20 skills de maior tráfego aprofundadas** com referências reais e correções factuais (ex.: GSAP é gratuito para uso comercial desde a aquisição pela Webflow em abr/2025; Google descontinuou FAQ rich results em mai/2026; OWASP Top 10:2025 consolidou SSRF em Broken Access Control).
+- Regra "Study-First" (`RULES.md`/`AGENTS.md`) deixa de mandar carregar as 4 arquivos de `.agents/memoria/` inteiros em toda tarefa — só `contexto.md` sempre, o resto por domínio da tarefa.
+- `agents/*.json`: removidos os campos `constraints`/`requiredSkills`, redundantes com `never`/`skills`.
+
+### Fixed
+- `izanagi doctor`/`izanagi chat /doctor` detectavam "modo projeto instalado" (`.agents/` como raiz) pela simples existência da pasta `.agents/`, mesmo quando ela só continha `.agents/memoria/` local — passava a procurar `SYSTEM.md`/`RULES.md`/`skill-resolver.json` no lugar errado e falhava com "missing". Agora exige `.agents/agents/` (instalação completa) antes de trocar a raiz.
+- `core/skill-resolver.json` tinha uma edição local não commitada (nunca enviada) que derrubava os aliases de 248 para 116, quebrando `routing.test.ts` — restaurado para a versão consolidada do commit `ae86d8a`.
+
+## [2.10.4] — 2026-08-12
 
 ### Added
 - **Policy Engine** (`src/runtime/security/policy.ts`): permissão contextual (ambiente dev/ci/produção, trust tier builtin/generated/community), distinta do Security Scanner (que só detecta conteúdo perigoso). Wired em `ToolRegistry.execute()`.

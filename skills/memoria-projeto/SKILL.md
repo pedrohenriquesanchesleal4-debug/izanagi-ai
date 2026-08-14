@@ -1,6 +1,6 @@
 ---
 name: memoria-projeto
-description: Mantém memória persistente do projeto entre sessões, guardando decisões, padrões de código e erros já resolvidos, para o agente melhorar a cada nova tarefa em vez de começar do zero. Use no INÍCIO de qualquer tarefa de código relevante (ler a memória) e no FINAL de qualquer tarefa que tenha gerado uma decisão, padrão ou correção de erro importante (atualizar a memória). Também dispara quando o usuário perguntar "o que já decidimos sobre X" ou "por que fizemos assim".
+description: "Mantém memória persistente do projeto entre sessões (decisões, padrões, erros resolvidos). Use no início de uma tarefa para ler o histórico e no final para registrar o que foi aprendido."
 ---
 
 # Memória do projeto
@@ -79,6 +79,19 @@ Exemplo:
 ## Gotcha
 
 Se o projeto já tem um `CLAUDE.md` na raiz, não duplique informação entre ele e `.claude/memoria/contexto.md` — `CLAUDE.md` é para regras permanentes do projeto, a memória é para o que foi sendo aprendido ao longo do tempo.
+
+### Camada certa para cada tipo de informação
+
+Prática consolidada em 2026 para agentes de código (Claude Code e equivalentes): nem tudo que "vale lembrar" deve virar linha de memória.
+
+| Tipo de informação | Onde vai | Por quê |
+|---|---|---|
+| Regra permanente, sempre válida (stack, convenção de nome) | `CLAUDE.md` | Carregado em toda sessão — precisa ser curto e universal |
+| Regra que precisa ser **enforced** deterministicamente | Hook (`.claude/settings.json`) | Instrução em texto pode ser ignorada; hook não |
+| Conhecimento contextual (só relevante para certas tarefas) | Skill | Carregado sob demanda, não polui toda sessão |
+| Decisão/erro/aprendizado que evolui com o tempo | `.agents/memoria/*.md` (esta skill) | Histórico vivo, apendado, não é regra fixa |
+
+Referência de ordem de grandeza real: o `CLAUDE.md`/`MEMORY.md` do Claude Code é truncado nas primeiras **~200 linhas ou 25KB** (o que vier primeiro) — o mesmo motivo pelo qual esta skill manda condensar arquivos de memória acima de ~60 linhas: arquivo inchado além do limite de carregamento é arquivo parcialmente ignorado.
 
 ## References
 

@@ -1,6 +1,6 @@
 ---
 name: web-perf-seo
-description: "Performance web e SEO para sistemas de produção. Core Web Vitals 2026 (LCP <2.5s, CLS <0.1, INP <200ms) com diagnóstico e fix por métrica, otimização de assets (WebP/AVIF, next/image, font subsetting, code splitting), estratégias de cache (CDN, ISR, Service Worker, stale-while-revalidate), SEO on-page (meta tags, Open Graph, JSON-LD structured data, heading hierarchy, canonical URLs, sitemap.xml), e auditoria Lighthouse (Performance ≥90, Accessibility ≥95, Best Practices ≥95, SEO ≥95). Use ao criar páginas, otimizar performance, auditar SEO ou configurar caching/CDN."
+description: "Otimiza Core Web Vitals (LCP, CLS, INP), assets, cache e SEO on-page (meta tags, structured data) com metas de Lighthouse. Use ao criar páginas, otimizar performance ou auditar SEO."
 ---
 
 # Web Performance & SEO — Manual Operacional
@@ -212,7 +212,7 @@ export const metadata: Metadata = {
 | `Article` / `NewsArticle` | Blog posts, notícias |
 | `Product` | Páginas de produto (e-commerce) |
 | `Organization` | Página principal da empresa |
-| `FAQ` | Páginas de FAQ |
+| `FAQ` | ⚠️ Google **removeu o rich result de FAQ** em 07/05/2026 (suporte no Search Console e Rich Results Test caiu em jun/2026, API em ago/2026). Mantenha o schema `FAQPage` para ajudar o entendimento da página e AI Overviews/voice — mas não espere o snippet expandido no SERP |
 | `BreadcrumbList` | Navegação breadcrumb |
 | `WebApplication` | SaaS / App |
 | `HowTo` | Tutoriais passo-a-passo |
@@ -236,6 +236,20 @@ npx lighthouse https://site.com --output=json --output-path=./lighthouse.json
 
 # Chrome DevTools → Lighthouse tab → Analyze page load
 ```
+
+### Peso de cada métrica no Performance score
+
+O score de Performance é uma média ponderada (curva log-normal contra dados reais do HTTP Archive) — **TBT e LCP somam mais da metade do peso**, então são a prioridade de otimização:
+
+| Métrica | Peso |
+|---|---|
+| Total Blocking Time (TBT) | 30% |
+| Largest Contentful Paint (LCP) | 25% |
+| Cumulative Layout Shift (CLS) | 25% |
+| First Contentful Paint (FCP) | 10% |
+| Speed Index (SI) | 10% |
+
+Os pesos mudam entre versões do Lighthouse (o time do Chrome recalibra com base em pesquisa de UX real) — confirme a versão atual em `developer.chrome.com/docs/lighthouse/performance/performance-scoring` antes de prometer uma nota exata.
 
 ---
 
@@ -261,4 +275,7 @@ npx lighthouse https://site.com --output=json --output-path=./lighthouse.json
 
 ## References
 
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Core Web Vitals (oficial): https://web.dev/learn-web-vitals/ · Lighthouse scoring (oficial): https://developer.chrome.com/docs/lighthouse/performance/performance-scoring
+- Structured data (oficial, políticas gerais): https://developers.google.com/search/docs/appearance/structured-data/sd-policies · Galeria completa de rich results: https://developers.google.com/search/docs/appearance/structured-data/search-gallery · Vocabulário: https://schema.org
+- PageSpeed Insights (dados de campo + lab): https://pagespeed.web.dev
+- Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.

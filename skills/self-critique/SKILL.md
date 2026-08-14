@@ -1,6 +1,6 @@
 ---
 name: self-critique
-description: "Revisão crítica autônoma do próprio trabalho (código, artefatos, texto) antes de declarar a entrega concluída: aplica quality gates, verifica conformidade com as regras do framework, checa edge cases e elimina stubs ou débitos técnicos. Use antes de finalizar qualquer entrega importante."
+description: "Use antes de finalizar qualquer entrega complexa: aplica os 5 quality gates (stubs, segurança, craft, verificação, concisão) como auto-revisão."
 ---
 
 # Self-Critique (Auto-Revisão Crítica de Entrega)

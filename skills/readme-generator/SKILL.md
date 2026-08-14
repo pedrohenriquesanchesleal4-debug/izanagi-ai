@@ -1,6 +1,6 @@
 ---
 name: readme-generator
-description: "Geração de README profissional a partir do código: extração de stack (package.json/composer.json), badges de CI/coverage, estrutura obrigatória, seções de instalação, uso, scripts, configuração de ambiente, testes, deploy, contribuição e licença. Use quando for criar ou reescrever o README de qualquer repositório. Pule se for documentação interna profunda (use technical-writer) ou se já houver README completo revisado nesta sessão."
+description: "Use ao criar ou reescrever o README de um repositório: extrai stack real, badges, instalação, uso, testes, deploy e contribuição."
 ---
 
 # README Generator

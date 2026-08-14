@@ -1,6 +1,6 @@
 ---
 name: hallucination-detection
-description: "Detecta e previne alucinações de LLMs em código, documentação e recomendações técnicas: checagem de existência de funções/APIs, validação contra documentação oficial, verificação de imports inexistentes e contraste com o repositório local. Use ao revisar código gerado, auditar respostas incertas ou depurar erros misteriosos."
+description: "Detecta alucinações técnicas em código gerado — APIs inexistentes, imports inventados, versões descasadas — cruzando com o repositório real. Use ao revisar código gerado por IA ou depurar erros misteriosos."
 ---
 
 # Hallucination Detection (Detecção de Falsidades Técnicas)

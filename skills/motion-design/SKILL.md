@@ -1,12 +1,6 @@
 ---
 name: motion-design
-description: |
-  Skill de Motion Design para Web — escolha e uso correto de bibliotecas de
-  animação: GSAP (ScrollTrigger, SplitText), Anime.js v4, Motion (Framer Motion),
-  Lottie, CSS Scroll-Driven Animations e Number Flow. Use quando o pedido envolver
-  "gsap", "anime.js", "framer motion", "lottie", "micro-interações", "hover
-  animation", "text reveal", "stagger", "spring", "motion design" ou animações de
-  interface em geral.
+description: "Escolha e uso de bibliotecas de animação web (GSAP, Motion, Anime.js, Lottie, CSS scroll-driven, Number Flow). Use ao implementar micro-interações, scroll animations ou motion design de UI."
 ---
 
 # Motion Design — Bibliotecas de Animação
@@ -52,6 +46,9 @@ gsap.from(split.chars, { yPercent: 120, stagger: 0.02, ease: 'power4.out',
 - React: use `@gsap/react` (`useGSAP`) — context seguro, cleanup automático de ScrollTriggers.
 - Tudo que é scrub leva `ease: 'none'`; reveals one-shot usam eases com personalidade (`power3/4.out`, `expo.out`).
 - Batch de muitos elementos: `ScrollTrigger.batch()`.
+- **Licença (2026)**: desde a aquisição pela Webflow (abr/2025), GSAP core + **todos** os plugins antes exclusivos do Club GreenSock (`SplitText`, `MorphSVG`, `DrawSVG`, `ScrollSmoother`) são **100% gratuitos, inclusive uso comercial**, instaláveis direto do npm público — não peça nem configure token de registry privado (`GREENSOCK_...`), isso é obsoleto.
+- **SplitText 3.13**: reescrito (14 recursos novos, ~50% menor), com melhorias de acessibilidade, re-split responsivo (recalcula em resize) e suporte a elementos aninhados/emoji — prefira sempre a versão atual do pacote `gsap` em vez de forks antigos.
+- GSAP também anima direto para CSS custom properties: `gsap.to('.el', { color: 'var(--accent)' })`.
 
 ## Anime.js v4 (API modular)
 
@@ -80,6 +77,8 @@ animate('.dot', { x: createMotionPath('#path') });
 - `waapi` submodule (~3KB) quando o target é WAAPI puro; `engine` para config global (frameRate, pauseOnDocumentHidden).
 
 ## Motion (Framer Motion) — React
+
+**Motion v12 (mar/2026)**: projeto independente (renomeado de "Framer Motion" pra "Motion" em 2025); import path é `motion/react` (não `framer-motion`). Motor híbrido: roda nativo via Web Animations API + `ScrollTimeline` do browser quando possível (até 120fps, fora da main thread), e cai pra JS só quando precisa de recurso que WAAPI não cobre (spring física, keyframes interrompíveis, gestos). As APIs de scroll (`useScroll`, `whileInView`) que eram experimentais em v10 hoje são o caminho padrão para qualquer coisa reativa a scroll.
 
 ```tsx
 import { motion, useScroll, useSpring, useTransform } from 'motion/react';
@@ -136,7 +135,9 @@ const container = { show: { transition: { staggerChildren: 0.08 } } };
 
 ## References
 
-Veja `references.md` nesta pasta — Anime.js v4 API, Kinetik/Kinetic/Mellow UI (padrões de micro-interação) e skills públicas de anime.js para estudo.
+- [GSAP 3.13 release notes](https://gsap.com/blog/3-13/) — confirma licenciamento 100% gratuito (todos os plugins Club GreenSock inclusos) e reescrita do SplitText.
+- [Motion (motion.dev)](https://motion.dev/docs/react) — docs oficiais v12, motor híbrido WAAPI/ScrollTimeline + fallback JS.
+- Veja `references.md` nesta pasta — Anime.js v4 API, Kinetik/Kinetic/Mellow UI (padrões de micro-interação) e skills públicas de anime.js para estudo.
 
 ## Metrics & Evolution
 

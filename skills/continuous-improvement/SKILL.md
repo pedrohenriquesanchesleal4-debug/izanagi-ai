@@ -1,6 +1,6 @@
 ---
 name: continuous-improvement
-description: "Evolução contínua do framework e dos projetos: reflete sobre o ciclo de desenvolvimento concluído, extrai aprendizados estruturados, atualiza a memória persistente e sugere aprimoramentos em skills ou padrões. Use ao encerrar ciclos de projeto, marcos ou após correções complexas."
+description: "Reflete sobre um ciclo de trabalho concluído, extrai aprendizados e atualiza a memória persistente do projeto (.agents/memoria/). Use ao encerrar sprints, marcos ou após resolver bugs complexos."
 ---
 
 # Continuous Improvement (Evolução Contínua e Aprendizado)

@@ -1,6 +1,6 @@
 ---
 name: performance-optimizer
-description: Version 1.0.0 Priority: High Dependencies: Complexity Analyzer, Database Engineer Compatibility: ">=1.0.0"
+description: "Identifica gargalos de performance (DB, app, rede, frontend), mede antes/depois e aplica otimizações direcionadas. Use ao investigar lentidão ou antes de deploy para checar regressões."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [performance-optimizer]
@@ -81,6 +81,15 @@ The Performance Optimizer identifies bottlenecks, measures impact, and applies t
 | Dashboard takes > 5s | Missing index | Analyze slow query log, add index |
 | Export times out | No pagination | Chunk results, stream response |
 | High CPU on DB server | Inefficient query | Rewrite with EXPLAIN, optimize JOINs |
+
+**Metodologia EXPLAIN ANALYZE (Postgres/MySQL) — nunca otimize um índice sem isto primeiro:**
+
+1. Rode `EXPLAIN (ANALYZE, BUFFERS) <query>` — `EXPLAIN` sozinho só mostra o plano *estimado*; `ANALYZE` executa a query de verdade e mostra tempo e linhas reais.
+2. Procure `Seq Scan` em tabela grande sem filtro seletivo → candidato a índice.
+3. Compare `rows` estimado vs. real no plano: divergência grande (ordens de magnitude) indica estatísticas desatualizadas → rode `ANALYZE <tabela>` ou revise o `autovacuum`.
+4. Escolha o tipo de índice pelo padrão de acesso, não por hábito: **B-tree** (igualdade/range, default e mais comum), **GIN** (JSONB, arrays, full-text search), **GiST** (dados geométricos, ranges), **BRIN** (colunas correlacionadas à ordem física, tabelas enormes de append-only).
+5. Índice parcial (`CREATE INDEX ... WHERE status = 'active'`) quando a query sempre filtra um subconjunto pequeno e estável.
+6. `Buffers: shared hit=X read=Y` no output — `read` alto é I/O de disco (não cache); se persistir após indexar, revise `shared_buffers`/cache warming.
 
 ### Application
 
@@ -249,4 +258,6 @@ cache_levels:
 
 ## References
 
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- PostgreSQL `EXPLAIN` (doc oficial): https://www.postgresql.org/docs/current/sql-explain.html · Use The Index, Luke (guia canônico de indexação SQL, Markus Winand): https://use-the-index-luke.com
+- web.dev — profiling e Core Web Vitals: https://web.dev · Chrome DevTools Performance panel: https://developer.chrome.com/docs/devtools/performance
+- Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.

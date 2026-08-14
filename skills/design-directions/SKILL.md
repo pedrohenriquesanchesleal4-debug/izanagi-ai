@@ -1,6 +1,6 @@
 ---
 name: design-directions
-description: Seletor de Direções de Design por Indústria (Style Selector). Sempre que um site, landing, dashboard ou produto visual for solicitado, apresenta 3-5 direções de design BESPOKE e distintas para o nicho (nunca glassmorphism genérico), com paleta exata, tipografia com personalidade, layout signature, motion signature e referências reais, para o usuário ESCOLHER antes de qualquer código. Proibido pular direto para um template.
+description: "Apresenta 3-5 direções de design distintas e bespoke por nicho (paleta, tipografia, layout e motion signature) antes de qualquer código visual. Use ao iniciar um site, landing, dashboard ou produto visual novo."
 ---
 
 # Design Directions (Style Selector por Indústria)

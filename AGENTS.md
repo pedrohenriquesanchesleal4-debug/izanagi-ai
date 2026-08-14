@@ -1,6 +1,6 @@
 # AGENTS.md — Izanagi AI Framework Reference
 
-> Version 2.10.3
+> Version 2.11.0
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
 > Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi (Smart Auto-Detection & Selective Generation)
 
@@ -79,7 +79,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 ## 5. Regras de Execução, Autonomia & Masterpiece Gate
 
-- **Estudo Antes de Codar (Study-First):** toda tarefa começa (1) carregando `.agents/memoria/`, (2) consultando `references/` e/ou `deep-research` quando a tarefa exigir informação externa, e só então (3) arquitetar e implementar. Nunca programe no escuro.
+- **Estudo Antes de Codar (Study-First):** toda tarefa começa (1) carregando `.agents/memoria/contexto.md` (sempre) + só os arquivos de `.agents/memoria/` (`decisoes.md`, `erros-corrigidos.md`, `learnings.md`) do domínio da tarefa — cada agente nativo em `.claude/agents/*.md` já aponta pra sua fatia relevante, não é preciso reler os quatro por hábito —, (2) consultando `references/` e/ou `deep-research` quando a tarefa exigir informação externa, e só então (3) arquitetar e implementar. Nunca programe no escuro, mas também nunca recarregue contexto irrelevante.
 - **Lei da Fidelidade Absoluta a Referências (Anti-Rush):** Quando solicitado clonagem, inspiração ou replicação de uma referência visual/técnica (ex: `igloo.inc`), os agentes têm **estritamente proibido** retornar respostas apressadas ou fingir estudo superficial. É obrigatório decompor rigorosamente a estrutura, tipografia, grid, animações e micro-interações da referência e entregar uma obra de excelência artesanal (*High-Craft*) idêntica ou superior.
 - **Zero Falsificação de Pesquisa (Anti-Fake-Research):** Nunca afirme ter estudado ou analisado um site ou documento sem processá-lo com profundidade real. Cada entrega reflete estudo genuíno e maestria técnica.
 - **Composição de Skills Obrigatória:** skills nunca são usadas isoladas. O `core/skill-composer.md` + `compositions` do `skill-resolver.json` definem cadeias encadeadas por domínio.

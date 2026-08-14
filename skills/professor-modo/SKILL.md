@@ -1,6 +1,6 @@
 ---
 name: professor-modo
-description: Depois de fazer qualquer alteração de código, explica de forma curta o que foi feito e ensina um conceito relacionado, no nível de um dev júnior aprendendo na prática. Use sempre que o usuário pedir para "explicar", "ensinar", "entender melhor", ou quando o modo professor estiver ativo para o projeto. Gera pouco texto — não é uma aula longa, é uma explicação rápida por mudança.
+description: "Depois de alterar código, explica em poucas linhas o que foi feito e ensina um conceito relacionado, nível dev júnior. Use quando pedirem para explicar/ensinar ou o modo professor estiver ativo."
 ---
 
 # Modo professor

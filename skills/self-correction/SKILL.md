@@ -1,6 +1,6 @@
 ---
 name: self-correction
-description: "Identifica falhas e desvios no próprio raciocínio ou código durante a execução, aplica a correção imediata sem re-percorrer todo o fluxo anterior e registra o aprendizado para evitar repetição. Use ao notar comportamento inesperado, erro de compilação ou feedback negativo de testes."
+description: "Use ao notar erro de build, teste falhando ou desvio de regra do projeto: isola a causa, aplica correção cirúrgica e registra o aprendizado."
 ---
 
 # Self-Correction (Auto-Correção em Tempo de Execução)

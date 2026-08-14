@@ -1,6 +1,6 @@
 ---
 name: handoff-sessao
-description: "Grava um resumo curto do estado da tarefa em andamento para retomar na próxima sessão sem perder contexto e sem reexplicar tudo: objetivo, feito, falta, próximo passo concreto, arquivos tocados e armadilhas. Use quando o usuário disser 'vou parar por aqui', 'continuo depois', 'pausa' ou quando a conversa estiver perto do limite de contexto. Complementa memoria-projeto (estado em progresso vs conhecimento permanente)."
+description: "Grava um resumo curto do estado da tarefa em andamento para retomar na próxima sessão sem perder contexto. Use quando o usuário disser 'pausa'/'continuo depois' ou a conversa estiver perto do limite de contexto."
 ---
 
 # Handoff de Sessão
@@ -71,6 +71,16 @@ Exemplo real:
 4. ❌ Deixar entrada de tarefa concluída
 5. ❌ Confiar na memória sem escrever ("lembro do que falta")
 6. ❌ Segredos/credenciais no arquivo de handoff
+
+## Por que não confiar só no auto-compact
+
+Ferramentas de agente de código já compactam sozinhas quando a janela de contexto se esgota (ex.: Claude Code dispara em ~95% do limite, resume o histórico e descarta saída bruta de ferramentas/raciocínio intermediário). Isso não substitui o handoff desta skill por três motivos:
+
+1. **O resumo automático é genérico** — otimizado para "não perder o fio", não para o formato denso e específico (Objetivo/Feito/Falta/Próximo passo/Armadilhas) que quem retoma precisa.
+2. **Não sobrevive ao fim da sessão** — auto-compact preserva contexto dentro da mesma sessão; não grava nada em disco para uma sessão nova, um outro agente, ou o dia seguinte.
+3. **Cadência de checkpoint deliberada bate cadência reativa** — a prática recomendada para tarefas longas é gravar estado a cada unidade de trabalho concluída (sub-problema resolvido, decisão tomada), não só quando o limite técnico é atingido. Gravar só ao estourar o contexto é tarde demais se a sessão cair antes disso (crash, fechamento acidental, timeout).
+
+Por isso: grave o handoff em pontos naturais de parada (fim de sub-tarefa, decisão importante) — não espere o aviso de contexto cheio.
 
 ## Composição com outras skills
 

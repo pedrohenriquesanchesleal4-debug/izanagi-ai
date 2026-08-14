@@ -1,6 +1,6 @@
 ---
 name: qa
-description: "Quality Assurance completo para código de produção. 7 dimensões de auditoria: TypeScript Strict (zero `any`, props tipadas, null safety), Componentes React (SRP, hooks rules, cleanup de efeitos, derivação de estado), Performance (re-renders, memoização, lazy loading, code splitting, N+1), Acessibilidade WCAG 2.2 AA (contraste 4.5:1, labels, navegação por teclado, ARIA, focus trap, screen readers), Responsividade (mobile-first, breakpoints, touch targets 44px), Segurança (validação server-side, RLS, XSS/injection, secrets), SEO (title, meta, h1, alt, canonical, structured data). Inclui Pirâmide de Testes (unitários Vitest/Jest, integração, E2E Playwright com seletores por role/intent), checklist de code review e processo de revisão. Use ao auditar código, validar antes de merge/deploy, ou revisar PR."
+description: "Use para auditar código antes de merge/deploy: TypeScript estrito, React, performance, acessibilidade WCAG, responsividade, segurança, SEO e pirâmide de testes."
 ---
 
 # Quality Assurance — Manual Operacional
@@ -30,6 +30,8 @@ Manual denso de QA para código de produção. 7 dimensões de auditoria com che
    ╱──────────────────╲   Vitest/Jest com coverage ≥ 80%
 ```
 
+> **Pirâmide vs. Troféu (Kent C. Dodds)**: a pirâmide acima é o padrão para backends e serviços com lógica de negócio isolada. Para frontend component-driven (React/Next.js), a referência 2026 é o **Testing Trophy**: análise estática na base (TypeScript strict + lint), camada fina de unitários, **camada larga de integração** (Testing Library exercitando componentes como o usuário usa) e um topo pequeno de E2E. Motivo: em UI muito interconectada, unitários isolados dão pouca confiança por esforço — integração é onde fica o melhor custo-benefício. Regra prática: não brigue por forma "correta" — pergunte onde os bugs reais deste projeto se originam e invista o esforço de teste ali.
+
 ### Seletores E2E (Playwright) — Ordem de preferência
 
 | Prioridade | Seletor | Exemplo | Resiliência |
@@ -39,6 +41,10 @@ Manual denso de QA para código de produção. 7 dimensões de auditoria com che
 | 3 | `getByText` | `page.getByText('Bem-vindo')` | ⚠️ Média (texto muda) |
 | 4 | `getByTestId` | `page.getByTestId('submit-btn')` | ⚠️ Média (acoplado) |
 | 5 | CSS selector | `page.locator('.btn-primary')` | ❌ Baixa (frágil) |
+
+- **A mudança de maior impacto**: migrar seletores CSS/testid para `getByRole` é o que mais elimina flakiness — sobrevive a refatoração de DOM, redesign de classe e reorganização de markup, e funciona como cobertura de acessibilidade de brinde.
+- **`getByTestId` só quando não existe role/label semântica**: widgets customizados, grids de dados complexos, componentes de marketing sem botão real. Over-tagging com `data-testid` acopla o teste à implementação e anula a resiliência do seletor por role.
+- Use `.filter()` e encadeamento de locators para desambiguar múltiplos matches em vez de cair para CSS solto.
 
 ### Regras de teste
 
@@ -124,6 +130,19 @@ const filteredItems = useMemo(() => items.filter(i => i.active), [items]);
 | **Modais** | Focus trap, `Escape` fecha, `aria-modal="true"` | Testar com teclado only |
 | **Skip link** | `<a href="#main-content">Pular para conteúdo</a>` | Primeiro item focável |
 | **Motion** | `prefers-reduced-motion` respeitado | Verificar com media query ativa |
+
+### WCAG 2.2 — critérios novos vs. 2.1 (verificar explicitamente)
+
+WCAG 2.2 mantém todos os 77 critérios úteis do 2.1 (removeu só o 4.1.1 Parsing, obsoleto) e adiciona 9 novos, focados em baixa visão, cognição/aprendizagem e mobilidade/toque. Os relevantes para o nível AA deste checklist:
+
+| Critério | Nível | Regra concreta |
+|---|---|---|
+| 2.4.11 Focus Not Obscured (Minimum) | AA | Elemento focado não pode ficar total/parcialmente escondido atrás de header sticky, cookie banner etc. |
+| 2.5.7 Dragging Movements | AA | Toda ação de arrastar (drag) precisa de alternativa sem arrastar (ex: botões de mover) |
+| 2.5.8 Target Size (Minimum) | AA | Alvo clicável ≥ 24×24px CSS, ou espaçamento suficiente para não haver sobreposição com outro alvo |
+| 3.2.6 Consistent Help | A | Mecanismo de ajuda/contato no mesmo lugar relativo em todas as páginas |
+| 3.3.7 Redundant Entry | A | Não pedir a mesma informação duas vezes no mesmo fluxo (ex: endereço repetido em checkout) |
+| 3.3.8 Accessible Authentication (Minimum) | AA | Login não pode depender só de teste cognitivo (memorizar senha sem opção de colar/gerenciador, CAPTCHA sem alternativa) |
 
 ### Ferramentas
 
@@ -228,3 +247,5 @@ npx lighthouse https://localhost:3000 --only-categories=accessibility
 ## References
 
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+
+Atualizações usadas nesta revisão: [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (spec oficial — 9 critérios novos vs. 2.1, incluindo Target Size 2.5.8 e Accessible Authentication 3.3.8); [Playwright — Locators](https://playwright.dev/docs/locators) (prioridade `getByRole`); Kent C. Dodds — [Testing Trophy](https://kentcdodds.com/blog/write-tests) (proporção de testes para frontend component-driven).

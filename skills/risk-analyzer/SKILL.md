@@ -1,6 +1,6 @@
 ---
 name: risk-analyzer
-description: Version 1.0.0 | Priority: High Dependencies: Requirement Analyzer, Software Architect Compatibility: ">=1.0.0"
+description: "Use para identificar, avaliar e mitigar riscos de projeto e técnicos antes que se materializem, com matriz de probabilidade x impacto."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [risk-analyzer]

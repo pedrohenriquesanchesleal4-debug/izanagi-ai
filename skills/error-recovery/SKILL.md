@@ -1,6 +1,6 @@
 ---
 name: error-recovery
-description: "Resiliência em automações: retries com critério (erro recuperável vs permanente), backoff, checkpoints (retomar de onde parou), classificação de falhas, idempotência e recuperação de estado. Use em qualquer automação que deva sobreviver a falhas (rede, API, arquivo) sem perder progresso e sem duplicar trabalho."
+description: "Torna automações resilientes a falhas: classifica erros (recuperável/permanente/crítico), aplica retry com backoff e checkpoints para retomar sem duplicar. Use em automações que processam lotes ou chamam APIs instáveis."
 ---
 
 # Error Recovery

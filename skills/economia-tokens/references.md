@@ -4,11 +4,12 @@
 
 ## Docs canônicas
 
-- [Anthropic: Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) — paper fundacional sobre context engineering para agentes
-- [Anthropic: Prompt Caching (API docs)](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) — documentação oficial de cache_control
+- [Anthropic: Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) — paper fundacional sobre context engineering para agentes (set/2025)
+- [Anthropic/Claude: Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) — documentação oficial de `cache_control`, breakpoints, TTL de 5min/1h e limites mínimos de prefixo cacheável
+- [Anthropic: Writing Effective Tools for AI Agents](https://www.anthropic.com/engineering/writing-tools-for-agents) — paginação, range selection, filtering e truncation para respostas de tools que consomem muito contexto
 - [OpenAI: Prompt Caching](https://platform.openai.com/docs/guides/prompt-caching) — documentação oficial de prefix caching automático
 - [OpenAI Tokenizer](https://platform.openai.com/tokenizer) — visualize quantos tokens cada texto custa
-- [Claude Code: CLAUDE.md Best Practices](https://docs.anthropic.com/en/docs/claude-code/memory) — guidelines oficiais para manter CLAUDE.md enxuto e eficiente
+- [Claude Code: Manage Claude's memory](https://docs.claude.com/en/docs/claude-code/memory) — guidelines oficiais para manter CLAUDE.md enxuto e eficiente
 
 ## Papers & Pesquisa
 
@@ -25,7 +26,6 @@
 
 ## Práticas de produção
 
-- [Simon Willison: LLM Cost Optimization](https://simonwillison.net) — artigos práticos sobre custo e janelas de contexto
-- [AI Hero: AGENTS.md Best Practices](https://aihero.dev) — guidelines para manter arquivos de instrução de agentes enxutos
-- [Red Hat: AGENTS.md Token Economy](https://redhat.com) — keep files ≤150 lines, progressive disclosure
-- [Technspire: Prompt Caching Optimization](https://technspire.com) — auditoria de workloads e monitoramento de cache hit rate
+- [Simon Willison: writing on LLMs](https://simonwillison.net/) — artigos práticos sobre custo e janelas de contexto
+- [ClaudeLog: What Is Claude Code Auto-Compact](https://claudelog.com/faqs/what-is-claude-code-auto-compact/) — mecânica real de compactação automática (~95% da janela, o que sobrevive e o que é descartado)
+- [Anthropic: Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices) — práticas de codificação agentic, incluindo gestão de contexto e sub-agentes

@@ -1,6 +1,6 @@
 ---
 name: security-privacy
-description: "Segurança aplicada e privacidade para sistemas de produção. OWASP Top 10 com mitigações concretas por vulnerabilidade (Injection → Zod/prepared statements, Broken Auth → Argon2id+JWT RS256+MFA, SSRF → allowlist+URL validation), LGPD/GDPR compliance (direitos do titular, mapeamento de dados, DPO, notificação 72h), Secure Coding (CSP, CORS, rate limiting, idempotency keys), Auth & Authorization (RLS, RBAC, middleware de sessão), Criptografia (Argon2id cost 3, AES-256-GCM, TLS 1.3), API Hardening (request size limit, audit logging, anti-IDOR). Use ao implementar autenticação, autorização, validação de input, proteção de APIs, ou ao revisar código quanto a segurança antes de merge/deploy."
+description: "Use ao implementar autenticação, autorização, validação de input ou revisar código quanto a segurança: OWASP Top 10, LGPD/GDPR e hardening de APIs."
 ---
 
 # Security & Privacy — Manual Operacional
@@ -18,6 +18,20 @@ Manual denso de segurança aplicada para sistemas de produção. Baseado em OWAS
 **Pule** para `code-auditor` quando o foco é SAST completo com relatório; `defense-in-depth` quando é arquitetura de segurança em camadas; `automation-security` quando é segurança de automações (credenciais, logs sanitizados).
 
 ---
+
+## Atualização: OWASP Top 10:2025 (8ª edição)
+
+Em 2025 o OWASP publicou a 8ª edição do Top 10 (primeira revisão desde 2021), baseada em análise de mais de 175 mil CVEs e 589 CWEs. A tabela abaixo usa a nomenclatura 2021 (ainda a mais implantada em código legado), mas ao auditar ou desenhar algo novo, aplique o mapeamento 2025:
+
+| Mudança 2021 → 2025 | O que significa na prática |
+|---|---|
+| **Broken Access Control continua #1** | Segue afetando praticamente toda aplicação testada — RLS/RBAC continuam prioridade #1 de mitigação |
+| **SSRF foi absorvido por Broken Access Control** | Trate validação de URL/allowlist de SSRF como parte do controle de acesso, não como categoria isolada |
+| **Nova: A03 Software Supply Chain Failures** | "Vulnerable and Outdated Components" virou categoria mais ampla — cobre não só CVEs conhecidos em dependências, mas risco de terceiros/CI-CD (typosquatting, pacotes comprometidos, pipeline poisoning) |
+| **Nova: A10 Mishandling of Exceptional Conditions** | Falhas de tratamento de erro/exceção que vazam estado interno ou permitem bypass — reforça a regra de "erro genérico" já usada neste manual |
+| **Mudança de foco geral** | De falhas de código isoladas para fraquezas sistêmicas de todo o ciclo de vida (design, config, dependências) |
+
+Fonte: [owasp.org/Top10/2025](https://owasp.org/Top10/2025/).
 
 ## OWASP Top 10 — Mitigações Concretas
 
@@ -136,6 +150,23 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 | Audit logging | Structured JSON log | `{action, userId, resource, timestamp, ip}` |
 | Timeout | Request timeout | 30s para API, 5min para upload |
 
+### OWASP API Security Top 10 (2023 — ainda vigente em 2026, sem revisão nova publicada)
+
+Referência específica para APIs (distinta do Top 10 web geral) — usada por auditores de PCI-DSS/HIPAA/GDPR/DORA como checklist de linha de base:
+
+| # | Risco | Mitigação no contexto deste manual |
+|---|---|---|
+| API1 | Broken Object Level Authorization (BOLA/IDOR) | Ownership check por request — nunca confiar em ID vindo do client sem validar `auth.uid()` |
+| API2 | Broken Authentication | Ver tabela de Autenticação & Autorização acima |
+| API3 | Broken Object Property Level Authorization | Validar quais campos cada role pode ler/escrever — Zod schema por role, não um schema único genérico |
+| API4 | Unrestricted Resource Consumption | Rate limiting + `maxLength`/payload size já cobertos acima; adicionar limite de paginação (`limit` máx.) |
+| API5 | Broken Function Level Authorization | Middleware RBAC por rota, nunca checagem só no frontend |
+| API6 | Unrestricted Access to Sensitive Business Flows | Rate limit dedicado em fluxos de negócio sensíveis (checkout, reset de senha, criação de conta) além do rate limit geral |
+| API7 | SSRF | Ver linha SSRF na tabela OWASP Top 10 acima |
+| API8 | Security Misconfiguration | Ver seção Security Headers |
+| API9 | Improper Inventory Management | Manter inventário de endpoints/versões ativas; desligar versões antigas de API (`/v1` órfã é superfície de ataque esquecida) |
+| API10 | Unsafe Consumption of APIs | Validar/sanitizar respostas de APIs de terceiros como se fossem input não confiável — nunca repassar direto ao client |
+
 ---
 
 ## LGPD (Lei Geral de Proteção de Dados)
@@ -159,6 +190,10 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 - [ ] Notificação de vazamento à ANPD em até 72h
 - [ ] Dados pessoais NUNCA em logs (mascarar CPF: `***.***.***-XX`, email: `j***@***.com`)
 - [ ] Retenção definida por tipo de dado (ex: logs de acesso: 6 meses, conta: até exclusão)
+
+### Atualização regulatória ANPD (2026)
+
+Em dez/2025 a ANPD publicou o Mapa de Temas Prioritários 2026-2027 e atualizou a Agenda Regulatória 2025-2026 — 19 temas prioritários incluem: direitos do titular, RIPD (Relatório de Impacto), dados sensíveis (biométricos/saúde), compartilhamento de dados pelo Poder Público e **inteligência artificial** (prioridade explícita do novo ciclo). Implicação prática: a Resolução de Dosimetria da ANPD **reduz sanções** para organizações que comprovam documentação estruturada (inventário de dados, políticas, contratos com operadores, registros de treinamento, evidência de resposta a incidente) — manter essa documentação viva não é burocracia, é redução de risco financeiro direto em fiscalização. Site oficial: [gov.br/anpd](https://www.gov.br/anpd/pt-br).
 
 ---
 
@@ -186,3 +221,5 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ## References
 
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+
+Atualizações 2025/2026 usadas nesta revisão: [OWASP Top 10:2025](https://owasp.org/Top10/2025/) (8ª edição — Software Supply Chain Failures e Mishandling of Exceptional Conditions são novas; SSRF mesclado em Broken Access Control) e o site oficial da [ANPD](https://www.gov.br/anpd/pt-br) (Mapa de Temas Prioritários 2026-2027 e Agenda Regulatória).

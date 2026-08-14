@@ -1,6 +1,6 @@
 ---
 name: automation-optimization
-description: "Otimização de automações sem sacrificar confiabilidade: caça a gargalos na ordem certa (I/O, rede, browser, processamento, memória, execuções redundantes), paralelismo seguro com rate limits, batching, caching, checkpoints/delta processing, métricas antes/depois e documentação do ganho. Use para tornar automações rápidas, baratas e estáveis."
+description: "Identifica e corrige gargalos de I/O, browser, processamento e memória em automações, com métricas antes/depois. Use quando uma automação demorar demais, estourar rate limits ou custar caro."
 ---
 
 # Automation Optimization — Rápido Sem Quebrar

@@ -80,7 +80,7 @@ export function chatCommand(baseDir: string): void {
     if (input === '/doctor') {
       console.log('\n\x1b[36mRunning doctor check...\x1b[0m');
       // Import and call doctor command logic
-      const projectRoot = fs.existsSync(path.join(cwd, '.agents')) ? path.join(cwd, '.agents') : baseDir;
+      const projectRoot = fs.existsSync(path.join(cwd, '.agents', 'agents')) ? path.join(cwd, '.agents') : baseDir;
       const resolverPath = path.join(projectRoot, 'core', 'skill-resolver.json');
       if (fs.existsSync(resolverPath)) {
         console.log('\x1b[32m✔ Framework & Resolver OK\x1b[0m\n');

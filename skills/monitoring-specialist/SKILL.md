@@ -1,6 +1,6 @@
 ---
 name: monitoring-specialist
-description: "Especialista em monitoramento de sistemas: definição de métricas essenciais (CPU, memória, latência, taxa de erro), configuração de alertas acionáveis, criação de dashboards operacionais e estabelecimento de SLIs, SLOs e SLAs. Use ao configurar monitoramento de produção ou planejar confiabilidade."
+description: "Define métricas essenciais, SLIs/SLOs/SLAs e alertas acionáveis para produção. Use ao configurar monitoramento de sistemas ou planejar confiabilidade."
 ---
 
 # Monitoring Specialist (Métricas, Alertas e SLOs)

@@ -1,6 +1,6 @@
 ---
 name: architecture-patterns
-description: "Padrões arquiteturais para sistemas de produção com matriz de decisão, diagramas e trade-offs. 6 padrões core: Clean Architecture (4 camadas, Dependency Rule), Hexagonal/Ports & Adapters (core puro + adapters), DDD (Bounded Contexts, Aggregates, Value Objects), CQRS (Command vs Query separation), Event-Driven (Event Sourcing, Saga, Outbox), Microservices (Database-per-Service, API Gateway, Circuit Breaker). Inclui templates de ADR (Architecture Decision Records), diagramas Mermaid.js e checklist de quando usar/não usar cada padrão. Use ao projetar ou refatorar a arquitetura do sistema, escolher padrões ou documentar decisões."
+description: "Padrões arquiteturais (Clean Architecture, Hexagonal, DDD, CQRS, Event-Driven, Microservices) com matriz de decisão, trade-offs e template de ADR. Use ao projetar ou refatorar a arquitetura do sistema."
 ---
 
 # Architecture Patterns — Manual Operacional
@@ -162,14 +162,18 @@ Query (Read):    Query → Handler → Read Model (denormalized) → Response
 
 | Padrão | Problema que resolve | Implementação |
 |---|---|---|
-| **Outbox Pattern** | Garantir que evento é publicado quando DB é commitada | Salvar evento em tabela `outbox` na mesma transaction, publicar depois |
-| **Saga Pattern** | Transação distribuída entre serviços | Sequência de eventos compensatórios (rollback por evento) |
+| **Outbox Pattern** | Garantir que evento é publicado quando DB é commitada | Salvar evento em tabela `outbox` (mesmo schema/transaction do domínio) e publicar via processo separado com ID único para dedupe. Baixa vazão: polling da tabela. Alta vazão em produção: substituir polling por **CDC** (Change Data Capture, ex. **Debezium**) lendo o write-ahead log |
+| **Saga Pattern** | Transação distribuída entre serviços | **Coreografia** (cada serviço reage a eventos que observa — simples em pequena escala) ou **Orquestração** (um coordenador emite comandos e reage a respostas — mais fácil de raciocinar conforme a saga cresce); sequência de eventos compensatórios (rollback por evento) |
 | **Dead Letter Queue** | Eventos que falharam N vezes | Mover para fila separada para análise manual |
 | **Idempotency** | Processamento duplicado de evento | Chave de idempotência por evento (deduplicate by ID) |
+
+**Regra de introdução incremental**: comece com Pub/Sub simples publicando poucos eventos de domínio de alto valor; adicione outbox transacional antes de qualquer saga; só introduza saga onde o workflow de fato atravessa múltiplos serviços. Camadas (event sourcing, CQRS, saga) só valem a complexidade quando o sistema realmente precisa — não big-bang.
 
 ---
 
 ## Microservices
+
+**Diretriz 2026 (heurística de mercado, não regra absoluta)**: comece com monolito modular. Migrar para microserviços só se justifica ao ultrapassar de forma sustentada a ordem de **~1M requisições/dia** ou **~50+ desenvolvedores** competindo pelo mesmo deploy — abaixo disso, o overhead operacional (observabilidade distribuída, deploy independente, versionamento de contrato) normalmente supera o ganho. Sem **bounded contexts** de DDD definindo as fronteiras primeiro, microserviços viram "distributed big ball of mud": serviços separados na infra, mas acoplados no domínio.
 
 ### Quando migrar de monolito
 

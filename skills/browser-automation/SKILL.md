@@ -1,6 +1,6 @@
 ---
 name: browser-automation
-description: "Automação de navegador com Playwright (preferência) ou Selenium: navegação, preenchimento de formulários, autenticação, upload/download de arquivos, extração de tabelas, paginação, waits inteligentes, retries, seletores resilientes (data-testid/texto/role) e validação de resultados. Use quando não existir API e a automação web for necessária."
+description: "Automação de navegador com Playwright: navegação, formulários, upload/download, extração de tabelas e seletores resilientes. Use quando não existir API e a automação web for necessária."
 ---
 
 # Browser Automation

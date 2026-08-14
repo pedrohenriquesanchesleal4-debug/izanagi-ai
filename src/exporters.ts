@@ -23,7 +23,72 @@ export interface IzanagiAgentInfo {
   chains: Record<string, string[]>;
   always: string[];
   never: string[];
+  handoffs: { to: string; reason: string }[];
 }
+
+/**
+ * Tools nativos do Claude Code por agente — nunca herda tudo (`tools` omitido = acesso total).
+ * Perfil por categoria: leitura/análise fica só com Read/Grep/Glob(+web); quem implementa ganha
+ * Edit/Write/Bash. Fallback conservador cobre agentes novos/gerados que ainda não têm entrada aqui.
+ */
+export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
+  'adversarial-critic': ['Read', 'Grep', 'Glob'],
+  'agent-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit'],
+  animation: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'WebFetch'],
+  architect: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
+  'automation-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
+  'bug-hunter': ['Read', 'Grep', 'Glob', 'Bash', 'Edit'],
+  database: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
+  devops: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
+  discovery: ['Read', 'Grep', 'Glob', 'Write', 'WebFetch', 'WebSearch'],
+  docs: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
+  evaluator: ['Read', 'Grep', 'Glob'],
+  'form-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write'],
+  pm: ['Read', 'Grep', 'Glob', 'Write', 'WebFetch'],
+  'product-reasoner': ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  professor: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  qa: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
+  researcher: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  security: ['Read', 'Grep', 'Glob', 'Bash', 'WebFetch'],
+  'senior-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
+  'skill-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
+  techlead: ['Read', 'Grep', 'Glob', 'Bash']
+};
+
+/** Fallback de tools pra agentes sem entrada em CLAUDE_AGENT_TOOLS (ex.: gerados sob demanda). */
+export const CLAUDE_AGENT_TOOLS_DEFAULT = ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'];
+
+/**
+ * Gatilho de auto-seleção por agente — vira a primeira frase da `description` do subagent nativo.
+ * O Claude Code decide sozinho quando delegar com base nesse texto; precisa ser acionável
+ * ("Use PROACTIVELY quando/para..."), não descritivo de marketing.
+ */
+export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
+  'adversarial-critic': 'Use PROACTIVELY depois que uma solução, arquitetura ou entrega parecer pronta, para caçar pontos cegos e riscos antes do usuário achar.',
+  'agent-architect': 'Use quando faltar um agente especializado para uma lacuna real do time e for preciso desenhar um novo agente.',
+  animation: 'Use PROACTIVELY para scrollytelling, motion design, WebGL 3D ou qualquer interação cinematográfica de UI.',
+  architect: 'Use PROACTIVELY antes de codar quando a tarefa exigir decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS.',
+  'automation-engineer': 'Use PROACTIVELY para automações (planilhas, browser, API, ETL) que precisem de idempotência, retries e logging estruturado.',
+  'bug-hunter': 'Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes — root cause analysis com teste de regressão.',
+  database: 'Use PROACTIVELY para modelagem de dados, SQL otimizado, migrações e schemas (Postgres/MySQL/Redis).',
+  devops: 'Use PROACTIVELY para CI/CD, Docker, Kubernetes, IaC e observabilidade.',
+  discovery: 'Use PROACTIVELY no início de projeto/feature nova para entrevistar, pesquisar referências reais e gerar o blueprint antes de codar.',
+  docs: 'Use PROACTIVELY para README, documentação de API, diagramas e guias técnicos.',
+  evaluator: 'Use depois de uma entrega para avaliar objetivamente contra critérios técnicos mensuráveis.',
+  'form-engineer': 'Use PROACTIVELY para formulários complexos (wizards, validação Zod/RHF, acessibilidade).',
+  pm: 'Use PROACTIVELY para escopo, sprints, milestones e análise de risco de projeto.',
+  'product-reasoner': 'Use PROACTIVELY antes de arquitetar para extrair requisitos com evidências (FACT/ASSUMPTION/UNKNOWN) e critérios BDD.',
+  professor: 'Use quando o usuário pedir explicação, ensino ou mentoria adaptativa sobre um conceito técnico.',
+  qa: 'Use PROACTIVELY para testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG) antes de considerar algo pronto.',
+  researcher: 'Use PROACTIVELY quando a decisão depender de informação externa (stack, concorrência, preços, referências).',
+  security: 'Use PROACTIVELY antes de mergear código sensível — OWASP Top 10, auth, secrets, LGPD.',
+  'senior-engineer': 'Use PROACTIVELY para implementação full-stack de ponta a ponta com TDD estrito.',
+  'skill-architect': 'Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills.',
+  techlead: 'Use PROACTIVELY para code review pedagógico e decisões de governança técnica.'
+};
+
+/** Marcador presente em todo arquivo gerado — permite regenerar sem arriscar sobrescrever edição manual. */
+export const GENERATED_MARKER = 'Gerado pelo Izanagi AI';
 
 /** Subconjunto curado de skills exportado para Claude Code (.claude/skills). */
 export const CLAUDE_SKILLS = [
@@ -120,6 +185,7 @@ export function loadIzanagiAgents(baseDir: string): IzanagiAgentInfo[] {
         chains?: Record<string, string[]>;
         always?: string[];
         never?: string[];
+        handoffs?: { to: string; reason: string }[];
       };
       const slug = file.replace(/\.json$/i, '').replace(/-agent$/i, '');
       agents.push({
@@ -132,7 +198,8 @@ export function loadIzanagiAgents(baseDir: string): IzanagiAgentInfo[] {
         skills: raw.skills ?? [],
         chains: raw.chains ?? {},
         always: raw.always ?? [],
-        never: raw.never ?? []
+        never: raw.never ?? [],
+        handoffs: raw.handoffs ?? []
       });
     } catch {
       // arquivo JSON inválido: ignora silenciosamente (doctor cuida da auditoria)
@@ -150,6 +217,11 @@ export function readSkillSummary(baseDir: string, name: string): SkillSummary | 
   return { name, ...parseSkillMarkdown(content) };
 }
 
+/**
+ * Extrai description + corpo ORIGINAL (sem resumir). Progressive disclosure do Claude Code só
+ * carrega o corpo (Layer 2) quando a skill é ativada — resumir na exportação não economiza
+ * token nenhum e só destrói listas/estrutura do conteúdo original.
+ */
 function parseSkillMarkdown(content: string): { description: string; body: string } {
   let description = '';
   let body = content;
@@ -160,53 +232,20 @@ function parseSkillMarkdown(content: string): { description: string; body: strin
     description = parseFrontmatterDescription(fm[1]);
   }
 
-  // Resumo do corpo: títulos de seção (##) + primeira frase de cada parágrafo
-  const lines = body.split(/\r?\n/);
-  const out: string[] = [];
-  let inCode = false;
-  let pending: string[] = [];
-
-  const flush = (): void => {
-    if (pending.length === 0) return;
-    const para = truncate(pending.join(' '), 240);
-    if (para) out.push(para);
-    pending = [];
-  };
-
-  for (const line of lines) {
-    const t = line.trim();
-    if (t.startsWith('```')) {
-      inCode = !inCode;
-      continue;
-    }
-    if (inCode) continue;
-    if (t.startsWith('###')) continue;
-    if (t.startsWith('##')) {
-      flush();
-      out.push(t);
-      continue;
-    }
-    if (t.startsWith('#') || t === '') {
-      flush();
-      continue;
-    }
-    pending.push(t);
-    if (pending.join(' ').length > 320) flush();
-  }
-  flush();
-
-  let result = out.join('\n').trim();
-  if (result.length > 1400) {
-    const cut = truncate(result, 1400).replace(/…$/, '');
-    result = `${cut}\n\n… (resumo gerado automaticamente)`;
-  }
-  return { description, body: result };
+  return { description, body: body.trim() };
 }
 
-/** Escreve o arquivo apenas se não existir; retorna o path relativo criado (ou null). */
+/**
+ * Escreve o arquivo se não existir, ou se o arquivo existente for uma geração anterior do
+ * Izanagi (contém `GENERATED_MARKER`) — nesse caso regenera. Se existir e NÃO tiver o marcador,
+ * assume edição manual do usuário e não sobrescreve. Retorna o path relativo escrito (ou null).
+ */
 function writeIfAbsent(baseDir: string, relPath: string, content: string): string | null {
   const abs = path.join(baseDir, relPath);
-  if (fs.existsSync(abs)) return null;
+  if (fs.existsSync(abs)) {
+    const existing = fs.readFileSync(abs, 'utf-8');
+    if (!existing.includes(GENERATED_MARKER)) return null;
+  }
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, content, 'utf-8');
   return relPath.split(path.sep).join('/');
@@ -229,8 +268,9 @@ function chainList(chains: Record<string, string[]>): string {
 
 function claudeCommandTemplate(a: IzanagiAgentInfo): string {
   const modelLine = a.model ? `model: ${a.model}\n` : '';
+  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas de ${(a.role || a.name).toLowerCase()}.`;
   return `---
-description: ${a.role || a.name}
+description: ${truncate(trigger, 200)}
 ${modelLine}---
 
 # ${a.name}
@@ -258,29 +298,78 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 }
 
 function claudeSkillTemplate(s: SkillSummary): string {
-  const title = s.name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   return `---
 name: ${s.name}
 description: "${s.description}"
 ---
 
-# ${title}
-
 ${s.body}
 
-> Gerado pelo Izanagi AI — resumo da skill original \`skills/${s.name}/SKILL.md\`.
+> Gerado pelo Izanagi AI — cópia fiel de \`skills/${s.name}/SKILL.md\` (fonte da verdade).
+`;
+}
+
+/** Extrai o texto de referências.md se existir (Layer 3 — só citado, nunca inlinado). */
+function hasReferences(baseDir: string, name: string): boolean {
+  const sourceDir = resolveSourceDir(baseDir);
+  return fs.existsSync(path.join(sourceDir, 'skills', name, 'references.md'));
+}
+
+function claudeAgentTemplate(baseDir: string, a: IzanagiAgentInfo): string {
+  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use PROACTIVELY para tarefas de ${a.role.toLowerCase()}.`;
+  const tools = (CLAUDE_AGENT_TOOLS[a.slug] ?? CLAUDE_AGENT_TOOLS_DEFAULT).join(', ');
+  const modelLine = a.model ? `model: ${a.model}\n` : '';
+  const description = truncate(trigger, 260);
+  const skillLines = a.skills.length > 0
+    ? a.skills.map((s) => `- \`skills/${s}/SKILL.md\`${hasReferences(baseDir, s) ? ' (+ `references.md`)' : ''}`).join('\n')
+    : '- (sem skills declaradas)';
+
+  return `---
+name: ${a.slug}
+description: "${description}"
+tools: ${tools}
+${modelLine}---
+
+# ${a.name}
+
+${a.role}
+
+## Sempre
+
+${a.always.length > 0 ? bullet(a.always) : '- (sem regras sempre)'}
+
+## Nunca
+
+${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
+
+## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+
+${skillLines}
+
+## Chains (fluxos de execução)
+
+${chainList(a.chains) || '- (sem chains)'}
+
+## Handoff
+
+${a.handoffs && a.handoffs.length > 0 ? bullet(a.handoffs.map((h) => `\`${h.to}\` — ${h.reason}`)) : '- (sem handoff declarado)'}
+
+> Fonte: \`agents/${a.file}\` · Gerado pelo Izanagi AI (\`izanagi export --cli claude\`)
 `;
 }
 
 function claudeMainTemplate(baseDir: string, agents: IzanagiAgentInfo[], skills: SkillSummary[]): string {
-  const agentList = agents.map((a) => `- \`/${a.slug}\` — ${a.role}`).join('\n');
+  const agentTable = agents
+    .map((a) => `| \`${a.slug}\` | ${a.role} |`)
+    .join('\n');
   const skillList = skills.map((s) => `- \`${s.name}\` — ${truncate(s.description, 120)}`).join('\n');
   const always = agents.flatMap((a) => a.always).filter((x) => x.length > 0);
   const never = agents.flatMap((a) => a.never).filter((x) => x.length > 0);
+  const totalSkills = countSkills(baseDir);
 
   return `# Izanagi AI — Claude Code Integration
 
-Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e 21 agentes pré-definidos.
+Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e ${agents.length} agentes pré-definidos.
 
 ## Fonte da verdade
 
@@ -290,17 +379,25 @@ Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia d
 - \`SYSTEM.md\` — fundação do sistema (engines, quality gates, memória)
 - \`RULES.md\` — regras operacionais
 
-## Agentes (comandos slash)
+## Agentes nativos (Agent tool)
 
-Ative com \`/\` no Claude Code — os 12 comandos estão em \`.claude/commands/\`:
+Os ${agents.length} agentes em \`.claude/agents/*.md\` são **subagents nativos do Claude Code**: aparecem no Agent tool e o Claude delega sozinho quando a \`description\` de cada um bate com a tarefa (não precisa chamar por nome). Chame também por \`/<slug>\` em \`.claude/commands/\` quando quiser forçar um agente específico.
 
-${agentList}
+| Agente | Quando usar |
+|---|---|
+${agentTable}
 
-## Skills curadas
+**Execução paralela**: para tarefas com frentes independentes (ex.: Database + Security + QA num mesmo PR), dispare vários agentes de uma vez — cada um roda com contexto isolado e só o resultado final volta.
 
-13 skills disponíveis em \`.claude/skills/<nome>/SKILL.md\` (carregadas automaticamente quando relevantes):
+## Skills sempre carregadas
+
+${skills.length} skills universais ficam nativas em \`.claude/skills/<nome>/SKILL.md\` (Claude Code carrega nome+descrição sempre; corpo completo só quando ativada):
 
 ${skillList}
+
+## Skills especializadas (via agente)
+
+As outras ${Math.max(totalSkills - skills.length, 0)} skills da biblioteca (\`skills/<nome>/SKILL.md\`) não ficam pré-carregadas — cada agente nativo já referencia as suas na seção "Skills relevantes" do próprio \`.claude/agents/<slug>.md\` e as lê sob demanda quando é ativado. Isso evita pagar ~100 tokens fixos por skill em toda sessão só por ela existir na biblioteca.
 
 ## Regras essenciais
 
@@ -324,6 +421,14 @@ Gerado pelo Izanagi AI em \`${baseDir}\` — \`izanagi export --cli claude\`
 `;
 }
 
+/** Conta quantas skills existem na biblioteca-fonte (skills/<name>/SKILL.md). */
+function countSkills(baseDir: string): number {
+  const sourceDir = resolveSourceDir(baseDir);
+  const skillsDir = path.join(sourceDir, 'skills');
+  if (!fs.existsSync(skillsDir)) return 0;
+  return fs.readdirSync(skillsDir).filter((d) => fs.existsSync(path.join(skillsDir, d, 'SKILL.md'))).length;
+}
+
 export function exportToClaude(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
@@ -333,13 +438,19 @@ export function exportToClaude(baseDir: string): string[] {
   const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(baseDir, agents, skills));
   if (main) created.push(main);
 
-  // 12 comandos slash em .claude/commands/<agent>.md
+  // subagents nativos em .claude/agents/<slug>.md — aparecem no Agent tool e são auto-selecionados
+  for (const agent of agents) {
+    const rel = writeIfAbsent(baseDir, `.claude/agents/${agent.slug}.md`, claudeAgentTemplate(baseDir, agent));
+    if (rel) created.push(rel);
+  }
+
+  // comandos slash em .claude/commands/<agent>.md — invocação explícita por nome
   for (const agent of agents) {
     const rel = writeIfAbsent(baseDir, `.claude/commands/${agent.slug}.md`, claudeCommandTemplate(agent));
     if (rel) created.push(rel);
   }
 
-  // skills curadas em .claude/skills/<name>/SKILL.md
+  // skills universais em .claude/skills/<name>/SKILL.md — corpo fiel ao original, nunca resumido
   for (const s of skills) {
     const rel = writeIfAbsent(baseDir, `.claude/skills/${s.name}/SKILL.md`, claudeSkillTemplate(s));
     if (rel) created.push(rel);

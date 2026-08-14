@@ -1,6 +1,6 @@
 ---
 name: data-validation
-description: "Validação de dados em automações: schemas (Pydantic), verificação de campos obrigatórios, formatos (email, CPF/CNPJ, datas, telefone), faixas de valores, detecção de duplicados (chave natural), e relatórios de qualidade com contagem de erros. Use antes de enviar dados a qualquer destino (API, banco, planilha) para garantir zero dado inválido."
+description: "Valida dados antes de enviar a qualquer destino (API, banco, planilha): schemas, formatos, duplicados e relatório de qualidade por erro. Use antes de importar ou sincronizar dados para evitar lote inválido."
 ---
 
 # Data Validation

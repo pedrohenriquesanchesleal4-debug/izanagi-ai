@@ -1,6 +1,6 @@
 ---
 name: tech-lead
-description: "Liderança técnica operacional (Tech Lead): code review pedagógico que ensina, delegação eficiente, desbloqueio de engenheiros, governança de padrões de código e garantia de qualidade nas entregas do dia a dia. Use ao conduzir code reviews, guiar sprints ou liderar o time no dia a dia."
+description: "Code review pedagógico, desbloqueio de engenheiros e governança de padrões de qualidade no dia a dia. Use ao revisar PRs, guiar sprints ou liderar o time."
 ---
 
 # Tech Lead (Liderança Técnica Operacional e Code Review Pedagógico)

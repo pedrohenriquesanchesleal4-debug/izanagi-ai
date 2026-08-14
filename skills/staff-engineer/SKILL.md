@@ -1,6 +1,6 @@
 ---
 name: staff-engineer
-description: "Liderança técnica transversal (Staff Engineer): alinhamento técnico entre múltiplos times, eliminação de gargalos sistêmicos, mentoria de engenheiros e condução de projetos de grande escala com impacto organizacional. Use ao liderar iniciativas cross-team ou resolver débitos técnicos sistêmicos."
+description: "Use ao liderar iniciativas técnicas cross-team ou resolver débitos sistêmicos de grande escala que exigem alinhamento entre múltiplos times."
 ---
 
 # Staff Engineer (Liderança Técnica Transversal)

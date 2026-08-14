@@ -1,6 +1,6 @@
 ---
 name: refactoring-specialist
-description: Version 1.0.0 Priority: High Dependencies: Software Architect, Clean Code Validator, Complexity Analyzer, Testing Compatibility: ">=1.0.0"
+description: "Use para refatorar código sem alterar comportamento: catálogo de code smells, técnicas como Extract Method e checklist de segurança com testes."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [refactoring-specialist]
@@ -77,6 +77,8 @@ The Refactoring Specialist restructures existing code without changing its exter
 
 ## Code Smell Catalog
 
+> Nomenclatura clássica (1ª edição, ainda a mais usada na indústria). A 2ª edição de *Refactoring* (Fowler, 2018) renomeou alguns itens para reforçar a linguagem agnóstica de paradigma: **Long Method → Long Function**, **Switch Statement → Repeated Switches**, **Extract Method → Extract Function**, **Inappropriate Intimacy → Insider Trading**. Os dois nomes são intercambiáveis — use o que o time já reconhece.
+
 | Smell | Symptom | Refactoring Technique |
 |-------|---------|----------------------|
 | **Long Method** | > 20 lines, hard to understand | Extract Method |
@@ -124,7 +126,7 @@ function printDetails(total: number) {
 }
 ```
 
-### Replace with Polymorphism
+### Replace Conditional with Polymorphism
 
 ```
 Before:
@@ -260,4 +262,7 @@ refactoring_plan:
 
 ## References
 
-Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
+- Refactoring.com — catálogo oficial de Fowler (2ª edição): https://refactoring.com/catalog/ · Refactoring Guru — smells + técnicas ilustradas: https://refactoring.guru/refactoring
+- *Refactoring: Improving the Design of Existing Code*, 2ª ed. (Fowler, 2018) — fonte canônica dos nomes e técnicas acima
+- *Working Effectively with Legacy Code* (Feathers) — testes de caracterização para código sem cobertura: https://www.oreilly.com/library/view/working-effectively-with/0131177052/
+- Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.

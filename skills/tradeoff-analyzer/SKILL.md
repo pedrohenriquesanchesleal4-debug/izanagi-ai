@@ -1,6 +1,6 @@
 ---
 name: tradeoff-analyzer
-description: Version 1.0.0 | Priority: Medium Dependencies: Software Architect Compatibility: ">=1.0.0"
+description: "Compara abordagens técnicas por critérios ponderados (complexidade, manutenibilidade, performance, custo, risco) e gera recomendação estruturada. Use ao decidir entre arquiteturas, libs ou padrões concorrentes."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [tradeoff-analyzer]

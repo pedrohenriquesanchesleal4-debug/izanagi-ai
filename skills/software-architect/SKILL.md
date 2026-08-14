@@ -1,6 +1,6 @@
 ---
 name: software-architect
-description: Version 1.0.0 Priority: Critical Compatibility: ">=1.0.0"
+description: "Use antes de escrever código em projetos novos, features complexas ou refactors: define padrão de arquitetura, componentes, riscos e plano de implementação."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [software-architect]

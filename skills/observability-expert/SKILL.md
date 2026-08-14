@@ -1,6 +1,6 @@
 ---
 name: observability-expert
-description: "Especialista em observabilidade e tracing distribuído: OpenTelemetry, logs estruturados em JSON, correlação de requisições por trace_id e span_id, diagnóstico de gargalos e análise de causa raiz em microsserviços. Use ao instrumentar sistemas complexos ou debugar problemas em produção."
+description: "Instrumentação com OpenTelemetry, logs estruturados e correlação por trace_id/span_id para achar causa raiz em microsserviços. Use ao instrumentar sistemas distribuídos ou debugar produção."
 ---
 
 # Observability Expert (Tracing Distribuído e Logs Estruturados)

@@ -58,6 +58,19 @@ Referências pesquisadas (2026) para sites cinematográficos, scroll-driven e n�
 - **Number Flow** (number-flow.barvian.me) — transições numéricas suaves (usado pelo Skiper).
 - **Animations.dev** (Emil Kowalski) — padrões de animação de interface: rotações de 3D card, reveals, spring physics.
 
+### CSS Scroll-Driven Animations — suporte de browser (verificado 2026)
+
+- Spec: [MDN — CSS scroll-driven animations](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_scroll-driven_animations). Duas timelines: **scroll-timeline** (progresso ligado ao scroll do container — parallax, progress bar) e **view-timeline** (progresso ligado à visibilidade do elemento no viewport — reveals).
+- Suporte nativo (2026): Chrome 115+, Edge 115+, Firefox 132+, Safari 18+ — cobertura global estimada em ~84% (fontes divergem entre "quase universal" e "84%"; sempre envolver em `@supports (animation-timeline: scroll())` com fallback estático/IntersectionObserver).
+- Detalhe de implementação: declarar `animation-timeline` **depois** do shorthand `animation` na regra CSS, senão não tem efeito.
+
+### Canvas image sequence — performance (verificado 2026)
+
+- Handler de `resize` deve ser debounced/throttled — mobile dispara resize repetidamente (rotação, barra de endereço); recalcular dimensões só após estabilizar.
+- Handler de scroll/scrub deve ficar leve: só atualiza o índice do frame; decodificação de imagem nunca deve rodar dentro do callback de scroll.
+- Peso da sequência de frames (formato, resolução por breakpoint) importa mais que microotimização de JS — WebP/AVIF e cache compartilhado de `Image()` primeiro.
+- Fonte: gsapvault.com/blog/scroll-image-sequence-tutorial; kozelsky.medium.com "How to Create Scroll Driven Image Sequence Animations".
+
 ### Padrões técnicos a dominar
 1. **Canvas frame scrub** — o "site-vídeo": frames + `ScrollTrigger` scrub + preload + HiDPI (Apple, uiprompts).
 2. **Scroll-driven 3D** — câmera/objetos movidos por scroll (R3F + `useGSAP` + `ScrollTrigger`).

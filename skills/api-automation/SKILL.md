@@ -1,6 +1,6 @@
 ---
 name: api-automation
-description: "Automação de integrações via API (REST/HTTP): autenticação (Bearer/Basic/OAuth2), headers, paginação, rate limits, retries com backoff, validação de respostas (status, schema, campos), timeout e integração entre serviços com httpx/requests. Use para integrar sistemas via API de forma confiável e idempotente."
+description: "Integração via API REST/HTTP: autenticação, paginação, rate limits, retries com backoff e validação de schema com httpx/pydantic. Use para integrar sistemas via API de forma confiável e idempotente."
 ---
 
 # API Automation

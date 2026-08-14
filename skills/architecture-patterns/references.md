@@ -13,3 +13,5 @@
 ## Comunidade / tutorial / exemplos
 - [Awesome Software Architecture](https://github.com/mehdihadeli/awesome-software-architecture) — lista curada de recursos e patterns de arquitetura.
 - [ADR (Architecture Decision Records)](https://adr.github.io) — padrão e exemplos de ADRs para registrar decisões arquiteturais.
+- [Three Dots Labs — Microservices or Monolith? It's a Detail](https://threedots.tech/post/microservices-or-monolith-its-detail/) — argumento prático de que DDD/bounded contexts importam mais que a escolha monolito vs. microserviço.
+- [Encore — Event-Driven Architecture in 2026: Patterns, Tools, and When to Use It](https://encore.dev/articles/event-driven-architecture) — quando introduzir outbox/saga/event sourcing de forma incremental em vez de big-bang.

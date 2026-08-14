@@ -1,9 +1,6 @@
 ---
 name: websocket-realtime
-description: |
-  Skill de WebSocket e Comunicacao em Tempo Real para o Izanagi. Aborda WebSocket API,
-  Server-Sent Events (SSE), Socket.IO, WebRTC e padroes de arquitetura real-time.
-  Use esta skill para implementar funcionalidades em tempo real (chat, notificacoes, streaming).
+description: "Comunicação em tempo real via WebSocket, SSE, Socket.IO e WebRTC, com padrões de canais, escalabilidade e segurança. Use ao implementar chat, notificações push ou streaming ao vivo."
 ---
 
 # Skill WebSocket & Real-Time — Izanagi

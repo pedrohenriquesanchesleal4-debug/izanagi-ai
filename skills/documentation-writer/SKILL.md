@@ -1,6 +1,6 @@
 ---
 name: documentation-writer
-description: Version 1.0.0 | Priority: Medium Dependencies: Technical Writer Compatibility: ">=1.0.0"
+description: "Gera documentação de projeto — README, docs de API, guias de setup, arquitetura e contribuição — em templates prontos. Use ao documentar um projeto novo ou atualizar sua documentação existente."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [documentation-writer]

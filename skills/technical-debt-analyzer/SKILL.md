@@ -1,6 +1,6 @@
 ---
 name: technical-debt-analyzer
-description: Version 1.0.0 | Priority: High Dependencies: Complexity Analyzer, Clean Code Validator Compatibility: ">=1.0.0"
+description: "Identifica, quantifica e prioriza dívida técnica (código, design, testes, docs, infra, segurança) em um backlog priorizado por custo e impacto. Use ao planejar refatorações ou avaliar saúde técnica do projeto."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [technical-debt-analyzer]

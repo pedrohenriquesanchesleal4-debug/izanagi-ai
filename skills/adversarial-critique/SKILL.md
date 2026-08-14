@@ -1,6 +1,6 @@
 ---
 name: adversarial-critique
-description: "Crítica adversarial de implementações antes de merge/deploy: caçar bugs, segurança (injection, auth, secrets, IDOR), falhas de arquitetura, requisitos faltantes, problemas de performance, edge cases, suposições incorretas, overengineering e AI slop. Saída: findings com severidade + veredicto READY/READY_WITH_FIXES/NOT_READY. Use após qualquer implementação e antes da avaliação final."
+description: "Crítica adversarial de implementações: caça bugs, falhas de segurança, arquitetura e edge cases, com veredicto READY/READY_WITH_FIXES/NOT_READY. Use após qualquer implementação e antes da avaliação final."
 version: 1.0.0
 triggers:
   - criticar

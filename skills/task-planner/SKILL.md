@@ -1,6 +1,6 @@
 ---
 name: task-planner
-description: "Planejamento estruturado de tarefas e épicos de engenharia: decomposição hierárquica em marcos, definição de dependências lógicas, estimativa de complexidade, critérios de aceite mensuráveis e rastreabilidade de progresso. Use ao iniciar projetos complexos, novas features de grande porte ou reestruturações."
+description: "Decompõe épicos em marcos, dependências e critérios de aceite mensuráveis. Use ao iniciar projetos complexos, features grandes ou refatorações profundas."
 ---
 
 # Task Planner (Planejamento Hierárquico de Engenharia)

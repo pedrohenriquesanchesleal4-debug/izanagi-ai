@@ -1,9 +1,6 @@
 ---
 name: serverless-edge
-description: |
-  Skill de Serverless e Edge Computing para o Izanagi. Aborda AWS Lambda, Cloudflare
-  Workers, Vercel Edge Functions, serverless patterns, cold start optimization e edge caching.
-  Use esta skill para implementar funcionalidades serverless e edge computing.
+description: "Use para implementar funções serverless ou edge (Vercel, AWS Lambda, Cloudflare Workers): padrões, cold start e caching no edge."
 ---
 
 # Skill Serverless & Edge — Izanagi

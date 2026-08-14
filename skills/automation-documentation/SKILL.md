@@ -1,6 +1,6 @@
 ---
 name: automation-documentation
-description: "Documentação de automações: README com instalação (dependências, Python version), configuração (.env com variáveis explicadas), execução (comandos, dry-run, modos), testes (pytest, como rodar), limitações conhecidas, manutenção (o que verificar periodicamente) e troubleshooting. Use em toda automação entregue para que outro humano (ou você) consiga executar e manter."
+description: "Gera README de automações: instalação, configuração (.env), execução com dry-run, testes, limitações e troubleshooting. Use em toda automação entregue, para que outra pessoa consiga executar e manter."
 ---
 
 # Automation Documentation

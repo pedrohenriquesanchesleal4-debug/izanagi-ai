@@ -1,6 +1,6 @@
 ---
 name: breaking-change-detector
-description: Version 1.0.0 | Priority: Medium Dependencies: API Designer, Senior Code Reviewer Compatibility: ">=1.0.0"
+description: "Detecta breaking changes em APIs e migrações de banco, classificando por semver (major/minor/patch) com estratégia de migração segura. Use antes de publicar mudanças em contratos de API ou schema de banco."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [breaking-change-detector]

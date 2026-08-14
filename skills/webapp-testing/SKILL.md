@@ -1,6 +1,6 @@
 ---
 name: webapp-testing
-description: "Testa aplicações web locais com Playwright: escreve scripts Python nativos, verifica funcionalidade do frontend, debuga comportamento de UI, captura screenshots e logs do navegador. Use ao validar páginas, fluxos, formulários ou regressões visuais. Inspirado no skill webapp-testing da ComposioHQ (índice awesome-claude-skills, 66k stars)."
+description: "Testa apps web locais com Playwright: scripts de verificação de UI, screenshots e logs do navegador. Use ao validar páginas, fluxos, formulários ou regressões visuais."
 ---
 
 # Webapp Testing — Automação Playwright de Aplicações Web

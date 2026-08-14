@@ -1,6 +1,6 @@
 ---
 name: defense-in-depth
-description: "Estratégia de segurança e robustez em camadas (Defense in Depth): implementação de múltiplas barreiras defensivas independentes (validação de entrada, sanitização, autenticação, autorização por rota, validação de saída, auditoria e sandboxing) para que a falha de uma camada não comprometa o sistema. Use ao projetar sistemas críticos, APIs sensíveis ou rotas de autenticação."
+description: "Projeta segurança em camadas independentes (rate limit, validação de entrada, autorização, persistência segura) para que a falha de uma não comprometa o sistema. Use em auth, APIs públicas ou dados sensíveis."
 ---
 
 # Defense in Depth (Segurança e Robustez em Camadas)

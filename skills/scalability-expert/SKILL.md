@@ -1,6 +1,6 @@
 ---
 name: scalability-expert
-description: Version 1.0.0 | Priority: High Dependencies: Performance Optimizer, DevOps Engineer, Software Architect Compatibility: ">=1.0.0"
+description: "Use para projetar escalabilidade horizontal, cache, sharding de banco e pipelines assíncronos antes que o sistema degrade sob carga."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [scalability-expert]

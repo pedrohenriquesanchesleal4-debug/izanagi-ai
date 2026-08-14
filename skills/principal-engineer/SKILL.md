@@ -1,6 +1,6 @@
 ---
 name: principal-engineer
-description: "Governança técnica sênior de longo prazo (Principal Engineer): definição de padrões organizacionais, arquiteturas de referência, tomada de decisões estratégicas via ADRs (Architecture Decision Records) e alinhamento tecnológico cross-team. Use ao projetar fundações técnicas corporativas ou resolver dilemas arquiteturais complexos."
+description: "Governança técnica de longo prazo: define padrões organizacionais, arquiteturas de referência e ADRs para decisões de alto impacto. Use em mudanças de stack ou dilemas arquiteturais complexos."
 ---
 
 # Principal Engineer (Governança e Arquitetura de Longo Prazo)

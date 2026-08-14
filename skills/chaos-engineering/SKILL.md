@@ -1,10 +1,6 @@
 ---
 name: chaos-engineering
-description: |
-  Skill de Chaos Engineering para o Izanagi. Aborda principios de engenharia do caos,
-  experimentos de resiliencia, ferramentas (Chaos Mesh, Gremlin, Litmus), e pratica de
-  break things in production de forma controlada.
-  Use esta skill para planejar e executar experimentos de caos.
+description: "Planeja e executa experimentos de resiliência (pod kill, latência de rede, stress de CPU/memória) com hipótese, blast radius controlado e game days. Use antes de validar a resiliência do sistema em produção."
 ---
 
 # Skill Chaos Engineering — Izanagi

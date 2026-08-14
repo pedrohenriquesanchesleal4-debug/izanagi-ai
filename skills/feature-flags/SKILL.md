@@ -1,9 +1,6 @@
 ---
 name: feature-flags
-description: |
-  Skill de Feature Flags e A/B Testing para o Izanagi. Aborda estrategias de rollout,
-  targeted releases, canary deployments, A/B/n experiments e ferramentas de gerenciamento
-  de flags. Use esta skill para implementar entregas graduais e experimentacao.
+description: "Estratégias de feature flags, rollout gradual, canary releases e A/B testing (LaunchDarkly, Statsig, Split.io, Flagsmith). Use ao implementar entregas graduais ou experimentos A/B."
 ---
 
 # Skill Feature Flags — Izanagi

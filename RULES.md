@@ -9,7 +9,7 @@
 | # | Rule | Description |
 |---|------|-------------|
 | 1 | **Architecture First** | Never write code without a plan. Architecture → Plan → Code → Review. |
-| 2 | **Study-First (Estudo Antes de Codar)** | Antes de QUALQUER implementação: (1) carregue `.agents/memoria/` (learnings, erros já corrigidos, decisões — nunca repita um erro já resolvido); (2) consulte `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços). Proibido programar no escuro. |
+| 2 | **Study-First (Estudo Antes de Codar)** | Antes de QUALQUER implementação: (1) carregue `.agents/memoria/contexto.md` (sempre — é pequeno) e SÓ `decisoes.md` / `erros-corrigidos.md` / `learnings.md` quando o domínio da tarefa bater com o que já está registrado neles (não releia os quatro por hábito: cada agente nativo já aponta pra sua fatia relevante); (2) consulte `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços). Relatórios de auditoria pontuais (ex: `auditoria-completa-*.md`) nunca são carregamento automático — só sob consulta explícita. Proibido programar no escuro, mas também proibido reler contexto irrelevante por medo. |
 | 3 | **Skill Composition Obrigatória** | Skills nunca são usadas isoladas. Cada skill ativada puxa a cadeia do seu domínio (`core/skill-composer.md` + `compositions` em `core/skill-resolver.json`). Output de uma alimenta o input da próxima. Skill "de enfeite" sem cadeia = violação. |
 | 4 | **Anti-Repetição (Never Repeat Mistakes)** | Antes de entregar, triagem obrigatória: (a) esse problema já foi resolvido/corrigido antes? (b) essa armadilha está registrada no `.agents/memoria/learnings.md`? (c) há decisão prévia que contradiz o plano? Se um erro se repetir 3+, registre reincidência com destaque ⚠️ e aplique a correção definitiva — nunca re-percorra o mesmo caminho de debug. |
 | 5 | **One File Per Response** | Each output produces exactly one complete file. No exceptions. |
@@ -142,7 +142,7 @@ Skills NUNCA atuam isoladas — cada ativação dispara a cadeia de composição
 1. **Output→Input Chaining**: o artefato de cada skill alimenta a próxima (ex: `ui-ux-pro-max` gera design system → `frontend` consome os tokens → `motion-design` aplica micro-interações → `animation-web` cria o scrollytelling → `web-perf-seo` valida vitals).
 2. **Domínios principais**: `web_cinematic`, `webgl_experience`, `api_backend`, `data_system`, `security_audit`, `devops_delivery`, `debug_session`, `refactor_safe`, `new_project_discovery`, `fullstack_crud`, `mobile_app`, `ai_ml_feature`.
 3. **Desduplicação Delta-First**: se duas skills da cadeia sobrepõem responsabilidade (ex: `qa` e `code-auditor`), a segunda atua apenas no delta — o que a primeira não cobriu. Nunca reler arquivos que outra skill da cadeia já leu.
-4. **Início obrigatório**: toda cadeia começa carregando `.agents/memoria/` e, se a tarefa exige informação externa, `deep-research` antes de implementar.
+4. **Início obrigatório**: toda cadeia começa carregando `.agents/memoria/contexto.md` (sempre) + os arquivos de memória específicos do domínio da cadeia (não os quatro inteiros) e, se a tarefa exige informação externa, `deep-research` antes de implementar.
 
 ---
 

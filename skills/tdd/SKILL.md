@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: "Test-Driven Development com Iron Law: escreva o teste antes, veja falhar, código mínimo para passar, refatore. Use em qualquer feature, bugfix ou refatoração antes de escrever código de implementação. Inspirado na skill test-driven-development do obra/superpowers (264k stars)."
+description: "Test-Driven Development com Iron Law: escreva o teste antes, veja falhar, código mínimo, refatore. Use em toda feature, bugfix ou refatoração antes de escrever código de implementação."
 ---
 
 # TDD — Test-Driven Development (Iron Law)
@@ -59,6 +59,15 @@ Exceções (pergunte ao humano): protótipos descartáveis, código gerado, arqu
 ## Bug fix com TDD
 
 Bug encontrado? Escreva teste falhando que reproduz o bug → siga o ciclo → o teste prova o fix e previne regressão. **Nunca conserte bug sem teste.**
+
+## TDD com agentes de IA (quando o agente escreve o teste E o código)
+
+O maior risco de TDD conduzido por agente é o agente escrever teste e implementação na mesma resposta: ele passa a escrever testes que combinam com a implementação que acabou de gerar, não com o requisito original — o teste passa "por construção", não por verificação. Isso é pior que não ter TDD, porque cria falsa confiança.
+
+- **Separe a autoria**: o RED (teste) é aprovado — pelo humano ou por outro agente/etapa — *antes* de qualquer código de implementação ser escrito. Quem escreve o teste não deve escrever o código no mesmo passo sem esse checkpoint.
+- **Nunca gere teste + implementação no mesmo turno.** Se o teste e o código aparecem juntos, o RED nunca foi observado de verdade — volte e separe as etapas.
+- **Desconfie de testes "verdes de primeira"**: se o agente entrega um teste que já passa, ele não viu o RED — force a reexecução do ciclo (apague a implementação, rode o teste, confirme a falha pelo motivo certo).
+- Isso reforça — não substitui — a Iron Law: a garantia contra "testes que validam os próprios bugs do agente" é o mesmo RED→GREEN→REFACTOR já descrito acima, aplicado com checkpoint explícito entre teste e código.
 
 ## Verification Checklist (antes de declarar pronto)
 

@@ -1,6 +1,6 @@
 ---
 name: cto-advisor
-description: Version 1.0.0 | Priority: Medium Dependencies: Principal Engineer, Tech Lead Compatibility: ">=1.0.0"
+description: "Aconselha decisões técnicas estratégicas (build vs buy, roadmap, estrutura de times, risco, orçamento) traduzindo trade-offs técnicos para stakeholders de negócio. Use em decisões de nível executivo."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [cto-advisor]

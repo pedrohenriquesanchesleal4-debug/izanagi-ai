@@ -1,6 +1,6 @@
 ---
 name: agentic-coding
-description: "Codificacao autonoma em loop de agente (planejar -> codar -> testar -> refletir -> corrigir) com verificacao empirica obrigatoria, loops finitos com limite de tentativas e diagnostico por log. Use ao implementar features, corrigir falhas de build/teste ou rodar sessoes longas de codigo; pule para parallel-agents quando a tarefa tem 2+ dominios independentes e para professor-modo quando so precisa explicar."
+description: "Loop de codificação autônoma (planejar, codar, testar, corrigir) com verificação empírica obrigatória e tentativas limitadas. Use ao implementar features ou corrigir falhas de build/teste."
 ---
 
 # Agentic Coding (Codificação Autônoma em Loop)

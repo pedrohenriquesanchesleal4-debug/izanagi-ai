@@ -1,6 +1,6 @@
 ---
 name: root-cause-analyzer
-description: Version 1.0.0 Priority: High Dependencies: Bug Hunter Compatibility: ">=1.0.0"
+description: "Use após corrigir um bug para investigar a causa raiz sistêmica (5 Whys, Fishbone, Premortem) e recomendar mudanças de processo."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [root-cause-analyzer]

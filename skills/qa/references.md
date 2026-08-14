@@ -8,6 +8,7 @@
 - [Can I Use](https://caniuse.com/) — Compatibilidade de features entre navegadores.
 
 ## Checklists / práticas
+- [Playwright Docs — Locators](https://playwright.dev/docs/locators) — Guia oficial de estratégia de seletores (`getByRole` como prioridade, `getByTestId` como último recurso).
 - [WebAIM](https://webaim.org/) — Checklists e artigos práticos de acessibilidade.
 - [axe](https://www.deque.com/axe/) — Motor de testes de acessibilidade automatizados.
 - [Lighthouse](https://developer.chrome.com/docs/lighthouse/) — Auditoria automatizada de performance, a11y e SEO.

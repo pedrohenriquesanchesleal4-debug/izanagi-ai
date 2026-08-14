@@ -1,9 +1,6 @@
 ---
 name: graphql
-description: |
-  Skill de GraphQL para o Izanagi. Contém padrões de schema design, resolver patterns,
-  Apollo Client/Server, caching, subscriptions e boas práticas de performance.
-  Use esta skill para implementar ou revisar APIs GraphQL.
+description: "Padrões de schema, resolvers, Apollo Client/Server, DataLoader, caching e segurança em GraphQL. Use ao implementar ou revisar APIs GraphQL."
 ---
 
 # Skill GraphQL — Izanagi

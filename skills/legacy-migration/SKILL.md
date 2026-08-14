@@ -1,10 +1,6 @@
 ---
 name: legacy-migration
-description: |
-  Skill de Migracao de Sistemas Legados para o Izanagi. Aborda estrategias de migracao
-  (strangler fig, big bang, parallel run), extracao de dados de sistemas antigos (WordPress,
-  bancos relacionais), e modernizacao gradual. Use esta skill ao migrar funcionalidades
-  de sistemas legados para a nova plataforma.
+description: "Estratégias de migração de sistemas legados (strangler fig, big bang, parallel run) e extração de dados de sistemas antigos. Use ao migrar funcionalidades para uma nova plataforma."
 ---
 
 # Skill Legacy Migration — Izanagi

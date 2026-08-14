@@ -1,6 +1,6 @@
 ---
 name: technology-selection
-description: "Escolha de tecnologia para automações: linguagem, bibliotecas e abordagem (API vs browser vs planilha vs CLI) com justificativa explícita. Python por padrão, mas a linguagem é consequência do problema. Use antes de implementar qualquer automação para decidir a stack com critério e registrar o porquê."
+description: "Escolhe stack de automação (linguagem, libs, API vs browser vs planilha vs CLI) com justificativa explícita registrada. Use antes de implementar qualquer automação nova."
 ---
 
 # Technology Selection

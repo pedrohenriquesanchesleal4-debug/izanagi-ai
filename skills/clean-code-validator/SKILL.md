@@ -1,6 +1,6 @@
 ---
 name: clean-code-validator
-description: Version 1.0.0 Priority: High Dependencies: Senior Code Reviewer Compatibility: ">=1.0.0"
+description: "Revisa código contra princípios de clean code — nomes, funções pequenas, efeitos colaterais, tratamento de erro — e gera relatório de violações com fix sugerido. Use após escrever ou refatorar código."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [clean-code-validator]

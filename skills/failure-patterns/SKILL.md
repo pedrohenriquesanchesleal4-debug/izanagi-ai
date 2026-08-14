@@ -1,6 +1,6 @@
 ---
 name: failure-patterns
-description: "Memória de falhas reutilizáveis: converter erros recorrentes em padrões estruturados (pattern, symptoms, rootCause, solution, confidence, occurrences) para o runtime procurar antes de executar e aplicar correção guiada. Use ao encontrar um erro novo, resolver um bug difícil ou detectar recorrência."
+description: "Registra padrões de falhas recorrentes (sintoma, causa raiz, solução, confiança) para aplicar correção guiada. Use ao encontrar um erro novo, resolver um bug difícil ou detectar recorrência."
 version: 1.0.0
 triggers:
   - padrão de falha

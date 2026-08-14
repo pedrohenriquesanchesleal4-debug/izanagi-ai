@@ -1,6 +1,6 @@
 ---
 name: sequence-diagram-builder
-description: "Criação de diagramas de sequência em Mermaid.js para visualizar fluxos assíncronos, chamadas de API, autenticação OAuth, interações entre microsserviços e ciclos de vida de requisições. Use ao documentar arquiteturas, fluxos complexos ou contratos de integração."
+description: "Use para documentar fluxos assíncronos, chamadas de API, autenticação ou integrações entre serviços com diagramas de sequência em Mermaid.js."
 ---
 
 # Sequence Diagram Builder (Diagramas de Sequência via Mermaid)

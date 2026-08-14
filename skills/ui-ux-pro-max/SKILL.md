@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "Design intelligence profissional para UI/UX com banco de dados local pesquisável (BM25): 84 estilos, 192 paletas de cor, 74 pares de tipografia, 192 tipos de produto, 98 diretrizes UX, 16 presets GSAP, 25 tipos de chart e guidelines por stack (React, Next.js, Vue, Flutter, SwiftUI, Tailwind, shadcn/ui, Three.js e mais). Use ao projetar páginas, componentes, paletas, tipografia, layouts, acessibilidade, animação ou ao revisar UI. Baseado no pacote ui-ux-pro-max-skill (115k stars, MIT)."
+description: "Motor de busca local (BM25) com estilos, paletas, tipografia, guidelines de UX e presets por stack para decisões de design. Use ao projetar páginas, componentes, cores, tipografia ou revisar UI."
 ---
 
 # UI/UX Pro Max — Design Intelligence
@@ -19,7 +19,7 @@ Use quando a tarefa envolver **estrutura de UI, decisões visuais, padrões de i
 
 | Prio | Categoria | Impacto | Domain | Checks (deve ter) | Anti-padrões (evite) |
 |------|-----------|---------|--------|-------------------|----------------------|
-| 1 | Acessibilidade | CRÍTICO | `ux` | Contraste 4.5:1, Alt text, Navegação por teclado, Aria-labels | Remover focus rings, Ícone-only sem label |
+| 1 | Acessibilidade | CRÍTICO | `ux` | Contraste 4.5:1 (texto normal AA) / 3:1 (texto grande e componentes de UI/gráficos, WCAG 2.2) / 7:1 (AAA texto normal), Alt text, Navegação por teclado, Aria-labels | Remover focus rings, Ícone-only sem label |
 | 2 | Touch & Interação | CRÍTICO | `ux` | Alvo ≥44×44px, espaçamento 8px+, feedback de loading | Depender só de hover, mudanças instantâneas (0ms) |
 | 3 | Performance | ALTO | `ux` | WebP/AVIF, Lazy loading, reservar espaço (CLS < 0.1) | Layout thrashing, Cumulative Layout Shift |
 | 4 | Seleção de estilo | ALTO | `style`, `product` | Combinar com tipo de produto, consistência, ícones SVG (sem emoji) | Misturar flat & skeuomorphic, emoji como ícone |
@@ -67,6 +67,8 @@ node <skill-dir>/scripts/search.mjs "<query>" --design-system --persist -p "Nome
 
 Cria `design-system/<slug>/MASTER.md` (fonte da verdade) + `design-system/<slug>/pages/` (overrides por página). Com `--page "dashboard"`, cria override específico. Se `MASTER.md` já existe, `--persist` **não sobrescreve** sem `--force`.
 
+**Modelo de tokens (aplique ao formalizar cor/tipografia no MASTER.md)**: 3 camadas — **global** (valor bruto: `#6366F1`, `16px`), **alias/semântico** (aponta pro global: `color-primary` → global, `font-size-body` → global) e **componente** (escopo mínimo: `button-background-color` → alias). Nunca hardcode hex/px direto em componente; sempre via alias semântico — é o que permite dark mode e re-tema sem tocar em componente.
+
 **Recuperação ao construir página específica:** 1) leia `MASTER.md`; 2) se `pages/<page>.md` existir, suas regras sobrescrevem o Master; 3) senão use só o Master.
 
 ### Passo 2c: Design Dials (opcional)
@@ -91,7 +93,7 @@ node <skill-dir>/scripts/search.mjs "<keyword>" --domain <domain> [-n <max>]
 | Mais opções de estilo | `style` | `--domain style "glassmorphism dark"` |
 | Paletas de cor | `color` | `--domain color "entertainment vibrant"` |
 | Pares de tipografia | `typography` | `--domain typography "playful modern"` |
-| Google Fonts individuais | `google-fonts` | `--domain google-fonts "sans serif variable"` |
+| Google Fonts individuais | `google-fonts` | `--domain google-fonts "sans serif variable"` (regra rápida se o banco não cobrir o caso: 1 "voz" de destaque — display/headline — + 1 "cavalo de trabalho" — sans ou serif de leitura — nunca duas fontes de personalidade forte juntas) |
 | Charts | `chart` | `--domain chart "real-time dashboard"` |
 | Práticas UX | `ux` | `--domain ux "animation accessibility"` |
 | Estrutura de landing | `landing` | `--domain landing "hero social-proof"` |
@@ -151,6 +153,14 @@ Depois, sintetize o design system + buscas detalhadas e implemente.
 ## Antes de entregar UI de app
 
 Leia `references/pro-rules.md` e percorra seu checklist canônico pré-entrega (ícones, feedback de interação, contraste light/dark, safe areas, acessibilidade) — escopado para UI nativa/mobile (iOS/Android/React Native/Flutter).
+
+## Referências
+
+- **WCAG 2.2** (w3.org/TR/WCAG22, mantido pelo W3C) — critérios 1.4.3 (Contrast Minimum, 4.5:1/3:1) e 1.4.6 (Contrast Enhanced/AAA, 7:1); os limiares numéricos vieram inalterados do WCAG 2.1, o 2.2 adicionou critérios novos (ex. tamanho de alvo) sem mexer em contraste.
+- **Design tokens** — modelo de 3 camadas (global/alias/componente): ver UXPin "What Are Design Tokens?" e Contentful "Design tokens explained" para o vocabulário padrão do mercado em 2026.
+- **Font pairing** — heurística "1 voz + 1 cavalo de trabalho" (display/headline contrastando com um sans ou serif de leitura) é consenso nos guias de pareamento tipográfico de 2026.
+- **Banco de regras**: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) — fonte primária de todo o motor local (estilos, paletas, tipografia, UX guidelines, reasoning rules).
+- Curadoria completa (com o que foi portado e como usar): `references.md` desta skill.
 
 ## Nota de segurança e integração Izanagi
 

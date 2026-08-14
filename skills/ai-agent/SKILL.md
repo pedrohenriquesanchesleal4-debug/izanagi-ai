@@ -1,9 +1,6 @@
 ---
 name: ai-agent
-description: |
-  Skill de AI/Agent Development para o Izanagi. Contém padrões de integração com LLMs,
-  RAG, vector databases, LangGraph, MCP, multi-agent systems e prompt engineering.
-  Use esta skill para implementar ou revisar funcionalidades baseadas em IA generativa.
+description: "Padrões de integração com LLMs, RAG, vector databases, LangGraph, MCP e multi-agent systems. Use ao implementar ou revisar funcionalidades baseadas em IA generativa."
 ---
 
 # Skill AI/Agent Development — izanagi

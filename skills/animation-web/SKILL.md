@@ -1,12 +1,6 @@
 ---
 name: animation-web
-description: |
-  Skill de Web Animation Cinematográfica — scrollytelling, scroll-driven animations,
-  scroll image sequences (estilo Apple), smooth scroll, parallax, pinned sections,
-  preloaders e transições de página. Use quando o pedido envolver "site animado",
-  "scroll animation", "scrollytelling", "efeito ao rolar", "site estilo vídeo",
-  "frames que passam ao scroll", "cinematic website", "Apple-style" ou qualquer site
-  que não deve parecer estático.
+description: "Scrollytelling, scroll-driven animations, sequências de imagem em canvas (estilo Apple), parallax e pinned sections. Use quando o site não deve parecer estático e o scroll for a timeline da experiência."
 ---
 
 # Animation Web — Scrollytelling & Cinematic Sites
@@ -33,7 +27,7 @@ Especialista em transformar sites estáticos em experiências cinematográficas 
 | Efeito de profundidade | **Parallax** em camadas com velocidades diferentes | ScrollTrigger `scrub` + `yPercent` |
 | Slide horizontal de conteúdo | **Horizontal scroll section** — painéis se movem lateralmente | ScrollTrigger `pin` + `xPercent` |
 | Texto dramático entrando | **SplitText reveals** (word/char/line) | GSAP SplitText ou CSS custom |
-| Revelações simples | **Entrance reveals** (fade/slide/mask) | IntersectionObserver / CSS `animation-timeline: scroll()` |
+| Revelações simples | **Entrance reveals** (fade/slide/mask) | IntersectionObserver / CSS `animation-timeline: scroll()` ou `view()` — suportado nativamente em Chrome 115+, Edge 115+, Firefox 132+, Safari 18+ (2026); sem esses browsers, fallback obrigatório via `@supports (animation-timeline: scroll())` |
 | Hero "wow" no topo | **Preloader + hero reveal coreografado** | GSAP timeline + Lenis |
 
 ## Workflow
@@ -60,6 +54,7 @@ gsap.to(frames, {
 - Preload frames com cache compartilhado (`Map<src, Image>`).
 - Canvas HiDPI: `canvas.width = clientWidth * min(devicePixelRatio, 2)`.
 - Texto/capítulos aparecem como overlays em pontos específicos do progresso (timeline sobre o scrub).
+- **Performance (2026)**: nunca redesenhe o canvas dentro do handler de `resize` sem debounce/throttle — mobile dispara `resize` repetidamente em mudanças de viewport (rotação, barra de endereço escondendo); recalcule dimensões só depois do evento estabilizar. O handler de scroll/scrub em si deve ficar leve (`onUpdate` só troca o índice do frame e chama `drawFrame()`, nunca decodifica imagem ali). Otimize o peso da sequência (WebP/AVIF, resolução por breakpoint) antes de otimizar o código — dezenas a centenas de frames pesam mais que qualquer microotimização de JS.
 
 ### Hero coreografado
 ```js
@@ -109,7 +104,9 @@ gsap.to(panels, { xPercent: -100 * (panels.length - 1), ease: 'none',
 
 ## References
 
-Veja `references.md` nesta pasta — sites de referência (uiprompts.app, Apple product pages, scrollytelling exemplos, Skiper UI, KokonutUI) com técnicas extraídas de cada um.
+- [MDN — CSS scroll-driven animations](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_scroll-driven_animations) — spec de `scroll-timeline`/`view-timeline`, suporte de browser atualizado.
+- [GSAP Vault — Apple-Style Scroll Image Sequences](https://gsapvault.com/blog/scroll-image-sequence-tutorial) — tutorial de referência do padrão canvas + ScrollTrigger + HiDPI + Lenis.
+- Veja `references.md` nesta pasta — sites de referência (uiprompts.app, Apple product pages, scrollytelling exemplos, Skiper UI, KokonutUI) com técnicas extraídas de cada um.
 
 ## Metrics & Evolution
 

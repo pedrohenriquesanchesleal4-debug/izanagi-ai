@@ -11,6 +11,7 @@ Curadoria do método de brainstorming do framework Superpowers (obra/superpowers
 ## O que aproveitar no Izanagi
 
 1. **HARD-GATE** — proibição absoluta de implementar antes de design aprovado; aplica-se a todo projeto, inclusive "simples".
+1b. **Triagem em 3 trilhas** (verificado no SKILL.md original, 2026): **Spike** (pergunta de viabilidade → só um relatório, não vira código mantido), **Bounded** (mudança bem delimitada em código existente → design curto no chat, sem doc separado), **Architectural** (subsistema/reestruturação → processo completo + spec escrita). Regra: "quando em dúvida, trilha mais pesada"; complexidade oculta descoberta no meio da tarefa faz upgrade de trilha. Só a trilha Architectural aprovada invoca a skill de planejamento (`writing-plans`) — nenhuma outra skill de implementação antes.
 2. **Entrevista 1-pergunta-por-vez** com foco em propósito/restrição/sucesso.
 3. **2-3 abordagens com trade-offs**, recomendação primeiro.
 4. **Design em seções** com aprovação incremental.
@@ -27,6 +28,11 @@ Curadoria do método de brainstorming do framework Superpowers (obra/superpowers
 | `writing-plans` | Plano de implementação claro o suficiente para júnior seguir — sobrepõe `task-planner` |
 | `using-git-worktrees` | Isolamento de branch com worktrees — padrão opcional para devops |
 | `subagent-driven-development` | Delegar tarefas a subagentes com revisão — ecoa o modo Swarm do orquestrador |
+
+## Discovery de produto (entrevista dirigida a evidência)
+
+- **Teresa Torres — Continuous Discovery Habits** (livro; https://www.producttalk.org/): 5 hábitos — (1) entrevistar ≥1 cliente/semana, (2) mapear oportunidades em uma **Opportunity Solution Tree** (outcome → oportunidades → soluções → testes de suposição), (3) testar suposições antes de construir, (4) rodar experimentos pequenos continuamente, (5) trio de produto (PM + design + engenharia) junto na descoberta — não repassado via relatório de pesquisa.
+- Aplicação no Izanagi: usar a árvore de oportunidades como checklist mental na Fase 2 (perguntas 6-10) para não pular de "dor" direto para "feature" sem validar a oportunidade.
 
 ## Onde instalar (caso queira o pacote completo)
 

@@ -1,6 +1,6 @@
 ---
 name: automation-engineer
-description: "Engenharia de automacoes profissionais: decompor o processo, pesquisar solucoes existentes, escolher a melhor stack (Python padrao), implementar com validacao, idempotencia, retries, logging estruturado, testes, dry-run, seguranca de credenciais e documentacao completa. Use para automatizar qualquer processo: planilhas, APIs, browser, ETL, integracoes, tarefas repetitivas."
+description: "Projeta sistemas de automação confiáveis: decompõe o processo, escolhe a stack, implementa com validação, idempotência, retries e testes. Use para automatizar planilhas, APIs, browser, ETL ou integrações."
 ---
 
 # Automation Engineer — Engenharia de Automações Profissionais

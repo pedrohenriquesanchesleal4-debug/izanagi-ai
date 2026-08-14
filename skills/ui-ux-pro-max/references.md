@@ -44,8 +44,16 @@ node skills/ui-ux-pro-max/scripts/search.mjs "suspense streaming" --stack nextjs
 
 > Para valores exatos (hex, fonts, seções, snippets GSAP), rode o motor: `node <skill-dir>/scripts/search.mjs "<query>" --domain <domain>`.
 
+**Nota de licença GSAP (2026)**: desde a aquisição pela Webflow (abr/2025), GSAP e todos os plugins antes exclusivos do Club GreenSock (SplitText, MorphSVG, DrawSVG, ScrollSmoother) são 100% gratuitos, inclusive uso comercial — sem token/registry privado para instalar via npm. Ver `skills/motion-design/references.md` para detalhes.
+
 ## Fontes complementares de design system
 
 - Google Fonts pairing: `fonts.google.com/share?selection.family=...`
 - Design tokens: Heroicons / Lucide (ícones SVG, nunca emoji)
 - A11y: WCAG AA (4.5:1 texto), prefers-reduced-motion, focus states, 44×44px alvo tátil
+
+## Verificação 2026 (WCAG 2.2, tokens, tipografia)
+
+- **WCAG 2.2** (w3.org/TR/WCAG22): 4.5:1 (texto normal, AA) / 3:1 (texto grande ≥18pt ou ≥14pt bold, e componentes de UI/objetos gráficos) / 7:1 (AAA, texto normal). Confirmado: os limiares numéricos de contraste não mudaram do WCAG 2.1 para o 2.2 — o 2.2 adicionou critérios novos (ex. tamanho de alvo, foco não obscurecido), não recalibrou contraste. Ferramentas: WebAIM Contrast Checker, Level Access, getwcag.com.
+- **Design tokens (3 camadas)**: global (valor bruto) → alias/semântico (nome com significado, ex. `color-primary`) → componente (escopo mínimo, ex. `button-background-color`). Fonte: UXPin "What Are Design Tokens? A Complete Guide (2026)", Contentful "Design tokens explained".
+- **Font pairing**: heurística de mercado 2026 — 1 fonte de "voz" (display/headline, personalidade forte) + 1 "cavalo de trabalho" (sans/serif neutro de leitura); evitar duas fontes de personalidade forte competindo. Fonte: guias de pareamento tipográfico 2026 (getly.store, Figr "Typography System Design").

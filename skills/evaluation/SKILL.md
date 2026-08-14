@@ -1,6 +1,6 @@
 ---
 name: evaluation
-description: "Avaliação estruturada de resultados de agentes e workflows: métricas ponderadas (correctness, requirement coverage, test results, architecture, security, performance, maintainability), verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN), detecção de regressões e recomendações acionáveis. Use ao avaliar qualquer entrega antes de declarar conclusão. Contrato de saída: Evaluation Report JSON."
+description: "Avalia entregas de agentes por métricas ponderadas (corretude, cobertura, testes, arquitetura, segurança) com veredito PASS/FAIL, regressões e recomendações. Use antes de declarar qualquer entrega concluída."
 version: 1.0.0
 triggers:
   - avaliar

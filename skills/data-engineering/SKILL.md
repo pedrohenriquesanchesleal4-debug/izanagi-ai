@@ -1,9 +1,6 @@
 ---
 name: data-engineering
-description: |
-  Skill de Data Engineering para o Izanagi. Abrange modelagem de dados, bancos NoSQL,
-  message queues, streaming, ETL, search (Elasticsearch) e boas práticas de dados.
-  Use esta skill para projetar ou implementar pipelines de dados e sistemas de armazenamento.
+description: "Guia de modelagem de dados, NoSQL, message queues, streaming e pipelines ETL com boas práticas de schema, idempotência e monitoramento. Use para projetar pipelines de dados ou sistemas de armazenamento."
 ---
 
 # Skill Data Engineering — Izanagi

@@ -1,6 +1,6 @@
 ---
 name: mcp-server-dev
-description: "Desenvolvimento de servidores Model Context Protocol (MCP): tools com schemas JSON Schema estritos, resources via URI, prompts reutilizáveis, transportes STDIO e HTTP/SSE (streamable), validação Zod, sanitização anti path-traversal e command injection, estrutura de erro { isError: true }, tratamento de erro que não derruba o processo, e testes com MCP Inspector. Use ao criar ou estender servidores MCP para agentes de IA."
+description: "Desenvolvimento de servidores MCP: tools com schema Zod, resources, prompts, transportes STDIO/HTTP e sanitização contra path-traversal e command injection. Use ao criar ou estender servidores MCP."
 ---
 
 # Model Context Protocol (MCP) Server Development

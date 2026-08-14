@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: "Depuração sistemática em 6 fases obrigatórias (Reproduzir → Isolar → Hipótese → Corrigir → Verificar → Prevenir) com causa raiz comprovada por evidência — nunca chute. Inclui: Matriz de Isolamento (bisect manual, git bisect, eliminação de variáveis), Protocolo de Coleta de Logs (stack trace completo, não truncado), Classificação de Falhas (código vs ambiente vs dados vs dependência), Limite de Hipóteses (3 hipóteses refutadas = mudar camada), Teste de Regressão obrigatório como parte do fix, e registro em `.agents/memoria/erros-corrigidos.md`. Use em QUALQUER erro, crash, teste falhando ou comportamento inesperado. Inspirada na skill systematic-debugging do obra/superpowers (266k★) e nos padrões do AnthropicEducation/claude-code-snippets (MIT)."
+description: "Depuração em 6 fases (reproduzir, isolar, hipótese, corrigir, verificar, prevenir) com causa raiz comprovada por evidência, nunca por chute. Use em qualquer erro, crash ou teste falhando, antes de qualquer correção."
 ---
 
 # Systematic Debugging — Manual Operacional
@@ -60,6 +60,7 @@ Localize a camada/função/linha exata que falha.
 | **Eliminação de variáveis** | Múltiplas possíveis causas | Remova uma variável por vez, teste cada remoção |
 | **Logging cirúrgico** | Fluxo complexo | `console.log` em pontos estratégicos (remover depois!) |
 | **Pergunta "o que mudou?"** | Bug recente | Diff do último commit/deploy — 80% dos bugs vêm de uma mudança |
+| **Distributed tracing** | Bug atravessa múltiplos serviços/microserviços | Correlacione pelo trace ID (ex. OpenTelemetry) e identifique o span com maior latência ou erro — sem isso, correlacionar timestamps de logs entre serviços não sincronizados é adivinhação |
 
 ### FASE 3 — HIPÓTESE (Causa Raiz, Não Sintoma)
 
@@ -69,6 +70,10 @@ Localize a camada/função/linha exata que falha.
 | Cada hipótese tem teste que a prova ou refuta | Print de verificação, teste unitário mínimo, chamada isolada |
 | Prefira a hipótese que explica **todos** os sintomas | Hipótese que explica 1 de 3 sintomas provavelmente está errada |
 | **Causa raiz ≠ Sintoma** | Corrigir sintoma = bug volta |
+
+**Técnica formal — 5 Whys**: parta do sintoma e pergunte "por quê?" repetidamente (tipicamente 5 iterações), cada resposta virando a próxima pergunta, até chegar num defeito acionável (não mais um "porque sim"). Exemplo: *API retorna 500* → por quê? *query falhou* → por quê? *conexão do pool esgotada* → por quê? *conexão não é liberada em erro* → por quê? *falta `finally`/`using` no código de acesso* → causa raiz: recurso não é liberado em caminho de exceção.
+
+**Quando há múltiplas causas candidatas concorrendo** (bug com sintomas espalhados, causa não óbvia): use um **diagrama de Ishikawa/Fishbone** (Kaoru Ishikawa) antes do 5 Whys — mapeie candidatas por categoria (Código/Lógica, Dados/Input, Ambiente/Config, Dependências, Concorrência/Timing, Infra/Rede) para não fixar prematuramente numa hipótese só porque foi a primeira lembrada. Só depois de mapear as categorias, aplique 5 Whys na(s) mais provável(is).
 
 **Limite**: Após 3 hipóteses refutadas sem confirmação → **pare e reconsidere**. Você pode estar olhando a camada errada:
 

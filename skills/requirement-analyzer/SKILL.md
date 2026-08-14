@@ -1,6 +1,6 @@
 ---
 name: requirement-analyzer
-description: "Análise e decomposição rigorosa de requisitos de software: extração de regras funcionais e não-funcionais, identificação de ambiguidades, definição de critérios de aceite (BDD / Given-When-Then) e mapeamento de restrições técnicas. Use ao receber especificações vagas ou iniciar novos épicos."
+description: "Use ao receber requisitos vagos ou iniciar um épico: decompõe em requisitos funcionais/não-funcionais e critérios de aceite BDD."
 ---
 
 # Requirement Analyzer (Análise e Refinamento de Requisitos)

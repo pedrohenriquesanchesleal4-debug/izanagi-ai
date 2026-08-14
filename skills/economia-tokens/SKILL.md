@@ -1,6 +1,6 @@
 ---
 name: economia-tokens
-description: "Engenharia de Contexto (Context Engineering) para redução de 60-85% no consumo de tokens sem sacrificar profundidade de entrega. 7 pilares operacionais: Protocolo de Leitura de Arquivos (grep-first, range-read, zero releitura), Alinhamento de Cache de Prompt (prefixo estático → dinâmico para cache hits de 80%+), Higiene de Contexto (sliding window, compactação por threshold, Lost-in-the-Middle mitigation), Protocolo de Edição Delta (diff cirúrgico, nunca reescreva arquivo inteiro), Protocolo de Comunicação (zero narração, zero preâmbulo, bullets telegráficos), Protocolo de Terminal (filtragem de saída, pipe para head/tail, agrupamento de comandos), Coordenação de Memória (artefatos em disco, nunca payloads entre agentes). Use SEMPRE, em TODA tarefa — ativa por padrão, não precisa ser invocada. Economia se aplica a contexto inútil, NUNCA ao entregável."
+description: "Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff. Use sempre, em toda tarefa, por padrão."
 ---
 
 # Context Engineering — Economia de Tokens (v2)
@@ -74,7 +74,10 @@ Prompt Caching permite reutilizar o prefixo processado do prompt entre chamadas,
 
 1. **Estático PRIMEIRO**: Instruções de sistema, regras, few-shot examples que não mudam vão no INÍCIO. Qualquer variabilidade no prefixo invalida o cache inteiro.
 2. **Zero variabilidade invisível**: NUNCA injete timestamps, request IDs, session tokens ou dados dinâmicos no system prompt ou nas primeiras seções. Até 1 caractere diferente mata o cache.
-3. **Threshold mínimo**: O prefixo estável precisa ter ≥1.024 tokens para ativar cache automático (OpenAI). Para Anthropic, use `cache_control` breakpoints explícitos.
+3. **Threshold mínimo**: O prefixo estável precisa ter ≥1.024 tokens para ativar cache automático (OpenAI). Para Anthropic (Claude), o mínimo cacheável é **1.024 tokens** em modelos Opus/Sonnet e **2.048 tokens** em Haiku — prefixos menores nunca são cacheados, não importa quantas vezes se repitam.
+   - Anthropic oferece dois modos: **automático** (um único campo `cache_control` no topo da requisição, cobrindo o prefixo inteiro) ou **breakpoints explícitos** (`cache_control` em blocos de conteúdo específicos — tools, system, messages, nessa ordem — para controle fino de onde o cache "corta").
+   - TTL padrão de **5 minutos** (renovado a cada hit) ou **1 hora** (cache estendido, para sessões mais espaçadas). Um bloco já marcado não precisa ser marcado de novo em turnos seguintes — ele segue gerando hit enquanto acessado dentro do TTL.
+   - Hit de cache custa uma fração do token de entrada normal; miss custa o preço cheio de escrita de cache (mais caro que um turno sem cache). Por isso, prefixo instável é pior que não cachear.
 4. **Mensagem do usuário POR ÚLTIMO**: A pergunta dinâmica do usuário é SEMPRE o último item do contexto. Colocá-la no início mata 100% do cache.
 
 ### Matadores de cache (NUNCA faça)
@@ -106,6 +109,8 @@ O contexto é o maior vilão de custo. Contexto quadrático (n² atenção) degr
 | 8K-16K tokens | Resumir turnos com mais de 10 turnos de distância |
 | 16K-32K tokens | Compactar agressivamente: manter só últimos 5 turnos completos + resumo de 3-5 linhas do resto |
 | > 32K tokens | ALERTA: Lost-in-the-Middle ativo. Compactar obrigatoriamente. Considerar reiniciar sessão com handoff |
+
+**Referência de mecânica real**: o auto-compact do Claude Code dispara em ~95% da janela de contexto (200K tokens): pausa o turno atual, roda uma passada de sumarização sobre o histórico inteiro, e substitui os turnos antigos pelo resumo — preservando intenção/objetivo, conceitos técnicos discutidos, arquivos examinados/editados com trechos de código relevantes, erros encontrados e como foram corrigidos, e tarefas pendentes; descarta saídas brutas de ferramentas e raciocínio intermediário. Os pilares 3 e 5 desta skill replicam manualmente essa mesma lógica de seleção — o que é "crítico o suficiente para sobreviver à compactação" é exatamente o que deve ir no resumo de handoff (skill `handoff-sessao`) antes do limite ser atingido, com a vantagem de o agente escolher o que preservar em vez de depender de um resumo automático genérico.
 
 ### Informação posicional (Lost-in-the-Middle)
 

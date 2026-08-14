@@ -1,6 +1,6 @@
 ---
 name: release-planner
-description: Version 1.0.0 | Priority: Medium Dependencies: Project Manager, Breaking Change Detector Compatibility: ">=1.0.0"
+description: "Use para planejar releases: versionamento semântico, checklist de release, changelog e coordenação de deploy."
 version: 1.0.0
 compatibility: ">= 1.0.0"
 triggers: [release-planner]

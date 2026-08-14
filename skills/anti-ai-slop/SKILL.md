@@ -1,6 +1,6 @@
 ---
 name: anti-ai-slop
-description: Auditoria e correção de design "cara de IA" (AI slop). Detecta os padrões estatísticos que denunciam UI gerada por IA (Inter default, gradientes roxo→azul, hero centralizado + 3 cards, glassmorphism em tudo, rounded-2xl uniforme, copy genérica "Build the future") e reescreve o frontend com escolhas intencionais: tipografia com personalidade, cor dominante + acento afiado, layout assimétrico, motion em 1-2 momentos-chave. Use ao revisar QUALQUER UI antes de entregar, e no modo detect para auditar código existente.
+description: "Detecta e corrige design 'cara de IA' (Inter default, gradiente roxo-azul, hero + 3 cards, glassmorphism genérico) com tipografia, cor e layout intencionais. Use ao revisar qualquer UI antes de entregar."
 ---
 
 # Anti AI-Slop (Zero "Cara de IA")

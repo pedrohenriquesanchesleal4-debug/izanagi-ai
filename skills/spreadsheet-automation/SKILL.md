@@ -1,6 +1,6 @@
 ---
 name: spreadsheet-automation
-description: "Automação profissional de planilhas (Excel XLSX/XLS, CSV, ODS, Google Sheets): leitura, escrita, validação, normalização, transformação, detecção de duplicados e integração com sistemas via pandas/openpyxl/csv. Cobre encoding BR (utf-8-sig), schemas Pydantic, chunks para arquivos grandes, formatação preservada, fórmulas, multi-sheet, e relatórios de qualidade antes de qualquer upload/integração. Use para automatizar qualquer tarefa envolvendo planilhas como fonte ou destino de dados."
+description: "Use para automatizar planilhas (Excel, CSV, ODS, Google Sheets) como fonte ou destino de dados: leitura, validação, normalização e escrita sem perda de dados."
 ---
 
 # Spreadsheet Automation — Planilhas como Fonte de Dados Confiável

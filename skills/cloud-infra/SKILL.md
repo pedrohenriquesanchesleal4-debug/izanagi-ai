@@ -1,9 +1,6 @@
 ---
 name: cloud-infra
-description: |
-  Skill de Cloud Infrastructure para o Izanagi. Cobre AWS, GCP, Azure, Terraform,
-  Docker, Kubernetes, CI/CD, e boas práticas de infraestrutura como código (IaC).
-  Use esta skill para projetar, implantar ou revisar infraestrutura cloud.
+description: "Guia de infraestrutura cloud (AWS/GCP/Azure), Terraform/IaC, Docker, Kubernetes e CI/CD com boas práticas de segurança. Use para projetar, implantar ou revisar infraestrutura cloud."
 ---
 
 # Skill Cloud Infrastructure — Izanagi

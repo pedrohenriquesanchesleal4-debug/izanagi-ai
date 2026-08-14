@@ -1,10 +1,6 @@
 ---
 name: wasm
-description: |
-  Skill de WebAssembly (Wasm) para o Izanagi. Aborda compilacao de linguagens para Wasm,
-  integracao com JavaScript, performance, Rust/Wasm, AssemblyScript, e casos de uso
-  (processamento pesado no client, portabilidade de bibliotecas).
-  Use esta skill para implementar funcionalidades que exigem execucao performatica no browser.
+description: "Compila código para WebAssembly (Rust/AssemblyScript) e integra com JS para performance quase nativa no browser. Use ao implementar processamento pesado no client (imagem, áudio, cálculos, compressão)."
 ---
 
 # Skill WebAssembly — Izanagi

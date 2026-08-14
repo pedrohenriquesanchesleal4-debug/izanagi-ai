@@ -1,6 +1,6 @@
 ---
 name: automation-research
-description: "Pesquisa estruturada antes de implementar automações: documentação oficial (endpoints, auth, rate limits), bibliotecas que já resolvem 80%, projetos open-source similares, padrões de arquitetura (ETL, idempotência, retry, batching), limitações conhecidas e fontes prioritárias curadas. Use antes de implementar qualquer automação com padrão conhecido — nunca reinvente a roda nem copie cegamente."
+description: "Pesquisa documentação oficial, bibliotecas e projetos similares antes de implementar uma automação com padrão conhecido. Use antes de codar integrações, ETL, scraping ou automação de browser."
 ---
 
 # Automation Research — Pesquisar Antes de Reinventar

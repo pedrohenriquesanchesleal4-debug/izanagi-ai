@@ -1,10 +1,6 @@
 ---
 name: frontend
-description: |
-  Skill de frontend para o Izanagi. Contém todos os design tokens do Tailwind CSS,
-  padrões de design identificados nas páginas existentes, e boas práticas de Next.js + Tailwind.
-  Use esta skill para criar ou editar componentes visuais, garantindo consistência com o design system existente.
-  Antes de criar novas classes ou variáveis, consulte a lista de tokens existentes abaixo.
+description: "Design tokens do Tailwind e padrões de UI de alto craft do projeto, com boas práticas de Next.js. Use ao criar ou editar componentes visuais para manter consistência com o design system."
 ---
 
 # Skill Frontend — Izanagi
@@ -78,6 +74,8 @@ Antes de criar qualquer estilização, **consulte os tokens abaixo**. Priorize S
 ### Plugin Ativo
 
 - **`@tailwindcss/typography`** — Classe `.prose` para conteúdo rico (posts, artigos)
+
+> **Nota de versão (Tailwind v4)**: v4 eliminou o `tailwind.config.js` como fonte única de tokens — cores, espaçamento e tipografia passam a viver em CSS via bloco `@theme` (`--color-brand-500`, `--shadow-soft` etc.), gerando utilities reais (`bg-brand-500`) sem precisar de um segundo sistema de estilo. Este projeto ainda usa `tailwind.config.js` (estilo v3) — ao migrar para v4, portar os tokens da tabela acima para `@theme` mantendo os mesmos nomes semânticos. Heurística útil independente da versão: **se um valor aparece mais de uma vez, ele é um token** — promova para `theme.extend`/`@theme` em vez de repetir `bg-[#1e40af]`.
 
 ---
 
@@ -259,6 +257,32 @@ colors: {
 ---
 
 ## ⚡ Boas Práticas Next.js
+
+### Server Components por padrão (App Router)
+
+- Todo arquivo em `/app` é **React Server Component por padrão** — só vira Client Component com `"use client"` explícito no topo. Regra: comece server, suba `"use client"` só até onde a interatividade exige.
+- Buscar dados direto dentro de Server Components `async` — sem `useEffect`, sem `getServerSideProps`. O React deduplica automaticamente `fetch()` com a mesma URL/opções entre `generateMetadata` e a página no mesmo request.
+- **Cache de `fetch` é agressivo por padrão** no Next.js — isso quebra silenciosamente dados que precisam ser sempre frescos (dashboards, dados por usuário). Toda chamada que não pode ser cacheada precisa de `cache: 'no-store'` ou `next: { revalidate: 0 }` explícito.
+- Impacto real: mover data-fetching de Client → Server Components costuma cortar 30-60% do JS enviado ao cliente (ex.: dashboards caindo de ~400KB para ~150KB de first-load JS).
+
+### `params`/`searchParams` são `Promise` (Next.js 15+)
+
+```tsx
+// ✅ Next.js 15+ — params e searchParams chegam como Promise, precisam de await
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return <div>{slug}</div>;
+}
+
+// ❌ Desestruturar direto (funcionava até o Next 14) causa erro/bug silencioso no 15+
+export default function Page({ params }: { params: { slug: string } }) {
+  const { slug } = params; // quebra em Next.js 15+
+}
+```
 
 ### `"use client"` — Quando usar
 - ✅ Componentes com `useState`, `useEffect`, `useRef`

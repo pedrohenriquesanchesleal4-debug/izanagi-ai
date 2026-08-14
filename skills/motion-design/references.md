@@ -15,11 +15,15 @@
 - **Site**: gsap.com · plugins: ScrollTrigger, SplitText, Draggable, Flip, MotionPath, Observer
 - **Stack recomendada**: `gsap` + `@gsap/react` (useGSAP) + ScrollTrigger + SplitText
 - **Padrões mais usados (2026)**: pinned scrub, parallax por camadas, horizontal scroll, text reveals (SplitText), SVG morph, Lottie frame-by-frame por scroll, image sequence em canvas
+- **Licença (verificado, gsap.com/blog/3-13)**: desde a aquisição pela Webflow (abr/2025) GSAP é 100% gratuito, **inclusive uso comercial**, com todos os plugins que antes exigiam assinatura Club GreenSock (SplitText, MorphSVG, DrawSVG, ScrollSmoother) incorporados ao pacote `gsap` público no npm/GitHub — não há mais registry privado a configurar.
+- **GSAP 3.13**: SplitText reescrito (14 recursos novos, ~50% menor, a11y melhorada, re-split responsivo, suporte a elementos aninhados/emoji); animação direta de CSS custom properties (`gsap.to(el, { color: 'var(--x)' })`); integração 1-clique via painel do Webflow.
 - Fontes: gsapify.com, gsapvault.com (tutorial scroll-image-sequence com Lenis + HiDPI + capítulos), freefrontend.com (60+ exemplos), gsapdemos.com
 
-## Motion (Framer Motion)
+## Motion (Framer Motion → Motion)
 
-- **npm**: `motion` (motion/react) — declarativo para React: `motion.*`, `useScroll`, `useTransform`, `useSpring`, `useReducedMotion`, variants, layout animations
+- **npm**: `motion` (import `motion/react`, NÃO `framer-motion`) — projeto tornou-se independente da Framer em 2025 e foi renomeado para "Motion".
+- **Motion v12** (lançado mar/2026, verificado em motion.dev/docs/react): motor híbrido — roda nativamente via Web Animations API + CSS `ScrollTimeline` do browser (até 120fps, fora da main thread) e cai para JS somente quando precisa de spring physics, keyframes interrompíveis ou tracking de gesto que WAAPI não cobre. APIs de scroll (`useScroll`, `whileInView`) que eram experimentais em v10 agora são o caminho padrão para qualquer animação reativa a scroll.
+- API: `motion.*`, `useScroll`, `useTransform`, `useSpring`, `useReducedMotion`, variants, layout animations
 - Uso típico: reveals `whileInView`, parallax `useScroll+useTransform`, animações de layout (cards/accordions), gestos (drag, hover)
 - Fonte: motion.dev
 

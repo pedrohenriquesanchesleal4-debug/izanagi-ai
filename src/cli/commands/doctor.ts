@@ -9,8 +9,10 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
 
   const cwd = process.cwd();
 
-  // Raiz do framework: .agents do projeto (se existir) ou pacote instalado
-  const projectRoot = fs.existsSync(path.join(cwd, '.agents')) ? path.join(cwd, '.agents') : baseDir;
+  // Raiz do framework: .agents do projeto SE for uma instalação completa (tem agents/ dentro),
+  // não só a presença da pasta — `.agents/memoria/` sozinha (comum, é gitignored) não conta,
+  // senão um repo raiz-based com só memória local cai por engano no modo "projeto instalado".
+  const projectRoot = fs.existsSync(path.join(cwd, '.agents', 'agents')) ? path.join(cwd, '.agents') : baseDir;
 
   let errors = 0;
   let warnings = 0;

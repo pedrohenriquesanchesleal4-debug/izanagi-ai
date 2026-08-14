@@ -1,6 +1,6 @@
 ---
 name: prompt-engineering
-description: "Engenharia de prompts para LLMs de alta performance: identidade e papel, contexto e regras globais (Sempre/Nunca), instruções passo a passo, formato de saída estrito (JSON/Markdown), few-shot com casos de borda, Chain-of-Thought, proteção contra prompt injection com delimitadores, economia de tokens e checklist de qualidade. Use ao projetar prompts de sistema, agentes, workflows ou otimizar prompts existentes."
+description: "Use ao projetar ou revisar prompts de sistema, few-shot, formato de saída estrito e proteção contra prompt injection."
 ---
 
 # Prompt Engineering & System Design

@@ -1,6 +1,6 @@
 ---
 name: handoff-protocol
-description: "Protocolo formal de handoff entre agentes: transição estruturada com motivo, contexto mínimo, artefatos, decisões, constraints e questões em aberto. Nunca passar contexto livre ou payloads gigantes — só o que o agente seguinte precisa. Use em toda transição de agente dentro de um execution graph ou swarm."
+description: "Protocolo de handoff estruturado entre agentes (motivo, contexto mínimo, artefatos, decisões, questões em aberto). Use em toda transição de agente dentro de um execution graph ou swarm."
 version: 1.0.0
 triggers:
   - handoff

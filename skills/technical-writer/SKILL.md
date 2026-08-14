@@ -1,6 +1,6 @@
 ---
 name: technical-writer
-description: "Redação e estruturação de documentação técnica de alto nível: guias de arquitetura, referências de API, manuais operacionais e diagramas como código (Mermaid), seguindo os princípios de clareza, concisão e foco no desenvolvedor. Use ao documentar sistemas, APIs ou arquiteturas."
+description: "Estrutura documentação técnica (arquitetura, APIs, manuais) pelo modelo Diátaxis, com diagramas como código. Use ao documentar sistemas, APIs ou arquiteturas."
 ---
 
 # Technical Writer (Documentação Técnica de Alto Craft)

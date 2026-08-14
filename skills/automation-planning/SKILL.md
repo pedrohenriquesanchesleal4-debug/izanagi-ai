@@ -1,6 +1,6 @@
 ---
 name: automation-planning
-description: "Planejamento de automações: decompor o processo em etapas, definir escopo, entradas/saídas, critérios de sucesso mensuráveis, riscos (dados sensíveis, rate limits, mudanças de layout) e cronograma antes de implementar. Use no início de qualquer tarefa de automação — nunca comece a codar sem um plano de 1 página."
+description: "Planeja automações antes de codar: escopo, entradas/saídas, critérios de sucesso mensuráveis e riscos em 1 página. Use no início de qualquer tarefa de automação, antes de escrever código."
 ---
 
 # Automation Planning

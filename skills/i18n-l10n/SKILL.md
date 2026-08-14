@@ -1,9 +1,6 @@
 ---
 name: i18n-l10n
-description: |
-  Skill de Internacionalizacao (i18n) e Localizacao (l10n) para o Izanagi. Aborda
-  next-intl, react-intl, gerenciamento de traducoes, locale routing, formatação de datas/
-  numeros/moeda e boas praticas de internacionalizacao em Next.js.
+description: "Padrões de i18n/l10n com next-intl, react-intl, locale routing e formatação de datas/números/moeda. Use ao internacionalizar ou traduzir uma aplicação Next.js."
 ---
 
 # Skill i18n & Localization — Izanagi

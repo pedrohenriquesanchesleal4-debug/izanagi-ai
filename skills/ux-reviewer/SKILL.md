@@ -1,6 +1,6 @@
 ---
 name: ux-reviewer
-description: "Avaliação de experiência do usuário (UX) baseada nas 10 heurísticas de Nielsen e boas práticas de usabilidade moderna: visibilidade do status, consistência, prevenção de erros, flexibilidade, carga cognitiva e design estético. Use ao revisar fluxos de tela, telas de conversão ou interfaces completas antes de release."
+description: "Avalia usabilidade de fluxos e telas pelas 10 heurísticas de Nielsen, classificando achados por severidade. Use ao revisar telas de conversão ou interfaces antes do release."
 ---
 
 # UX Reviewer (Heurísticas de Nielsen & Usabilidade)
