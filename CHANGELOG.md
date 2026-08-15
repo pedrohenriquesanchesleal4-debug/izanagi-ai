@@ -4,6 +4,28 @@
 
 ---
 
+## [2.12.0] — 2026-08-14
+
+### Fixed
+- **`.claude/agents/<slug>.md` (the file the Agent tool actually auto-delegates to) now renders each agent's `identity` field**, not just the one-line `role`. Every densely-researched agent identity (OWASP Top 10:2025, WCAG 2.2 SC numbers, TypeScript strict flags, Testing Trophy, etc.) was previously discarded at the primary invocation path — only the manually-typed `/<slug>` slash command had it.
+- Fixed a systemic `-agent` slug-suffix bug: 26 `handoffs[].to` entries and 5 chain steps across 15 agent JSON files pointed at non-existent subagent names (e.g. `senior-engineer-agent` instead of the real `senior-engineer`) — any orchestration reading declared handoffs would fail to resolve roughly two-thirds of them.
+- `techlead-agent.json` had `handoffs: []` despite being a declared inbound target from 3 other agents, with no path back after a failed review; added handoffs to `senior-engineer`/`qa`.
+- Disambiguated overlapping agent triggers: the four new-project entry points (`discovery`/`product-reasoner`/`architect`/`pm`) and the five post-delivery review agents (`qa`/`security`/`techlead`/`adversarial-critic`/`evaluator`) previously matched the same generic requests with no signal for which to pick.
+- `senior-engineer`'s TDD rule was gated on "before declaring done" (allowed write-then-test); reworded to a red-before-code gate matching `bug-hunter`'s stronger phrasing. Added `architecture-patterns` to its core skills (was optional-only, so `implement`/`bug`/`refactor` chains never touched it).
+
+### Changed (token economy)
+- Removed the "Sempre/Nunca (consolidado de todos os agentes)" block from `CLAUDE.md` — duplicated all 21 agents' rules (including single-agent-only ones) into an always-loaded section.
+- Removed `ui-ux-pro-max`/`motion-design`/`animation-web`/`webgl-3d` from `CLAUDE_SKILLS` — niche visual/3D skills paying a fixed cost every session regardless of task, already reachable on-demand via the owning agents.
+- `CLAUDE.md`: 7921 -> 5899 bytes this release (11891 at the start of the 2.11.x token-economy pass).
+- Regenerated stale `.codex/instructions.md`/`.github/copilot-instructions.md` (were listing 12 of 21 agents, stale path from a different machine).
+
+### Changed (output quality / anti-AI-slop)
+- `RULES.md` rule 12 contradicted rules 14-16: it mandated `bg-zinc-950`+glassmorphism+bento as THE anti-generic answer, while 14-16 ban any default aesthetic and require a bespoke per-niche direction. Reworded rule 12 (and its 4 echoes across the CLI export templates) to state the principle without prescribing one look as default.
+- `skills/frontend/SKILL.md`'s "every public page must follow" snippet was itself the exact AI-slop cliché its sibling skill `anti-ai-slop` flags as a tell; marked as a reference example for one specific direction, not a copy-paste template. Its form/button/feedback/typography examples switched from default Tailwind gray/blue to the file's own declared brand tokens, plus a warning against Inter-only typography.
+- Added "See also" cross-references between `animation-web`/`motion-design`/`webgl-3d` SKILL.md files pointing at `core/skill-composer.md`'s chains.
+
+---
+
 ## [2.11.1] — 2026-08-14
 
 ### Added
