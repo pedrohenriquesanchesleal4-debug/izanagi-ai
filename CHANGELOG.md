@@ -4,6 +4,28 @@
 
 ---
 
+## [2.13.0] — 2026-08-15
+
+### Added
+- `exportToOpencode()` (`src/exporters.ts`) + `izanagi export --cli opencode`: `.opencode/agent/*.md` (the 21 specialist agents + the "Izanagi Multi-Agent Orchestrator" invoked via `/agents`) are now generated from `agents/*.json`, the same way as every other CLI adapter. Previously `src/installer.ts` only did a one-time static copy from a frozen snapshot shipped in the npm package — any fix to an agent's identity/handoffs/tools never reached opencode/Kimi CLI users. Verified against opencode's actual docs first: the `mode` frontmatter field (primary/subagent/all) defaults to `all` when omitted, which all files already had, so automatic description-based dispatch was never actually broken — the real bug was pure staleness, not a missing config field.
+
+### Fixed
+- **`AgentFactory.generate()`** (`izanagi agent create`) wrote the genome file to `agents/generated/` unconditionally, even when `validateGenome()` failed — contradicting agent-architect's own "Sem aprovação, sem registro" rule and inconsistent with `SkillFactory`, which correctly withholds the file on failure. Now gated the same way.
+- **`loadIzanagiAgents()`** only scanned `agents/*.json`, so an agent successfully registered via `izanagi agent create` in `agents/generated/` was runnable via `izanagi run` but invisible to `exportToClaude()`/`exportToCodex()`/etc. — never reachable as a native subagent without a manual file move. Now scans `agents/generated/` too (matching `SkillResolver.loadAgent()`'s existing behavior).
+- Removed 9 junk files that had accumulated in `agents/generated/` from past ad-hoc CLI testing (single-word test prompts like "500", "banco" — not real agents); would have been exported as garbage subagents the moment the fix above went live.
+- Tool-grant mismatches in `CLAUDE_AGENT_TOOLS` (`src/exporters.ts`): `adversarial-critic` was missing `Bash` despite its identity mandating an active "try to actually break it" execution phase; `bug-hunter` was missing `Write` despite its own always-rule requiring it to create new regression-test files; `product-reasoner` was missing `Write` despite claiming to persist a requirements artifact.
+- `agents/pm-agent.json`, `devops-agent.json`, `database-agent.json`: `optionalSkills` listed `"architect-agent"` (an agent filename, not a skill/alias) — renamed to the real alias `"architect"`.
+- Softened `agent-architect`'s identity/never-list claim of an automated `minScore` evaluation gate before registration — the actual code only checks structural genome completeness; `minScore` is genuinely unmeasurable before an agent has ever run, and is really consumed later by the separate, manual `izanagi eval` command. Text now describes what's real vs. what `minScore` is actually for.
+- `SYSTEM.md`: Policy Engine and Evidence System sections claimed guarantees ("Wired em `ToolRegistry.execute()`") that don't hold — `Orchestrator.executeNode()` calls the LLM producer directly and never touches `ToolRegistry`/`PolicyEngine`/the Evidence module in the real `izanagi run` path. Both are real, tested, working subsystems in isolation, just not wired into the reachable execution path yet; marked with explicit caveats instead of overclaiming an enforced security boundary.
+- `izanagi --help`: pointed the documented `create agent`/`create skill` example at the real, validated `agent create`/`skill create` Factory pipelines instead of the bare unvalidated scaffold command.
+- `skills/feature-flags`: Split.io → Harness FME (acquired/rebranded), a stale vendor name the 2.11.0 fact-check pass missed.
+- `skills/sequence-diagram-builder`: fixed a real Mermaid.js semantics error (dashed arrows mean "reply", not "async" — the file's own worked example contradicted its own checklist item).
+- 31 of 103 skills still carried legacy frontmatter (`version`/`compatibility`/`triggers`/`token_budget`) and an English "> Version... Priority..." banner left over from an older skill-authoring generation. Stripped to `name`+`description` only, matching the other 72 already-normalized skills (all fields have safe defaults in `resolver.ts`).
+
+All 217 tests + AgentFactory/SkillFactory-specific tests pass; `izanagi doctor --deep` still PASSED (0 errors, 0 warnings) after every change in this release.
+
+---
+
 ## [2.12.0] — 2026-08-14
 
 ### Fixed
