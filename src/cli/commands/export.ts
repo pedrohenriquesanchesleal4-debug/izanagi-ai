@@ -55,8 +55,8 @@ function showExportHelp(): void {
 \x1b[1mUsage:\x1b[0m izanagi export [--cli <target>] [--dir <path>]
 
   \x1b[1mTargets:\x1b[0m
-  \x1b[32mclaude\x1b[0m    Generates CLAUDE.md + .claude/commands (12 agents) + .claude/skills (13 curadas).
-  \x1b[32mcodex\x1b[0m     Generates .codex/instructions.md + .codex/agents (12 agents).
+  \x1b[32mclaude\x1b[0m    Generates CLAUDE.md + .claude/agents + .claude/commands (21 agents) + .claude/skills (14 curadas, always-loaded).
+  \x1b[32mcodex\x1b[0m     Generates .codex/instructions.md + .codex/agents (21 agents).
   \x1b[32mcursor\x1b[0m    Generates .cursor/rules (core, agents, memory) in .mdc format.
   \x1b[32mcopilot\x1b[0m   Generates .github/copilot-instructions.md.
   \x1b[32mkimi\x1b[0m      Generates .kimi/README.md + kimi.md (Kimi CLI lê AGENTS.md/.opencode).

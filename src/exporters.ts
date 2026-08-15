@@ -361,9 +361,9 @@ ${a.handoffs && a.handoffs.length > 0 ? bullet(a.handoffs.map((h) => `\`${h.to}\
 
 function claudeMainTemplate(baseDir: string, agents: IzanagiAgentInfo[], skills: SkillSummary[]): string {
   const agentTable = agents
-    .map((a) => `| \`${a.slug}\` | ${a.role} |`)
+    .map((a) => `| \`${a.slug}\` | ${truncate(a.role, 70)} |`)
     .join('\n');
-  const skillList = skills.map((s) => `- \`${s.name}\` — ${truncate(s.description, 120)}`).join('\n');
+  const skillList = skills.map((s) => `- \`${s.name}\` — ${truncate(s.description, 60)}`).join('\n');
   const always = agents.flatMap((a) => a.always).filter((x) => x.length > 0);
   const never = agents.flatMap((a) => a.never).filter((x) => x.length > 0);
   const totalSkills = countSkills(baseDir);
@@ -374,11 +374,11 @@ Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia d
 
 ## Fonte da verdade
 
-> **Leia \`AGENTS.md\` antes de qualquer tarefa.** Ele é a referência completa do framework (agentes, comandos, estrutura, release flow). Este arquivo é apenas um resumo operacional.
+Este arquivo já cobre agentes, skills e regras essenciais do dia a dia — não precisa ler mais nada de saída. Consulte sob demanda só quando a tarefa exigir o tópico específico:
 
-- \`AGENTS.md\` — referência canônica do framework
-- \`SYSTEM.md\` — fundação do sistema (engines, quality gates, memória)
-- \`RULES.md\` — regras operacionais
+- \`AGENTS.md\` — só para: comandos avançados de dev, estrutura completa de pastas, release flow
+- \`SYSTEM.md\` — só para: detalhes de engines internas, quality gates, arquitetura de memória
+- \`RULES.md\` — só para: regras operacionais que não estejam listadas abaixo
 
 ## Agentes nativos (Agent tool)
 
