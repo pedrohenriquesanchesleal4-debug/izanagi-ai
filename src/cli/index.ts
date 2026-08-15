@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { getPackageDir, resolveFrameworkRoot } from '../installer.js';
 
 import { doctorCommand } from './commands/doctor.js';
 import { listCommand } from './commands/list.js';
@@ -23,12 +23,24 @@ import { approveCommand } from './commands/approve.js';
 import { rejectCommand } from './commands/reject.js';
 import { explainCommand } from './commands/explain.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const baseDir = path.resolve(__dirname, '../../');
+/**
+ * `packageDir` é SEMPRE a instalação do próprio izanagi-ai (node_modules/izanagi-ai ou
+ * o checkout do repo) — só serve pra ler o `package.json` do pacote (versão) e como
+ * fallback quando o projeto do usuário ainda não rodou `izanagi init`.
+ *
+ * `baseDir` é o que TODO comando de runtime (run/doctor/memory/trace/agent/skill/...)
+ * recebe como raiz real do PROJETO DO USUÁRIO: prioriza `.agents/` do diretório atual
+ * (projeto inicializado), senão cai pro `packageDir`. Bug corrigido em 2026-08-15:
+ * antes, `baseDir` era sempre `packageDir` (nunca olhava pro cwd do usuário) — todo
+ * comando de runtime lia/escrevia dentro da própria instalação do pacote em vez do
+ * projeto real, algo que só passava despercebido rodando o CLI de dentro do próprio
+ * checkout do framework (onde as duas coisas coincidem por acidente).
+ */
+const packageDir = getPackageDir();
+const baseDir = resolveFrameworkRoot(process.cwd());
 
 function showVersion(): void {
-  const pkg = JSON.parse(fs.readFileSync(path.join(baseDir, 'package.json'), 'utf-8'));
+  const pkg = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'));
   console.log(`Izanagi AI CLI v${pkg.version}`);
 }
 
