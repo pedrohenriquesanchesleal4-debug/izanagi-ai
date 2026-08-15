@@ -1,6 +1,6 @@
 ---
 description: Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills.
-model: claude-opus-4-1-20250805
+model: opus
 ---
 
 # Skill Architect

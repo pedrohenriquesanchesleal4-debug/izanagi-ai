@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY para formulários complexos (wizards, validação Zod/RHF, acessibilidade).
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Form & UI Engineer

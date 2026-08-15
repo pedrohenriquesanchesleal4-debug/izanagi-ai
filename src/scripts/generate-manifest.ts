@@ -91,9 +91,17 @@ function main(): void {
   const seen = new Set<string>();
 
   for (const [alias, target] of Object.entries(aliases).sort()) {
-    if (seen.has(target)) continue; // alias já catalogado por outro nome
     const resolved = resolveTarget(target);
     if (!resolved) continue; // só inclui o que existe (0 paths quebrados)
+
+    // Dedup pelo path RESOLVIDO, não pela string bruta do alias-target: o
+    // resolver tem variantes como `skills/foo` e `skills/foo/SKILL` que
+    // resolvem para o mesmíssimo `skills/foo/SKILL.md` — deduplicar pelo
+    // target cru deixava as duas passarem e contava a mesma skill 2x
+    // (foi assim que "212 skills" nunca bateu com a contagem real do
+    // diretório `skills/`).
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
 
     const category = target.split('/')[0];
     const label = categoryLabels[category] || category;
@@ -107,7 +115,6 @@ function main(): void {
       version: '1.0.0',
       path: resolved,
     });
-    seen.add(target);
   }
 
   const skills = [...byCategory.entries()].map(([name, list]) => ({

@@ -4,6 +4,21 @@
 
 ---
 
+## [3.1.0] — 2026-08-15
+
+### Fixed (CRITICAL)
+- **`izanagi init` never actually generated a Claude Code adapter unless `--cli claude` was passed explicitly or a `.claude/` folder already existed.** `installToProject()`'s CLI auto-detection only checked for existing adapter folders in the target project (`.cursor`, `.claude`, `.github`, `.codex`, `.kimi`) before falling back to `opencode` as the default — so a brand-new project, or `izanagi init` invoked non-interactively (as Claude Code itself does when running shell commands, since stdin isn't a TTY), silently got the `opencode` adapter instead. This is very likely why users reported "skills and agents aren't showing up automatically in Claude." Fixed by detecting the CLI's own env vars first (`CLAUDECODE`/`CLAUDE_CODE_ENTRYPOINT` for Claude Code, with best-effort checks for Cursor/Codex/Copilot too) before falling back to folder-based detection. Verified end-to-end: `CLAUDECODE=1 izanagi init <dir>` (non-interactive, no `--cli` flag) now generates `.claude/` correctly.
+- **`exportToClaude()` only ever exported a hardcoded subset of 10 "curated" skills to `.claude/skills/`** (`CLAUDE_SKILLS`), even though the library has 103. This is very likely the second half of the "skills aren't showing up" report — asking Claude to list its skills only ever surfaced ~10. Claude Code's own progressive-disclosure design (name+description always loaded, full body only read when a skill activates) makes exporting the whole library cheap, so `exportToClaude()` now calls the new `listAllSkillNames()` and exports all 103. `CLAUDE.md`'s own "Skills" section rewritten to stop duplicating the skill list inline (redundant with what Claude Code already loads natively from `.claude/skills/*/SKILL.md`).
+- **All 22 agent JSON definitions had a `model` field pinned to a specific dated Claude snapshot ID** (`claude-sonnet-4-20250514`, `claude-sonnet-4-6`, `claude-opus-4-1-20250805`) that no longer resolves in current Claude Code installs — invoking any of these as a native subagent failed outright with "model not found," which would read exactly like "the agent/skill isn't being used." Replaced with the generic tier aliases (`sonnet` / `opus`) that Claude Code resolves to the current model in that tier server-side, so this can't go stale the same way again.
+- **`.manifest` generation double-counted skills.** `generate-manifest.ts` deduplicated resolved skill-resolver aliases by the *raw target string* (e.g. `skills/foo` and `skills/foo/SKILL` are two different alias targets that both resolve to the same `skills/foo/SKILL.md` file) instead of the *resolved path* — so 44 skills were counted twice, inflating the long-claimed "212 skills" figure. Real count is 103 in `skills/` (168 across all 11 catalogued categories including `architecture/`, `coding/`, `database/`, etc.). Fixed the dedup key; corrected the "212 skills" claim to 103 everywhere in README.md/AGENTS.md/ROADMAP.md (and the `Skill Library` pack description, which also claimed a stale "111+").
+
+### Added
+- **New agent: `/ai-engineer`** (`agents/ai-engineer-agent.json`) — Software Engineer specialized in features that call, orchestrate, or evaluate an LLM: RAG pipelines, embeddings/vector DBs, autonomous agents with tool-calling/MCP, versioned prompt engineering, and LLM output evaluation/guardrails. Deliberately scoped apart from `senior-engineer` (generic full-stack/CRUD/UI) to avoid overlap — its own identity explicitly calls out the boundary and hands off to `senior-engineer` for non-AI plumbing. Wired into `CLAUDE_AGENT_TOOLS`/`CLAUDE_AGENT_TRIGGERS` (`src/exporters.ts`) and the agent count/table updated in AGENTS.md/README.md/SYSTEM.md/ROADMAP.md (21 → 22).
+
+All 217 tests pass; `izanagi doctor` PASSED (0 errors, 0 warnings); `izanagi init`/`izanagi export --cli all` re-verified end-to-end in this repo's own `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`, `.opencode/` (dogfooded — all previously stale from before this release, regenerated clean).
+
+---
+
 ## [3.0.0] — 2026-08-15
 
 ### Fixed (CRITICAL)

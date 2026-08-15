@@ -19,7 +19,7 @@
 ## Fase 2 — Engine Layer (v2.0 → v2.8) ✅
 
 - [x] 15 → 18 agentes especializados, cada um com chains compostas
-- [x] Biblioteca de skills modulares (212) + Skill Composer
+- [x] Biblioteca de skills modulares (103) + Skill Composer
 - [x] CLI executável publicado no npm (`izanagi-ai`) com `izanagi init/run/compile/chat/doctor`
 - [x] Packs selecionáveis + export multi-CLI (claude, codex, cursor, copilot, kimi)
 - [x] Multi-Agent Swarm Mode (execução paralela concorrente)
@@ -33,7 +33,7 @@
 - [x] **Evaluation Engine** (`core/evaluation/` → `src/runtime/evaluation/`) — vereditos PASS / PASS_WITH_WARNINGS / FAIL / BLOCKED / UNKNOWN, métricas ponderadas (correctness, security, architecture, performance, maintainability, artifact validity), confiança e regressões
 - [x] **Execution Graph** (`src/runtime/orchestration/`) — grafo por tarefa com nós, dependências, condições, retry policy, timeout, token budget e validador; batches paralelos detectados; templates por categoria sem grafo gigante universal
 - [x] **Adaptive Routing / Scoring** (`src/runtime/routing/`) — ranking de agentes e skills por relevância semântica + histórico + compatibilidade + custo + risco
-- [x] **Agent Genome** — 13 campos formais nos 21 agentes (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility)
+- [x] **Agent Genome** — 13 campos formais nos 22 agentes (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility)
 - [x] **Skill Manifest** — frontmatter padronizado nas skills (name, version, triggers, dependencies, risk, tokenBudget...) + `izanagi skill inspect/search`
 - [x] **Agent Factory & Skill Factory** (`src/runtime/factories/`) — geração de agentes e skills por lacuna real, com validação antes do registro
 - [x] **Failure Memory** (`src/runtime/memory/`) — 7 categorias (episodic, semantic, procedural, decision, failure, skill, project); padrões de falha reutilizáveis buscados antes da execução

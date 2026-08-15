@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY só quando já existem requisitos definidos e a questão em aberto é estrutural: decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS. Não use para descobrir o que construir…
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Software Architect

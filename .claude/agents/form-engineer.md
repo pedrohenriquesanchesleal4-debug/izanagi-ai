@@ -2,7 +2,7 @@
 name: form-engineer
 description: "Use PROACTIVELY para formulários complexos (wizards, validação Zod/RHF, acessibilidade)."
 tools: Read, Grep, Glob, Edit, Write
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Form & UI Engineer

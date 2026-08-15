@@ -2,7 +2,7 @@
 name: database
 description: "Use PROACTIVELY para modelagem de dados, SQL otimizado, migrações e schemas (Postgres/MySQL/Redis)."
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Database Engineer

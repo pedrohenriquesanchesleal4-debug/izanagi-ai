@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY quando a decisão depender de informação externa (stack, concorrência, preços, referências).
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Researcher

@@ -50,6 +50,7 @@ export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
   qa: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   researcher: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
   security: ['Read', 'Grep', 'Glob', 'Bash', 'WebFetch'],
+  'ai-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'senior-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'skill-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
   techlead: ['Read', 'Grep', 'Glob', 'Bash']
@@ -66,6 +67,7 @@ export const CLAUDE_AGENT_TOOLS_DEFAULT = ['Read', 'Grep', 'Glob', 'Edit', 'Writ
 export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
   'adversarial-critic': 'Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar — não para confirmar o que a revisão já cobriu.',
   'agent-architect': 'Use quando faltar um agente especializado para uma lacuna real do time e for preciso desenhar um novo agente.',
+  'ai-engineer': 'Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM — RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA (isso é `senior-engineer`).',
   animation: 'Use PROACTIVELY para scrollytelling, motion design, WebGL 3D ou qualquer interação cinematográfica de UI.',
   architect: 'Use PROACTIVELY só quando já existem requisitos definidos e a questão em aberto é estrutural: decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS. Não use para descobrir o que construir (isso é `discovery`/`product-reasoner`).',
   'automation-engineer': 'Use PROACTIVELY para automações (planilhas, browser, API, ETL) que precisem de idempotência, retries e logging estruturado.',
@@ -90,7 +92,12 @@ export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
 /** Marcador presente em todo arquivo gerado — permite regenerar sem arriscar sobrescrever edição manual. */
 export const GENERATED_MARKER = 'Gerado pelo Izanagi AI';
 
-/** Subconjunto curado de skills exportado para Claude Code (.claude/skills). */
+/**
+ * Subconjunto curado histórico — mantido só para não quebrar imports externos.
+ * `exportToClaude` não usa mais isto: exporta a biblioteca inteira (ver
+ * `listAllSkillNames`) para que os agentes nativos encontrem sob demanda
+ * qualquer skill que precisem, não apenas estas 10.
+ */
 export const CLAUDE_SKILLS = [
   'caveman',
   'brainstorming',
@@ -103,6 +110,24 @@ export const CLAUDE_SKILLS = [
   'economia-tokens',
   'handoff-sessao'
 ] as const;
+
+/**
+ * Lista todos os nomes de skill da biblioteca-fonte (skills/<name>/SKILL.md),
+ * ordenados. Claude Code só paga o custo de nome+descrição (frontmatter) por
+ * skill listada em `.claude/skills/` — o corpo completo só é lido quando a
+ * skill é de fato ativada — então exportar a biblioteca inteira aqui é
+ * barato e é o que faz os 22 agentes nativos encontrarem qualquer skill que
+ * referenciem, em vez de só as ~10 que estavam hardcoded antes.
+ */
+export function listAllSkillNames(baseDir: string): string[] {
+  const sourceDir = resolveSourceDir(baseDir);
+  const skillsDir = path.join(sourceDir, 'skills');
+  if (!fs.existsSync(skillsDir)) return [];
+  return fs
+    .readdirSync(skillsDir)
+    .filter((d) => fs.existsSync(path.join(skillsDir, d, 'SKILL.md')))
+    .sort();
+}
 
 interface SkillSummary {
   name: string;
@@ -372,8 +397,6 @@ function claudeMainTemplate(baseDir: string, agents: IzanagiAgentInfo[], skills:
   const agentTable = agents
     .map((a) => `| \`${a.slug}\` | ${truncate(a.role, 70)} |`)
     .join('\n');
-  const skillList = skills.map((s) => `- \`${s.name}\` — ${truncate(s.description, 60)}`).join('\n');
-  const totalSkills = countSkills(baseDir);
 
   return `# Izanagi AI — Claude Code Integration
 
@@ -399,15 +422,9 @@ ${agentTable}
 - Feature nova (fronteiras estruturais independentes): \`architect\` + \`database\` + \`security\` em paralelo, depois \`senior-engineer\` implementa em sequência.
 - Revisão de PR antes de merge: \`security\` + \`qa\` + \`techlead\` em paralelo por padrão (cada um responde uma pergunta diferente: risco de segurança, testes/cobertura, padrão de código); acrescente \`adversarial-critic\` só quando pedirem para caçar pontos cegos explicitamente.
 
-## Skills sempre carregadas
+## Skills (biblioteca inteira, nativa)
 
-${skills.length} skills universais ficam nativas em \`.claude/skills/<nome>/SKILL.md\` (Claude Code carrega nome+descrição sempre; corpo completo só quando ativada):
-
-${skillList}
-
-## Skills especializadas (via agente)
-
-As outras ${Math.max(totalSkills - skills.length, 0)} skills da biblioteca (\`skills/<nome>/SKILL.md\`) não ficam pré-carregadas — cada agente nativo já referencia as suas na seção "Skills relevantes" do próprio \`.claude/agents/<slug>.md\` e as lê sob demanda quando é ativado. Isso evita pagar ~100 tokens fixos por skill em toda sessão só por ela existir na biblioteca.
+Todas as ${skills.length} skills da biblioteca (\`skills/<name>/SKILL.md\`) foram exportadas fielmente para \`.claude/skills/<name>/SKILL.md\`. O Claude Code descobre nome+descrição de cada uma automaticamente ao abrir este projeto (custo fixo pequeno por skill) e só lê o corpo completo quando de fato a ativa — não é preciso listá-las aqui de novo nem chamar \`izanagi export\` para elas aparecerem. Peça por nome ("use a skill X") ou deixe o Claude escolher pela descrição; cada agente nativo também referencia as suas em "Skills relevantes" no próprio \`.claude/agents/<slug>.md\`.
 
 ## Regras essenciais
 
@@ -425,18 +442,12 @@ Gerado pelo Izanagi AI em \`${baseDir}\` — \`izanagi export --cli claude\`
 `;
 }
 
-/** Conta quantas skills existem na biblioteca-fonte (skills/<name>/SKILL.md). */
-function countSkills(baseDir: string): number {
-  const sourceDir = resolveSourceDir(baseDir);
-  const skillsDir = path.join(sourceDir, 'skills');
-  if (!fs.existsSync(skillsDir)) return 0;
-  return fs.readdirSync(skillsDir).filter((d) => fs.existsSync(path.join(skillsDir, d, 'SKILL.md'))).length;
-}
-
 export function exportToClaude(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
-  const skills = CLAUDE_SKILLS.map((n) => readSkillSummary(baseDir, n)).filter((s): s is SkillSummary => s !== null);
+  const skills = listAllSkillNames(baseDir)
+    .map((n) => readSkillSummary(baseDir, n))
+    .filter((s): s is SkillSummary => s !== null);
 
   // CLAUDE.md na raiz (fonte da verdade + regras essenciais inline)
   const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(baseDir, agents, skills));

@@ -1,6 +1,6 @@
 ---
 description: Use quando o usuário pedir explicação, ensino ou mentoria adaptativa sobre um conceito técnico.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Professor / Mentor

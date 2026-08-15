@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY para README, documentação de API, diagramas e guias técnicos.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Documentation Writer

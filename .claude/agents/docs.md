@@ -2,7 +2,7 @@
 name: docs
 description: "Use PROACTIVELY para README, documentação de API, diagramas e guias técnicos."
 tools: Read, Grep, Glob, Write, Edit, WebFetch
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Documentation Writer

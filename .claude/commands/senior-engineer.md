@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY para implementação full-stack de ponta a ponta com TDD estrito.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Senior Engineer

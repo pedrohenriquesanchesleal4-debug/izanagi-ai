@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY para CI/CD, Docker, Kubernetes, IaC e observabilidade.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # DevOps Engineer

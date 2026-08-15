@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada — testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG).
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # QA Engineer

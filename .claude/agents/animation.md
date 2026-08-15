@@ -2,7 +2,7 @@
 name: animation
 description: "Use PROACTIVELY para scrollytelling, motion design, WebGL 3D ou qualquer interação cinematográfica de UI."
 tools: Read, Grep, Glob, Edit, Write, WebFetch
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Animation Engineer

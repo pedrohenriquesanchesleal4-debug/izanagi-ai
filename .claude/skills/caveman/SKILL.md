@@ -1,11 +1,6 @@
 ---
 name: caveman
-description: >
-  Ultra-compressed communication mode. Cuts output tokens 65% (measured) by speaking like caveman
-  while keeping full technical accuracy. Supports intensity levels: lite, full (default), ultra,
-  wenyan-lite, wenyan-full, wenyan-ultra.
-  Use when user says "caveman mode", "talk like caveman", "use caveman", "less tokens",
-  "be brief", or invokes /caveman. Also auto-triggers when token efficiency is requested.
+description: "Ultra-compressed communication mode. Cuts output tokens 65% (measured) by speaking like caveman while keeping full technical accuracy. Supports intensity levels: lite, full (default), ultra, wenyan-lite, wenyan-full, wenyan-ultra. Use when user says "caveman mode", "talk like caveman", "use caveman", "less tokens", "be brief", or invokes /caveman. Also auto-triggers when token efficiency is requested."
 ---
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
@@ -86,3 +81,5 @@ Example — destructive op:
 ## Boundaries
 
 Persisted outside chat: write normal prose — code, comments, commits, docs, issue/PR/MR text, memory files, third-party messages (/caveman-compress exempt). "stop caveman" or "normal mode": revert. Level persist until changed or session end.
+
+> Gerado pelo Izanagi AI — cópia fiel de `skills/caveman/SKILL.md` (fonte da verdade).

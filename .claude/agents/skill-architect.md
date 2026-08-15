@@ -2,7 +2,7 @@
 name: skill-architect
 description: "Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills."
 tools: Read, Grep, Glob, Write, Edit, WebFetch
-model: claude-opus-4-1-20250805
+model: opus
 ---
 
 # Skill Architect

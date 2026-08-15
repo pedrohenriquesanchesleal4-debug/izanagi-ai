@@ -2,7 +2,7 @@
 name: architect
 description: "Use PROACTIVELY só quando já existem requisitos definidos e a questão em aberto é estrutural: decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS. Não use para descobrir o que construir (isso é `discovery`/`product-reasoner`)."
 tools: Read, Grep, Glob, Write, Edit, WebFetch, WebSearch
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Software Architect

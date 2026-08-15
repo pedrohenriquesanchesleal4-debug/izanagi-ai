@@ -29,14 +29,14 @@ export const PACKS: PackDefinition[] = [
   {
     id: 'agents',
     label: 'Agents',
-    description: '10 agentes pré-definidos em JSON (architect, security, senior-engineer...)',
+    description: '22 agentes pré-definidos em JSON (architect, security, senior-engineer...)',
     files: ['agents'],
     default: true
   },
   {
     id: 'skills',
     label: 'Skill Library',
-    description: '111+ skills especializadas (quality, debugging, cloud, devops...)',
+    description: '103 skills especializadas (quality, debugging, cloud, devops...)',
     files: ['skills'],
     default: true
   },
@@ -216,8 +216,18 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
   // Determina qual CLI/adaptador gerar para não poluir o projeto com arquivos desnecessários
   let targetCli = (cliTarget || '').toLowerCase().trim();
   if (!targetCli) {
-    // Auto-detecção baseada em pastas existentes no projeto
-    if (fs.existsSync(path.join(destinationRoot, '.cursor'))) targetCli = 'cursor';
+    // Auto-detecção primária: a própria CLI expõe uma env var quando está
+    // rodando o comando (isso é o que realmente importa — rodar `izanagi
+    // init` de dentro do Claude Code deve gerar `.claude/` mesmo num projeto
+    // 100% vazio, sem depender de uma pasta `.claude` já existir de antes).
+    if (process.env.CLAUDECODE === '1' || process.env.CLAUDE_CODE_ENTRYPOINT) targetCli = 'claude';
+    else if (process.env.CURSOR_TRACE_ID || process.env.CURSOR_AGENT) targetCli = 'cursor';
+    else if (process.env.CODEX_SANDBOX || process.env.CODEX_HOME) targetCli = 'codex';
+    else if (process.env.GITHUB_COPILOT_CLI || process.env.COPILOT_AGENT) targetCli = 'copilot';
+    // Fallback: pastas de adaptador já existentes no projeto (segunda melhor
+    // pista — cobre reinstalar/atualizar packs num projeto que já rodou
+    // `izanagi export --cli X` antes e não está mais rodando dentro da CLI).
+    else if (fs.existsSync(path.join(destinationRoot, '.cursor'))) targetCli = 'cursor';
     else if (fs.existsSync(path.join(destinationRoot, '.claude'))) targetCli = 'claude';
     else if (fs.existsSync(path.join(destinationRoot, '.github'))) targetCli = 'copilot';
     else if (fs.existsSync(path.join(destinationRoot, '.codex'))) targetCli = 'codex';

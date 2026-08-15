@@ -2,7 +2,7 @@
 name: senior-engineer
 description: "Use PROACTIVELY para implementação full-stack de ponta a ponta com TDD estrito."
 tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Senior Engineer

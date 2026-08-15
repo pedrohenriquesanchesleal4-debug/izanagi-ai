@@ -1,6 +1,6 @@
 # Izanagi AI — Claude Code Integration
 
-Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e 21 agentes pré-definidos.
+Este projeto usa o **Izanagi AI Framework** — framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e 22 agentes pré-definidos.
 
 ## Fonte da verdade
 
@@ -12,12 +12,13 @@ Este arquivo já cobre agentes, skills e regras essenciais do dia a dia — não
 
 ## Agentes nativos (Agent tool)
 
-Os 21 agentes em `.claude/agents/*.md` são **subagents nativos do Claude Code**: aparecem no Agent tool e o Claude delega sozinho quando a `description` de cada um bate com a tarefa (não precisa chamar por nome). Chame também por `/<slug>` em `.claude/commands/` quando quiser forçar um agente específico.
+Os 22 agentes em `.claude/agents/*.md` são **subagents nativos do Claude Code**: aparecem no Agent tool e o Claude delega sozinho quando a `description` de cada um bate com a tarefa (não precisa chamar por nome). Chame também por `/<slug>` em `.claude/commands/` quando quiser forçar um agente específico.
 
 | Agente | Quando usar |
 |---|---|
 | `adversarial-critic` | Crítica adversarial de implementações: caçar bugs, falhas de… |
 | `agent-architect` | Projeto de novos agentes especializados: Requirements → Capability… |
+| `ai-engineer` | Engenheiro de Software especializado em construir features com… |
 | `animation` | Motion Engineering & Experiências Cinematográficas Web… |
 | `architect` | System Design de alta escala, Clean Architecture, DDD, CQRS,… |
 | `automation-engineer` | Engenheiro de Automações Profissionais — decompõe o processo,… |
@@ -42,24 +43,9 @@ Os 21 agentes em `.claude/agents/*.md` são **subagents nativos do Claude Code**
 - Feature nova (fronteiras estruturais independentes): `architect` + `database` + `security` em paralelo, depois `senior-engineer` implementa em sequência.
 - Revisão de PR antes de merge: `security` + `qa` + `techlead` em paralelo por padrão (cada um responde uma pergunta diferente: risco de segurança, testes/cobertura, padrão de código); acrescente `adversarial-critic` só quando pedirem para caçar pontos cegos explicitamente.
 
-## Skills sempre carregadas
+## Skills (biblioteca inteira, nativa)
 
-10 skills universais ficam nativas em `.claude/skills/<nome>/SKILL.md` (Claude Code carrega nome+descrição sempre; corpo completo só quando ativada):
-
-- `caveman` — Ultra-compressed communication mode. Cuts output tokens…
-- `brainstorming` — Transforma uma ideia bruta em design aprovado por…
-- `deep-research` — Pesquisa multi-fonte na web: plano de busca, execução de…
-- `frontend` — Design tokens do Tailwind e padrões de UI de alto craft…
-- `tdd` — Test-Driven Development com Iron Law: escreva o teste…
-- `security-privacy` — Use ao implementar autenticação, autorização, validação…
-- `qa` — Use para auditar código antes de merge/deploy: TypeScript…
-- `memoria-projeto` — Mantém memória persistente do projeto entre sessões…
-- `economia-tokens` — Engenharia de contexto para reduzir consumo de tokens sem…
-- `handoff-sessao` — Grava um resumo curto do estado da tarefa em andamento…
-
-## Skills especializadas (via agente)
-
-As outras 93 skills da biblioteca (`skills/<nome>/SKILL.md`) não ficam pré-carregadas — cada agente nativo já referencia as suas na seção "Skills relevantes" do próprio `.claude/agents/<slug>.md` e as lê sob demanda quando é ativado. Isso evita pagar ~100 tokens fixos por skill em toda sessão só por ela existir na biblioteca.
+Todas as 103 skills da biblioteca (`skills/<name>/SKILL.md`) foram exportadas fielmente para `.claude/skills/<name>/SKILL.md`. O Claude Code descobre nome+descrição de cada uma automaticamente ao abrir este projeto (custo fixo pequeno por skill) e só lê o corpo completo quando de fato a ativa — não é preciso listá-las aqui de novo nem chamar `izanagi export` para elas aparecerem. Peça por nome ("use a skill X") ou deixe o Claude escolher pela descrição; cada agente nativo também referencia as suas em "Skills relevantes" no próprio `.claude/agents/<slug>.md`.
 
 ## Regras essenciais
 

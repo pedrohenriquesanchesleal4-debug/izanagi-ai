@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar — não para confirmar o que a revisão já cobriu.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Adversarial Critic

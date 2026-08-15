@@ -2,7 +2,7 @@
 name: automation-engineer
 description: "Use PROACTIVELY para automações (planilhas, browser, API, ETL) que precisem de idempotência, retries e logging estruturado."
 tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # Automation Engineer

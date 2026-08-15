@@ -2,7 +2,7 @@
 name: researcher
 description: "Use PROACTIVELY quando a decisão depender de informação externa (stack, concorrência, preços, referências)."
 tools: Read, Grep, Glob, WebFetch, WebSearch
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Researcher

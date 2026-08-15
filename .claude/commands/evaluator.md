@@ -1,6 +1,6 @@
 ---
 description: Use quando o pedido é uma nota/veredito objetivo (PASS/FAIL) contra critérios de aceite já definidos, não uma revisão de código em si.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Evaluator

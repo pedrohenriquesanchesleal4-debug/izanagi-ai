@@ -2,7 +2,7 @@
 name: agent-architect
 description: "Use quando faltar um agente especializado para uma lacuna real do time e for preciso desenhar um novo agente."
 tools: Read, Grep, Glob, Write, Edit
-model: claude-opus-4-1-20250805
+model: opus
 ---
 
 # Agent Architect

@@ -3,6 +3,8 @@ name: animation-web
 description: "Scrollytelling, scroll-driven animations, sequências de imagem em canvas (estilo Apple), parallax e pinned sections. Use quando o site não deve parecer estático e o scroll for a timeline da experiência."
 ---
 
+> **Ver também**: `core/skill-composer.md` — chains `web_cinematic`/`webgl_experience` já resolvem quando combinar esta skill com `motion-design` (timing/easing) e `webgl-3d` (hero 3D).
+
 # Animation Web — Scrollytelling & Cinematic Sites
 
 ## Identity

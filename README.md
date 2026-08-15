@@ -1,6 +1,6 @@
 # Izanagi AI
 
-Framework **meta** — **Adaptive Agent & Skill Runtime** — para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 21 agentes especializados, 212 skills, execution graph, evaluation engine, self-healing e CLI executável publicada no npm (`izanagi-ai`).
+Framework **meta** — **Adaptive Agent & Skill Runtime** — para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 22 agentes especializados, 103 skills, execution graph, evaluation engine, self-healing e CLI executável publicada no npm (`izanagi-ai`).
 
 > **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -35,7 +35,7 @@ izanagi --version
 | `izanagi benchmark [compare]` | 10 benchmarks builtin + comparação de regressões entre builds. |
 | `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
 | `izanagi memory inspect \| search <q>` | Estado da memória de execução e busca em `.agents/memoria/`. |
-| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 212 skills. |
+| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 103 skills. |
 | `izanagi diagnose` | Diagnóstico profundo do runtime (state, agent genome, contratos de artifact). |
 | `izanagi resume <run-id>` | Retoma execução interrompida (crash) ou pausada a partir do checkpoint — sem replanejar nem reexecutar nós concluídos. |
 | `izanagi approve <run-id> [node-id]` | Aprova uma ação de alto risco pausada (nó `kind: 'approval'`) e retoma. |
@@ -70,7 +70,7 @@ izanagi-ai/
 ├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, factories, tools, tracer, llm, cli)
 ├── core/            Engines (.md) + skill-resolver.json (aliases → targets + compositions)
 ├── agents/          21 definições de agentes em JSON (fonte da verdade dos comandos)
-├── skills/          212 skills em skills/<name>/SKILL.md (+ references.md opcional)
+├── skills/          103 skills em skills/<name>/SKILL.md (+ references.md opcional)
 ├── references/      Curadoria de referências reais por domínio (webgl-3d, scrollytelling, stack-2026...)
 ├── .agents/memoria/ Memória persistente anti-repetição (contexto, decisoes, erros-corrigidos, learnings)
 ├── .opencode/       Comandos slash do Opencode (adapters em .claude/, .codex/, .cursor/...)
@@ -83,7 +83,7 @@ izanagi-ai/
 
 ## Agentes e Skills
 
-O framework possui **21 agentes especializados** (`/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`) e **212 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (248 aliases, 15 composições). Ver `AGENTS.md` para a tabela completa.
+O framework possui **22 agentes especializados** (`/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`, `/ai-engineer`) e **103 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (248 aliases, 15 composições). Ver `AGENTS.md` para a tabela completa.
 
 ---
 

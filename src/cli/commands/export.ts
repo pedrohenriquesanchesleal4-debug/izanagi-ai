@@ -55,12 +55,12 @@ function showExportHelp(): void {
 \x1b[1mUsage:\x1b[0m izanagi export [--cli <target>] [--dir <path>]
 
   \x1b[1mTargets:\x1b[0m
-  \x1b[32mclaude\x1b[0m    Generates CLAUDE.md + .claude/agents + .claude/commands (21 agents) + .claude/skills (14 curadas, always-loaded).
-  \x1b[32mcodex\x1b[0m     Generates .codex/instructions.md + .codex/agents (21 agents).
+  \x1b[32mclaude\x1b[0m    Generates CLAUDE.md + .claude/agents + .claude/commands (22 agents) + .claude/skills (full 103-skill library, name+description always-loaded, body read on demand).
+  \x1b[32mcodex\x1b[0m     Generates .codex/instructions.md + .codex/agents (22 agents).
   \x1b[32mcursor\x1b[0m    Generates .cursor/rules (core, agents, memory) in .mdc format.
   \x1b[32mcopilot\x1b[0m   Generates .github/copilot-instructions.md.
   \x1b[32mkimi\x1b[0m      Generates .kimi/README.md + kimi.md (Kimi CLI lê AGENTS.md/.opencode).
-  \x1b[32mopencode\x1b[0m  Generates .opencode/agent/*.md (21 agents + orchestrator) — same convention Kimi CLI reads.
+  \x1b[32mopencode\x1b[0m  Generates .opencode/agent/*.md (22 agents + orchestrator) — same convention Kimi CLI reads.
   \x1b[32mall\x1b[0m       Generates every adapter above (default).
 
   \x1b[1mOptions:\x1b[0m

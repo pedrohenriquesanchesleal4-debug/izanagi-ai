@@ -2,7 +2,7 @@
 name: devops
 description: "Use PROACTIVELY para CI/CD, Docker, Kubernetes, IaC e observabilidade."
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # DevOps Engineer

@@ -8,13 +8,13 @@
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas, **Skill Composer** (15 composições de skills encadeadas por domínio), **21 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas, **Skill Composer** (15 composições de skills encadeadas por domínio), **22 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, e uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`). Este repositório É o framework (não um app que o usa).
 
 ---
 
-## 2. Os 21 Agentes Especializados & Comandos Opencode (`/`)
+## 2. Os 22 Agentes Especializados & Comandos Opencode (`/`)
 
-O framework conta com **21 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas com isolamento de contexto).
+O framework conta com **22 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas com isolamento de contexto).
 
 | Comando | Arquivo | Papel & Especialidade |
 |---|---|---|
@@ -24,6 +24,7 @@ O framework conta com **21 agentes especializados** em `agents/*.json` + orquest
 | `/animation` | `agents/animation-agent.json` | Scrollytelling, 3D WebGL, motion signature |
 | `/architect` | `agents/architect-agent.json` | System design, Clean Arch, DDD, CQRS, ADRs |
 | `/senior-engineer` | `agents/senior-engineer-agent.json` | Full-stack dev, refactoring, código limpo/testável |
+| `/ai-engineer` | `agents/ai-engineer-agent.json` | Features com LLM: RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, avaliação/guardrails |
 | `/techlead` | `agents/techlead-agent.json` | Code review, governança, mentoria |
 | `/automation-engineer` | `agents/automation-engineer-agent.json` | Automação profissional: planilhas, browser, API, ETL |
 | `/security` | `agents/security-agent.json` | OWASP Top 10, auth, secure coding |
@@ -68,7 +69,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 - `core/` — 10+ engines (.md, incluindo `skill-composer.md`, `checkpoint-healing-engine.md`, `quality-gates.md`) + **`skill-resolver.json`** (mapa alias → target + seção `compositions`)
 - `agents/` — Definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos)
-- `skills/` — 212 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria), `ui-ux-pro-max` (design system com motor BM25 offline em Node) e `anti-ai-slop` (auditoria zero "cara de IA")
+- `skills/` — 103 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria), `ui-ux-pro-max` (design system com motor BM25 offline em Node) e `anti-ai-slop` (auditoria zero "cara de IA")
 - `references/` — curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
 - `.agents/memoria/` — memória persistente anti-repetição: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`
 - `.opencode/agent/` — comandos slash do Opencode/Kimi CLI, gerados sob demanda a partir de `agents/*.json` (`izanagi export --cli opencode`), junto dos adapters de `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`

@@ -79,7 +79,7 @@ User Input / Comando CLI
 | **Artifact Contracts** (`contracts/artifacts.ts`) | 10+ schemas de artefato (requirements, architecture, database-schema, test-plan...) com validação por campos obrigatórios + tamanho mínimo, em PT-BR. |
 | **Skill Resolver** (`routing/resolver.ts`) | Alias → target (248), parse de frontmatter, scoring por relevância + histórico; `loadAgent` cobre `agents/` + `agents/generated/`. |
 | **Skill Scanner** (`security/skill-scanner.ts`) | 11 regras de segurança sobre skills (INJ, DNG, SCR, PER, NET, SEC) com severidade, allowlist e `DEFENSIVE_CONTEXT` (ignora exemplos defensivos/educativos). |
-| **Agent Genome** (`agents/*.json`) | 13 campos formais por agente (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility) — preenchidos nos 21 agentes core. |
+| **Agent Genome** (`agents/*.json`) | 13 campos formais por agente (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility) — preenchidos nos 22 agentes core. |
 | **Agent Factory** (`factories/agent-factory.ts`) | Gera novos agentes com genome a partir de requisito: detecção de lacuna vs. 21 core, ID slug, skills requeridas/opcionais, validação e escrita em `agents/generated/`. |
 | **Skill Factory** (`factories/skill-factory.ts`) | Cria skills novas com frontmatter, security scan pré-escrita, recusa de lacuna já coberta e escrita em `skills/generated/<name>/SKILL.md`. |
 | **Tool Registry** (`tools/registry.ts`) | Tools builtin (fs.read, fs.write, fs.ls) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → validate → execute. |
@@ -204,7 +204,7 @@ Toda rodada de batches persiste um checkpoint (§ Checkpoint & Resume) e cada de
 
 Novos agentes e skills são **gerados, não escritos à mão**:
 
-- `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` — o Agent Factory detecta lacuna vs. os 21 agentes core (recusa se o core já cobre), deriva ID slug, mapeia skills requeridas/opcionais, monta o genome completo (purpose, capabilities, inputs, outputs, handoffs, memory, evaluation, tokenBudget, compatibility), valida e escreve em `agents/generated/<id>.json` — descoberto automaticamente por `loadAgent`/`agent list`.
+- `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` — o Agent Factory detecta lacuna vs. os 22 agentes core (recusa se o core já cobre), deriva ID slug, mapeia skills requeridas/opcionais, monta o genome completo (purpose, capabilities, inputs, outputs, handoffs, memory, evaluation, tokenBudget, compatibility), valida e escreve em `agents/generated/<id>.json` — descoberto automaticamente por `loadAgent`/`agent list`.
 - `izanagi skill create <nome> --gap="<descrição>" [--force]` — o Skill Factory recusa lacunas já cobertas, gera `skills/generated/<nome>/SKILL.md` com frontmatter de manifesto (name, description, version, compatibility, triggers, token_budget), roda o security scanner antes da escrita e só persiste com severidade LOW.
 
 ## Benchmarks & Regression

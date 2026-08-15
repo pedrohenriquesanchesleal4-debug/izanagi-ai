@@ -2,7 +2,7 @@
 name: bug-hunter
 description: "Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes — root cause analysis com teste de regressão."
 tools: Read, Grep, Glob, Bash, Edit, Write
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Bug Hunter

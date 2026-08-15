@@ -1,6 +1,6 @@
 ---
 description: Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível — OWASP Top 10, LGPD.
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Security Engineer
