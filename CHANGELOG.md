@@ -4,6 +4,15 @@
 
 ---
 
+## [3.0.0] — 2026-08-15
+
+### Fixed (CRITICAL)
+- **Every runtime CLI command (`run`, `doctor`, `memory`, `trace`, `eval`, `benchmark`, `agent`, `skill`, `workflow`, `resume`, `approve`, `reject`, `explain`, `chat`, `create`, `compile`) operated on the installed package's own directory, not the user's project.** `src/cli/index.ts` computed `baseDir` from `path.resolve(__dirname, '../../')` (the izanagi-ai install location) and passed it to every command, never consulting `process.cwd()`. Found by smoke-testing `izanagi init` + `izanagi doctor` end-to-end in a fresh scratch project: doctor reported the framework repo's own trace/memory counts instead of the empty scratch project's. In a real npm install (global or `npx`), this meant every runtime command after `init` would read/write inside `node_modules/izanagi-ai` instead of the user's actual project — the CLI only ever appeared to work when run directly from inside the framework's own repo checkout, where the two paths coincide by accident.
+- Fix: wired in `resolveFrameworkRoot(cwd)` (already existed in `src/installer.ts`, unused) — prioritizes the project's own `.agents/` (created by `izanagi init`) and falls back to the package directory otherwise. `packageDir` (via `getPackageDir()`) is now used only for the CLI's own `package.json` version lookup.
+- Bumped as a major version: this changes the resolved root directory for every runtime command, a fundamental (if previously-broken) behavior change.
+
+---
+
 ## [2.13.0] — 2026-08-15
 
 ### Added
