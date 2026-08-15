@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi } from './exporters.js';
+import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode } from './exporters.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -213,23 +213,6 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
     console.log('  \x1b[33m•\x1b[0m opencode.json already exists — kept as is');
   }
 
-  // Agentes opencode (ex: /animation) para o projeto — ativáveis digitando /<nome> no opencode
-  const opencodeAgentsSrc = path.join(packageDir, '.opencode', 'agent');
-  const opencodeAgentsDest = path.join(destinationRoot, '.opencode', 'agent');
-  if (fs.existsSync(opencodeAgentsSrc)) {
-    fs.mkdirSync(opencodeAgentsDest, { recursive: true });
-    for (const agentFile of fs.readdirSync(opencodeAgentsSrc).filter((f: string) => f.endsWith('.md'))) {
-      const destFile = path.join(opencodeAgentsDest, agentFile);
-      if (!fs.existsSync(destFile)) {
-        fs.copyFileSync(path.join(opencodeAgentsSrc, agentFile), destFile);
-        const cmd = agentFile.replace(/\.md$/i, '');
-        console.log(`  \x1b[32m✔\x1b[0m opencode agent added: type \x1b[1m/${cmd}\x1b[0m to activate it`);
-      } else {
-        console.log(`  \x1b[33m•\x1b[0m .opencode/agent/${agentFile} already exists — kept as is`);
-      }
-    }
-  }
-
   // Determina qual CLI/adaptador gerar para não poluir o projeto com arquivos desnecessários
   let targetCli = (cliTarget || '').toLowerCase().trim();
   if (!targetCli) {
@@ -248,13 +231,12 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
     codex: () => exportToCodex(destinationRoot),
     copilot: () => exportToCopilot(destinationRoot),
     kimi: () => exportToKimi(destinationRoot),
-    opencode: () => [] // Opencode já é nativo
+    opencode: () => exportToOpencode(destinationRoot)
   };
 
   if (targetCli === 'all') {
     console.log('\n  \x1b[1mGenerating all Multi-CLI adapters:\x1b[0m');
     for (const [name, fn] of Object.entries(adapterMap)) {
-      if (name === 'opencode') continue;
       try {
         const created = fn();
         console.log(`  \x1b[32m✔\x1b[0m ${name} adapter: ${created.length} file(s) created`);
@@ -263,7 +245,7 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
         console.log(`  \x1b[33m⚠\x1b[0m ${name} skipped: ${msg}`);
       }
     }
-  } else if (adapterMap[targetCli] && targetCli !== 'opencode') {
+  } else if (adapterMap[targetCli]) {
     try {
       const created = adapterMap[targetCli]();
       console.log(`  \x1b[32m✔\x1b[0m Generated adapter for CLI: \x1b[1m${targetCli}\x1b[0m (${created.length} files)`);
@@ -271,8 +253,6 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
       const msg = err instanceof Error ? err.message : String(err);
       console.log(`  \x1b[33m⚠\x1b[0m Adapter ${targetCli} skipped: ${msg}`);
     }
-  } else {
-    console.log(`  \x1b[32m✔\x1b[0m CLI target: Opencode (clean workspace, no extra CLI folders)`);
   }
 
   console.log(`\n\x1b[32m[Izanagi AI] Success! ${copiedItems} files copied to .agents (${packs.length} packs).\x1b[0m`);

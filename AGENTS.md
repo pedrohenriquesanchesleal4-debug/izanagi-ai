@@ -71,7 +71,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 - `skills/` — 212 skills em `skills/<name>/SKILL.md` (+ `references.md` opcional), incluindo `design-directions` (Style Selector por indústria), `ui-ux-pro-max` (design system com motor BM25 offline em Node) e `anti-ai-slop` (auditoria zero "cara de IA")
 - `references/` — curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
 - `.agents/memoria/` — memória persistente anti-repetição: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`
-- `.opencode/agent/` — comandos slash do Opencode; adapters gerados sob demanda em `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`
+- `.opencode/agent/` — comandos slash do Opencode/Kimi CLI, gerados sob demanda a partir de `agents/*.json` (`izanagi export --cli opencode`), junto dos adapters de `.claude/`, `.codex/`, `.cursor/`, `.github/`, `.kimi/`
 - `src/` — CLI TypeScript (entrypoint: `src/cli/index.ts` → `runCLI`; multi-CLI export: `src/exporters.ts`)
 - `SYSTEM.md` & `RULES.md` — fundação e regras operacionais (Anti-Generic High-Craft, Masterpiece Gate & Cinematic UI)
 

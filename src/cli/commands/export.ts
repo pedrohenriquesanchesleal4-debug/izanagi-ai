@@ -1,7 +1,7 @@
 import path from 'path';
-import { exportAll, exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi } from '../../exporters.js';
+import { exportAll, exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode } from '../../exporters.js';
 
-const CLI_TARGETS = ['claude', 'codex', 'cursor', 'copilot', 'kimi', 'all'] as const;
+const CLI_TARGETS = ['claude', 'codex', 'cursor', 'copilot', 'kimi', 'opencode', 'all'] as const;
 type CliTarget = (typeof CLI_TARGETS)[number];
 
 interface ExportArgs {
@@ -60,6 +60,7 @@ function showExportHelp(): void {
   \x1b[32mcursor\x1b[0m    Generates .cursor/rules (core, agents, memory) in .mdc format.
   \x1b[32mcopilot\x1b[0m   Generates .github/copilot-instructions.md.
   \x1b[32mkimi\x1b[0m      Generates .kimi/README.md + kimi.md (Kimi CLI lê AGENTS.md/.opencode).
+  \x1b[32mopencode\x1b[0m  Generates .opencode/agent/*.md (21 agents + orchestrator) — same convention Kimi CLI reads.
   \x1b[32mall\x1b[0m       Generates every adapter above (default).
 
   \x1b[1mOptions:\x1b[0m
@@ -87,7 +88,9 @@ export function exportCommand(args: string[]): void {
             ? exportToCursor
             : target === 'copilot'
               ? exportToCopilot
-              : exportToKimi;
+              : target === 'opencode'
+                ? exportToOpencode
+                : exportToKimi;
 
   console.log(`\n\x1b[36m=== Exporting Izanagi AI adapters for ${target} ===\x1b[0m`);
   console.log(`  \x1b[90mTarget directory:\x1b[0m ${targetDir}\n`);
