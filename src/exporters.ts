@@ -92,6 +92,7 @@ export const GENERATED_MARKER = 'Gerado pelo Izanagi AI';
 
 /** Subconjunto curado de skills exportado para Claude Code (.claude/skills). */
 export const CLAUDE_SKILLS = [
+  'caveman',
   'brainstorming',
   'deep-research',
   'ui-ux-pro-max',
