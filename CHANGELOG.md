@@ -4,6 +4,22 @@
 
 ---
 
+## [2.11.1] — 2026-08-14
+
+### Added
+- `caveman` (ultra-compressed communication, ~65% output token cut) added to `CLAUDE_SKILLS` — always-loaded alongside `economia-tokens`, the two token-economy skills (input side + output side).
+
+### Changed
+- **`CLAUDE.md` no longer mandates reading `AGENTS.md` in full before every task** (was an unconditional ~12.6KB read on top of `CLAUDE.md` itself, every session). `AGENTS.md`/`SYSTEM.md`/`RULES.md` are now referenced on-demand for the specific topics `CLAUDE.md` doesn't already cover (release flow, full folder structure, internal engines).
+- Agent table's role column and always-loaded skill list descriptions in `CLAUDE.md` truncated harder (full untruncated role -> 70 chars, 120 -> 60 chars) since the full detail is already reachable on-demand via `.claude/agents/<slug>.md` and each skill's own file — no functionality lost, just deferred to when it's actually needed.
+- `CLAUDE.md`: 11891 -> 7921 bytes (-33%).
+- Fixed stale agent/skill counts in `izanagi export --help` (said 12 agents/13 skills; actual is 21/14).
+
+### Removed
+- Stray `caveman/README.md` from the skill export — no other skill in the library ships one; not part of the `SKILL.md` convention.
+
+---
+
 ## [2.11.0] — 2026-08-14
 
 ### Added
