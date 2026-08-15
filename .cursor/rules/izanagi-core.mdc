@@ -16,7 +16,7 @@ O Cursor também lê `AGENTS.md` — a referência canônica do framework. Estas
 ## Anti-Generic / High-Craft
 
 - Proibido entregar código/design genérico "cara de IA" (templates óbvios, fundos cinzas chapados, cards repetitivos).
-- Estética Apple-like / Awwwards-grade: `bg-zinc-950`, glassmorphism, bento grids, tipografia precisa, scrollytelling e micro-interações.
+- Estética Apple-like / Awwwards-grade, bespoke por nicho (zinc-950/glassmorphism é uma direção possível entre várias, nunca o padrão default): tipografia precisa, scrollytelling e micro-interações com propósito.
 
 ## Baixo token, alto sinal
 

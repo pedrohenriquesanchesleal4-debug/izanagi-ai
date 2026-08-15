@@ -80,7 +80,16 @@
     "recomendações"
   ],
   "permissions": [],
-  "handoffs": [],
+  "handoffs": [
+    {
+      "to": "senior-engineer",
+      "reason": "fix_necessario"
+    },
+    {
+      "to": "qa",
+      "reason": "verificacao_pos_fix"
+    }
+  ],
   "memory": [
     "memoria-projeto"
   ],

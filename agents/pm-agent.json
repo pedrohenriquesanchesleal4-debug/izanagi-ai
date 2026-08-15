@@ -29,7 +29,7 @@
     "risk_assessment": [
       "memoria-projeto",
       "requirement-analyzer",
-      "architect-agent",
+      "architect",
       "memoria-projeto"
     ],
     "exec_report": [
@@ -72,7 +72,7 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "senior-engineer-agent",
+      "to": "senior-engineer",
       "reason": "implementacao"
     }
   ],

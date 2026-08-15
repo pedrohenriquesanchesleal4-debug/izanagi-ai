@@ -16,7 +16,7 @@
   "chains": {
     "model": [
       "memoria-projeto",
-      "architect-agent",
+      "architect",
       "data-engineering",
       "security-privacy",
       "memoria-projeto"
@@ -81,7 +81,7 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "senior-engineer-agent",
+      "to": "senior-engineer",
       "reason": "schema_aprovado"
     }
   ],

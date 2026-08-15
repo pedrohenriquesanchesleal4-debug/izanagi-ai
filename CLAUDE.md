@@ -38,19 +38,17 @@ Os 21 agentes em `.claude/agents/*.md` são **subagents nativos do Claude Code**
 | `skill-architect` | Arquitetura de novas skills: Capability Gap → Research → Draft →… |
 | `techlead` | Liderança técnica operacional, Code Review pedagógico em 5… |
 
-**Execução paralela**: para tarefas com frentes independentes (ex.: Database + Security + QA num mesmo PR), dispare vários agentes de uma vez — cada um roda com contexto isolado e só o resultado final volta.
+**Execução paralela**: para tarefas com frentes independentes, dispare vários agentes de uma vez — cada um roda com contexto isolado e só o resultado final volta. Casos canônicos de fan-out:
+- Feature nova (fronteiras estruturais independentes): `architect` + `database` + `security` em paralelo, depois `senior-engineer` implementa em sequência.
+- Revisão de PR antes de merge: `security` + `qa` + `techlead` em paralelo por padrão (cada um responde uma pergunta diferente: risco de segurança, testes/cobertura, padrão de código); acrescente `adversarial-critic` só quando pedirem para caçar pontos cegos explicitamente.
 
 ## Skills sempre carregadas
 
-14 skills universais ficam nativas em `.claude/skills/<nome>/SKILL.md` (Claude Code carrega nome+descrição sempre; corpo completo só quando ativada):
+10 skills universais ficam nativas em `.claude/skills/<nome>/SKILL.md` (Claude Code carrega nome+descrição sempre; corpo completo só quando ativada):
 
 - `caveman` — Ultra-compressed communication mode. Cuts output tokens…
 - `brainstorming` — Transforma uma ideia bruta em design aprovado por…
 - `deep-research` — Pesquisa multi-fonte na web: plano de busca, execução de…
-- `ui-ux-pro-max` — Motor de busca local (BM25) com estilos, paletas,…
-- `motion-design` — Escolha e uso de bibliotecas de animação web…
-- `animation-web` — Scrollytelling, scroll-driven animations, sequências de…
-- `webgl-3d` — Cenas 3D no navegador com Three.js/React Three Fiber,…
 - `frontend` — Design tokens do Tailwind e padrões de UI de alto craft…
 - `tdd` — Test-Driven Development com Iron Law: escreva o teste…
 - `security-privacy` — Use ao implementar autenticação, autorização, validação…
@@ -61,46 +59,18 @@ Os 21 agentes em `.claude/agents/*.md` são **subagents nativos do Claude Code**
 
 ## Skills especializadas (via agente)
 
-As outras 89 skills da biblioteca (`skills/<nome>/SKILL.md`) não ficam pré-carregadas — cada agente nativo já referencia as suas na seção "Skills relevantes" do próprio `.claude/agents/<slug>.md` e as lê sob demanda quando é ativado. Isso evita pagar ~100 tokens fixos por skill em toda sessão só por ela existir na biblioteca.
+As outras 93 skills da biblioteca (`skills/<nome>/SKILL.md`) não ficam pré-carregadas — cada agente nativo já referencia as suas na seção "Skills relevantes" do próprio `.claude/agents/<slug>.md` e as lê sob demanda quando é ativado. Isso evita pagar ~100 tokens fixos por skill em toda sessão só por ela existir na biblioteca.
 
 ## Regras essenciais
 
 - **Arquitetura antes de código.** Toda decisão passa por engines de qualidade.
-- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — estética Apple-like/Awwwards (`bg-zinc-950`, glassmorphism, bento grids, micro-interações).
+- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — identidade visual bespoke por nicho (rule 14), zinc-950/glassmorphism é uma direção possível, nunca o padrão default.
 - **Execução paralela.** Ative múltiplos agentes especializados para frentes distintas.
 - **Baixo token, alto sinal.** Comprima respostas; nunca repita contexto.
 - **Auto-correção e ensino.** Reflita após cada tarefa; ensine de forma adaptativa.
 - **Segurança não é opcional.** Sem secrets no código, sem credenciais hardcoded.
 
-## Sempre (consolidado de todos os agentes)
-
-- Emitir veredicto claro (READY / READY_WITH_FIXES / NOT_READY) com lista priorizada de fixes
-- Classificar cada finding por severidade com impacto técnico concreto
-- Verificar cobertura de TODOS os requisitos do pedido original
-- Rodar um pre-mortem (assumir que a entrega já falhou em produção e reconstruir a causa) antes de fechar a lista de findings
-- Verificar na memória persistente quais agentes existem e o que já foi tentado antes de propor um agente novo
-- Reaproveitar skills existentes na composição do agente — nova skill só com lacuna real comprovada
-- Emitir o Agent Genome completo e normalizado (9 campos obrigatórios do runtime) antes de recomendar registro
-- Declarar handoffs formais com motivo para todo agente projetado
-- Aplicar least privilege nas permissions do agente projetado
-- Projetar tool scoping deny-by-default: o agente nasce sem tools e cada uma é habilitada só com justificativa explícita de necessidade
-- Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps
-- Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa
-
-## Nunca (consolidado de todos os agentes)
-
-- Implementar ou corrigir o código criticado
-- Reportar problemas sem justificativa técnica
-- Ignorar problemas de segurança por 'baixa probabilidade'
-- Criar agente redundante quando um existente cobre a capacidade com ajuste de chain
-- Registrar agente sem passar pela avaliação (métricas + minScore)
-- Gerar prompts genéricos/inflados — o agente deve ser mais sistema do que prompt
-- Projetar agente sem input/output contract definidos
-- Animar propriedades que forçam repintura de layout (Layout Thrashing: `width`, `height`, `top`, `left`, `margin`)
-- Usar animações genéricas sem propósito ou temporizações robóticas lineares sem curva de easing personalizada
-- Deixar loops de renderização WebGL ou ScrollTriggers executando em segundo plano quando os elementos estão fora da viewport
-- Compromover a acessibilidade ou legibilidade de texto em prol de efeitos visuais excessivos
-- Propor arquiteturas de microsserviços hiper-fragmentados quando um Monólito Modular atende a todos os SLAs com menor custo operacional
+> Regras específicas de cada agente (always/never) vivem em `.claude/agents/<slug>.md` — lidas sob demanda só quando aquele agente é ativado, não duplicadas aqui.
 
 ---
 Gerado pelo Izanagi AI em `/home/pedro/Documentos/VsCode/izanagi-ai/izanagi-ai` — `izanagi export --cli claude`

@@ -1,5 +1,5 @@
 ---
-description: Use PROACTIVELY para testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG) antes de considerar algo pronto.
+description: Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada — testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG).
 model: claude-sonnet-4-20250514
 ---
 

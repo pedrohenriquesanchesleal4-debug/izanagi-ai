@@ -31,7 +31,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 - `dockerize`: memoria-projeto, cloud-infra, security-privacy, automation-security, memoria-projeto
 - `cicd`: memoria-projeto, cloud-infra, qa, security-privacy, memoria-projeto
-- `infra`: memoria-projeto, architect-agent, iac-terraform, cloud-infra, security-privacy, memoria-projeto
+- `infra`: memoria-projeto, architect, iac-terraform, cloud-infra, security-privacy, memoria-projeto
 - `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability, memoria-projeto
 
 ## Sempre

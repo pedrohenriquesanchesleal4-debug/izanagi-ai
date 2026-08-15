@@ -1,5 +1,5 @@
 ---
-description: Use PROACTIVELY antes de arquitetar para extrair requisitos com evidências (FACT/ASSUMPTION/UNKNOWN) e critérios BDD.
+description: Use PROACTIVELY quando o que construir já está descrito (discovery já rodou ou o usuário já deu o contexto), mas faltam critérios de aceite/evidências (FACT/ASSUMPTION/UNKNOWN) e critérios BDD…
 model: claude-sonnet-4-20250514
 ---
 

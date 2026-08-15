@@ -82,15 +82,15 @@ Antes de criar qualquer estilização, **consulte os tokens abaixo**. Priorize S
 ## 📐 Padrões de Design de Alto Craft (Anti-Generic AI Mandate)
 
 > ⛔ **PROIBIDO LAYOUT "CARA DE IA"**: Nunca gere sites monótonos com fundos cinzas chapados (`bg-gray-50`), cards brancos genéricos idênticos em grid simétrico, blocos de texto chatos sem ritmo visual ou ausência total de animações.
-> ✅ **OBRIGATÓRIO (High-Craft & Cinematic UI)**:
-> - **Estética Apple-Futurista / Awwwards**: Fundos imersivos (`bg-zinc-950`), gradientes radiais sutis (`bg-gradient-to-tr from-indigo-950/40 via-zinc-950 to-zinc-950`), e efeitos de luz/foco.
-> - **Glassmorphism & Bordas Brilhantes**: `backdrop-blur-xl bg-zinc-900/60 border border-zinc-800/80 shadow-2xl` com glow sutil no hover (`hover:border-indigo-500/50 hover:shadow-indigo-500/10`).
-> - **Layouts Dinâmicos (Bento Grids & Asimetria)**: Grids variados (Bento UI), seções com contraste visual marcante, espaçamento generoso (`py-24` ou `py-32`), tipografia precisa (`tracking-tight font-sans`).
-> - **Motion & Micro-interações**: Transições fluidas (`transition-all duration-300 hover:scale-[1.02]`), suporte a animações de scroll, stagger entry e feedback visual em cada elemento interativo.
+> ✅ **A direção visual concreta (paleta, dark/light, glass ou não) vem de `design-directions`/`ui-ux-pro-max` PRIMEIRO, escolhida pelo usuário para o nicho do projeto (RULES.md regras 14-15) — nunca aplique zinc-950/glassmorphism/bento por padrão só porque é "o jeito bonito". O que é sempre obrigatório, qualquer que seja a direção escolhida:**
+> - **Identidade visual real**: paleta e tipografia que respiram o nicho (fintech ≠ luxury fashion ≠ AI tech), não um template único reaproveitado.
+> - **Efeitos com propósito**: glow, blur, glassmorphism só onde reforçam hierarquia (1-2 momentos-chave), nunca em todo card.
+> - **Layouts Dinâmicos (Bento Grids & Assimetria)**: quando a direção escolhida pedir, grids variados, seções com contraste visual marcante, espaçamento generoso (`py-24`/`py-32`), tipografia precisa.
+> - **Motion & Micro-interações**: transições fluidas, animações de scroll, stagger entry e feedback visual em elementos interativos — sempre com `prefers-reduced-motion` respeitado.
 
 ### Layout de Página Moderna / Cinematográfica
 
-Toda página pública deve seguir um padrão imersivo e sofisticado:
+**Exemplo de referência — não é template a copiar literalmente.** Só é aplicável tal como está se a direção escolhida na fase de design for "dark tech futurista"; para qualquer outro nicho, troque paleta/glow/radius pelos tokens da direção escolhida antes de usar:
 
 ```tsx
 <main className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-indigo-500 selection:text-white">
@@ -127,6 +127,8 @@ Toda página pública deve seguir um padrão imersivo e sofisticado:
 
 ### Formulários
 
+> Use os tokens da marca (`brand-blue`, `modal-*`) já declarados acima, não cores default do Tailwind (`gray-*`, `blue-500`) — ver `anti-ai-slop` para o porquê.
+
 ```tsx
 // Wrapper do formulário
 <form className="space-y-4">
@@ -134,18 +136,18 @@ Toda página pública deve seguir um padrão imersivo e sofisticado:
 </form>
 
 // Label padrão
-<label className="block text-sm font-medium text-gray-700 mb-2">
+<label className="block text-sm font-medium text-brand-dark-blue mb-2">
   Nome <span className="text-red-600">*</span>
 </label>
 
 // Input padrão
-<input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" />
+<input className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" />
 
 // Select padrão
-<select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent">
+<select className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent">
 
 // Textarea padrão
-<textarea rows={6} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" />
+<textarea rows={6} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" />
 
 // Erro de validação
 <p className="text-red-500 text-sm mt-1">{errors.campo.message}</p>
@@ -154,11 +156,8 @@ Toda página pública deve seguir um padrão imersivo e sofisticado:
 ### Botões
 
 ```tsx
-// Botão primário (azul)
+// Botão primário (tokens da marca)
 <button className="w-full bg-brand-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-dark-blue transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-
-// Botão simples
-<button className="w-full bg-blue-500 text-white font-semibold py-2 rounded-lg hover:bg-blue-600 transition-colors">
 
 // Botão com loading
 {loading ? (
@@ -191,8 +190,8 @@ Toda página pública deve seguir um padrão imersivo e sofisticado:
 ### Feedbacks
 
 ```tsx
-// Sucesso
-<div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+// Sucesso (usa brand-green já declarado nos tokens)
+<div className="bg-brand-green/10 border border-brand-green/30 text-emerald-800 px-4 py-3 rounded-lg mb-6">
 
 // Erro
 <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
@@ -212,14 +211,16 @@ Toda página pública deve seguir um padrão imersivo e sofisticado:
 
 ### Tipografia
 
+> **Nunca use Inter como fonte única do projeto sem decisão explícita** — é o tell #1 de "cara de IA" (`anti-ai-slop`). Escolha um pairing com personalidade para o nicho (ex.: uma serifada editorial para display + uma sans neutra para corpo, ou uma mono para dados/fintech) e declare em `tailwind.config.js`/`@theme` antes de usar as classes abaixo.
+
 | Uso | Classes |
 |-----|---------|
-| Título de página | `text-2xl font-bold text-gray-800` |
-| Subtítulo | `text-gray-600` |
-| Título de card | `text-xl font-bold text-gray-800` |
+| Título de página | `text-2xl font-bold text-slate-800 tracking-tight` |
+| Subtítulo | `text-slate-600` |
+| Título de card | `text-xl font-bold text-slate-800` |
 | Título de formulário | `text-xl font-semibold mb-4 text-center` |
-| Label | `block text-sm font-medium text-gray-700` |
-| Texto secundário | `text-gray-600 text-sm` |
+| Label | `block text-sm font-medium text-slate-700` |
+| Texto secundário | `text-slate-600 text-sm` |
 
 ---
 

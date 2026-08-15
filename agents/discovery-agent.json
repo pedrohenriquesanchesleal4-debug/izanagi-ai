@@ -155,7 +155,7 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "architect-agent",
+      "to": "architect",
       "reason": "blueprint_aprovado"
     }
   ],

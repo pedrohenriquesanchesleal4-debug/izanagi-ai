@@ -78,15 +78,15 @@
   ],
   "handoffs": [
     {
-      "to": "security-agent",
+      "to": "security",
       "reason": "guardrails_e_permissions_review"
     },
     {
-      "to": "skill-architect-agent",
+      "to": "skill-architect",
       "reason": "skill_gap_identificado"
     },
     {
-      "to": "techlead-agent",
+      "to": "techlead",
       "reason": "governanca_review"
     }
   ],

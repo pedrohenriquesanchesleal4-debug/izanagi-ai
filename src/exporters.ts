@@ -64,27 +64,27 @@ export const CLAUDE_AGENT_TOOLS_DEFAULT = ['Read', 'Grep', 'Glob', 'Edit', 'Writ
  * ("Use PROACTIVELY quando/para..."), não descritivo de marketing.
  */
 export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
-  'adversarial-critic': 'Use PROACTIVELY depois que uma solução, arquitetura ou entrega parecer pronta, para caçar pontos cegos e riscos antes do usuário achar.',
+  'adversarial-critic': 'Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar — não para confirmar o que a revisão já cobriu.',
   'agent-architect': 'Use quando faltar um agente especializado para uma lacuna real do time e for preciso desenhar um novo agente.',
   animation: 'Use PROACTIVELY para scrollytelling, motion design, WebGL 3D ou qualquer interação cinematográfica de UI.',
-  architect: 'Use PROACTIVELY antes de codar quando a tarefa exigir decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS.',
+  architect: 'Use PROACTIVELY só quando já existem requisitos definidos e a questão em aberto é estrutural: decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS. Não use para descobrir o que construir (isso é `discovery`/`product-reasoner`).',
   'automation-engineer': 'Use PROACTIVELY para automações (planilhas, browser, API, ETL) que precisem de idempotência, retries e logging estruturado.',
   'bug-hunter': 'Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes — root cause analysis com teste de regressão.',
   database: 'Use PROACTIVELY para modelagem de dados, SQL otimizado, migrações e schemas (Postgres/MySQL/Redis).',
   devops: 'Use PROACTIVELY para CI/CD, Docker, Kubernetes, IaC e observabilidade.',
-  discovery: 'Use PROACTIVELY no início de projeto/feature nova para entrevistar, pesquisar referências reais e gerar o blueprint antes de codar.',
+  discovery: 'Use PROACTIVELY só quando o usuário AINDA NÃO descreveu o que quer construir (fase de ideia, precisa de entrevista + pesquisa de referências visuais/técnicas antes de qualquer requisito).',
   docs: 'Use PROACTIVELY para README, documentação de API, diagramas e guias técnicos.',
-  evaluator: 'Use depois de uma entrega para avaliar objetivamente contra critérios técnicos mensuráveis.',
+  evaluator: 'Use quando o pedido é uma nota/veredito objetivo (PASS/FAIL) contra critérios de aceite já definidos, não uma revisão de código em si.',
   'form-engineer': 'Use PROACTIVELY para formulários complexos (wizards, validação Zod/RHF, acessibilidade).',
-  pm: 'Use PROACTIVELY para escopo, sprints, milestones e análise de risco de projeto.',
-  'product-reasoner': 'Use PROACTIVELY antes de arquitetar para extrair requisitos com evidências (FACT/ASSUMPTION/UNKNOWN) e critérios BDD.',
+  pm: 'Use PROACTIVELY só para perguntas de escopo/prazo/risco de cronograma (sprints, milestones) — não para decidir O QUE construir.',
+  'product-reasoner': 'Use PROACTIVELY quando o que construir já está descrito (discovery já rodou ou o usuário já deu o contexto), mas faltam critérios de aceite/evidências (FACT/ASSUMPTION/UNKNOWN) e critérios BDD antes de arquitetar.',
   professor: 'Use quando o usuário pedir explicação, ensino ou mentoria adaptativa sobre um conceito técnico.',
-  qa: 'Use PROACTIVELY para testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG) antes de considerar algo pronto.',
+  qa: 'Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada — testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG).',
   researcher: 'Use PROACTIVELY quando a decisão depender de informação externa (stack, concorrência, preços, referências).',
-  security: 'Use PROACTIVELY antes de mergear código sensível — OWASP Top 10, auth, secrets, LGPD.',
+  security: 'Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível — OWASP Top 10, LGPD.',
   'senior-engineer': 'Use PROACTIVELY para implementação full-stack de ponta a ponta com TDD estrito.',
   'skill-architect': 'Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills.',
-  techlead: 'Use PROACTIVELY para code review pedagógico e decisões de governança técnica.'
+  techlead: 'Use PROACTIVELY quando o pedido é revisão pedagógica de código/padrão (o "porquê" de uma mudança) ou governança de convenções — não para veredito de aprovar/reprovar.'
 };
 
 /** Marcador presente em todo arquivo gerado — permite regenerar sem arriscar sobrescrever edição manual. */
@@ -95,10 +95,6 @@ export const CLAUDE_SKILLS = [
   'caveman',
   'brainstorming',
   'deep-research',
-  'ui-ux-pro-max',
-  'motion-design',
-  'animation-web',
-  'webgl-3d',
   'frontend',
   'tdd',
   'security-privacy',
@@ -333,7 +329,7 @@ ${modelLine}---
 
 # ${a.name}
 
-${a.role}
+${a.identity || a.role}
 
 ## Sempre
 
@@ -364,8 +360,6 @@ function claudeMainTemplate(baseDir: string, agents: IzanagiAgentInfo[], skills:
     .map((a) => `| \`${a.slug}\` | ${truncate(a.role, 70)} |`)
     .join('\n');
   const skillList = skills.map((s) => `- \`${s.name}\` — ${truncate(s.description, 60)}`).join('\n');
-  const always = agents.flatMap((a) => a.always).filter((x) => x.length > 0);
-  const never = agents.flatMap((a) => a.never).filter((x) => x.length > 0);
   const totalSkills = countSkills(baseDir);
 
   return `# Izanagi AI — Claude Code Integration
@@ -388,7 +382,9 @@ Os ${agents.length} agentes em \`.claude/agents/*.md\` são **subagents nativos 
 |---|---|
 ${agentTable}
 
-**Execução paralela**: para tarefas com frentes independentes (ex.: Database + Security + QA num mesmo PR), dispare vários agentes de uma vez — cada um roda com contexto isolado e só o resultado final volta.
+**Execução paralela**: para tarefas com frentes independentes, dispare vários agentes de uma vez — cada um roda com contexto isolado e só o resultado final volta. Casos canônicos de fan-out:
+- Feature nova (fronteiras estruturais independentes): \`architect\` + \`database\` + \`security\` em paralelo, depois \`senior-engineer\` implementa em sequência.
+- Revisão de PR antes de merge: \`security\` + \`qa\` + \`techlead\` em paralelo por padrão (cada um responde uma pergunta diferente: risco de segurança, testes/cobertura, padrão de código); acrescente \`adversarial-critic\` só quando pedirem para caçar pontos cegos explicitamente.
 
 ## Skills sempre carregadas
 
@@ -403,19 +399,13 @@ As outras ${Math.max(totalSkills - skills.length, 0)} skills da biblioteca (\`sk
 ## Regras essenciais
 
 - **Arquitetura antes de código.** Toda decisão passa por engines de qualidade.
-- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — estética Apple-like/Awwwards (\`bg-zinc-950\`, glassmorphism, bento grids, micro-interações).
+- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — identidade visual bespoke por nicho (rule 14), zinc-950/glassmorphism é uma direção possível, nunca o padrão default.
 - **Execução paralela.** Ative múltiplos agentes especializados para frentes distintas.
 - **Baixo token, alto sinal.** Comprima respostas; nunca repita contexto.
 - **Auto-correção e ensino.** Reflita após cada tarefa; ensine de forma adaptativa.
 - **Segurança não é opcional.** Sem secrets no código, sem credenciais hardcoded.
 
-## Sempre (consolidado de todos os agentes)
-
-${always.length > 0 ? bullet([...new Set(always)].slice(0, 12)) : '- n/a'}
-
-## Nunca (consolidado de todos os agentes)
-
-${never.length > 0 ? bullet([...new Set(never)].slice(0, 12)) : '- n/a'}
+> Regras específicas de cada agente (always/never) vivem em \`.claude/agents/<slug>.md\` — lidas sob demanda só quando aquele agente é ativado, não duplicadas aqui.
 
 ---
 Gerado pelo Izanagi AI em \`${baseDir}\` — \`izanagi export --cli claude\`
@@ -500,7 +490,7 @@ function codexInstructionsTemplate(baseDir: string, agents: IzanagiAgentInfo[]):
 ## Regras essenciais
 
 - **Arquitetura antes de código.** Toda decisão passa por engines de qualidade.
-- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — estética Apple-like/Awwwards (\`bg-zinc-950\`, glassmorphism, bento grids, micro-interações, scrollytelling).
+- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — identidade visual bespoke por nicho, zinc-950/glassmorphism é uma direção possível, nunca o padrão default.
 - **Execução paralela.** Ative múltiplos agentes especializados para frentes distintas.
 - **Baixo token, alto sinal.** Comprima respostas; nunca repita contexto.
 - **Auto-correção e ensino.** Reflita após cada tarefa; ensine de forma adaptativa.
@@ -563,7 +553,7 @@ O Cursor também lê \`AGENTS.md\` — a referência canônica do framework. Est
 ## Anti-Generic / High-Craft
 
 - Proibido entregar código/design genérico "cara de IA" (templates óbvios, fundos cinzas chapados, cards repetitivos).
-- Estética Apple-like / Awwwards-grade: \`bg-zinc-950\`, glassmorphism, bento grids, tipografia precisa, scrollytelling e micro-interações.
+- Estética Apple-like / Awwwards-grade, bespoke por nicho (zinc-950/glassmorphism é uma direção possível entre várias, nunca o padrão default): tipografia precisa, scrollytelling e micro-interações com propósito.
 
 ## Baixo token, alto sinal
 
@@ -688,7 +678,7 @@ function copilotInstructionsTemplate(baseDir: string, agents: IzanagiAgentInfo[]
 ## Regras essenciais
 
 - **Arquitetura antes de código.** Pense antes de agir; arquitetura primeiro, código depois.
-- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — estética Apple-like/Awwwards (\`bg-zinc-950\`, glassmorphism, bento grids, micro-interações, scrollytelling).
+- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA" — identidade visual bespoke por nicho, zinc-950/glassmorphism é uma direção possível, nunca o padrão default.
 - **Baixo token, alto sinal.** Comprima respostas; nunca repita contexto.
 - **Auto-correção.** Reflita após cada tarefa; registre erros; evolua.
 - **Segurança não é opcional.** Sem secrets no código, sem credenciais hardcoded.

@@ -76,7 +76,7 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "qa-agent",
+      "to": "qa",
       "reason": "verificacao"
     }
   ],

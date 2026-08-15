@@ -1,5 +1,5 @@
 ---
-description: Use PROACTIVELY antes de codar quando a tarefa exigir decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS.
+description: Use PROACTIVELY só quando já existem requisitos definidos e a questão em aberto é estrutural: decisão de arquitetura, ADR, Clean Architecture, DDD ou CQRS. Não use para descobrir o que construir…
 model: claude-sonnet-4-20250514
 ---
 

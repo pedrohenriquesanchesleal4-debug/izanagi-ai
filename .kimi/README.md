@@ -23,4 +23,4 @@ O **Kimi CLI** é compatível com a convenção do opencode: ele lê `AGENTS.md`
 - **Sempre**: IaC versionado; monitoramento desde o dia 1; secrets por ferramenta própria.
 - **Nunca**: commit `.env`; container root; deploy sem CI; hardcode de config de ambiente.
 
-> Gerado pelo Izanagi AI em `C:\Users\pedro.leal\Documents\NexusAI` — `izanagi export --cli kimi`
+> Gerado pelo Izanagi AI em `/home/pedro/Documentos/VsCode/izanagi-ai/izanagi-ai` — `izanagi export --cli kimi`

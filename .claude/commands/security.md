@@ -1,5 +1,5 @@
 ---
-description: Use PROACTIVELY antes de mergear código sensível — OWASP Top 10, auth, secrets, LGPD.
+description: Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível — OWASP Top 10, LGPD.
 model: claude-sonnet-4-20250514
 ---
 

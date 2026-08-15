@@ -86,15 +86,15 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "senior-engineer-agent",
+      "to": "senior-engineer",
       "reason": "implementacao"
     },
     {
-      "to": "database-agent",
+      "to": "database",
       "reason": "schema_required"
     },
     {
-      "to": "security-agent",
+      "to": "security",
       "reason": "threat_modeling"
     }
   ],

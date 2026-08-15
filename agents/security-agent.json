@@ -86,11 +86,11 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "senior-engineer-agent",
+      "to": "senior-engineer",
       "reason": "fix_necessario"
     },
     {
-      "to": "devops-agent",
+      "to": "devops",
       "reason": "hardening"
     }
   ],

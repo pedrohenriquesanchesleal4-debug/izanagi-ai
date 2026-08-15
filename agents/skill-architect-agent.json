@@ -79,15 +79,15 @@
   ],
   "handoffs": [
     {
-      "to": "security-agent",
+      "to": "security",
       "reason": "security_scan"
     },
     {
-      "to": "qa-agent",
+      "to": "qa",
       "reason": "validacao_de_tests"
     },
     {
-      "to": "agent-architect-agent",
+      "to": "agent-architect",
       "reason": "skill_necessaria_para_agente_novo"
     }
   ],

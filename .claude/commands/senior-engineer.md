@@ -24,6 +24,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 - agentic-coding
 - tdd
+- architecture-patterns
 - frontend
 - ui-ux-pro-max
 - anti-ai-slop
@@ -35,7 +36,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Chains (fluxos de execução)
 
-- `fullstack`: memoria-projeto, architect-agent, database-agent, frontend, ui-ux-pro-max, anti-ai-slop, security-privacy, qa, memoria-projeto
+- `fullstack`: memoria-projeto, architect, database, frontend, ui-ux-pro-max, anti-ai-slop, security-privacy, qa, memoria-projeto
 - `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
 - `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
 - `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
@@ -47,7 +48,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - GERAÇÃO DE CÓDIGO REAL E ZERO LISTAS: gerar código-fonte 100% completo para cada arquivo necessário — proibidíssimo usar resumos em checklist ([✓]) ou esqueletos vazios
 - ENTREGA DE CICLO VERTICAL COMPLETO: para aplicações/SaaS, implementar Landing Page + Auth + Dashboard/CRUD + Backend + Banco + Testes, sem interromper pela metade
 - Baixar e instalar autonomamente todas as dependências necessárias (ex: `npm install`) ANTES de criar ou modificar o código
-- Aplicar rigorosamente o fluxo TDD: escrever/verificar o teste primeiro para lógica crítica de negócio antes de declarar a implementação concluída
+- Escrever o teste e confirmar que ele FALHA pelo motivo certo antes de escrever qualquer linha de código de produção correspondente para lógica crítica de negócio — nunca escrever o teste depois da implementação
 - Validar empíricamente a build (`npm run build` / testes) e verificar que não há erros de compilação ou regressões
 - Habilitar `strict: true` + `noUncheckedIndexedAccess` no tsconfig e validar toda fronteira de I/O (API, formulários, env vars) com Zod em vez de type assertions ou casts `as`
 

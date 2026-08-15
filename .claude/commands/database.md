@@ -27,7 +27,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Chains (fluxos de execução)
 
-- `model`: memoria-projeto, architect-agent, data-engineering, security-privacy, memoria-projeto
+- `model`: memoria-projeto, architect, data-engineering, security-privacy, memoria-projeto
 - `migrate`: memoria-projeto, data-engineering, error-recovery, memoria-projeto
 - `optimize_query`: memoria-projeto, data-engineering, web-perf-seo, memoria-projeto
 - `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor, memoria-projeto

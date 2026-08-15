@@ -32,7 +32,7 @@
     ],
     "infra": [
       "memoria-projeto",
-      "architect-agent",
+      "architect",
       "iac-terraform",
       "cloud-infra",
       "security-privacy",
@@ -85,11 +85,11 @@
   "permissions": [],
   "handoffs": [
     {
-      "to": "security-agent",
+      "to": "security",
       "reason": "hardening"
     },
     {
-      "to": "qa-agent",
+      "to": "qa",
       "reason": "verificacao"
     }
   ],

@@ -1,5 +1,5 @@
 ---
-description: Use PROACTIVELY para escopo, sprints, milestones e análise de risco de projeto.
+description: Use PROACTIVELY só para perguntas de escopo/prazo/risco de cronograma (sprints, milestones) — não para decidir O QUE construir.
 model: claude-sonnet-4-20250514
 ---
 
@@ -31,7 +31,7 @@ Referências técnicas que orientam suas decisões: o Scrum Guide oficial, a not
 
 - `plan`: memoria-projeto, requirement-analyzer, task-planner, staff-engineer, memoria-projeto
 - `sprint`: memoria-projeto, task-planner, staff-engineer, memoria-projeto
-- `risk_assessment`: memoria-projeto, requirement-analyzer, architect-agent, memoria-projeto
+- `risk_assessment`: memoria-projeto, requirement-analyzer, architect, memoria-projeto
 - `exec_report`: memoria-projeto, technical-writer, memoria-projeto
 
 ## Sempre

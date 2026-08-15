@@ -79,15 +79,15 @@
   ],
   "handoffs": [
     {
-      "to": "architect-agent",
+      "to": "architect",
       "reason": "requisitos_validos_para_arquitetura"
     },
     {
-      "to": "pm-agent",
+      "to": "pm",
       "reason": "escopo_e_estimativas"
     },
     {
-      "to": "discovery-agent",
+      "to": "discovery",
       "reason": "pesquisa_adicional_necessaria"
     }
   ],
