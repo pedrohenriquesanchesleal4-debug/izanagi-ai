@@ -1,20 +1,9 @@
 ---
 name: debug-specialist
 description: "Protocolo de primeira resposta a erros: captura contexto, reproduz, isola a causa e descarta causas comuns (cache, config, ambiente) antes de escalar. Use ao investigar um erro, stack trace ou bug reportado."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [debug-specialist]
-token_budget: 2048
 ---
 
 # Skill: Debug Specialist
-
-> Version 1.0.0
-> Priority: High
-> Dependencies: Bug Hunter, Root Cause Analyzer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

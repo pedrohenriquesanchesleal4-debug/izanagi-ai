@@ -1,6 +1,6 @@
 ---
 name: feature-flags
-description: "Estratégias de feature flags, rollout gradual, canary releases e A/B testing (LaunchDarkly, Statsig, Split.io, Flagsmith). Use ao implementar entregas graduais ou experimentos A/B."
+description: "Estratégias de feature flags, rollout gradual, canary releases e A/B testing (LaunchDarkly, Statsig, Harness FME, Flagsmith). Use ao implementar entregas graduais ou experimentos A/B."
 ---
 
 # Skill Feature Flags — Izanagi
@@ -11,7 +11,7 @@ description: "Estratégias de feature flags, rollout gradual, canary releases e 
 |------------|-----|
 | LaunchDarkly | Feature flags enterprise |
 | Statsig | Flags + experimentacao + analytics |
-| Split.io | Flags + metrics |
+| Harness FME (ex-Split.io) | Flags + experimentação + metrics |
 | Flagsmith | Open-source (self-hosted) |
 | Custom (env vars) | Flags simples, sem target |
 

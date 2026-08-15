@@ -32,12 +32,12 @@ export interface IzanagiAgentInfo {
  * Edit/Write/Bash. Fallback conservador cobre agentes novos/gerados que ainda não têm entrada aqui.
  */
 export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
-  'adversarial-critic': ['Read', 'Grep', 'Glob'],
+  'adversarial-critic': ['Read', 'Grep', 'Glob', 'Bash'],
   'agent-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit'],
   animation: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'WebFetch'],
   architect: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
   'automation-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
-  'bug-hunter': ['Read', 'Grep', 'Glob', 'Bash', 'Edit'],
+  'bug-hunter': ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   database: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
   devops: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
   discovery: ['Read', 'Grep', 'Glob', 'Write', 'WebFetch', 'WebSearch'],
@@ -45,7 +45,7 @@ export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
   evaluator: ['Read', 'Grep', 'Glob'],
   'form-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write'],
   pm: ['Read', 'Grep', 'Glob', 'Write', 'WebFetch'],
-  'product-reasoner': ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  'product-reasoner': ['Read', 'Grep', 'Glob', 'Write', 'WebFetch', 'WebSearch'],
   professor: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
   qa: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   researcher: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
@@ -163,43 +163,56 @@ export function resolveSourceDir(baseDir: string): string {
   return baseDir;
 }
 
-/** Lê todos os agentes reais de agents/*.json. */
+/**
+ * Lê todos os agentes reais de agents/*.json e agents/generated/*.json — este segundo
+ * diretório é onde o AgentFactory (`izanagi agent create`) grava genomas validados, e
+ * precisa ser varrido aqui também para que um agente aprovado pelo agent-architect seja
+ * automaticamente exportado como subagent nativo no próximo `izanagi export`, sem passo
+ * manual de "promoção". Mesma lista de diretórios que SkillResolver.loadAgent() já usa.
+ */
 export function loadIzanagiAgents(baseDir: string): IzanagiAgentInfo[] {
   const sourceDir = resolveSourceDir(baseDir);
-  const agentsDir = path.join(sourceDir, 'agents');
-  if (!fs.existsSync(agentsDir)) return [];
+  const dirs = [path.join(sourceDir, 'agents'), path.join(sourceDir, 'agents', 'generated')];
 
   const agents: IzanagiAgentInfo[] = [];
-  for (const file of fs.readdirSync(agentsDir)) {
-    if (!file.endsWith('.json')) continue;
-    try {
-      const raw = JSON.parse(fs.readFileSync(path.join(agentsDir, file), 'utf-8')) as {
-        name?: string;
-        role?: string;
-        identity?: string;
-        model?: string;
-        skills?: string[];
-        chains?: Record<string, string[]>;
-        always?: string[];
-        never?: string[];
-        handoffs?: { to: string; reason: string }[];
-      };
-      const slug = file.replace(/\.json$/i, '').replace(/-agent$/i, '');
-      agents.push({
-        slug,
-        file,
-        name: raw.name ?? slug,
-        role: raw.role ?? '',
-        identity: raw.identity ?? '',
-        model: raw.model,
-        skills: raw.skills ?? [],
-        chains: raw.chains ?? {},
-        always: raw.always ?? [],
-        never: raw.never ?? [],
-        handoffs: raw.handoffs ?? []
-      });
-    } catch {
-      // arquivo JSON inválido: ignora silenciosamente (doctor cuida da auditoria)
+  const seenSlugs = new Set<string>();
+  for (const agentsDir of dirs) {
+    if (!fs.existsSync(agentsDir)) continue;
+    for (const file of fs.readdirSync(agentsDir)) {
+      if (!file.endsWith('.json')) continue;
+      try {
+        const raw = JSON.parse(fs.readFileSync(path.join(agentsDir, file), 'utf-8')) as {
+          name?: string;
+          role?: string;
+          purpose?: string;
+          identity?: string;
+          model?: string;
+          skills?: string[];
+          requiredSkills?: string[];
+          chains?: Record<string, string[]>;
+          always?: string[];
+          never?: string[];
+          handoffs?: { to: string; reason: string }[];
+        };
+        const slug = file.replace(/\.json$/i, '').replace(/-agent$/i, '');
+        if (seenSlugs.has(slug)) continue;
+        seenSlugs.add(slug);
+        agents.push({
+          slug,
+          file,
+          name: raw.name ?? slug,
+          role: raw.role ?? raw.purpose ?? '',
+          identity: raw.identity ?? '',
+          model: raw.model,
+          skills: raw.skills ?? raw.requiredSkills ?? [],
+          chains: raw.chains ?? {},
+          always: raw.always ?? [],
+          never: raw.never ?? [],
+          handoffs: raw.handoffs ?? []
+        });
+      } catch {
+        // arquivo JSON inválido: ignora silenciosamente (doctor cuida da auditoria)
+      }
     }
   }
   return agents;

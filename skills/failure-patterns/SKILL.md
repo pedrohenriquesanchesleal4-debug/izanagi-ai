@@ -1,24 +1,6 @@
 ---
 name: failure-patterns
 description: "Registra padrões de falhas recorrentes (sintoma, causa raiz, solução, confiança) para aplicar correção guiada. Use ao encontrar um erro novo, resolver um bug difícil ou detectar recorrência."
-version: 1.0.0
-triggers:
-  - padrão de falha
-  - falha recorrente
-  - erro já visto
-  - memory de falhas
-  - registrar erro
-  - failure pattern
-capabilities:
-  - registro de padrões de falha
-  - classificação de tipo de falha
-  - correção guiada por padrão conhecido
-  - detecção de recorrência
-dependencies:
-  - memoria-projeto
-token_budget: 500
-compatibility: ">=3.0.0"
-risk: low
 ---
 
 # Failure Patterns — Transforme Falhas em Aprendizado Reutilizável

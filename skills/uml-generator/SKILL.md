@@ -1,19 +1,9 @@
 ---
 name: uml-generator
 description: "Gera diagramas UML (classes, componentes, casos de uso, sequência) em PlantUML ou Mermaid a partir de uma descrição de arquitetura. Use ao documentar ou comunicar o design de um sistema."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [uml-generator]
-token_budget: 2048
 ---
 
 # Skill: UML Generator
-
-> Version 1.0.0 | Priority: Low
-> Dependencies: Software Architect
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

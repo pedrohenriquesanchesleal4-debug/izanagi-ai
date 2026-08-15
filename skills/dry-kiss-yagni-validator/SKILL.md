@@ -1,19 +1,9 @@
 ---
 name: dry-kiss-yagni-validator
 description: "Verifica código contra DRY, KISS e YAGNI: duplicação, over-engineering e abstrações/parâmetros não usados, com exemplos de antes/depois. Use ao revisar ou refatorar código para simplicidade."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [dry-kiss-yagni-validator]
-token_budget: 2048
 ---
 
 # Skill: DRY / KISS / YAGNI Validator
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Clean Code Validator
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

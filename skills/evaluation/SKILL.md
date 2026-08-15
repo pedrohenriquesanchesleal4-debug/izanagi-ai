@@ -1,26 +1,6 @@
 ---
 name: evaluation
 description: "Avalia entregas de agentes por métricas ponderadas (corretude, cobertura, testes, arquitetura, segurança) com veredito PASS/FAIL, regressões e recomendações. Use antes de declarar qualquer entrega concluída."
-version: 1.0.0
-triggers:
-  - avaliar
-  - avaliacao
-  - evaluation
-  - veredito
-  - passou nos testes
-  - esta pronto
-  - resultado da entrega
-  - quality gate final
-capabilities:
-  - avaliação por métricas ponderadas
-  - detecção de regressões
-  - verdict estruturado
-  - recomendações acionáveis
-  - auditoria de evidência
-dependencies: []
-token_budget: 1200
-compatibility: ">=3.0.0"
-risk: low
 ---
 
 # Evaluation Skill — Avaliação Estruturada

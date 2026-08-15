@@ -1,28 +1,6 @@
 ---
 name: adversarial-critique
 description: "Crítica adversarial de implementações: caça bugs, falhas de segurança, arquitetura e edge cases, com veredicto READY/READY_WITH_FIXES/NOT_READY. Use após qualquer implementação e antes da avaliação final."
-version: 1.0.0
-triggers:
-  - criticar
-  - critic
-  - revisão adversarial
-  - caçar bugs
-  - tentar quebrar
-  - auditoria adversarial
-  - encontre problemas
-capabilities:
-  - caça de bugs e edge cases
-  - análise de segurança white-box
-  - detecção de AI slop
-  - validação de cobertura de requisitos
-  - priorização de fixes por severidade
-dependencies:
-  - code-auditor
-  - security-privacy
-  - anti-ai-slop
-token_budget: 1500
-compatibility: ">=3.0.0"
-risk: low
 ---
 
 # Adversarial Critique — Tente Quebrar Antes da Produção

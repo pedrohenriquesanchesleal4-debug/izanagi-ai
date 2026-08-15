@@ -161,12 +161,12 @@ function showHelp(): void {
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
   \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: graph + adaptive routing + eval + trace + healing.
                           (--prompt-only só compila izanagi-prompt.md, sem executar)
-  \x1b[32mcreate <agent|skill> <name>\x1b[0m    Creates a new agent or skill scaffold.
+  \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
   \x1b[32mlist [skills|agents]\x1b[0m           Lists all registered skills and agents.
   \x1b[32mdoctor [--deep]\x1b[0m                Validates framework integrity + runtime (deep).
-  \x1b[32magent list|inspect <name>\x1b[0m      Agent Genome: lista/inspeciona agentes.
-  \x1b[32mskill list|search|inspect|create\x1b[0m Skill Manifest: lista/busca/inspeciona skills.
+  \x1b[32magent list|inspect|create <req>\x1b[0m Agent Genome: lista/inspeciona/gera via Agent Factory (validado, recomendado).
+  \x1b[32mskill list|search|inspect|create\x1b[0m Skill Manifest: lista/busca/inspeciona/gera via Skill Factory (validado, recomendado).
   \x1b[32mworkflow list|inspect <name>\x1b[0m   Execution Graph templates e composições.
   \x1b[32mtrace [run-id]\x1b[0m                 Observabilidade: lista/mostra execuções.
   \x1b[32meval [file|--metrics|--report]\x1b[0m Avalia artefatos/resultados (Evaluation Engine).
@@ -200,7 +200,8 @@ function showHelp(): void {
   izanagi trace
   izanagi eval --report <run-id>
   izanagi benchmark run security
-  izanagi create agent my-agent
+  izanagi agent create "migração de PHP legado para Laravel"    (Agent Factory: validado, use este)
+  izanagi create agent my-agent                                  (scaffold cru, sem validação)
   izanagi compile architect system_prompt.md
   izanagi list skills
   izanagi doctor --deep

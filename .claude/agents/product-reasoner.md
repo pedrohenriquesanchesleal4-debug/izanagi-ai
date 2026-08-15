@@ -1,7 +1,7 @@
 ---
 name: product-reasoner
 description: "Use PROACTIVELY quando o que construir já está descrito (discovery já rodou ou o usuário já deu o contexto), mas faltam critérios de aceite/evidências (FACT/ASSUMPTION/UNKNOWN) e critérios BDD antes de arquitetar."
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Grep, Glob, Write, WebFetch, WebSearch
 model: claude-sonnet-4-20250514
 ---
 

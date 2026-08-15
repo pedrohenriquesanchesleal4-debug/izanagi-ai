@@ -1,19 +1,9 @@
 ---
 name: bug-prevention
 description: "Analisa código antes de bugs acontecerem: tipagem estrita, análise estática, testes e checklist de revisão para classes inteiras de bugs. Use ao revisar código para prevenir bugs recorrentes."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [bug-prevention]
-token_budget: 2048
 ---
 
 # Skill: Bug Prevention
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Root Cause Analyzer, Unit Test Engineer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

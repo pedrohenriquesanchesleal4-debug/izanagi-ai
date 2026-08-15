@@ -1,20 +1,9 @@
 ---
 name: bug-hunter
 description: "Investiga bugs com protocolo disciplinado: reproduzir, isolar, entender a causa raiz, corrigir e verificar com teste de regressão. Use ao investigar erros, exceções ou comportamento inesperado."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [bug-hunter]
-token_budget: 2048
 ---
 
 # Skill: Bug Hunter
-
-> Version 1.0.0
-> Priority: High
-> Dependencies: Debug Specialist, Root Cause Analyzer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

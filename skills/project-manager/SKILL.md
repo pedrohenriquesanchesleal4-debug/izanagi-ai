@@ -1,19 +1,9 @@
 ---
 name: project-manager
 description: "Use para planejar sprints, definir milestones, acompanhar velocidade e burndown, e reportar progresso e riscos a stakeholders."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [project-manager]
-token_budget: 2048
 ---
 
 # Skill: Project Manager
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Task Planner, Risk Analyzer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

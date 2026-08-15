@@ -81,7 +81,11 @@ export class AgentFactory {
     // 5. Validação do genome
     const validation = validateGenome(genome);
 
-    // 6. Registration
+    // 6. Registration — só grava em disco se o genome passou na validação (mesmo
+    // padrão do SkillFactory.generate(): nunca deixar um artefato reprovado no disco).
+    if (!validation.valid) {
+      return { genome, file: '', chain: required, validation };
+    }
     const targetDir = input.targetDir ?? path.join(process.cwd(), 'agents', 'generated');
     fs.mkdirSync(targetDir, { recursive: true });
     const file = path.join(targetDir, `${name}-agent.json`);

@@ -40,7 +40,7 @@ sequenceDiagram
 ## Checklist de qualidade (antes de entregar)
 - [ ] Diagrama renderiza perfeitamente em leitores de Markdown compatíveis com Mermaid
 - [ ] Ordem dos participantes reflete o fluxo real de dados
-- [ ] Retornos síncronos (`-->`) e assíncronos (`-->>`) distinguidos corretamente
+- [ ] Chamadas (`->>`, linha sólida) e retornos/respostas (`-->>`, linha tracejada) distinguidos corretamente — a linha tracejada indica retorno de mensagem, não necessariamente algo assíncrono
 - [ ] Sem poluição visual excessiva (máximo 10-12 passos por diagrama principal)
 
 ## Anti-padrões (proibido)

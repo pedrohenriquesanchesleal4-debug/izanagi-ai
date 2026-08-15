@@ -1,19 +1,9 @@
 ---
 name: design-pattern-advisor
 description: "Recomenda o padrão de projeto certo para um problema (Factory, Strategy, Decorator, Repository...) com trade-offs e alerta contra over-engineering. Use ao decidir como estruturar uma solução de código."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [design-pattern-advisor]
-token_budget: 2048
 ---
 
 # Skill: Design Pattern Advisor
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Software Architect
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

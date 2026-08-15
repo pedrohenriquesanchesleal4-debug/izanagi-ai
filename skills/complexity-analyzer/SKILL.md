@@ -1,19 +1,9 @@
 ---
 name: complexity-analyzer
 description: "Mede complexidade ciclomática (McCabe) e cognitiva do código, sinaliza funções acima do limite e recomenda extração/refatoração. Use ao revisar funções grandes ou muito aninhadas."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [complexity-analyzer]
-token_budget: 2048
 ---
 
 # Skill: Complexity Analyzer
-
-> Version 1.0.0 | Priority: High
-> Dependencies: Clean Code Validator
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

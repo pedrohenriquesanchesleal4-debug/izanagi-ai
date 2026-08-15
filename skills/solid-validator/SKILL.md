@@ -1,20 +1,9 @@
 ---
 name: solid-validator
 description: "Use após criar uma classe ou antes de refatorar para validar aderência aos 5 princípios SOLID, com violações e sugestões de correção."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [solid-validator]
-token_budget: 2048
 ---
 
 # Skill: SOLID Validator
-
-> Version 1.0.0
-> Priority: High
-> Dependencies: Clean Code Validator, Software Architect
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

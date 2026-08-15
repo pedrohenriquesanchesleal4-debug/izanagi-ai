@@ -1,19 +1,9 @@
 ---
 name: logging-expert
 description: "Define logging estruturado em JSON com contexto, sem vazar dados sensíveis, e o que registrar em cada nível (info/warning/error/critical). Use ao implementar ou revisar logging de uma aplicação."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [logging-expert]
-token_budget: 2048
 ---
 
 # Skill: Logging Expert
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: DevOps Engineer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

@@ -1,19 +1,9 @@
 ---
 name: release-planner
 description: "Use para planejar releases: versionamento semântico, checklist de release, changelog e coordenação de deploy."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [release-planner]
-token_budget: 2048
 ---
 
 # Skill: Release Planner
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Project Manager, Breaking Change Detector
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

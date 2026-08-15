@@ -12,7 +12,7 @@
 ## Referências e inspiração
 - [Flipt](https://github.com/flipt-io/flipt) — engine de feature flags open source (repo).
 - [PostHog Docs](https://posthog.com/docs) — feature flags, experimentos e analytics em um só produto.
-- [Split](https://www.split.io/) — plataforma de feature flags com trilhos de experimentação.
+- [Harness FME](https://www.split.io/) — plataforma de feature flags com trilhos de experimentação (ex-Split.io, adquirida pela Harness).
 
 ## Comunidade / galerias / exemplos
 - [Martech Series](https://martech.org/) — análises de mercado sobre plataformas e casos de uso. 

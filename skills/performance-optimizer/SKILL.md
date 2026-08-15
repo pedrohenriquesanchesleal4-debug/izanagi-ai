@@ -1,20 +1,9 @@
 ---
 name: performance-optimizer
 description: "Identifica gargalos de performance (DB, app, rede, frontend), mede antes/depois e aplica otimizações direcionadas. Use ao investigar lentidão ou antes de deploy para checar regressões."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [performance-optimizer]
-token_budget: 2048
 ---
 
 # Skill: Performance Optimizer
-
-> Version 1.0.0
-> Priority: High
-> Dependencies: Complexity Analyzer, Database Engineer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

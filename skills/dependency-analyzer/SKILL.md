@@ -1,19 +1,9 @@
 ---
 name: dependency-analyzer
 description: "Audita dependências por vulnerabilidades conhecidas (CVE), versões desatualizadas, conflitos e compliance de licença, com plano de ação priorizado. Use antes de atualizar pacotes ou revisar segurança de terceiros."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [dependency-analyzer]
-token_budget: 2048
 ---
 
 # Skill: Dependency Analyzer
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Security Engineer, DevOps Engineer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

@@ -1,19 +1,9 @@
 ---
 name: alternative-solution-generator
 description: "Gera múltiplas opções de solução com prós, contras e esforço estimado para um problema técnico. Use quando precisar comparar abordagens antes de decidir a implementação."
-version: 1.0.0
-compatibility: ">= 1.0.0"
-triggers: [alternative-solution-generator]
-token_budget: 2048
 ---
 
 # Skill: Alternative Solution Generator
-
-> Version 1.0.0 | Priority: Medium
-> Dependencies: Trade-off Analyzer
-> Compatibility: ">=1.0.0"
-
----
 
 ## Identity
 

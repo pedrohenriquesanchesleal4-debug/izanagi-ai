@@ -1,23 +1,6 @@
 ---
 name: handoff-protocol
 description: "Protocolo de handoff estruturado entre agentes (motivo, contexto mínimo, artefatos, decisões, questões em aberto). Use em toda transição de agente dentro de um execution graph ou swarm."
-version: 1.0.0
-triggers:
-  - handoff
-  - repassar
-  - transição de agente
-  - passar para o próximo
-  - entregar para
-  - mudança de agente
-capabilities:
-  - handoff estruturado
-  - contexto mínimo por destinatário
-  - rastreabilidade de decisões
-  - questões em aberto explícitas
-dependencies: []
-token_budget: 400
-compatibility: ">=3.0.0"
-risk: low
 ---
 
 # Handoff Protocol — Transição Estruturada Entre Agentes
