@@ -141,6 +141,67 @@ test('dashboard: /api/memory expõe agentes, skills, failures ativos e learnings
   });
 });
 
+test('dashboard: /api/memory expõe stats de modelo (recordModelRun)', async () => {
+  const baseDir = tmpDir();
+  const memory = new MemoryStore({ baseDir });
+  memory.recordModelRun('claude-sonnet-4-5', { success: true, score: 0.9, tokens: 500 });
+
+  await withServer(baseDir, async (base) => {
+    const res = await getJson(base + '/api/memory');
+    const body = res.body as { models: Record<string, { runs: number }> };
+    assert.equal(body.models['claude-sonnet-4-5'].runs, 1);
+  });
+});
+
+test('dashboard: /api/runs/:id de um run ainda sem evaluation (em andamento) não quebra — sem campo evaluation', async () => {
+  const baseDir = tmpDir();
+  const store = new TraceStore({ baseDir });
+  const tracer = new Tracer(store, { task: 'run em andamento', command: 'run' });
+  const closeSpan = tracer.span('node:execute', 'agent');
+  closeSpan(true);
+  // Note: sem finishAndSave() — simula processo interrompido no meio, como o
+  // flush() incremental do Tracer já cobre (ver runtime/tests/tracer.test.ts).
+
+  await withServer(baseDir, async (base) => {
+    const res = await getJson(`${base}/api/runs/${tracer.runId}`);
+    assert.equal(res.status, 200);
+    const body = res.body as { trace: { evaluation?: unknown; spans: unknown[] } };
+    assert.equal(body.trace.evaluation, undefined);
+    assert.equal(body.trace.spans.length, 1);
+  });
+});
+
+test('dashboard: /api/events entrega SSE quando um novo trace é salvo (live update entre processos)', async () => {
+  const baseDir = tmpDir();
+
+  await withServer(baseDir, async (base) => {
+    const received = await new Promise<string>((resolve, reject) => {
+      const req = http.get(`${base}/api/events`, (res) => {
+        let buf = '';
+        res.on('data', (chunk) => {
+          buf += chunk.toString();
+          if (buf.includes('data: ')) {
+            req.destroy();
+            resolve(buf);
+          }
+        });
+        res.on('error', reject);
+      });
+      req.on('error', (err) => {
+        // destroy() após resolve() dispara ECONNRESET — não é falha do teste.
+        if (!err.message.includes('ECONNRESET') && !err.message.includes('socket hang up')) reject(err);
+      });
+      // Só dispara a mudança depois que a conexão SSE já está estabelecida.
+      setTimeout(() => {
+        const store = new TraceStore({ baseDir });
+        new Tracer(store, { task: 'trigger', command: 'run' }).flush();
+      }, 50);
+      setTimeout(() => reject(new Error('timeout esperando evento SSE')), 2000);
+    });
+    assert.ok(received.includes('"kind":"runs"'), `esperava evento de runs, recebeu: ${received}`);
+  });
+});
+
 test('dashboard: rota desconhecida devolve 404 estruturado', async () => {
   await withServer(tmpDir(), async (base) => {
     const res = await getJson(base + '/api/nao-existe');

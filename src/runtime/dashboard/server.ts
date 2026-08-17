@@ -13,8 +13,10 @@
  * 26 do roadmap ("se for só fundação, diga explicitamente que é fundação").
  */
 
+import fs from 'fs';
+import path from 'path';
 import http from 'http';
-import { TraceStore } from '../observability/tracer.js';
+import { TraceStore, TRACE_DIR_REL } from '../observability/tracer.js';
 import { ArtifactRegistry } from '../artifacts/registry.js';
 import { MemoryStore } from '../memory/store.js';
 import { listBenchmarkReports } from '../benchmarks/runner.js';
@@ -30,11 +32,45 @@ function json(res: http.ServerResponse, status: number, body: unknown): void {
   res.end(text);
 }
 
+const BENCHMARKS_DIR_REL = path.join('.izanagi', 'state', 'benchmarks');
+
+/**
+ * Live updates — a CLI que roda `izanagi run`/`izanagi arena run` é um
+ * PROCESSO SEPARADO do dashboard, então não dá pra assinar o Event System
+ * em memória (`Tracer.events`) daqui. `fs.watch` nos diretórios de estado é
+ * o canal que funciona entre processos: qualquer escrita (inclusive o
+ * `Tracer.flush()` incremental) dispara um evento SSE simples pro browser
+ * recarregar a lista — sem servidor de socket próprio, sem dependência nova.
+ */
+function watchStateDirs(baseDir: string, onChange: (kind: 'runs' | 'benchmarks') => void): () => void {
+  const watchers: fs.FSWatcher[] = [];
+  const targets: Array<[string, 'runs' | 'benchmarks']> = [
+    [path.join(baseDir, TRACE_DIR_REL), 'runs'],
+    [path.join(baseDir, BENCHMARKS_DIR_REL), 'benchmarks'],
+  ];
+  for (const [dir, kind] of targets) {
+    fs.mkdirSync(dir, { recursive: true });
+    try {
+      watchers.push(fs.watch(dir, () => onChange(kind)));
+    } catch {
+      // fs.watch pode falhar em alguns filesystems (ex.: certos volumes de rede) —
+      // degrada para "sem live update" em vez de derrubar o dashboard inteiro.
+    }
+  }
+  return () => watchers.forEach((w) => w.close());
+}
+
 /** Cria (sem iniciar) o servidor do dashboard — devolve o http.Server para o caller decidir quando `.listen()`. */
 export function createDashboardServer(opts: DashboardServerOptions): http.Server {
   const { baseDir } = opts;
+  const sseClients = new Set<http.ServerResponse>();
 
-  return http.createServer((req, res) => {
+  const stopWatching = watchStateDirs(baseDir, (kind) => {
+    const payload = `data: ${JSON.stringify({ kind })}\n\n`;
+    for (const client of sseClients) client.write(payload);
+  });
+
+  const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const parts = url.pathname.split('/').filter(Boolean);
 
@@ -79,9 +115,22 @@ export function createDashboardServer(opts: DashboardServerOptions): http.Server
         json(res, 200, {
           agents: state.agents,
           skills: state.skills,
+          models: state.models,
           failures: memory.listFailures(50),
           learnings: memory.listLearnings(20),
         });
+        return;
+      }
+
+      if (parts[0] === 'api' && parts[1] === 'events') {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        });
+        res.write(': connected\n\n');
+        sseClients.add(res);
+        req.on('close', () => sseClients.delete(res));
         return;
       }
 
@@ -90,4 +139,12 @@ export function createDashboardServer(opts: DashboardServerOptions): http.Server
       json(res, 500, { error: err instanceof Error ? err.message : String(err) });
     }
   });
+
+  server.on('close', () => {
+    stopWatching();
+    for (const client of sseClients) client.end();
+    sseClients.clear();
+  });
+
+  return server;
 }

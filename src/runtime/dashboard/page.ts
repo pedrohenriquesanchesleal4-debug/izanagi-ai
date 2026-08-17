@@ -32,10 +32,17 @@ export const DASHBOARD_HTML = `<!doctype html>
   .list-item .id { color: #e4e4e7; font-weight: 600; font-size: 12px; }
   .list-item .meta { color: #71717a; font-size: 11px; margin-top: 2px; }
   .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-  .badge.pass, .badge.ok { background: #14532d; color: #86efac; }
-  .badge.fail, .badge.error { background: #450a0a; color: #fca5a5; }
-  .badge.blocked, .badge.pending { background: #451a03; color: #fdba74; }
+  .badge.pass, .badge.pass_with_warnings, .badge.ok { background: #14532d; color: #86efac; }
+  .badge.fail, .badge.error, .badge.blocked { background: #450a0a; color: #fca5a5; }
+  .badge.running, .badge.pending { background: #451a03; color: #fdba74; }
   .badge.unknown { background: #27272a; color: #a1a1aa; }
+  #live { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #52525b; }
+  #live .dot { width: 6px; height: 6px; border-radius: 50%; background: #3f3f46; }
+  #live.on .dot { background: #4ade80; box-shadow: 0 0 4px #4ade80; }
+  #live.on { color: #86efac; }
+  .batch { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .batch-node { border: 1px solid #27272a; border-radius: 4px; padding: 6px 10px; font-size: 11px; flex: 1; min-width: 140px; }
+  .batch-label { color: #3f3f46; font-size: 10px; width: 16px; padding-top: 8px; }
   .detail { padding: 20px; overflow-y: auto; }
   .empty { color: #52525b; padding: 40px; text-align: center; }
   section { margin-bottom: 24px; }
@@ -55,6 +62,7 @@ export const DASHBOARD_HTML = `<!doctype html>
 <header>
   <h1>IZANAGI</h1>
   <span class="tag">dashboard local — foundation (Fase 7)</span>
+  <span id="live"><span class="dot"></span><span id="live-label">conectando…</span></span>
 </header>
 <nav>
   <button data-tab="runs" class="active">Runs</button>
@@ -68,9 +76,10 @@ export const DASHBOARD_HTML = `<!doctype html>
 <script>
 let currentTab = 'runs';
 let items = [];
+let selectedRunId = null;
 
 function badge(status) {
-  const s = (status || 'unknown').toLowerCase();
+  const s = (status || 'running').toLowerCase();
   return '<span class="badge ' + s + '">' + s + '</span>';
 }
 function fmtMs(ms) { return ms == null ? '-' : (ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's'); }
@@ -78,15 +87,19 @@ function esc(s) { return String(s ?? '').replace(/[&<>]/g, (c) => ({'&':'&amp;',
 
 async function loadTab(tab) {
   currentTab = tab;
+  selectedRunId = null;
   document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('detail').innerHTML = '<div class="empty">Selecione um item à esquerda.</div>';
-  const list = document.getElementById('list');
-  list.innerHTML = '<div class="empty">carregando…</div>';
+  await refreshList();
+}
 
-  if (tab === 'runs') {
+async function refreshList() {
+  const list = document.getElementById('list');
+
+  if (currentTab === 'runs') {
     items = await (await fetch('/api/runs')).json();
     list.innerHTML = items.map((r, i) =>
-      '<div class="list-item" data-i="' + i + '">' +
+      '<div class="list-item' + (r.runId === selectedRunId ? ' active' : '') + '" data-i="' + i + '">' +
         '<div class="id">' + esc(r.runId) + '</div>' +
         '<div class="meta">' + badge(r.evaluation && r.evaluation.verdict) + ' ' + esc(r.task || '').slice(0, 40) + ' · ' + fmtMs(r.durationMs) + '</div>' +
       '</div>'
@@ -94,7 +107,7 @@ async function loadTab(tab) {
     list.querySelectorAll('.list-item').forEach((el) => el.addEventListener('click', () => selectRun(items[+el.dataset.i].runId, el)));
   }
 
-  if (tab === 'arena') {
+  if (currentTab === 'arena') {
     items = await (await fetch('/api/benchmarks')).json();
     list.innerHTML = items.map((r, i) =>
       '<div class="list-item" data-i="' + i + '">' +
@@ -105,28 +118,48 @@ async function loadTab(tab) {
     list.querySelectorAll('.list-item').forEach((el) => el.addEventListener('click', () => selectBenchmark(items[+el.dataset.i], el)));
   }
 
-  if (tab === 'memory') {
+  if (currentTab === 'memory') {
     const m = await (await fetch('/api/memory')).json();
-    list.innerHTML = '<div class="list-item active"><div class="id">resumo</div><div class="meta">agentes, skills, failures, learnings</div></div>';
+    list.innerHTML = '<div class="list-item active"><div class="id">resumo</div><div class="meta">agentes, skills, modelos, failures, learnings</div></div>';
     renderMemory(m);
   }
 }
 
 async function selectRun(runId, el) {
+  selectedRunId = runId;
   document.querySelectorAll('.list-item').forEach((x) => x.classList.remove('active'));
   el.classList.add('active');
   const data = await (await fetch('/api/runs/' + runId)).json();
   renderRun(data.trace, data.artifacts);
 }
 
+function renderExecutionGraph(trace) {
+  const graph = trace.graph;
+  if (!graph || !graph.parallelBatches || !graph.parallelBatches.length) {
+    return (trace.spans || []).map((s) =>
+      '<div class="node-row">' + badge(s.status) + '<span class="name">' + esc(s.name) + ' <span style="color:#52525b">[' + esc(s.type) + ']</span></span><span class="dur">' + fmtMs(s.durationMs) + '</span></div>'
+    ).join('') || '<div class="empty">sem spans</div>';
+  }
+  const byId = Object.fromEntries((graph.nodes || []).map((n) => [n.id, n]));
+  return graph.parallelBatches.map((batch, i) =>
+    '<div class="batch"><span class="batch-label">' + (i + 1) + '</span>' +
+    batch.map((id) => {
+      const n = byId[id] || { id, status: 'unknown' };
+      return '<div class="batch-node">' + badge(n.status) + ' <b>' + esc(n.id) + '</b><br><span style="color:#52525b">' + esc(n.agent || (n.skills || []).join(',') || n.kind) + ' · ' + fmtMs(n.durationMs) + '</span></div>';
+    }).join('') +
+    '</div>'
+  ).join('') + '<div class="kv" style="margin-top:6px"><b>legenda</b>cada linha é um lote paralelo — nós lado a lado rodaram ao mesmo tempo</div>';
+}
+
 function renderRun(trace, artifacts) {
   const ev = trace.evaluation;
+  const running = !ev;
   let html = '';
   html += '<section><h2>Run</h2>';
   html += '<div class="kv"><b>id</b>' + esc(trace.runId) + '</div>';
   html += '<div class="kv"><b>task</b>' + esc(trace.task) + '</div>';
-  html += '<div class="kv"><b>status</b>' + badge(ev && ev.verdict) + '</div>';
-  html += '<div class="kv"><b>duração</b>' + fmtMs(trace.durationMs) + '</div>';
+  html += '<div class="kv"><b>status</b>' + (running ? badge('running') : badge(ev.verdict)) + '</div>';
+  html += '<div class="kv"><b>duração</b>' + fmtMs(trace.durationMs) + (running ? ' (em andamento)' : '') + '</div>';
   html += '<div class="kv"><b>modelo</b>' + esc(trace.model || '-') + '</div>';
   html += '<div class="kv"><b>agentes</b>' + esc((trace.agents || []).join(', ')) + '</div>';
   html += '<div class="kv"><b>skills</b>' + esc((trace.skills || []).join(', ')) + '</div>';
@@ -143,11 +176,7 @@ function renderRun(trace, artifacts) {
     html += '</section>';
   }
 
-  html += '<section><h2>Execution Graph (spans)</h2>';
-  html += (trace.spans || []).map((s) =>
-    '<div class="node-row">' + badge(s.status) + '<span class="name">' + esc(s.name) + ' <span style="color:#52525b">[' + esc(s.type) + ']</span></span><span class="dur">' + fmtMs(s.durationMs) + '</span></div>'
-  ).join('') || '<div class="empty">sem spans</div>';
-  html += '</section>';
+  html += '<section><h2>Execution Graph</h2>' + renderExecutionGraph(trace) + '</section>';
 
   if (trace.healing && trace.healing.length) {
     html += '<section><h2>Healing</h2>';
@@ -189,6 +218,9 @@ function renderMemory(m) {
   html += '<section><h2>Skills</h2><table><tr><th>skill</th><th>uses</th></tr>' +
     Object.entries(m.skills || {}).map(([id, s]) => '<tr><td>' + esc(id) + '</td><td>' + s.uses + '</td></tr>').join('') +
     '</table></section>';
+  html += '<section><h2>Modelos</h2><table><tr><th>modelo</th><th>runs</th><th>taxa de sucesso</th><th>tokens médios</th></tr>' +
+    Object.entries(m.models || {}).map(([id, s]) => '<tr><td>' + esc(id) + '</td><td>' + s.runs + '</td><td>' + Math.round((s.successes / Math.max(1, s.runs)) * 100) + '%</td><td>' + Math.round(s.avgTokens) + '</td></tr>').join('') +
+    '</table></section>';
   html += '<section><h2>Failure patterns ativos</h2><table><tr><th>pattern</th><th>ocorrências</th><th>confiança</th></tr>' +
     (m.failures || []).map((f) => '<tr><td>' + esc(f.pattern) + '</td><td>' + f.occurrences + '</td><td>' + f.confidence + '</td></tr>').join('') +
     '</table></section>';
@@ -198,8 +230,31 @@ function renderMemory(m) {
   document.getElementById('detail').innerHTML = html;
 }
 
+function connectLive() {
+  const live = document.getElementById('live');
+  const label = document.getElementById('live-label');
+  const source = new EventSource('/api/events');
+  source.onopen = () => { live.classList.add('on'); label.textContent = 'live'; };
+  source.onerror = () => { live.classList.remove('on'); label.textContent = 'reconectando…'; };
+  source.onmessage = async (evt) => {
+    let payload;
+    try { payload = JSON.parse(evt.data); } catch { return; }
+    if (payload.kind === 'runs' && (currentTab === 'runs')) {
+      await refreshList();
+      if (selectedRunId) {
+        const data = await (await fetch('/api/runs/' + selectedRunId)).json();
+        renderRun(data.trace, data.artifacts);
+      }
+    }
+    if (payload.kind === 'benchmarks' && currentTab === 'arena') {
+      await refreshList();
+    }
+  };
+}
+
 document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => loadTab(b.dataset.tab)));
 loadTab('runs');
+connectLive();
 </script>
 </body>
 </html>
