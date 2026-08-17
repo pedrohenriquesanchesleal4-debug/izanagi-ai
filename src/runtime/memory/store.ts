@@ -5,6 +5,12 @@
  * Local: .izanagi/state/memory.json (estado do runtime) + .agents/memoria/ (markdown humano).
  *
  * Complementa (não substitui) a memória markdown existente de .agents/memoria/.
+ *
+ * Toda mutação (recordAgentRun/recordSkillRun/recordModelRun/recordFailure/
+ * invalidateFailure/archiveFailure/addLearning) persiste em disco na hora —
+ * não fica só em memória esperando um `.save()` explícito no fim do run. Se
+ * o processo for encerrado no meio de uma execução (Ctrl+C, crash, terminal
+ * fechado), o que já foi registrado até aquele ponto não se perde.
  */
 
 import fs from 'fs';
@@ -84,6 +90,7 @@ export class MemoryStore {
     s.avgScore = (s.avgScore * (s.runs - 1) + opts.score) / s.runs;
     s.avgTokens = (s.avgTokens * (s.runs - 1) + opts.tokens) / s.runs;
     s.lastRunAt = nowIso();
+    this.save();
   }
 
   agentStats(agent: string) {
@@ -100,6 +107,7 @@ export class MemoryStore {
     s.avgScore = (s.avgScore * (s.uses - 1) + opts.score) / s.uses;
     s.avgTokens = (s.avgTokens * (s.uses - 1) + opts.tokens) / s.uses;
     s.lastUsedAt = nowIso();
+    this.save();
   }
 
   skillStats(skill: string) {
@@ -116,6 +124,7 @@ export class MemoryStore {
     s.avgScore = (s.avgScore * (s.runs - 1) + opts.score) / s.runs;
     s.avgTokens = (s.avgTokens * (s.runs - 1) + opts.tokens) / s.runs;
     s.lastRunAt = nowIso();
+    this.save();
   }
 
   modelStats(modelId: string) {
@@ -155,6 +164,7 @@ export class MemoryStore {
         existing.status = 'active';
         existing.invalidatedReason = undefined;
       }
+      this.save();
       return existing;
     }
     const entry: FailurePattern = {
@@ -171,6 +181,7 @@ export class MemoryStore {
       status: 'active',
     };
     this.state.failures[entry.pattern] = entry;
+    this.save();
     return entry;
   }
 
@@ -185,6 +196,7 @@ export class MemoryStore {
     if (!entry) return false;
     entry.status = 'invalidated';
     entry.invalidatedReason = reason;
+    this.save();
     return true;
   }
 
@@ -198,6 +210,7 @@ export class MemoryStore {
     const entry = this.state.failures[pattern];
     if (!entry) return false;
     entry.status = 'archived';
+    this.save();
     return true;
   }
 
@@ -290,6 +303,7 @@ export class MemoryStore {
       confidence,
     });
     this.state.learnings = this.state.learnings.slice(0, 200);
+    this.save();
   }
 
   listLearnings(limit = 20) {

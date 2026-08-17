@@ -89,6 +89,28 @@ test('tracer: markTool e runId pré-definido', () => {
   assert.deepEqual(trace.tools, ['bash']);
 });
 
+test('tracer: crash-safety — cada span fechado já fica persistido em disco, antes do finishAndSave', () => {
+  const dir = tmpDir();
+  const store = new TraceStore({ baseDir: dir });
+  const tracer = new Tracer(store, { task: 'run interrompido', command: 'run' });
+
+  const close1 = tracer.span('node:execute', 'agent');
+  close1(true);
+
+  // "Fechou a CLI" aqui — finishAndSave() nunca é chamado. O que já rodou
+  // deve estar salvo mesmo assim (senão um Ctrl+C no meio perde tudo).
+  const partial = store.load(tracer.runId);
+  assert.ok(partial, 'snapshot parcial persistido sem finishAndSave');
+  assert.equal(partial!.spans.length, 1);
+  assert.equal(partial!.spans[0].name, 'node:execute');
+  assert.equal(partial!.evaluation, undefined, 'sem evaluation = sinal de que o run ainda está em andamento');
+
+  const close2 = tracer.span('node:verify', 'agent');
+  close2(true);
+  const partial2 = store.load(tracer.runId);
+  assert.equal(partial2!.spans.length, 2, 'segundo span também persiste incrementalmente');
+});
+
 test('tracer: load inexistente retorna null e list vazio sem diretório', () => {
   const dir = tmpDir();
   const store = new TraceStore({ baseDir: dir });

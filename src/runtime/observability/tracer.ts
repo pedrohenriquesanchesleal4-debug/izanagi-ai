@@ -188,9 +188,18 @@ export class Tracer {
         this.ctx.failures++;
         if (metadata?.retry) this.ctx.retries++;
       }
+      // Crash-safety: persiste a cada span fechado, não só no finishAndSave() do
+      // fim do run. Se o processo morrer no meio (Ctrl+C, crash), o progresso até
+      // aqui já está em disco — sem `evaluation`, o dashboard sabe que é parcial.
+      this.flush();
     };
 
     return close;
+  }
+
+  /** Persiste um snapshot parcial do run em andamento (ver nota de crash-safety em `span()`). */
+  flush(): void {
+    this.store.save(this.finish());
   }
 
   markAgent(agent: string): void {
@@ -210,7 +219,12 @@ export class Tracer {
     this.tokensOut += output;
   }
 
-  /** Finaliza a sessão e devolve o RunTrace montado. */
+  /**
+   * Finaliza a sessão e devolve o RunTrace montado. Também usado por `flush()`
+   * para snapshots parciais — nesse caso `endedAt`/`durationMs` refletem "como
+   * estava no momento do flush", não o fim real (ausência de `evaluation` é o
+   * sinal de que o run ainda está em andamento).
+   */
   finish(extra?: Partial<RunTrace>): RunTrace {
     const ended = nowMs();
     const startedMs = Date.parse(this.ctx.startedAt);

@@ -96,6 +96,36 @@ test('memory: invalidate/archive de pattern inexistente devolve false', () => {
   assert.equal(m.archiveFailure('NAO-EXISTE'), false);
 });
 
+test('memory: crash-safety — cada mutação persiste na hora, sem precisar de .save() explícito', () => {
+  const dir = tmpDir();
+  const stateFile = path.join(dir, '.izanagi', 'state', 'runtime-state.json');
+  const m = new MemoryStore({ baseDir: dir });
+
+  m.recordAgentRun('qa', { success: true, score: 0.9, tokens: 100 });
+  assert.ok(fs.existsSync(stateFile), 'recordAgentRun persiste sem .save() manual');
+  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf-8')).agents.qa.runs, 1);
+
+  m.recordSkillRun('frontend', { success: true, score: 0.8, tokens: 50 });
+  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf-8')).skills.frontend.uses, 1);
+
+  m.recordModelRun('claude-sonnet-4-5', { success: true, score: 0.9, tokens: 200 });
+  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf-8')).models['claude-sonnet-4-5'].runs, 1);
+
+  m.recordFailure({ pattern: 'X-1', rootCause: 'r', solution: 's' });
+  assert.ok(JSON.parse(fs.readFileSync(stateFile, 'utf-8')).failures['X-1']);
+
+  m.invalidateFailure('X-1', 'motivo');
+  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf-8')).failures['X-1'].status, 'invalidated');
+
+  m.addLearning('sempre rodar doctor', 'test');
+  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf-8')).learnings.length, 1);
+
+  // Uma segunda instância (equivalente a reabrir a CLI) já enxerga tudo isso sem chamar save().
+  const reopened = new MemoryStore({ baseDir: dir });
+  assert.equal(reopened.agentStats('qa')?.runs, 1);
+  assert.equal(reopened.listLearnings().length, 1);
+});
+
 test('memory: recordAgentRun acumula stats corretas', () => {
   const m = new MemoryStore({ baseDir: tmpDir() });
   m.recordAgentRun('qa', { success: true, score: 0.9, tokens: 1000 });
