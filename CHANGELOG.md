@@ -4,6 +4,19 @@
 
 ---
 
+## [3.4.0] — 2026-08-17
+
+### Fixed (CRITICAL)
+- **The 3 commits after the 3.3.0 release (crash-safe MemoryStore/Tracer persistence, dashboard live SSE updates, dashboard visual polish) were pushed to GitHub but never published to npm** — `izanagi-ai@3.3.0` on the registry was missing all of it. Caught because the version number hadn't changed, so nothing signaled a re-publish was needed. This release ships everything below.
+
+### Added
+- **Crash-safe persistence**: `MemoryStore` now calls `save()` from every mutator (`recordAgentRun`/`recordSkillRun`/`recordModelRun`/`recordFailure`/`invalidateFailure`/`archiveFailure`/`addLearning`) instead of relying on one explicit `.save()` at the end of a run. `Tracer.flush()` persists a partial `RunTrace` snapshot after every span closes. Closing the CLI mid-run (Ctrl+C, crash, closed terminal) no longer loses that run's progress.
+- **`izanagi dashboard` live updates**: new `/api/events` Server-Sent Events endpoint backed by `fs.watch` on the state directories (the dashboard and `izanagi run` are separate processes, so this is the channel that actually works across them — the in-memory Event System isn't reachable from a different process). The page now has a "● live" indicator and refreshes the visible run/benchmark list automatically.
+- **Dashboard Execution Graph** now renders `trace.graph.parallelBatches` as real side-by-side lanes instead of a flat span list (falls back to spans for older traces without a graph). Runs without an `evaluation` field render a "running" badge instead of breaking. Memory panel gained a Models table (`recordModelRun` stats existed but were never surfaced anywhere).
+- **Dashboard visual polish**: refined palette, pill badges, animated live-dot, and a real stats bar (total runs, pass rate, avg score, in-progress count, runs needing healing) computed client-side from the same data already fetched — no invented numbers.
+
+---
+
 ## [3.3.0] — 2026-08-16
 
 ### Added
