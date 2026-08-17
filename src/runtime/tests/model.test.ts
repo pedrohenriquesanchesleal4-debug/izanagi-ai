@@ -23,16 +23,33 @@ test('router: tarefa complexa com risco alto usa premium', () => {
   assert.ok(r.reasons.some((x) => x.includes('risco')));
 });
 
-test('router: catálogo default tem 3 providers', () => {
-  assert.equal(DEFAULT_PROVIDERS.length, 3);
+test('router: catálogo default tem 5 providers (3 cloud + 2 locais)', () => {
+  assert.equal(DEFAULT_PROVIDERS.length, 5);
   const ids = DEFAULT_PROVIDERS.map((p) => p.id);
   assert.ok(ids.includes('openai'));
   assert.ok(ids.includes('anthropic'));
   assert.ok(ids.includes('google'));
+  assert.ok(ids.includes('ollama'));
+  assert.ok(ids.includes('lmstudio'));
   const catalog = router.catalog();
   assert.ok(catalog.some((m) => m.id.includes('gpt-4o-mini')));
   assert.ok(catalog.some((m) => m.id.includes('claude')));
   assert.ok(catalog.some((m) => m.id.includes('gemini')));
+});
+
+test('router: providers locais (ollama/lmstudio) têm custo zero (self-hosted, sem billing por token)', () => {
+  const ollama = DEFAULT_PROVIDERS.find((p) => p.id === 'ollama')!;
+  const lmstudio = DEFAULT_PROVIDERS.find((p) => p.id === 'lmstudio')!;
+  for (const model of [...ollama.models, ...lmstudio.models]) {
+    assert.equal(model.costPer1kInput, 0);
+    assert.equal(model.costPer1kOutput, 0);
+  }
+});
+
+test('router: "openrouter" e "custom" ficam fora do catálogo default (preço não verificável de propósito)', () => {
+  const ids = DEFAULT_PROVIDERS.map((p) => p.id);
+  assert.ok(!ids.includes('openrouter'));
+  assert.ok(!ids.includes('custom'));
 });
 
 test('router: estimateComplexity heurística 1-5', () => {

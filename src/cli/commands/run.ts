@@ -355,8 +355,9 @@ export async function runRuntime(
   const llmProviders = client.configuredProviders();
   if (llmProviders.length === 0) {
     console.log('  \x1b[33m⚠ Modo headless:\x1b[0m nenhuma API key encontrada (IZANAGI_OPENAI_API_KEY /');
-    console.log('    IZANAGI_ANTHROPIC_API_KEY / IZANAGI_GOOGLE_API_KEY).');
-    console.log('    Os nós do grafo serão simulados — defina uma chave para execução real via LLM.\n');
+    console.log('    IZANAGI_ANTHROPIC_API_KEY / IZANAGI_GOOGLE_API_KEY / IZANAGI_OPENROUTER_API_KEY).');
+    console.log('    Modelo local? IZANAGI_OLLAMA_ENABLED=1 ou IZANAGI_LMSTUDIO_ENABLED=1 (sem API key).');
+    console.log('    Os nós do grafo serão simulados — defina uma chave/flag para execução real via LLM.\n');
   } else {
     console.log(`  \x1b[32m✔ Execução real via LLM:\x1b[0m providers configurados: ${llmProviders.join(', ')}\n`);
   }

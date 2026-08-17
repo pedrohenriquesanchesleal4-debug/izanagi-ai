@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { OpenAIAdapter, AnthropicAdapter, GoogleAdapter, LLMClient } from '../llm/client.js';
+import { OpenAIAdapter, AnthropicAdapter, GoogleAdapter, OpenRouterAdapter, OllamaAdapter, LMStudioAdapter, CustomOpenAICompatibleAdapter, LLMClient } from '../llm/client.js';
 
 function mockFetchOnce(handler: (url: string, init: RequestInit) => Promise<unknown>): void {
   (globalThis as Record<string, unknown>).fetch = (async (url: string, init: RequestInit) => {
@@ -117,4 +117,65 @@ test('llm: configuredProviders lista apenas os com chave', () => {
   assert.deepEqual(client.configuredProviders(), ['openai']);
   assert.equal(client.isConfigured('openai'), true);
   assert.equal(client.isConfigured('anthropic'), false);
+});
+
+test('llm: OpenRouterAdapter usa wire format OpenAI-compatible com sua própria chave', async () => {
+  mockFetchOnce(async (url, init) => {
+    assert.ok(url.includes('openrouter.ai/api/v1/chat/completions') || url.includes('/chat/completions'));
+    assert.ok((init.headers as Record<string, string>).Authorization.includes('Bearer or-test'));
+    return { choices: [{ message: { content: 'Resposta openrouter' } }], usage: { total_tokens: 7 } };
+  });
+
+  const adapter = new OpenRouterAdapter('or-test');
+  assert.equal(adapter.configured, true);
+  const result = await adapter.complete({ model: 'meta-llama/llama-3', messages: [{ role: 'user', content: 'Oi' }] });
+  assert.equal(result.text, 'Resposta openrouter');
+  assert.equal(result.provider, 'openrouter');
+});
+
+test('llm: OllamaAdapter exige opt-in explícito (não fica configured por padrão — preserva modo headless)', () => {
+  const disabled = new OllamaAdapter('http://localhost:11434/v1', false);
+  assert.equal(disabled.configured, false);
+  const enabled = new OllamaAdapter('http://localhost:11434/v1', true);
+  assert.equal(enabled.configured, true);
+});
+
+test('llm: OllamaAdapter completa sem enviar Authorization (servidor local, sem key)', async () => {
+  mockFetchOnce(async (url, init) => {
+    assert.ok(url.includes('11434/v1/chat/completions'));
+    assert.equal((init.headers as Record<string, string>).Authorization, undefined);
+    return { choices: [{ message: { content: 'Resposta local' } }], usage: { total_tokens: 3 } };
+  });
+
+  const adapter = new OllamaAdapter('http://localhost:11434/v1', true);
+  const result = await adapter.complete({ model: 'llama3', messages: [{ role: 'user', content: 'Oi' }] });
+  assert.equal(result.text, 'Resposta local');
+  assert.equal(result.provider, 'ollama');
+});
+
+test('llm: LMStudioAdapter também exige opt-in explícito', async () => {
+  assert.equal(new LMStudioAdapter('http://localhost:1234/v1', false).configured, false);
+  const adapter = new LMStudioAdapter('http://localhost:1234/v1', true);
+  assert.equal(adapter.configured, true);
+
+  mockFetchOnce(async (url) => {
+    assert.ok(url.includes('1234/v1/chat/completions'));
+    return { choices: [{ message: { content: 'Resposta lmstudio' } }], usage: { total_tokens: 4 } };
+  });
+  const result = await adapter.complete({ model: 'local-model', messages: [{ role: 'user', content: 'Oi' }] });
+  assert.equal(result.provider, 'lmstudio');
+});
+
+test('llm: CustomOpenAICompatibleAdapter só fica configured com base URL explícita', async () => {
+  assert.equal(new CustomOpenAICompatibleAdapter('', '').configured, false);
+  const adapter = new CustomOpenAICompatibleAdapter('ck-test', 'https://gateway.interno.example/v1');
+  assert.equal(adapter.configured, true);
+
+  mockFetchOnce(async (url, init) => {
+    assert.ok(url.startsWith('https://gateway.interno.example/v1/chat/completions'));
+    assert.ok((init.headers as Record<string, string>).Authorization.includes('Bearer ck-test'));
+    return { choices: [{ message: { content: 'Resposta custom' } }], usage: { total_tokens: 6 } };
+  });
+  const result = await adapter.complete({ model: 'custom-model', messages: [{ role: 'user', content: 'Oi' }] });
+  assert.equal(result.provider, 'custom');
 });

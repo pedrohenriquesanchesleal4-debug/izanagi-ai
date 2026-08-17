@@ -39,6 +39,33 @@ export const DEFAULT_PROVIDERS: ModelProvider[] = [
       { id: 'gemini-2.5-pro', tier: 'premium', contextWindow: 1000000, costPer1kInput: 0.00125, costPer1kOutput: 0.01, avgLatencyMs: 2000, reasoning: 'high' },
     ],
   },
+  /**
+   * Ollama e LM Studio: sem entrada real de catálogo o roteador nunca teria
+   * um modelo pra escolher, mesmo com o adapter habilitado (llm/client.ts) —
+   * `usableProviders` filtra pelo id do provider, então "opt-in no adapter"
+   * sem "opt-in no catálogo" seria uma cura que nunca cura nada. custo 0 é
+   * fato real (self-hosted, sem billing por token), não estimativa; o `id`
+   * do modelo é um placeholder — sobrescreva em `.izanagi/izanagi.config.json`
+   * com o modelo que você de fato baixou/carregou localmente.
+   */
+  {
+    id: 'ollama',
+    name: 'Ollama (local)',
+    models: [
+      { id: 'llama3.1', tier: 'balanced', contextWindow: 128000, costPer1kInput: 0, costPer1kOutput: 0, avgLatencyMs: 1500, reasoning: 'medium' },
+    ],
+  },
+  {
+    id: 'lmstudio',
+    name: 'LM Studio (local)',
+    models: [
+      { id: 'local-model', tier: 'balanced', contextWindow: 32000, costPer1kInput: 0, costPer1kOutput: 0, avgLatencyMs: 1500, reasoning: 'medium' },
+    ],
+  },
+  // "openrouter" e "custom" ficam de fora do catálogo default de propósito: o custo real
+  // varia por modelo roteado (OpenRouter) ou é desconhecido (endpoint próprio) — nenhum
+  // número aqui seria verificável. Adicione o(s) modelo(s) reais em
+  // `.izanagi/izanagi.config.json` (loadProjectProviders mescla com este catálogo).
 ];
 
 export class ModelRouter {
