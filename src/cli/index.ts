@@ -18,6 +18,7 @@ import { evalCommand } from './commands/eval.js';
 import { benchmarkCommand } from './commands/benchmark.js';
 import { memoryCommand } from './commands/memory.js';
 import { diagnoseCommand } from './commands/diagnose.js';
+import { dashboardCommand } from './commands/dashboard.js';
 import { resumeCommand } from './commands/resume.js';
 import { approveCommand } from './commands/approve.js';
 import { rejectCommand } from './commands/reject.js';
@@ -106,6 +107,10 @@ export async function runCLI(args: string[]): Promise<void> {
       diagnoseCommand(baseDir);
       break;
 
+    case 'dashboard':
+      dashboardCommand(baseDir, rest);
+      break;
+
     case 'resume':
       await resumeCommand(baseDir, rest);
       break;
@@ -190,6 +195,7 @@ function showHelp(): void {
   \x1b[32mbenchmark list|run|compare\x1b[0m     Suíte de benchmarks + regression comparison.
   \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
   \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
+  \x1b[32mdashboard [--port N]\x1b[0m           Sobe o Dashboard local (Run Explorer, Arena, Memory) em http://localhost.
   \x1b[32mresume <run-id>\x1b[0m                Retoma execução interrompida/pausada a partir do checkpoint.
   \x1b[32mapprove <run-id> [node-id]\x1b[0m     Aprova ação de alto risco pausada (human-in-the-loop) e retoma.
   \x1b[32mreject <run-id> [node-id] [--reason]\x1b[0m Rejeita ação pausada e retoma (nó falha com o motivo).

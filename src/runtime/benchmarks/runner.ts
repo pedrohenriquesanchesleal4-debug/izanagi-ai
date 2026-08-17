@@ -240,6 +240,21 @@ export class BenchmarkRunner {
   }
 }
 
+/** Lista os relatórios de benchmark já salvos em .izanagi/state/benchmarks/ (mais recente primeiro). */
+export function listBenchmarkReports(baseDir: string): BenchmarkReport[] {
+  const dir = path.join(baseDir, '.izanagi', 'state', 'benchmarks');
+  if (!fs.existsSync(dir)) return [];
+  const reports: BenchmarkReport[] = [];
+  for (const f of fs.readdirSync(dir).filter((f) => f.endsWith('.json'))) {
+    try {
+      reports.push(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')) as BenchmarkReport);
+    } catch {
+      // relatório corrompido — ignora, não derruba a listagem
+    }
+  }
+  return reports.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
 function isFsPath(v: unknown): boolean {
   return typeof v === 'string' && (v.includes('\\') || v.includes('/')) && fs.existsSync(v);
 }
