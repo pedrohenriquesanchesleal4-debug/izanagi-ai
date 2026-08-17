@@ -57,6 +57,45 @@ test('memory: listFailures ordena por ocorrências', () => {
   assert.equal(list[0].occurrences, 2);
 });
 
+test('memory: invalidateFailure remove da busca ativa mas mantém no histórico', () => {
+  const m = new MemoryStore({ baseDir: tmpDir() });
+  m.recordFailure({ pattern: 'STALE-1', symptoms: ['timeout'], rootCause: 'r', solution: 's', confidence: 0.9 });
+
+  assert.equal(m.invalidateFailure('STALE-1', 'causa raiz mudou após refactor'), true);
+
+  assert.equal(m.findRelevantFailures('erro de timeout').length, 0, 'invalidado some da busca ativa');
+  assert.equal(m.listFailures().length, 0, 'invalidado some da listagem ativa');
+  assert.equal(m.listFailures(50, { includeInactive: true }).length, 1, 'mas continua no histórico completo');
+  assert.equal(m.raw.failures['STALE-1'].status, 'invalidated');
+  assert.equal(m.raw.failures['STALE-1'].invalidatedReason, 'causa raiz mudou após refactor');
+});
+
+test('memory: recordFailure reativa um pattern invalidado que recorreu de verdade', () => {
+  const m = new MemoryStore({ baseDir: tmpDir() });
+  m.recordFailure({ pattern: 'FLAKY-1', symptoms: ['flaky'], rootCause: 'r', solution: 's', confidence: 0.7 });
+  m.invalidateFailure('FLAKY-1');
+  assert.equal(m.raw.failures['FLAKY-1'].status, 'invalidated');
+
+  m.recordFailure({ pattern: 'FLAKY-1', symptoms: ['flaky'], rootCause: 'r', solution: 's', confidence: 0.7 });
+  assert.equal(m.raw.failures['FLAKY-1'].status, 'active', 'recorrência real reativa');
+  assert.equal(m.raw.failures['FLAKY-1'].invalidatedReason, undefined);
+});
+
+test('memory: archiveFailure é decisão final — recorrência NÃO reativa sozinha', () => {
+  const m = new MemoryStore({ baseDir: tmpDir() });
+  m.recordFailure({ pattern: 'OLD-1', symptoms: ['legacy'], rootCause: 'r', solution: 's', confidence: 0.7 });
+  assert.equal(m.archiveFailure('OLD-1'), true);
+
+  m.recordFailure({ pattern: 'OLD-1', symptoms: ['legacy'], rootCause: 'r', solution: 's', confidence: 0.7 });
+  assert.equal(m.raw.failures['OLD-1'].status, 'archived', 'archived não é desfeito por uma recorrência');
+});
+
+test('memory: invalidate/archive de pattern inexistente devolve false', () => {
+  const m = new MemoryStore({ baseDir: tmpDir() });
+  assert.equal(m.invalidateFailure('NAO-EXISTE'), false);
+  assert.equal(m.archiveFailure('NAO-EXISTE'), false);
+});
+
 test('memory: recordAgentRun acumula stats corretas', () => {
   const m = new MemoryStore({ baseDir: tmpDir() });
   m.recordAgentRun('qa', { success: true, score: 0.9, tokens: 1000 });

@@ -301,6 +301,16 @@ export interface FailurePattern {
   firstSeen?: string;
   lastSeen?: string;
   tags?: string[];
+  /**
+   * Memory Lifecycle (create/retrieve/update/promote/invalidate/archive).
+   * Ausente = 'active' (compatibilidade com padrões gravados antes deste campo existir).
+   * 'invalidated' = a solução registrada não se aplica mais (codebase mudou, causa raiz
+   * era outra) — para de ser sugerida por `findRelevantFailures`, mas fica no histórico.
+   * 'archived' = decisão manual e final de não usar mais este padrão (não é reativado
+   * automaticamente por uma nova ocorrência, ao contrário de 'invalidated').
+   */
+  status?: 'active' | 'invalidated' | 'archived';
+  invalidatedReason?: string;
 }
 
 export interface MemoryEntry {

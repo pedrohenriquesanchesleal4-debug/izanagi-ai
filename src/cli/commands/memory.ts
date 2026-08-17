@@ -21,8 +21,23 @@ export function memoryCommand(baseDir: string, args: string[]): void {
     memorySearch(store, query);
     return;
   }
+  if (sub === 'invalidate' || sub === 'archive') {
+    const pattern = args[1];
+    if (!pattern) {
+      console.error(`\x1b[31mUsage:\x1b[0m izanagi memory ${sub} <pattern> ${sub === 'invalidate' ? '[reason]' : ''}\n`);
+      process.exit(1);
+    }
+    const ok = sub === 'invalidate' ? store.invalidateFailure(pattern, args.slice(2).join(' ') || undefined) : store.archiveFailure(pattern);
+    if (!ok) {
+      console.error(`\x1b[31mPattern não encontrado:\x1b[0m ${pattern}\n`);
+      process.exit(1);
+    }
+    store.save();
+    console.log(`\x1b[32m✔\x1b[0m padrão "${pattern}" ${sub === 'invalidate' ? 'invalidado' : 'arquivado'}.\n`);
+    return;
+  }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi memory <inspect|search> [query]\n');
+  console.error('Usage: izanagi memory <inspect|search|invalidate|archive> [query|pattern]\n');
   process.exit(1);
 }
 
@@ -52,8 +67,10 @@ function memoryInspect(store: MemoryStore): void {
     console.log(`  • ${id.padEnd(24)} uses ${s.uses} | success ${Math.round((s.successes / Math.max(1, s.uses)) * 100)}%`);
   }
 
-  console.log(`\n\x1b[1mPadrões de falha (${failures.length}):\x1b[0m`);
-  for (const f of failures.slice(0, 10)) {
+  const activeFailures = store.listFailures(10);
+  const inactiveCount = failures.length - store.listFailures(failures.length).length;
+  console.log(`\n\x1b[1mPadrões de falha ativos (${activeFailures.length}${inactiveCount > 0 ? ` de ${failures.length}, ${inactiveCount} invalidado(s)/arquivado(s)` : ''}):\x1b[0m`);
+  for (const f of activeFailures) {
     console.log(`  • \x1b[33m${f.pattern}\x1b[0m (${f.occurrences}x, conf ${f.confidence}) — ${f.rootCause.slice(0, 60)}`);
   }
 

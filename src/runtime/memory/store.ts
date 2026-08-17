@@ -149,6 +149,12 @@ export class MemoryStore {
       existing.confidence = Math.min(0.99, existing.confidence + 0.03);
       existing.lastSeen = now;
       if (pattern.symptoms?.length) existing.symptoms = Array.from(new Set([...existing.symptoms, ...pattern.symptoms]));
+      // Recorrência real é sinal de que a invalidação foi precoce — reativa.
+      // 'archived' é decisão manual e final: uma recorrência não a desfaz sozinha.
+      if (existing.status === 'invalidated') {
+        existing.status = 'active';
+        existing.invalidatedReason = undefined;
+      }
       return existing;
     }
     const entry: FailurePattern = {
@@ -162,15 +168,44 @@ export class MemoryStore {
       firstSeen: now,
       lastSeen: now,
       tags: pattern.tags,
+      status: 'active',
     };
     this.state.failures[entry.pattern] = entry;
     return entry;
   }
 
-  /** Busca padrões de falha relevantes para uma tarefa (match por tags/symptoms). */
-  findRelevantFailures(query: string): FailurePattern[] {
+  /**
+   * Invalida um padrão: a solução registrada não se aplica mais (ex.: causa
+   * raiz mudou com uma refatoração). Some da busca ativa, mas fica no
+   * histórico — se a mesma falha recorrer de verdade, `recordFailure`
+   * reativa sozinho. Devolve false se o pattern não existe.
+   */
+  invalidateFailure(pattern: string, reason?: string): boolean {
+    const entry = this.state.failures[pattern];
+    if (!entry) return false;
+    entry.status = 'invalidated';
+    entry.invalidatedReason = reason;
+    return true;
+  }
+
+  /**
+   * Arquiva um padrão: decisão manual e final de não usá-lo mais. Ao
+   * contrário de invalidação, uma recorrência não reativa sozinha — exige
+   * `recordFailure` explícito tratando como novo, ou reversão manual do status.
+   * Devolve false se o pattern não existe.
+   */
+  archiveFailure(pattern: string): boolean {
+    const entry = this.state.failures[pattern];
+    if (!entry) return false;
+    entry.status = 'archived';
+    return true;
+  }
+
+  /** Busca padrões de falha relevantes para uma tarefa (match por tags/symptoms). Ignora invalidated/archived por padrão. */
+  findRelevantFailures(query: string, opts: { includeInactive?: boolean } = {}): FailurePattern[] {
     const q = query.toLowerCase();
     return Object.values(this.state.failures)
+      .filter((p) => opts.includeInactive || (p.status ?? 'active') === 'active')
       .filter(
         (p) =>
           p.symptoms.some((s) => q.includes(s.toLowerCase())) ||
@@ -180,8 +215,11 @@ export class MemoryStore {
       .sort((a, b) => b.confidence - a.confidence);
   }
 
-  listFailures(limit = 50): FailurePattern[] {
-    return Object.values(this.state.failures).sort((a, b) => b.occurrences - a.occurrences).slice(0, limit);
+  listFailures(limit = 50, opts: { includeInactive?: boolean } = {}): FailurePattern[] {
+    return Object.values(this.state.failures)
+      .filter((p) => opts.includeInactive || (p.status ?? 'active') === 'active')
+      .sort((a, b) => b.occurrences - a.occurrences)
+      .slice(0, limit);
   }
 
   /* ==================== MEMORY ENTRIES (markdown humano) ==================== */
