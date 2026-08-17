@@ -326,6 +326,7 @@ export class Orchestrator {
           id: `heal-${Date.now().toString(36)}-${failure.nodeId}`,
           kind: 'abort',
           failureKind: 'non-recoverable',
+          category: 'CONFIGURATION_FAILURE',
           message: 'orçamento de tokens da fase recovery esgotado — abortando',
           nodeId: failure.nodeId,
           createdAt: new Date().toISOString(),
@@ -387,11 +388,22 @@ export class Orchestrator {
     // Evaluation final
     const closeEval = trace.span('evaluation', 'evaluation');
     const evaluator = new EvaluationEngine();
-    const artifacts = Array.from(ctx.artifacts.entries()).map(([id, a]) => ({
-      name: id,
-      kind: a.kind as never,
-      valid: a.valid,
-    }));
+    const artifacts = Array.from(ctx.artifacts.entries()).map(([id, a]) => {
+      const record = ctx.artifactRegistry.get(`${ctx.runId}:${id}`);
+      return {
+        name: id,
+        kind: a.kind as never,
+        valid: a.valid,
+        ...(record
+          ? {
+              id: record.id,
+              producer: [record.producer.agent, record.producer.skill].filter(Boolean).join('/') || record.producer.nodeId,
+              createdAt: record.createdAt,
+              status: record.valid ? ('valid' as const) : ('invalid' as const),
+            }
+          : {}),
+      };
+    });
     const testResults = Array.from(ctx.artifacts.values()).find((a) => a.kind === 'test-results');
     const testsFailed = testResults ? (testResults.content as { failed?: number }).failed ?? 0 : 0;
     const scoredArtifacts = Array.from(ctx.artifacts.values()).filter((a) => a.valid);

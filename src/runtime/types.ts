@@ -102,6 +102,16 @@ export interface ArtifactRef {
   hash?: string;
   valid?: boolean;
   issues?: string[];
+  /**
+   * Proveniência — preenchida quando o artefato passou pelo `ArtifactRegistry`
+   * (`runtime/artifacts/registry.ts`); ausente para artefatos construídos
+   * soltos via `makeArtifact()` antes de qualquer registro (ex.: benchmarks).
+   */
+  id?: string;
+  /** Quem produziu — agente e/ou skill responsável (formato livre, ex. "senior-engineer/tdd"). */
+  producer?: string;
+  createdAt?: string;
+  status?: 'valid' | 'invalid';
 }
 
 /** Schema mínimo de um artefato — usado pelo validators.ts. */
@@ -260,6 +270,26 @@ export type FailureKind =
   | 'dependency'
   | 'unknown';
 
+/**
+ * Taxonomia de ORIGEM da falha (independente de `FailureKind`, que classifica a
+ * ESTRATÉGIA de recuperação). Existe para relatório/observabilidade — nunca
+ * substitui `FailureKind`, que continua governando a lógica de cura em
+ * `recovery/healing.ts`.
+ */
+export type FailureCategory =
+  | 'MODEL_FAILURE'
+  | 'TOOL_FAILURE'
+  | 'VALIDATION_FAILURE'
+  | 'ARTIFACT_FAILURE'
+  | 'TEST_FAILURE'
+  | 'SECURITY_FAILURE'
+  | 'TIMEOUT'
+  | 'DEPENDENCY_FAILURE'
+  | 'CONFIGURATION_FAILURE'
+  | 'ENVIRONMENT_FAILURE'
+  | 'AGENT_FAILURE'
+  | 'UNKNOWN_FAILURE';
+
 export interface FailurePattern {
   pattern: string;
   symptoms: string[];
@@ -332,6 +362,8 @@ export interface HealingAction {
   id: string;
   kind: HealingActionKind;
   failureKind: FailureKind;
+  /** Taxonomia de origem (MODEL_FAILURE, TOOL_FAILURE, ...) — ver `FailureCategory`. */
+  category: FailureCategory;
   message: string;
   nodeId?: string;
   /** Skill/agente substituto (skill_replacement / handoff). */

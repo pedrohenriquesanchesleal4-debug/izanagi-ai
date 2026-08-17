@@ -67,6 +67,14 @@ test('orchestrator: ciclo completo com artefatos válidos → PASS + trace persi
   const stats = memory.agentStats('senior-engineer');
   assert.ok(stats, 'stats do agente registrados');
   assert.ok(stats.runs >= 1);
+
+  // Foundation: artifacts carregam proveniência do ArtifactRegistry (id/producer/createdAt/status)
+  assert.ok(result.trace.artifacts.length > 0, 'trace tem artifacts');
+  for (const artifact of result.trace.artifacts) {
+    assert.ok(artifact.id?.startsWith(`${result.trace.runId}:`), 'artifact.id vem do registry');
+    assert.ok(artifact.createdAt, 'artifact.createdAt preenchido');
+    assert.ok(artifact.status === 'valid' || artifact.status === 'invalid', 'artifact.status derivado da validação');
+  }
 });
 
 test('orchestrator: falha transitória → retry → sucesso final', async () => {

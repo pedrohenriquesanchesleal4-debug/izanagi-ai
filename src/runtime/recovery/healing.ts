@@ -9,7 +9,7 @@
  * (symptoms) para guiar a solução e registrar aprendizado.
  */
 
-import type { FailureKind, HealingAction, HealingActionKind } from '../types.js';
+import type { FailureCategory, FailureKind, HealingAction, HealingActionKind } from '../types.js';
 import type { MemoryStore } from '../memory/store.js';
 
 export interface HealingInput {
@@ -59,6 +59,43 @@ export function isRecoverable(kind: FailureKind): boolean {
   return kind === 'recoverable' || kind === 'tool' || kind === 'validation';
 }
 
+const CATEGORY_RULES: Array<{ regex: RegExp; category: FailureCategory }> = [
+  { regex: /security|secret|vulnerab|owasp|injection|cve-/i, category: 'SECURITY_FAILURE' },
+  { regex: /timeout|timed out|etimedout/i, category: 'TIMEOUT' },
+  { regex: /config|env var|environment variable|\.env/i, category: 'CONFIGURATION_FAILURE' },
+  { regex: /enoent|permission denied|eacces|disk|filesystem/i, category: 'ENVIRONMENT_FAILURE' },
+  { regex: /artifact|contract/i, category: 'ARTIFACT_FAILURE' },
+  { regex: /\btest(s)?\b|assert/i, category: 'TEST_FAILURE' },
+];
+
+/**
+ * Categoriza a ORIGEM da falha para fins de observabilidade/relatório.
+ * Complementa `classifyFailure()` (que decide a estratégia de cura) sem
+ * substituí-la — um `FailureKind` pode mapear para categorias diferentes
+ * dependendo do conteúdo real da mensagem de erro.
+ */
+export function categorizeFailure(kind: FailureKind, error: string): FailureCategory {
+  for (const rule of CATEGORY_RULES) {
+    if (rule.regex.test(error)) return rule.category;
+  }
+  switch (kind) {
+    case 'dependency':
+      return 'DEPENDENCY_FAILURE';
+    case 'tool':
+      return 'TOOL_FAILURE';
+    case 'agent':
+      return 'AGENT_FAILURE';
+    case 'validation':
+      return 'VALIDATION_FAILURE';
+    case 'planning':
+      return 'MODEL_FAILURE';
+    case 'recoverable':
+      return 'MODEL_FAILURE';
+    default:
+      return 'UNKNOWN_FAILURE';
+  }
+}
+
 export class Healer {
   /** Backoff exponencial simples. */
   static backoff(baseMs: number, attempt: number, factor = 1.6): number {
@@ -76,6 +113,7 @@ export class Healer {
    */
   heal(input: HealingInput): HealingDecision {
     const kind = classifyFailure(input.error);
+    const category = categorizeFailure(kind, input.error);
     const id = `heal-${Date.now().toString(36)}-${input.nodeId}`;
 
     // 1. Hard limits — nunca loops infinitos
@@ -106,6 +144,7 @@ export class Healer {
           id,
           kind: 'local_repair',
           failureKind: kind,
+          category,
           message: `padrão conhecido ${best.pattern} (${best.occurrences} ocorrências): ${best.solution}`,
           nodeId: input.nodeId,
           matchedPattern: best.pattern,
@@ -122,6 +161,7 @@ export class Healer {
           id,
           kind: 'retry',
           failureKind: kind,
+          category,
           message: `falha transitória detectada — retry com backoff (tentativa ${input.attempt + 1}/${input.maxAttempts})`,
           nodeId: input.nodeId,
           createdAt: new Date().toISOString(),
@@ -138,6 +178,7 @@ export class Healer {
           id,
           kind: 'skill_replacement',
           failureKind: kind,
+          category,
           message: `artefato inválido — substituindo skill por validador corretivo${replacement ? ` (${replacement})` : ''}`,
           nodeId: input.nodeId,
           replacement,
@@ -155,6 +196,7 @@ export class Healer {
           id,
           kind: 'replan',
           failureKind: kind,
+          category,
           message: 'falha de planejamento — reconstruindo grafo de execução',
           nodeId: input.nodeId,
           createdAt: new Date().toISOString(),
@@ -170,6 +212,7 @@ export class Healer {
           id,
           kind: 'handoff',
           failureKind: kind,
+          category,
           message: `falha de ${kind} — repassando para agente especializado ${target}`,
           nodeId: input.nodeId,
           replacement: target,
@@ -188,6 +231,7 @@ export class Healer {
         id,
         kind: 'abort',
         failureKind: kind,
+        category: categorizeFailure(kind, input.error),
         message: reason,
         nodeId: input.nodeId,
         createdAt: new Date().toISOString(),
