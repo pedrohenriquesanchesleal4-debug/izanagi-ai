@@ -4,6 +4,52 @@
 
 ---
 
+## [3.3.0] — 2026-08-16
+
+### Added
+Izanagi Evolution — audited the runtime against a 7-phase roadmap (Foundation →
+Reliability → Observability → Model Runtime → Memory → Arena → Platform)
+before writing any code. Found ~70% already implemented (ArtifactRegistry,
+EvaluationEngine, Healer, ModelRouter, MemoryStore, BenchmarkRunner all
+pre-existed); closed the real, specific gaps only — no reimplementation, no
+invented metrics/benchmarks/results, one commit per phase:
+
+- **Foundation**: `FailureCategory` (12-value failure-origin taxonomy,
+  `runtime/recovery/healing.ts`), `ArtifactRef` provenance (`id`/`producer`/
+  `createdAt`/`status`, populated from the existing `ArtifactRegistry`).
+- **Reliability**: `ArtifactRegistry.detectRegression()` — a healed retry that
+  scores worse than the version it replaced now fails the node instead of
+  silently "succeeding" (roadmap's `HEALING_REJECTED` concept). Verified the
+  heal→retry→evaluate verification loop already existed end-to-end.
+- **Observability**: real-time Event System (`runtime/observability/events.ts`)
+  — `EventBus` emitting `run.*`/`node.*`/`evaluation.*`/`diagnosis.*`/
+  `healing.*`/`verification.*`/`quality_gate.*`; new `OrchestratorOptions.onEvent`
+  hook (the dashboard below consumes the underlying data, not this hook yet).
+- **Model Runtime**: `OllamaAdapter`, `LMStudioAdapter`, `OpenRouterAdapter`,
+  `CustomOpenAICompatibleAdapter` (`runtime/llm/client.ts`) — local providers
+  require explicit opt-in (`IZANAGI_OLLAMA_ENABLED=1` etc.) so the existing
+  zero-config headless mode can't silently break.
+- **Memory**: failure-pattern lifecycle — `MemoryStore.invalidateFailure()` /
+  `archiveFailure()`, new `izanagi memory invalidate|archive <pattern>`.
+- **Arena**: `BenchmarkRunner.runBaselines()`/`compareBaselines()` (N producers
+  head-to-head, genuine ties return no forced winner), `izanagi benchmark
+  report <id>`, `izanagi arena` as a literal alias for the existing benchmark
+  CLI (roadmap's naming, zero reimplementation).
+- **Platform (foundation only, not the full phase)**: `izanagi dashboard
+  [--port N]` — a local `node:http` server (zero new dependencies) reading
+  straight from `TraceStore`/`ArtifactRegistry`/`MemoryStore`/benchmark
+  reports, serving a single embedded-HTML page (Run Explorer, Arena panel,
+  Memory panel). Deliberately not built: hosted multi-user platform, auth,
+  Skill/Agent Registry UI, plugin extensibility — scoped down to match how
+  the rest of the framework already works (local-first, single-user) after
+  asking the user directly instead of guessing.
+
+250/250 tests passing (57 new across the 7 phases), `izanagi doctor` PASSED
+after every phase, no breaking changes to any existing CLI command or public
+API.
+
+---
+
 ## [3.2.0] — 2026-08-16
 
 ### Added
