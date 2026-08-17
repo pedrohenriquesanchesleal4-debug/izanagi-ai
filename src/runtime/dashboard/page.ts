@@ -9,61 +9,94 @@ export const DASHBOARD_HTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Izanagi Dashboard</title>
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --bg: #08080a; --bg-2: #0e0e11; --bg-3: #151519; --border: #212127; --border-soft: #1a1a1f;
+    --text: #e4e4e7; --text-dim: #9a9aa2; --text-faint: #55555f;
+    --accent: #8b7cf6; --accent-dim: #4c3fa8;
+    --ok: #34d399; --ok-bg: #0d2b21; --bad: #f87171; --bad-bg: #2d1113; --warn: #fbbf24; --warn-bg: #2b210a;
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    background: #0a0a0c; color: #d4d4d8; font-size: 13px; line-height: 1.5;
+    background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
-  header { padding: 14px 20px; border-bottom: 1px solid #27272a; display: flex; align-items: center; gap: 16px; }
-  header h1 { font-size: 14px; font-weight: 600; margin: 0; color: #e4e4e7; letter-spacing: 0.02em; }
-  header .tag { color: #71717a; font-size: 11px; }
-  nav { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid #27272a; }
+  header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg));
+  }
+  header .mark {
+    width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #fff;
+  }
+  header h1 { font-size: 14px; font-weight: 700; margin: 0; color: var(--text); letter-spacing: 0.04em; }
+  header .tag { color: var(--text-faint); font-size: 11px; }
+  header .spacer { flex: 1; }
+  .stats { display: flex; gap: 22px; padding: 10px 24px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat .n { font-size: 17px; font-weight: 700; color: var(--text); }
+  .stat .n.ok { color: var(--ok); }
+  .stat .n.bad { color: var(--bad); }
+  .stat .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
+  nav { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--bg); }
   nav button {
-    background: none; border: none; color: #71717a; padding: 10px 14px; cursor: pointer;
-    font-family: inherit; font-size: 12px; border-bottom: 2px solid transparent;
+    background: none; border: none; color: var(--text-dim); padding: 11px 14px; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 500; border-bottom: 2px solid transparent; transition: color .15s;
   }
-  nav button.active { color: #e4e4e7; border-bottom-color: #52525b; }
-  main { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 90px); }
-  .list { overflow-y: auto; border-right: 1px solid #27272a; }
-  .list-item { padding: 10px 16px; border-bottom: 1px solid #18181b; cursor: pointer; }
-  .list-item:hover { background: #18181b; }
-  .list-item.active { background: #1f1f23; border-left: 2px solid #52525b; }
-  .list-item .id { color: #e4e4e7; font-weight: 600; font-size: 12px; }
-  .list-item .meta { color: #71717a; font-size: 11px; margin-top: 2px; }
-  .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-  .badge.pass, .badge.pass_with_warnings, .badge.ok { background: #14532d; color: #86efac; }
-  .badge.fail, .badge.error, .badge.blocked { background: #450a0a; color: #fca5a5; }
-  .badge.running, .badge.pending { background: #451a03; color: #fdba74; }
-  .badge.unknown { background: #27272a; color: #a1a1aa; }
-  #live { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #52525b; }
-  #live .dot { width: 6px; height: 6px; border-radius: 50%; background: #3f3f46; }
-  #live.on .dot { background: #4ade80; box-shadow: 0 0 4px #4ade80; }
-  #live.on { color: #86efac; }
-  .batch { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
-  .batch-node { border: 1px solid #27272a; border-radius: 4px; padding: 6px 10px; font-size: 11px; flex: 1; min-width: 140px; }
-  .batch-label { color: #3f3f46; font-size: 10px; width: 16px; padding-top: 8px; }
-  .detail { padding: 20px; overflow-y: auto; }
-  .empty { color: #52525b; padding: 40px; text-align: center; }
-  section { margin-bottom: 24px; }
-  section h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #71717a; margin: 0 0 8px; }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--text); border-bottom-color: var(--accent); }
+  main { display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 140px); }
+  .list { overflow-y: auto; border-right: 1px solid var(--border); background: var(--bg-2); }
+  .list-item { padding: 11px 16px; border-bottom: 1px solid var(--border-soft); cursor: pointer; transition: background .12s; }
+  .list-item:hover { background: var(--bg-3); }
+  .list-item.active { background: var(--bg-3); border-left: 2px solid var(--accent); padding-left: 14px; }
+  .list-item .id { color: var(--text); font-weight: 600; font-size: 12px; }
+  .list-item .meta { color: var(--text-dim); font-size: 11px; margin-top: 3px; }
+  .badge {
+    display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .badge.pass, .badge.pass_with_warnings, .badge.ok { background: var(--ok-bg); color: var(--ok); }
+  .badge.fail, .badge.error, .badge.blocked { background: var(--bad-bg); color: var(--bad); }
+  .badge.running, .badge.pending { background: var(--warn-bg); color: var(--warn); }
+  .badge.unknown { background: var(--bg-3); color: var(--text-dim); }
+  #live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-faint); }
+  #live .dot { width: 6px; height: 6px; border-radius: 50%; background: #3f3f46; transition: background .2s; }
+  #live.on .dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: pulse 2s ease-in-out infinite; }
+  #live.on { color: var(--ok); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+  .batch { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .batch-node { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 11px; flex: 1; min-width: 150px; background: var(--bg-2); }
+  .batch-label { color: var(--text-faint); font-size: 10px; width: 18px; padding-top: 9px; }
+  .detail { padding: 24px; overflow-y: auto; }
+  .empty { color: var(--text-faint); padding: 60px 20px; text-align: center; }
+  section { margin-bottom: 26px; }
+  section h2 {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+    margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-soft);
+  }
   table { width: 100%; border-collapse: collapse; }
-  td, th { padding: 4px 8px; text-align: left; border-bottom: 1px solid #18181b; font-size: 12px; }
-  th { color: #71717a; font-weight: 500; }
-  .node-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #18181b; }
-  .node-row .name { flex: 1; color: #d4d4d8; }
-  .node-row .dur { color: #52525b; font-size: 11px; }
-  .kv { display: flex; gap: 6px; color: #a1a1aa; font-size: 11px; margin-bottom: 4px; }
-  .kv b { color: #71717a; font-weight: 500; min-width: 90px; }
-  .score { font-weight: 700; }
+  td, th { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border-soft); font-size: 12px; }
+  th { color: var(--text-faint); font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:hover td { background: var(--bg-2); }
+  .node-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); }
+  .node-row .name { flex: 1; color: var(--text); }
+  .node-row .dur { color: var(--text-faint); font-size: 11px; }
+  .kv { display: flex; gap: 8px; color: var(--text-dim); font-size: 11.5px; margin-bottom: 5px; }
+  .kv b { color: var(--text-faint); font-weight: 500; min-width: 90px; }
+  .score { font-weight: 700; color: var(--text); }
 </style>
 </head>
 <body>
 <header>
+  <span class="mark">イ</span>
   <h1>IZANAGI</h1>
   <span class="tag">dashboard local — foundation (Fase 7)</span>
+  <span class="spacer"></span>
   <span id="live"><span class="dot"></span><span id="live-label">conectando…</span></span>
 </header>
+<div class="stats" id="stats"></div>
 <nav>
   <button data-tab="runs" class="active">Runs</button>
   <button data-tab="arena">Arena</button>
@@ -93,6 +126,25 @@ async function loadTab(tab) {
   await refreshList();
 }
 
+function renderStats(runs) {
+  const stats = document.getElementById('stats');
+  const total = runs.length;
+  const finished = runs.filter((r) => r.evaluation);
+  const passed = finished.filter((r) => r.evaluation.verdict === 'PASS' || r.evaluation.verdict === 'PASS_WITH_WARNINGS').length;
+  const running = total - finished.length;
+  const avgScore = finished.length ? (finished.reduce((a, r) => a + (r.evaluation.score || 0), 0) / finished.length).toFixed(2) : '-';
+  const healingRuns = runs.filter((r) => (r.healing || []).length > 0).length;
+  stats.innerHTML =
+    stat(total, 'runs') +
+    stat(finished.length ? Math.round((passed / finished.length) * 100) + '%' : '-', 'pass rate', passed >= finished.length / 2 ? 'ok' : 'bad') +
+    stat(avgScore, 'score médio') +
+    stat(running, 'em andamento', running > 0 ? 'ok' : '') +
+    stat(healingRuns, 'com healing');
+}
+function stat(n, label, cls) {
+  return '<div class="stat"><span class="n' + (cls ? ' ' + cls : '') + '">' + n + '</span><span class="l">' + label + '</span></div>';
+}
+
 async function refreshList() {
   const list = document.getElementById('list');
 
@@ -105,9 +157,11 @@ async function refreshList() {
       '</div>'
     ).join('') || '<div class="empty">nenhum run ainda — rode "izanagi run"</div>';
     list.querySelectorAll('.list-item').forEach((el) => el.addEventListener('click', () => selectRun(items[+el.dataset.i].runId, el)));
+    renderStats(items);
   }
 
   if (currentTab === 'arena') {
+    document.getElementById('stats').innerHTML = '';
     items = await (await fetch('/api/benchmarks')).json();
     list.innerHTML = items.map((r, i) =>
       '<div class="list-item" data-i="' + i + '">' +
@@ -119,6 +173,7 @@ async function refreshList() {
   }
 
   if (currentTab === 'memory') {
+    document.getElementById('stats').innerHTML = '';
     const m = await (await fetch('/api/memory')).json();
     list.innerHTML = '<div class="list-item active"><div class="id">resumo</div><div class="meta">agentes, skills, modelos, failures, learnings</div></div>';
     renderMemory(m);
