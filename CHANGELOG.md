@@ -4,6 +4,14 @@
 
 ---
 
+## [3.5.0] — 2026-08-17
+
+### Added
+- **Default-on Unicode hygiene on every file write.** New `runtime/text/unicode-hygiene.ts`: `sanitizeText()` strips invisible Unicode control/formatting characters (zero-width space/joiner, bidi overrides, BOM, ...) and normalizes homoglyph spaces (non-breaking space, em/en spaces, ideographic space, ...) that LLM output sometimes contains — a zero-width space inside an identifier, or a non-breaking space where indentation expects a plain space, both cause silent, hard-to-debug breakage. Wired into `tools/registry.ts`'s `fs.write` (the one choke point every generated file passes through) and `contracts/artifacts.ts`'s `makeArtifact()`. Always on, no opt-in, pure regex — zero new dependencies, zero network/LLM calls. Rewritten once already: a first char-by-char implementation cost ~260ms on a 1.5MB file; the regex-based version costs <4ms on the same file.
+- Evaluated `github.com/guillaumemeyer/watermarks-remover` for a broader "AI watermark removal" feature and deliberately did not adopt its architecture: it's a Python microservice with per-approach Docker images running real watermark-detection ML models (SynthID, MarkLLM, CtrlRegen, MarkDiffusion), and its statistical-watermark-removal path rewrites text via an LLM call — real token cost, against this framework's zero-dependency, zero-extra-token design.
+
+---
+
 ## [3.4.0] — 2026-08-17
 
 ### Fixed (CRITICAL)
