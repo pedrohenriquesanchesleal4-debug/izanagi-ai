@@ -19,6 +19,7 @@ import type {
   RunTrace,
 } from './types.js';
 import { TraceStore, Tracer } from './observability/tracer.js';
+import type { IzanagiEvent } from './observability/events.js';
 import { MemoryStore } from './memory/store.js';
 import { EvaluationEngine } from './evaluation/engine.js';
 import { Planner } from './orchestration/planner.js';
@@ -56,6 +57,8 @@ export interface OrchestratorOptions {
   /** Retoma um run interrompido a partir do checkpoint salvo com este runId, em vez de planejar do zero. */
   resumeRunId?: string;
   verbose?: boolean;
+  /** Observador em tempo real do Event System (run.started, healing.*, quality_gate.*, ...) — ver observability/events.ts. */
+  onEvent?: (event: IzanagiEvent) => void;
 }
 
 export interface ExecuteCtx {
@@ -151,7 +154,7 @@ export class Orchestrator {
       }
     }
 
-    const trace = new Tracer(store, { runId: resumed?.runId, task: this.opts.task, command: this.opts.command });
+    const trace = new Tracer(store, { runId: resumed?.runId, task: this.opts.task, command: this.opts.command, onEvent: this.opts.onEvent });
     this.tokensUsed = resumed?.tokensUsed ?? 0;
     const tokensUsed = () => this.tokensUsed;
 
@@ -339,6 +342,8 @@ export class Orchestrator {
       // Self-healing
       const healer = new Healer();
       const elapsed = Date.now() - startedAt;
+      trace.events.emit('diagnosis.started', { nodeId: failure.nodeId, error: failure.error });
+      trace.events.emit('healing.started', { nodeId: failure.nodeId, attempt: attempts });
       const decision = healer.heal({
         nodeId: failure.nodeId,
         agent: failure.agent,
@@ -353,6 +358,8 @@ export class Orchestrator {
         memory,
       });
       healing.push(decision.action);
+      trace.events.emit('diagnosis.completed', { nodeId: failure.nodeId, kind: decision.action.failureKind, category: decision.action.category });
+      trace.events.emit('healing.completed', { nodeId: failure.nodeId, kind: decision.action.kind, category: decision.action.category });
       const closeHeal = trace.span(`healing:${decision.action.kind}`, 'healing', {
         failureKind: decision.action.failureKind,
         message: decision.action.message,
@@ -385,8 +392,11 @@ export class Orchestrator {
       closeHeal();
     }
 
-    // Evaluation final
+    // Evaluation final (também serve como Verification Loop: nenhum healing é dado como
+    // bem-sucedido sem essa reavaliação — ver seção 5.7 do roadmap).
     const closeEval = trace.span('evaluation', 'evaluation');
+    trace.events.emit('evaluation.started', {});
+    trace.events.emit('verification.started', { healingRounds: healing.length });
     const evaluator = new EvaluationEngine();
     const artifacts = Array.from(ctx.artifacts.entries()).map(([id, a]) => {
       const record = ctx.artifactRegistry.get(`${ctx.runId}:${id}`);
@@ -426,6 +436,12 @@ export class Orchestrator {
       recommendations: ctx.artifacts.has('critique') ? ['crítica adversarial consumida; revisar achados no artefato critique'] : [],
     });
     closeEval();
+    trace.events.emit('evaluation.completed', { verdict: finalEvaluation.verdict, score: finalEvaluation.score });
+    trace.events.emit('verification.completed', { verdict: finalEvaluation.verdict, score: finalEvaluation.score });
+    trace.events.emit(
+      finalEvaluation.verdict === 'PASS' || finalEvaluation.verdict === 'PASS_WITH_WARNINGS' ? 'quality_gate.passed' : 'quality_gate.failed',
+      { verdict: finalEvaluation.verdict, score: finalEvaluation.score },
+    );
 
     // Histórico de performance do modelo roteado (alimenta futuras decisões do router)
     memory.recordModelRun(modelId, {
@@ -509,9 +525,11 @@ export class Orchestrator {
     ctx: ExecuteCtx,
   ): Promise<{ nodeId: string; agent?: string; skill?: string; error: string; blockedApproval?: boolean; context?: string } | null> {
     for (const batch of graph.parallelBatches) {
+      batch.forEach((nodeId) => ctx.trace.events.emit('node.started', { nodeId }));
       const results = await Promise.all(
         batch.map((nodeId) => this.executeNode(graph, nodeId, ctx)),
       );
+      results.forEach((r, i) => ctx.trace.events.emit('node.completed', { nodeId: batch[i], status: r?.status ?? 'ok' }));
       const blocked = results.find((r) => r && r.status === 'blocked_approval') as
         | { nodeId: string; error?: string; status: string; context?: string }
         | undefined;

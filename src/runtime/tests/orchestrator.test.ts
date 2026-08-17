@@ -232,3 +232,31 @@ test('orchestrator: run real popula Artifact Registry e Decision Journal (rastre
   assert.ok(agentDecision, 'decisão de agent-routing registrada');
   assert.equal(agentDecision!.chosen, 'senior-engineer');
 });
+
+test('orchestrator: Event System emite o ciclo de vida do run em tempo real (não só pós-fato)', async () => {
+  const baseDir = tmpDir();
+  const memory = new MemoryStore({ baseDir });
+  const seen: string[] = [];
+
+  const orchestrator = new Orchestrator({
+    baseDir,
+    command: 'test',
+    task: 'Criar uma feature simples',
+    category: 'implementation',
+    primaryAgent: 'senior-engineer',
+    skillChain: ['frontend'],
+    produce: (node: GraphNode) => validArtifact(node.outputs?.[0] ?? 'raw', validContentFor(node.outputs?.[0])),
+    onEvent: (event) => seen.push(event.name),
+  });
+  orchestrator.setMemory(memory);
+
+  const result = await orchestrator.run();
+
+  assert.equal(result.status, 'PASS');
+  assert.equal(seen[0], 'run.started', 'run.started é sempre o primeiro evento');
+  assert.equal(seen[seen.length - 1], 'run.completed', 'run.completed é sempre o último');
+  assert.ok(seen.includes('node.started') && seen.includes('node.completed'), 'nós emitem started/completed');
+  assert.ok(seen.includes('evaluation.started') && seen.includes('evaluation.completed'), 'evaluation emite started/completed');
+  assert.ok(seen.includes('quality_gate.passed'), 'PASS emite quality_gate.passed');
+  assert.ok(!seen.includes('quality_gate.failed'), 'run com sucesso não emite quality_gate.failed');
+});

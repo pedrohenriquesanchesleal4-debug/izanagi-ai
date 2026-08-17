@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type { RunTrace, TraceSpan } from '../types.js';
+import { EventBus, ALL_EVENTS, type IzanagiEvent } from './events.js';
 
 export const TRACE_DIR_REL = path.join('.izanagi', 'state', 'traces');
 
@@ -122,8 +123,10 @@ export class Tracer {
   private readonly seq: number;
   private tokensIn = 0;
   private tokensOut = 0;
+  /** Event System — pub/sub em tempo real do ciclo de vida deste run (ver observability/events.ts). */
+  readonly events: EventBus;
 
-  constructor(store: TraceStore, opts: { runId?: string; task: string; command: string }) {
+  constructor(store: TraceStore, opts: { runId?: string; task: string; command: string; onEvent?: (event: IzanagiEvent) => void }) {
     this.store = store;
     this.seq = seqCounter++;
     this.ctx = {
@@ -138,6 +141,11 @@ export class Tracer {
       failures: 0,
       spans: [],
     };
+    this.events = new EventBus(this.ctx.runId);
+    // Assina ANTES de emitir o primeiro evento — senão um onEvent passado pelo
+    // caller nunca veria 'run.started' (a subscrição chegaria tarde demais).
+    if (opts.onEvent) this.events.on(ALL_EVENTS, opts.onEvent);
+    this.events.emit('run.started', { task: opts.task, command: opts.command });
   }
 
   get runId(): string {
@@ -231,6 +239,7 @@ export class Tracer {
   finishAndSave(extra?: Partial<RunTrace>): { trace: RunTrace; file: string } {
     const trace = this.finish(extra);
     const file = this.store.save(trace);
+    this.events.emit('run.completed', { verdict: trace.evaluation?.verdict, score: trace.evaluation?.score, durationMs: trace.durationMs });
     return { trace, file };
   }
 }
