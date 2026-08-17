@@ -70,6 +70,48 @@ test('artifact registry: consumers() rastreia quem depende de um artefato', () =
   assert.equal(consumers[0].id, 'run-1:verify');
 });
 
+test('artifact registry: detectRegression sem histórico anterior nunca regride', () => {
+  const registry = new ArtifactRegistry({ baseDir: tmpDir() });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v1', size: 10, valid: true, score: 0.9 });
+  assert.deepEqual(registry.detectRegression('run-1:execute'), { regressed: false });
+});
+
+test('artifact registry: detectRegression flagra versão nova inválida onde a anterior era válida', () => {
+  const registry = new ArtifactRegistry({ baseDir: tmpDir() });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v1', size: 10, valid: true, score: 0.9 });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v2', size: 10, valid: false, score: 0.4 });
+
+  const result = registry.detectRegression('run-1:execute');
+  assert.equal(result.regressed, true);
+  assert.equal(result.previousScore, 0.9);
+  assert.equal(result.currentScore, 0.4);
+});
+
+test('artifact registry: detectRegression flagra queda crítica de score mesmo com ambas versões válidas', () => {
+  const registry = new ArtifactRegistry({ baseDir: tmpDir() });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v1', size: 10, valid: true, score: 0.95 });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v2', size: 10, valid: true, score: 0.5 });
+
+  assert.equal(registry.detectRegression('run-1:execute').regressed, true);
+});
+
+test('artifact registry: detectRegression não flagra melhora ou queda pequena', () => {
+  const registry = new ArtifactRegistry({ baseDir: tmpDir() });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v1', size: 10, valid: true, score: 0.7 });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v2', size: 10, valid: true, score: 0.85 });
+  assert.equal(registry.detectRegression('run-1:execute').regressed, false);
+
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v3', size: 10, valid: true, score: 0.75 });
+  assert.equal(registry.detectRegression('run-1:execute').regressed, false);
+});
+
+test('artifact registry: detectRegression não flagra quando a versão anterior já era inválida (nada a proteger)', () => {
+  const registry = new ArtifactRegistry({ baseDir: tmpDir() });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v1', size: 10, valid: false, score: 0.1 });
+  registry.register({ kind: 'implementation', name: 'execute', producer: { runId: 'run-1', nodeId: 'execute' }, hash: 'v2', size: 10, valid: false, score: 0.05 });
+  assert.equal(registry.detectRegression('run-1:execute').regressed, false);
+});
+
 test('artifact registry: persiste em disco e recarrega em nova instância', () => {
   const baseDir = tmpDir();
   const r1 = new ArtifactRegistry({ baseDir });

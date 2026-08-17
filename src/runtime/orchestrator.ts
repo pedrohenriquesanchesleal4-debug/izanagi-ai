@@ -639,6 +639,16 @@ export class Orchestrator {
         return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
       }
 
+      // Regression Protection: uma correção de healing não pode piorar o artifact
+      // em relação à versão anterior (score menor ou virar inválido).
+      const regression = ctx.artifactRegistry.detectRegression(`${ctx.runId}:${node.id}`);
+      if (regression.regressed) {
+        node.status = 'failed';
+        node.error = `regressão detectada (invalid artifact regression): score ${regression.currentScore} < ${regression.previousScore} na versão anterior`;
+        closeSpan(false, node.error);
+        return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+      }
+
       node.status = 'succeeded';
       node.endedAt = new Date().toISOString();
       node.durationMs = Date.now() - Date.parse(node.startedAt!);

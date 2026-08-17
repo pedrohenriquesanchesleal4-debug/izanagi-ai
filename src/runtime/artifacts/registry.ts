@@ -120,4 +120,21 @@ export class ArtifactRegistry {
   consumers(id: string): ArtifactRecord[] {
     return this.records.filter((r) => r.dependencies.includes(id));
   }
+
+  /**
+   * Regression Protection — compara a última versão registrada de um artefato
+   * com a anterior (replan/retry após healing). Regressão = versão nova
+   * inválida onde a anterior era válida, ou queda crítica de score (>= 0.3)
+   * numa versão anterior que já era válida. Sem histórico anterior, nunca há
+   * regressão (primeira versão não tem baseline pra comparar).
+   */
+  detectRegression(id: string): { regressed: boolean; previousScore?: number; currentScore?: number } {
+    const versions = this.history(id);
+    if (versions.length < 2) return { regressed: false };
+    const previous = versions[versions.length - 2];
+    const current = versions[versions.length - 1];
+    if (!previous.valid) return { regressed: false, previousScore: previous.score, currentScore: current.score };
+    const criticalDrop = !current.valid || previous.score - current.score >= 0.3;
+    return { regressed: criticalDrop, previousScore: previous.score, currentScore: current.score };
+  }
 }
