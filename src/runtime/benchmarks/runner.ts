@@ -164,6 +164,55 @@ export class BenchmarkRunner {
     return report;
   }
 
+  /**
+   * Baselines — roda a MESMA suíte contra N producers nomeados (ex.: "izanagi"
+   * vs "direct-model" vs outro agente) e devolve um relatório completo por
+   * producer. Diferente de `compare()` (2 versões do MESMO producer ao longo
+   * do tempo), isso responde "o Izanagi realmente melhora o resultado frente
+   * à alternativa?" — a pergunta central da Arena (seção 9.2 do roadmap).
+   */
+  async runBaselines(
+    cases: BenchmarkCase[],
+    producers: Record<string, (c: BenchmarkCase) => Promise<unknown> | unknown>,
+    opts: BenchmarkRunOptions,
+  ): Promise<Record<string, BenchmarkReport>> {
+    const reports: Record<string, BenchmarkReport> = {};
+    for (const [name, producer] of Object.entries(producers)) {
+      reports[name] = await this.runSuite(cases, producer, { ...opts, suite: `${opts.suite ?? 'default'}:${name}` });
+    }
+    return reports;
+  }
+
+  /** Compara N baselines lado a lado por caso e por resumo — sem inventar "vencedor" quando os scores empatam. */
+  compareBaselines(reports: Record<string, BenchmarkReport>): {
+    baselines: string[];
+    byCase: Array<{ caseId: string; scores: Record<string, number>; winner: string | null }>;
+    ranking: Array<{ baseline: string; avgScore: number; passed: number; total: number }>;
+  } {
+    const baselines = Object.keys(reports);
+    const caseIds = new Set<string>();
+    for (const r of Object.values(reports)) for (const res of r.results) caseIds.add(res.caseId);
+
+    const byCase = Array.from(caseIds).map((caseId) => {
+      const scores: Record<string, number> = {};
+      for (const [name, report] of Object.entries(reports)) {
+        const found = report.results.find((r) => r.caseId === caseId);
+        scores[name] = found?.score ?? 0;
+      }
+      const maxScore = Math.max(...Object.values(scores));
+      const topBaselines = baselines.filter((b) => scores[b] === maxScore);
+      // Empate real (inclusive entre todos) não elege vencedor — não inventa diferença que não existe.
+      const winner = topBaselines.length === 1 ? topBaselines[0] : null;
+      return { caseId, scores, winner };
+    });
+
+    const ranking = baselines
+      .map((name) => ({ baseline: name, avgScore: reports[name].summary.avgScore, passed: reports[name].summary.passed, total: reports[name].summary.total }))
+      .sort((a, b) => b.avgScore - a.avgScore);
+
+    return { baselines, byCase, ranking };
+  }
+
   /** Compara duas versões de relatório (regression benchmarking). */
   compare(prev: BenchmarkReport, curr: BenchmarkReport): Record<string, unknown> {
     const prevByCase = new Map(prev.results.map((r) => [r.caseId, r]));

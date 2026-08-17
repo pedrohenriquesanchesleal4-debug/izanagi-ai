@@ -90,6 +90,11 @@ export async function runCLI(args: string[]): Promise<void> {
 
     case 'benchmark':
     case 'bench':
+    // "arena" é o nome do mesmo sistema de benchmark na nomenclatura do roadmap
+    // (seção 13) — mesmo handler, sem reimplementar nada (regra "não crie
+    // comandos redundantes"); `benchmark`/`bench` continuam funcionando por
+    // compatibilidade com quem já usa a CLI hoje.
+    case 'arena':
       await benchmarkCommand(baseDir, rest);
       break;
 

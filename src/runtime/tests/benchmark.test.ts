@@ -106,3 +106,49 @@ test('benchmark: compare detecta regressões', async () => {
   assert.ok(cmp.regressions.length > 0);
   assert.ok(cmp.regressionRate > 0);
 });
+
+test('benchmark: runBaselines roda a mesma suíte contra N producers nomeados', async () => {
+  const dir = tmpDir();
+  const reg = new BenchmarkRegistry();
+  const cases = reg.load(dir).slice(0, 2);
+  const runner = new BenchmarkRunner();
+
+  const reports = await runner.runBaselines(
+    cases,
+    {
+      izanagi: (c) => Object.fromEntries(c.expectedArtifacts.map((a) => [a, 'conteúdo completo e válido'])),
+      'direct-model': () => ({ text: 'TODO incompleto sem artefatos' }),
+    },
+    { baseDir: dir, suite: 'baseline-test' },
+  );
+
+  assert.deepEqual(Object.keys(reports).sort(), ['direct-model', 'izanagi']);
+  assert.ok(reports.izanagi.summary.avgScore > reports['direct-model'].summary.avgScore, 'izanagi deve pontuar melhor que a alternativa incompleta');
+});
+
+test('benchmark: compareBaselines rankeia por avgScore e elege vencedor por caso (sem empate falso)', async () => {
+  const dir = tmpDir();
+  const reg = new BenchmarkRegistry();
+  const cases = reg.load(dir).slice(0, 2);
+  const runner = new BenchmarkRunner();
+
+  const reports = await runner.runBaselines(
+    cases,
+    {
+      izanagi: (c) => Object.fromEntries(c.expectedArtifacts.map((a) => [a, 'conteúdo completo e válido'])),
+      'direct-model': () => ({ text: 'TODO incompleto sem artefatos' }),
+      tied: (c) => Object.fromEntries(c.expectedArtifacts.map((a) => [a, 'conteúdo completo e válido'])),
+    },
+    { baseDir: dir, suite: 'baseline-cmp' },
+  );
+
+  const cmp = runner.compareBaselines(reports);
+  assert.equal(cmp.ranking[0].avgScore >= cmp.ranking[1].avgScore, true, 'ranking ordenado desc por avgScore');
+  assert.equal(cmp.ranking[cmp.ranking.length - 1].baseline, 'direct-model', 'pior baseline por último');
+  // izanagi e tied produzem o mesmo output → empate real por caso → sem vencedor forçado
+  for (const row of cmp.byCase) {
+    if (row.scores.izanagi === row.scores.tied && row.scores.izanagi >= row.scores['direct-model']) {
+      assert.equal(row.winner, null, 'empate real entre os melhores não elege vencedor arbitrário');
+    }
+  }
+});

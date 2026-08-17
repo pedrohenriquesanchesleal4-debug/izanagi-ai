@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
 import { BenchmarkRunner } from '../../runtime/benchmarks/runner.js';
+import type { BenchmarkReport } from '../../runtime/types.js';
 
 export async function benchmarkCommand(baseDir: string, args: string[]): Promise<void> {
   const sub = args[0]?.toLowerCase() ?? 'list';
@@ -28,8 +29,17 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
     benchmarkCompare(baseDir, prev, curr);
     return;
   }
+  if (sub === 'report') {
+    const id = args[1];
+    if (!id) {
+      console.error('\x1b[31mUsage:\x1b[0m izanagi benchmark report <report-id>\n');
+      process.exit(1);
+    }
+    benchmarkReport(baseDir, id);
+    return;
+  }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi benchmark <list|run|compare> [args]\n');
+  console.error('Usage: izanagi benchmark <list|run|compare|report> [args]\n');
   process.exit(1);
 }
 
@@ -94,17 +104,39 @@ async function benchmarkRun(baseDir: string, domain?: string): Promise<void> {
   console.log(`\x1b[90mComparar versões: \x1b[0mizanagi benchmark compare <anterior> ${report.id}\n`);
 }
 
+function loadReport(baseDir: string, id: string): Record<string, unknown> | null {
+  const file = path.join(baseDir, '.izanagi', 'state', 'benchmarks', `${id}.json`);
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+function benchmarkReport(baseDir: string, id: string): void {
+  const report = loadReport(baseDir, id) as { id: string; suite: string; frameworkVersion: string; createdAt: string; summary: { total: number; passed: number; failed: number; avgScore: number; totalDurationMs: number }; byDomain: Record<string, number>; results: Array<{ caseId: string; domain: string; passed: boolean; score: number; durationMs: number; artifactsMissing: string[]; validatorFailures: string[] }> } | null;
+  if (!report) {
+    console.error(`\x1b[31mRelatório não encontrado:\x1b[0m ${id} (.izanagi/state/benchmarks/${id}.json)\n`);
+    process.exit(1);
+  }
+  console.log(`\n\x1b[35m=== Benchmark Report: ${report!.id} ===\x1b[0m`);
+  console.log(`  suite ${report!.suite} | framework v${report!.frameworkVersion} | ${report!.createdAt.slice(0, 19)}`);
+  console.log(`  \x1b[1m${report!.summary.passed}/${report!.summary.total}\x1b[0m passaram | score médio ${report!.summary.avgScore} | ${report!.summary.totalDurationMs}ms\n`);
+  console.log(`\x1b[1mPor domínio:\x1b[0m`);
+  for (const [domain, score] of Object.entries(report!.byDomain)) {
+    console.log(`  • ${domain.padEnd(14)} ${score}`);
+  }
+  console.log(`\n\x1b[1mCasos:\x1b[0m`);
+  for (const r of report!.results) {
+    const status = r.passed ? '\x1b[32m✔\x1b[0m' : '\x1b[31m✖\x1b[0m';
+    console.log(`  ${status} ${r.caseId.padEnd(20)} [${r.domain}] score ${r.score} (${r.durationMs}ms)`);
+  }
+  console.log('');
+}
+
 function benchmarkCompare(baseDir: string, prevId: string, currId: string): void {
-  const dir = path.join(baseDir, '.izanagi', 'state', 'benchmarks');
-  const load = (id: string) => {
-    const file = path.join(dir, `${id}.json`);
-    if (!fs.existsSync(file)) return null;
-    try {
-      return JSON.parse(fs.readFileSync(file, 'utf-8'));
-    } catch {
-      return null;
-    }
-  };
+  const load = (id: string) => loadReport(baseDir, id);
   const prev = load(prevId);
   const curr = load(currId);
   if (!prev || !curr) {
@@ -112,7 +144,7 @@ function benchmarkCompare(baseDir: string, prevId: string, currId: string): void
     process.exit(1);
   }
   const runner = new BenchmarkRunner();
-  const cmp = runner.compare(prev, curr);
+  const cmp = runner.compare(prev as unknown as BenchmarkReport, curr as unknown as BenchmarkReport);
   console.log(`\n\x1b[35m=== Regression Benchmark: ${cmp.from} → ${cmp.to} ===\x1b[0m`);
   console.log(`  \x1b[1mDelta score médio:\x1b[0m ${Number(cmp.avgDelta) > 0 ? '\x1b[32m+' : Number(cmp.avgDelta) < 0 ? '\x1b[31m' : ''}${cmp.avgDelta}\x1b[0m`);
   console.log(`  \x1b[1mTaxa de regressão:\x1b[0m ${Number(cmp.regressionRate)}%`);
