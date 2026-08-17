@@ -17,6 +17,21 @@ test('tools: discover só expõe tools compatíveis com permissões', () => {
   assert.ok(readOnly.some((t) => t.id === 'fs.ls'), 'fs.ls disponível (requer fs:read)');
 });
 
+test('tools: fs.write aplica Unicode Hygiene — remove invisíveis e normaliza espaços homóglifos', () => {
+  const registry = new ToolRegistry();
+  const ctx = tmpCtx();
+  const file = path.join(ctx.baseDir, 'code.ts');
+
+  // U+200B (zero-width space) no meio de um identificador + U+00A0 (non-breaking space) como separador
+  const dirty = `const foo${'\u200B'}bar${'\u00A0'}=${'\u00A0'}1;`;
+  registry.execute('fs.write', { file, content: dirty }, ctx);
+
+  const written = fs.readFileSync(file, 'utf-8');
+  assert.equal(written, 'const foobar = 1;');
+  assert.ok(!written.includes('\u200B'), 'zero-width space removido');
+  assert.ok(!written.includes('\u00A0'), 'non-breaking space normalizado para espaço comum');
+});
+
 test('tools: fs.write + fs.read em ciclo completo', () => {
   const registry = new ToolRegistry();
   const ctx = tmpCtx();
@@ -30,6 +45,7 @@ test('tools: fs.write + fs.read em ciclo completo', () => {
   assert.ok(r.ok);
   assert.equal((r.result as { content: string }).content, 'olá mundo');
 });
+
 
 test('tools: execução sem permissão é negada (least privilege)', () => {
   const registry = new ToolRegistry();

@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { PolicyEngine, type PolicyEnvironment, type TrustTier } from '../security/policy.js';
+import { sanitizeText } from '../text/unicode-hygiene.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
 
@@ -88,7 +89,11 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
       const { file, content } = input as { file: string; content: string };
       const abs = ensureInside(ctx.baseDir, file, ctx.allowedDirs);
       fs.mkdirSync(path.dirname(abs), { recursive: true });
-      fs.writeFileSync(abs, content, 'utf-8');
+      // Unicode Hygiene (sempre ativa, zero custo de token): remove caracteres
+      // invisíveis e normaliza espaços homóglifos antes de gravar — ver
+      // runtime/text/unicode-hygiene.ts para o porquê do escopo limitado.
+      const { text: clean } = sanitizeText(content);
+      fs.writeFileSync(abs, clean, 'utf-8');
       return { written: abs };
     },
   },

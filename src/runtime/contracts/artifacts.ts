@@ -8,6 +8,7 @@
 
 import crypto from 'crypto';
 import type { ArtifactKind, ArtifactRef, ArtifactSchema } from '../types.js';
+import { sanitizeText } from '../text/unicode-hygiene.js';
 
 const STUB_PATTERNS = [
   /TODO/i,
@@ -176,7 +177,9 @@ export function validateArtifact(kind: ArtifactKind, content: unknown): Validati
  * Cria um ArtifactRef validado a partir de conteúdo.
  */
 export function makeArtifact(kind: ArtifactKind, name: string, content: unknown, path?: string): ArtifactRef {
-  const text = toText(content);
+  // Unicode Hygiene (sempre ativa): hash/validação refletem o mesmo texto que
+  // de fato seria gravado em disco via fs.write, não o texto bruto do modelo.
+  const text = sanitizeText(toText(content)).text;
   const report = validateArtifact(kind, text);
   return {
     kind,
