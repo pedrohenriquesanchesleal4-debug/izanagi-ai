@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest, checkSkillLifecycle } from '../checks.js';
+import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest, checkSkillLifecycle, checkNestedDuplicate } from '../checks.js';
 
 export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   const deep = args.includes('--deep') || args.includes('-d');
@@ -16,6 +16,13 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
 
   let errors = 0;
   let warnings = 0;
+
+  // 0. Verify there's no `<nome>/<nome>` nested duplicate (root cause of "agents/skills não aparecem").
+  const nestedDuplicate = checkNestedDuplicate(cwd);
+  if (nestedDuplicate) {
+    console.log(` \x1b[33m⚠\x1b[0m ${nestedDuplicate.name}: ${nestedDuplicate.detail}`);
+    warnings++;
+  }
 
   // 1. Verify SYSTEM.md & RULES.md
   const systemPath = path.join(projectRoot, 'SYSTEM.md');

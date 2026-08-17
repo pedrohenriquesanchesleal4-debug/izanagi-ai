@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { installToProject, PACKS, CORE_PACK_ID } from '../../installer.js';
 import { selectPacks } from '../prompts.js';
+import { checkNestedDuplicate } from '../checks.js';
 
 interface InitArgs {
   targetDir: string;
@@ -64,6 +65,11 @@ export async function initCommand(args: string[]): Promise<void> {
       console.error(`\x1b[31mError:\x1b[0m directory already exists and is not empty: ${destinationRoot}`);
       process.exit(1);
     }
+  }
+
+  const nestedDuplicate = checkNestedDuplicate(destinationRoot);
+  if (nestedDuplicate) {
+    console.log(`\n\x1b[33mWarning:\x1b[0m ${nestedDuplicate.detail}\n`);
   }
 
   console.log(`\n\x1b[36m=== Initializing Izanagi AI in: ${destinationRoot} ===\x1b[0m\n`);

@@ -88,6 +88,39 @@ export function checkArtifactContracts(skills: SkillManifest[]): CheckResult {
   return { name: 'Artifact contracts', ok: true, detail: `${withContracts.length}/${skills.length} skills declaram inputs/outputs` };
 }
 
+/**
+ * Detecta a pasta duplicada `<nome>/<nome>` — ex.: `izanagi-ai/izanagi-ai/` — criada quando
+ * `git clone <repo>` roda dentro de um diretório já nomeado como o repo, ou quando `izanagi init`
+ * é apontado para uma subpasta em vez do diretório atual. Sintoma reportado: agents/commands/skills
+ * nativos do Claude Code (ou de qualquer outro CLI adapter) não aparecem "de cara" porque o CLI é
+ * aberto na pasta de fora (vazia) enquanto `.claude/`, `.git/`, etc. vivem um nível abaixo.
+ */
+export function checkNestedDuplicate(cwd: string): CheckResult | null {
+  const baseName = path.basename(cwd);
+  const nestedDir = path.join(cwd, baseName);
+
+  if (!fs.existsSync(nestedDir) || !fs.statSync(nestedDir).isDirectory()) return null;
+
+  const nestedLooksLikeProjectRoot =
+    fs.existsSync(path.join(nestedDir, '.git')) || fs.existsSync(path.join(nestedDir, 'package.json'));
+  const cwdAlreadyHasOwnRoot =
+    fs.existsSync(path.join(cwd, '.git')) || fs.existsSync(path.join(cwd, 'package.json'));
+
+  if (!nestedLooksLikeProjectRoot || cwdAlreadyHasOwnRoot) return null;
+
+  return {
+    name: 'Nested duplicate folder',
+    ok: false,
+    detail:
+      `"${nestedDir}" parece ser a raiz real do projeto (tem .git/package.json), mas o CLI foi aberto em ` +
+      `"${cwd}" — um nível acima, sem nada dentro. Isso costuma vir de um "git clone" rodado dentro de uma ` +
+      `pasta já nomeada "${baseName}", ou de "izanagi init ${baseName}" chamado de dentro dela. Efeito prático: ` +
+      `.claude/agents, .claude/commands e .claude/skills nunca aparecem "de cara" no Claude Code, porque ele ` +
+      `descobre esses arquivos a partir de onde foi aberto, não de onde eles realmente estão. Corrija movendo ` +
+      `o conteúdo de "${nestedDir}" para "${cwd}" (achatando a duplicação) e reabra o CLI a partir de "${cwd}".`,
+  };
+}
+
 /** Distribuição de lifecycle das skills — sinaliza draft/deprecated (nunca é erro, só visibilidade). */
 export function checkSkillLifecycle(skills: SkillManifest[]): CheckResult {
   const counts: Record<string, number> = {};

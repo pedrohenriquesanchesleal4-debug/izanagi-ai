@@ -4,6 +4,13 @@
 
 ---
 
+## [3.2.0] — 2026-08-16
+
+### Added
+- **`checkNestedDuplicate()` (`src/cli/checks.ts`)**, wired into both `izanagi doctor` and `izanagi init`, detects the `<name>/<name>` nested-duplicate folder pattern (e.g. `izanagi-ai/izanagi-ai/`) — created when `git clone <repo>` is run from inside a directory already named after the repo, or `izanagi init <dir>` is pointed at a subfolder instead of the current directory. Found by dogfooding: a real project ended up with the framework's `.git`/`.claude`/`package.json` one level below where the CLI was actually opened, so Claude Code (and every other adapter) discovered an empty outer folder and never surfaced the 22 native agents, slash-commands, or the 103-skill library "out of the box" — exactly the symptom users have reported as "skills/agents aren't showing up automatically." `doctor` now surfaces this as a warning with the exact fix (flatten `<nested>` into the parent, reopen the CLI there); `init` warns before installing into a destination that already has this shape.
+
+---
+
 ## [3.1.0] — 2026-08-15
 
 ### Fixed (CRITICAL)
