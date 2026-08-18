@@ -31,7 +31,7 @@ Modelos são treinados em milhões de sites e devolvem a média estatística: In
 
 ### Copy (textos)
 - [ ] Headlines vagas: "Build the future", "Elevate your business", "Unlock your potential", "Revolutionize", "Seamless", "Cutting-edge", "Empower". Fix: copy específica, com dados, verbo concreto, benefício mensurável (ex: "Reduce API costs 63% with response caching").
-- [ ] Travessões "—" como ornamento de texto. Fix: "·", ":", ponto final.
+- [ ] Travessões "—" (em-dash Unicode) OU "--" (duplo hífen ASCII, comum quando texto vem de outro editor/idioma). Fix: "·", ":", ponto final. Hífen simples "-" continua normal.
 - [ ] Emojis decorativos no UI copy. Fix: ícones semânticos (Lucide/Phosphor) ou nada.
 
 ### Componentes

@@ -37,4 +37,4 @@ Use ao: preparar sistema para produção; configurar alertas no Prometheus/Grafa
 - Google SRE Book (Monitoring Distributed Systems): https://sre.google/sre-book/monitoring-distributed-systems/
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/monitoring-specialist/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/monitoring-specialist/SKILL.md` (fonte da verdade).

@@ -72,4 +72,4 @@ swarm_dispatch:
 - Parallel agent orchestration patterns (Fastio / Odea Works 2026) · obra/superpowers dispatching pattern.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/parallel-agents/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/parallel-agents/SKILL.md` (fonte da verdade).

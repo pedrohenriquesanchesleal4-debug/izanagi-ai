@@ -1,6 +1,6 @@
 ---
 name: skill-architect
-description: "Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills."
+description: "Use quando faltar uma skill comprovadamente necessária: cura duplicação e lacunas da biblioteca de skills."
 tools: Read, Grep, Glob, Write, Edit, WebFetch
 model: opus
 ---
@@ -47,7 +47,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial da 
 - Registrar skill com risk alto sem mitigação e sem avaliação
 - Registrar skill sem triggers com semântica forte
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/prompt-engineering/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
@@ -65,8 +65,8 @@ Referências técnicas que orientam suas decisões: a documentação oficial da 
 
 ## Handoff
 
-- `security` — security_scan
-- `qa` — validacao_de_tests
-- `agent-architect` — skill_necessaria_para_agente_novo
+- `security`: security_scan
+- `qa`: validacao_de_tests
+- `agent-architect`: skill_necessaria_para_agente_novo
 
 > Fonte: `agents/skill-architect-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

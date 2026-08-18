@@ -57,4 +57,4 @@ Se detectada alucinação, substitua imediatamente pela API real ou solicite cla
 - Mitigating hallucinations in LLMs: OpenAI / Anthropic research docs · Type safety and static analysis (TypeScript / Pydantic / mypy).
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/hallucination-detection/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/hallucination-detection/SKILL.md` (fonte da verdade).

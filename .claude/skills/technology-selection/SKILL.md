@@ -88,4 +88,4 @@ Combine fontes → API + planilha + browser em etapas separadas (mapeie cada uma
 - Python docs: https://docs.python.org/3/ · httpx: https://www.python-httpx.org · Playwright: https://playwright.dev · pandas: https://pandas.pydata.org · Pydantic: https://docs.pydantic.dev · 12-factor (dependencies): https://12factor.net/dependencies
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/technology-selection/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/technology-selection/SKILL.md` (fonte da verdade).

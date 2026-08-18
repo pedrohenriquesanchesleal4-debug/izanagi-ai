@@ -71,4 +71,4 @@ Use no início de **toda** automação com padrão conhecido: integrar com servi
 - Ver `references.md` do skill `automation-engineer` (documentação canônica por domínio) e `references/repos-ai-agents.md` do framework.
 - Skill `deep-research` para pesquisas profundas multi-fonte com relatório estruturado.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/automation-research/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/automation-research/SKILL.md` (fonte da verdade).

@@ -1,6 +1,6 @@
 ---
 name: security
-description: "Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível — OWASP Top 10, LGPD."
+description: "Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível: OWASP Top 10, LGPD."
 tools: Read, Grep, Glob, Bash, WebFetch
 model: sonnet
 ---
@@ -36,7 +36,7 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 - Usar wildcard '*' em CORS associado a credentials: true ou expor stack traces detalhados em ambiente de produção
 - Assumir que o frontend é uma barreira de segurança confiável — a validação e autorização devem ocorrer obrigatoriamente no backend
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
 - `skills/code-auditor/SKILL.md` (+ `references.md`)
@@ -57,7 +57,7 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 
 ## Handoff
 
-- `senior-engineer` — fix_necessario
-- `devops` — hardening
+- `senior-engineer`: fix_necessario
+- `devops`: hardening
 
 > Fonte: `agents/security-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

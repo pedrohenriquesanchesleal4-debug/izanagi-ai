@@ -280,4 +280,4 @@ Os pesos mudam entre versões do Lighthouse (o time do Chrome recalibra com base
 - PageSpeed Insights (dados de campo + lab): https://pagespeed.web.dev
 - Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/web-perf-seo/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/web-perf-seo/SKILL.md` (fonte da verdade).

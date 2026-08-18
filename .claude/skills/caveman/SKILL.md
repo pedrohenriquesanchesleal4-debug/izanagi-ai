@@ -82,4 +82,4 @@ Example — destructive op:
 
 Persisted outside chat: write normal prose — code, comments, commits, docs, issue/PR/MR text, memory files, third-party messages (/caveman-compress exempt). "stop caveman" or "normal mode": revert. Level persist until changed or session end.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/caveman/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/caveman/SKILL.md` (fonte da verdade).

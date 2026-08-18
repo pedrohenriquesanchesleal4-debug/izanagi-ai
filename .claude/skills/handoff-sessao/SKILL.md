@@ -91,4 +91,4 @@ Por isso: grave o handoff em pontos naturais de parada (fim de sub-tarefa, decis
 
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026) para gestão de contexto multi-sessão.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/handoff-sessao/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/handoff-sessao/SKILL.md` (fonte da verdade).

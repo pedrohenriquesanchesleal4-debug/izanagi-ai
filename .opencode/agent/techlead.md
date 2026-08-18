@@ -1,5 +1,5 @@
 ---
-description: "Tech Lead - Use PROACTIVELY quando o pedido é revisão pedagógica de código/padrão (o "porquê" de uma mudança) ou governança de convenções — não para veredito de aprovar/reprovar."
+description: "Tech Lead - Use PROACTIVELY quando o pedido é revisão pedagógica de código/padrão (o "porquê" de uma mudança) ou governança de convenções: não para veredito de aprovar/reprovar."
 ---
 
 # Tech Lead

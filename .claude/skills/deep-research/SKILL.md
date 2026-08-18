@@ -83,4 +83,4 @@ Mesmo os melhores sistemas em 2026 erram em "citation quality" e "factual accura
 - Ferramentas de busca do agente: `websearch` + `webfetch` nativos do Opencode.
 - Curadoria completa em `references.md`.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/deep-research/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/deep-research/SKILL.md` (fonte da verdade).

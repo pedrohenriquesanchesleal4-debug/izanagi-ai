@@ -1,5 +1,5 @@
 ---
-description: "AI Software Engineer - Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM — RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA…"
+description: "AI Software Engineer - Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM: RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA…"
 ---
 
 # AI Software Engineer

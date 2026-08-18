@@ -47,4 +47,4 @@ Use ao: instrumentar microsserviços ou aplicações web modernas; diagnosticar 
 - OpenTelemetry Documentation: https://opentelemetry.io · Distributed Tracing in Practice.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/observability-expert/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/observability-expert/SKILL.md` (fonte da verdade).

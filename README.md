@@ -1,6 +1,6 @@
 # Izanagi AI
 
-Framework **meta** — **Adaptive Agent & Skill Runtime** — para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 22 agentes especializados, 103 skills, execution graph, evaluation engine, self-healing e CLI executável publicada no npm (`izanagi-ai`).
+Framework **meta**: **Adaptive Agent & Skill Runtime**: para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 22 agentes especializados, 106 skills, execution graph, evaluation engine, self-healing e CLI executável publicada no npm (`izanagi-ai`).
 
 > **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -23,8 +23,8 @@ izanagi --version
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory) — caminho único, sem modo estático paralelo. `--prompt-only` só compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. |
-| `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 21 core). |
+| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory): caminho único, sem modo estático paralelo. `--prompt-only` só compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. |
+| `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 22 core). |
 | `izanagi agent list \| inspect <name>` | Lista/inspeta agentes (inclui `agents/generated/`) com genome. |
 | `izanagi skill create <nome> --gap="<descrição>" [--force]` | Skill Factory: cria skill com frontmatter, security scan pré-escrita e recusa de lacuna já coberta. |
 | `izanagi skill list \| search <q> \| inspect <name>` | Lista, busca e detalha skills. |
@@ -35,13 +35,13 @@ izanagi --version
 | `izanagi benchmark [compare]` | 10 benchmarks builtin + comparação de regressões entre builds. |
 | `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
 | `izanagi memory inspect \| search <q>` | Estado da memória de execução e busca em `.agents/memoria/`. |
-| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 103 skills. |
+| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 106 skills. |
 | `izanagi diagnose` | Diagnóstico profundo do runtime (state, agent genome, contratos de artifact). |
-| `izanagi resume <run-id>` | Retoma execução interrompida (crash) ou pausada a partir do checkpoint — sem replanejar nem reexecutar nós concluídos. |
+| `izanagi resume <run-id>` | Retoma execução interrompida (crash) ou pausada a partir do checkpoint: sem replanejar nem reexecutar nós concluídos. |
 | `izanagi approve <run-id> [node-id]` | Aprova uma ação de alto risco pausada (nó `kind: 'approval'`) e retoma. |
-| `izanagi reject <run-id> [node-id] [--reason]` | Rejeita a ação pausada (o nó falha com o motivo) e retoma — self-healing/abort seguem normalmente. |
+| `izanagi reject <run-id> [node-id] [--reason]` | Rejeita a ação pausada (o nó falha com o motivo) e retoma: self-healing/abort seguem normalmente. |
 | `izanagi explain <run-id>` | Por que o Izanagi decidiu isso: decisões (Decision Journal) + self-healing + veredito, sem chain-of-thought. |
-| `izanagi export --cli <cli>` | Regenera adapters multi-CLI (claude, codex, cursor, copilot, kimi, all). |
+| `izanagi export --cli <cli>` | Regenera adapters multi-CLI (opencode, claude, codex, cursor, copilot, kimi, all). |
 | `izanagi --version` | Exibe a versão da CLI. |
 
 ### Exemplos
@@ -69,8 +69,8 @@ izanagi-ai/
 ├── bin/             Executável da CLI (bin/izanagi.js → dist/cli)
 ├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, factories, tools, tracer, llm, cli)
 ├── core/            Engines (.md) + skill-resolver.json (aliases → targets + compositions)
-├── agents/          21 definições de agentes em JSON (fonte da verdade dos comandos)
-├── skills/          103 skills em skills/<name>/SKILL.md (+ references.md opcional)
+├── agents/          22 definições de agentes em JSON (fonte da verdade dos comandos)
+├── skills/          106 skills em skills/<name>/SKILL.md (+ references.md opcional)
 ├── references/      Curadoria de referências reais por domínio (webgl-3d, scrollytelling, stack-2026...)
 ├── .agents/memoria/ Memória persistente anti-repetição (contexto, decisoes, erros-corrigidos, learnings)
 ├── .opencode/       Comandos slash do Opencode (adapters em .claude/, .codex/, .cursor/...)
@@ -83,7 +83,7 @@ izanagi-ai/
 
 ## Agentes e Skills
 
-O framework possui **22 agentes especializados** (`/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`, `/ai-engineer`) e **103 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (248 aliases, 15 composições). Ver `AGENTS.md` para a tabela completa.
+O framework possui **22 agentes especializados** (`/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`, `/ai-engineer`) e **106 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (258 aliases, 16 composições). Ver `AGENTS.md` para a tabela completa.
 
 ---
 
@@ -93,11 +93,11 @@ O framework possui **22 agentes especializados** (`/discovery`, `/product-reason
 npm install       # instala dependências
 npm run build     # tsc && regenera .manifest
 npm run doctor    # auditoria de integridade
-node --test dist/runtime/tests/*.test.js   # 152 testes do runtime
+node --test dist/runtime/tests/*.test.js   # 262 testes do runtime
 npm run verify    # build + teste de instalação em sandbox
 ```
 
-> **Gotcha:** `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js` — rode `npm run build` antes de qualquer comando CLI local.
+> **Gotcha:** `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js`: rode `npm run build` antes de qualquer comando CLI local.
 
 ### Publicando no NPM
 
@@ -110,4 +110,4 @@ npm publish          # prepublishOnly roda o build automaticamente
 
 ## Licença
 
-MIT — Use, modifique, distribua. Apenas mantenha os créditos.
+MIT: Use, modifique, distribua. Apenas mantenha os créditos.

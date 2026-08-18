@@ -148,4 +148,4 @@ await server.connect(stdio);
 - Spec MCP: https://modelcontextprotocol.io · SDK TypeScript: https://github.com/modelcontextprotocol/typescript-sdk · zod: https://zod.dev · MCP Inspector: https://github.com/modelcontextprotocol/inspector
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/mcp-server-dev/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/mcp-server-dev/SKILL.md` (fonte da verdade).

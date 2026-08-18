@@ -120,4 +120,4 @@ leads = [Lead.model_validate(item) for item in fetch_all(client, "/leads?limit=1
 - httpx: https://www.python-httpx.org · tenacity: https://tenacity.readthedocs.io · Pydantic: https://docs.pydantic.dev · HTTP semantics (RFC 9110): https://www.rfc-editor.org/rfc/rfc9110
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/api-automation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/api-automation/SKILL.md` (fonte da verdade).

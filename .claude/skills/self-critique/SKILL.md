@@ -52,4 +52,4 @@ Confirme se as leis do framework (ciclo vertical completo, zero listas para SaaS
 - Code review best practices: Google Engineering Practices documentation · Clean Code (Robert C. Martin).
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/self-critique/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/self-critique/SKILL.md` (fonte da verdade).

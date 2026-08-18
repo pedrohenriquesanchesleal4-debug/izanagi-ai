@@ -1,5 +1,5 @@
 ---
-description: "Skill Architect - Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills."
+description: "Skill Architect - Use quando faltar uma skill comprovadamente necessária: cura duplicação e lacunas da biblioteca de skills."
 ---
 
 # Skill Architect

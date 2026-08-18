@@ -31,7 +31,7 @@ Modelos são treinados em milhões de sites e devolvem a média estatística: In
 
 ### Copy (textos)
 - [ ] Headlines vagas: "Build the future", "Elevate your business", "Unlock your potential", "Revolutionize", "Seamless", "Cutting-edge", "Empower". Fix: copy específica, com dados, verbo concreto, benefício mensurável (ex: "Reduce API costs 63% with response caching").
-- [ ] Travessões "—" como ornamento de texto. Fix: "·", ":", ponto final.
+- [ ] Travessões "—" (em-dash Unicode) OU "--" (duplo hífen ASCII, comum quando texto vem de outro editor/idioma). Fix: "·", ":", ponto final. Hífen simples "-" continua normal.
 - [ ] Emojis decorativos no UI copy. Fix: ícones semânticos (Lucide/Phosphor) ou nada.
 
 ### Componentes
@@ -63,4 +63,4 @@ Modelos são treinados em milhões de sites e devolvem a média estatística: In
 - Se o usuário pediu um estilo específico (ex: "quero glassmorphism"), respeite, mas aplique com refinamento (glass 2.0: translucidez sutil, noise, gradient borders, sem blur pesado).
 - Referências de qualidade: Linear, Vercel, Stripe, Apple, Awwwards SOTD — use o vocabulário, nunca copie.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/anti-ai-slop/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/anti-ai-slop/SKILL.md` (fonte da verdade).

@@ -48,4 +48,4 @@ Erro → Classificação → Padrão existente? → SIM: aplicar solução guiad
                               → NÃO: diagnosticar → registrar padrão → fix → teste de regressão
 ```
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/failure-patterns/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/failure-patterns/SKILL.md` (fonte da verdade).

@@ -50,4 +50,4 @@ Funcionalidade: Recuperação de Senha
 - Agile Requirements & BDD (Specification by Example): Gojko Adzic.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/requirement-analyzer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/requirement-analyzer/SKILL.md` (fonte da verdade).

@@ -56,4 +56,4 @@ sequenceDiagram
 - Mermaid.js Sequence Diagrams: https://mermaid.js.org/syntax/sequenceDiagram.html
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/sequence-diagram-builder/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/sequence-diagram-builder/SKILL.md` (fonte da verdade).

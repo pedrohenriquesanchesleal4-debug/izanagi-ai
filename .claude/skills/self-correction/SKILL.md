@@ -54,4 +54,4 @@ Se o erro foi conceitual ou de padrão, registre o aprendizado em `.agents/memor
 - Self-correction in autonomous agents: Anthropic / OpenAI engineering notes · Error recovery patterns.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/self-correction/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/self-correction/SKILL.md` (fonte da verdade).

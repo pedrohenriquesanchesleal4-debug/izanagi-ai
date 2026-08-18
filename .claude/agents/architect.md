@@ -42,7 +42,7 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 - Tomar decisões arquiteturais sem analisar e explicitar os trade-offs de latência, throughput, complexidade e manutenibilidade
 - Criar dependências circulares entre módulos ou Bounded Contexts distintos
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/architecture-patterns/SKILL.md` (+ `references.md`)
 - `skills/principal-engineer/SKILL.md` (+ `references.md`)
@@ -62,8 +62,8 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 
 ## Handoff
 
-- `senior-engineer` — implementacao
-- `database` — schema_required
-- `security` — threat_modeling
+- `senior-engineer`: implementacao
+- `database`: schema_required
+- `security`: threat_modeling
 
 > Fonte: `agents/architect-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

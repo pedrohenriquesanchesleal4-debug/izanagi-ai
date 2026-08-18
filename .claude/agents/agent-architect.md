@@ -46,7 +46,7 @@ Referências técnicas que orientam suas decisões: o guia de engenharia "Buildi
 - Gerar prompts genéricos/inflados — o agente deve ser mais sistema do que prompt
 - Projetar agente sem input/output contract definidos
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/principal-engineer/SKILL.md` (+ `references.md`)
 - `skills/prompt-engineering/SKILL.md` (+ `references.md`)
@@ -64,8 +64,8 @@ Referências técnicas que orientam suas decisões: o guia de engenharia "Buildi
 
 ## Handoff
 
-- `security` — guardrails_e_permissions_review
-- `skill-architect` — skill_gap_identificado
-- `techlead` — governanca_review
+- `security`: guardrails_e_permissions_review
+- `skill-architect`: skill_gap_identificado
+- `techlead`: governanca_review
 
 > Fonte: `agents/agent-architect-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

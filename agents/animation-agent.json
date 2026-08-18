@@ -64,7 +64,10 @@
     "gsap",
     "transições de página"
   ],
-  "optionalSkills": [],
+  "optionalSkills": [
+    "editorial-layout",
+    "conversion-copywriting"
+  ],
   "inputs": [
     "task",
     "design direction"

@@ -68,4 +68,4 @@ php artisan serve
 
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/documentation-writer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/documentation-writer/SKILL.md` (fonte da verdade).

@@ -248,7 +248,17 @@
     "handoff-protocol": "skills/handoff-protocol/SKILL",
     "handoff": "skills/handoff-protocol/SKILL",
     "failure-patterns": "skills/failure-patterns/SKILL",
-    "padroes-falha": "skills/failure-patterns/SKILL"
+    "padroes-falha": "skills/failure-patterns/SKILL",
+    "payments": "skills/payments-billing",
+    "billing": "skills/payments-billing",
+    "stripe": "skills/payments-billing",
+    "pagamentos": "skills/payments-billing",
+    "payments-billing": "skills/payments-billing/SKILL",
+    "editorial-layout": "skills/editorial-layout/SKILL",
+    "grid-editorial": "skills/editorial-layout",
+    "conversion-copywriting": "skills/conversion-copywriting/SKILL",
+    "copywriting": "skills/conversion-copywriting",
+    "copy": "skills/conversion-copywriting"
   },
   "compositions": {
     "web_cinematic": {
@@ -263,12 +273,14 @@
       "chain": [
         "design-directions",
         "ui-ux-pro-max",
+        "editorial-layout",
         "frontend",
         "motion-design",
         "animation-web",
         "webgl-3d",
         "web-perf-seo",
         "a11y",
+        "conversion-copywriting",
         "anti-ai-slop",
         "qa"
       ],
@@ -442,16 +454,20 @@
         "fullstack",
         "sistema",
         "dashboard com backend",
-        "saas"
+        "saas",
+        "saas com cobranca"
       ],
       "chain": [
         "architect",
         "db",
         "backend",
         "design-directions",
+        "editorial-layout",
         "frontend",
         "security",
+        "payments-billing",
         "ui-ux-pro-max",
+        "conversion-copywriting",
         "anti-ai-slop",
         "parallel-agents",
         "qa",
@@ -553,6 +569,27 @@
         "memoria-projeto"
       ],
       "artifact": "research artifact com claims classificados (FACT/ASSUMPTION/INFERENCE/UNKNOWN)"
+    },
+    "billing_integration": {
+      "triggers": [
+        "pagamento",
+        "assinatura",
+        "cobranca",
+        "cobrança",
+        "checkout",
+        "stripe",
+        "billing",
+        "plano pago"
+      ],
+      "chain": [
+        "payments-billing",
+        "backend",
+        "db",
+        "security-privacy",
+        "observability-expert",
+        "qa"
+      ],
+      "artifact": "integracao de cobranca em producao (webhook verificado, idempotente, dunning, acesso liberado so via webhook)"
     }
   }
 }

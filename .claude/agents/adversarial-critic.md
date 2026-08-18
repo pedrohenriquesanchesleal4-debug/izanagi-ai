@@ -1,6 +1,6 @@
 ---
 name: adversarial-critic
-description: "Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar — não para confirmar o que a revisão já cobriu."
+description: "Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar: não para confirmar o que a revisão já cobriu."
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
@@ -45,7 +45,7 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (e OWASP Top 10
 - Reportar problemas sem justificativa técnica
 - Ignorar problemas de segurança por 'baixa probabilidade'
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/code-auditor/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
@@ -62,8 +62,8 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (e OWASP Top 10
 
 ## Handoff
 
-- `senior-engineer` — aplicar_fixes
-- `evaluator` — avaliacao_final
-- `security` — aprofundar_vulnerabilidades
+- `senior-engineer`: aplicar_fixes
+- `evaluator`: avaliacao_final
+- `security`: aprofundar_vulnerabilidades
 
 > Fonte: `agents/adversarial-critic-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

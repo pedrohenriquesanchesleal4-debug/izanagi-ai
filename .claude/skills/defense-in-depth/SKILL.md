@@ -82,4 +82,4 @@ export async function updateProfile(req: Request) {
 - OWASP Defense in Depth: https://cheatsheetseries.owasp.org · NIST Cybersecurity Framework.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/defense-in-depth/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/defense-in-depth/SKILL.md` (fonte da verdade).

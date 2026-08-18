@@ -1,5 +1,5 @@
 ---
-description: "QA Engineer - Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada — testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG)."
+description: "QA Engineer - Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada: testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG)."
 ---
 
 # QA Engineer

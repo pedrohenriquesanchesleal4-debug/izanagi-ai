@@ -59,4 +59,4 @@ Você é o avaliador do Izanagi. Sua única função é AVALIAR — nunca implem
 - Regressão ou teste falhando → nunca PASS.
 - Score e confidence em [0,1].
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/evaluation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/evaluation/SKILL.md` (fonte da verdade).

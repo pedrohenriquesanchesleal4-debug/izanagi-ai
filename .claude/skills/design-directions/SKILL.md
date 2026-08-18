@@ -64,4 +64,4 @@ Formate as direções de forma comparável (tabela resumo + detalhe de cada uma)
 - Código ZERO nesta skill: o output é a decisão de design do usuário (a direção escolhida vira input da cadeia de implementação).
 - Se o usuário disser "escolhe por mim", escolha a direção mais alinhada ao nicho e justifique em 1 linha.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/design-directions/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/design-directions/SKILL.md` (fonte da verdade).

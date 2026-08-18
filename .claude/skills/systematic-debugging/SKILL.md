@@ -157,4 +157,4 @@ Localize a camada/função/linha exata que falha.
 
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/systematic-debugging/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/systematic-debugging/SKILL.md` (fonte da verdade).

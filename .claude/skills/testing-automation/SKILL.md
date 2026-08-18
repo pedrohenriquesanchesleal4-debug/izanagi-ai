@@ -122,4 +122,4 @@ def main(dry_run: bool = False):
 - pytest: https://docs.pytest.org · pytest-playwright: https://playwright.dev/python/docs/test-runners · pytest-httpx: https://github.com/Colin-b/pytest_httpx
 - Ver skills `automation-engineer`, `error-recovery`, `webapp-testing`.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/testing-automation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/testing-automation/SKILL.md` (fonte da verdade).

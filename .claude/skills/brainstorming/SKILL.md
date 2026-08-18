@@ -101,4 +101,4 @@ Cada unidade deve: ter um propósito, expor interface clara, ser testável de fo
 - Baseado em TDD-YAGNI-DRY workflow (ver também `tdd` no Izanagi).
 - Curadoria de referências do framework: `references/` (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo) e `references.md` desta skill.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/brainstorming/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/brainstorming/SKILL.md` (fonte da verdade).

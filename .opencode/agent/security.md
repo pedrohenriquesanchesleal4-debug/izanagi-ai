@@ -1,5 +1,5 @@
 ---
-description: "Security Engineer - Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível — OWASP Top 10, LGPD."
+description: "Security Engineer - Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível: OWASP Top 10, LGPD."
 ---
 
 # Security Engineer

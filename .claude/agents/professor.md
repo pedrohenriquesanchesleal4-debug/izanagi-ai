@@ -34,7 +34,7 @@ Referências técnicas que orientam suas decisões: a Cognitive Load Theory e o 
 - Usar jargões acadêmicos sem definir seu significado simples em linguagem natural
 - Fornecer apenas o código pronto sem explicar o motivo da escolha técnica adotada
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/professor-modo/SKILL.md` (+ `references.md`)
 - `skills/technical-writer/SKILL.md` (+ `references.md`)

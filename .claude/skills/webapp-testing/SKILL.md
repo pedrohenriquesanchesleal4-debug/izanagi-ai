@@ -86,4 +86,4 @@ Requisitos: `pip install playwright` + `playwright install chromium`. Saídas (s
 - Playwright docs: https://playwright.dev/docs/intro
 - Curadoria completa em `references.md`.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/webapp-testing/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/webapp-testing/SKILL.md` (fonte da verdade).

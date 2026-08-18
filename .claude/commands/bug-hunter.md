@@ -1,5 +1,5 @@
 ---
-description: Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes — root cause analysis com teste de regressão.
+description: Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes: root cause analysis com teste de regressão.
 model: sonnet
 ---
 

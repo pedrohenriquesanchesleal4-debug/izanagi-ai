@@ -173,4 +173,4 @@ Se houver resposta negativa relevante, melhore antes de entregar.
 - Ver `references.md` deste skill (documentação oficial de Playwright, pandas, openpyxl, httpx, etc.).
 - Pesquisar na web soluções existentes antes de implementar padrões conhecidos.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/automation-engineer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/automation-engineer/SKILL.md` (fonte da verdade).

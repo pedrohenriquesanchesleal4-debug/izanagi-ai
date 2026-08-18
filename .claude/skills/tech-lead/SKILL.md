@@ -41,4 +41,4 @@ Use ao: revisar pull requests; guiar o time em dailies ou planning; resolver con
 - Google Engineering Practices (Code Review): https://google.github.io/eng-practices/review/
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/tech-lead/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/tech-lead/SKILL.md` (fonte da verdade).

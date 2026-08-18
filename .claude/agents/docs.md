@@ -38,7 +38,7 @@ Referências técnicas que orientam suas decisões: o framework Diátaxis (diata
 - Fornecer exemplos de código com erros de sintaxe ou referências a pacotes e rotas que não existem
 - Omitir a explicação das variáveis de ambiente exigidas pela aplicação
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/technical-writer/SKILL.md` (+ `references.md`)
 - `skills/readme-generator/SKILL.md` (+ `references.md`)

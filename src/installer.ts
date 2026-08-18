@@ -130,12 +130,21 @@ export function getPackageDir(): string {
 
 /**
  * Resolve o framework root do projeto do usuário:
- * - Se o projeto foi inicializado (`.agents/` existe), usa ele (permite edição local).
+ * - Se o projeto foi inicializado de fato (`.agents/core` existe: o pack `core` é
+ *   sempre copiado por `izanagi init`), usa `.agents/` (permite edição local).
  * - Caso contrário, usa a raiz do pacote instalado.
+ *
+ * Checar só `fs.existsSync(cwd/.agents)` (sem o `/core`) é um falso positivo real:
+ * `.agents/memoria/` é criado pelo próprio runtime (`izanagi run`) para persistir
+ * memória, mesmo sem `izanagi init` nunca ter sido executado. Nesse caso `.agents/`
+ * existe mas não tem `agents/`, `core/`, `skills/` — todo comando (`doctor`, `run`,
+ * `agent list`...) então procurava RULES.md/skill-resolver.json ali dentro e falhava
+ * silenciosamente, mesmo dentro do próprio checkout do framework (rodar `izanagi doctor`
+ * na raiz deste repo depois de qualquer `izanagi run` de teste local reproduz o bug).
  */
 export function resolveFrameworkRoot(cwd: string): string {
   const projectAgents = path.join(cwd, '.agents');
-  if (fs.existsSync(projectAgents)) {
+  if (fs.existsSync(path.join(projectAgents, 'core'))) {
     return projectAgents;
   }
   return getPackageDir();

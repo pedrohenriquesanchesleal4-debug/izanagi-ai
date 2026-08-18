@@ -96,4 +96,4 @@ def salvar_estado(processados: set[str]):
 - AWS: Timeouts, retries and backoff: https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/ · Martin Fowler: Patterns of resilient architecture: https://martinfowler.com/articles/patterns-of-distributed-systems/ · tenacity (retry lib): https://tenacity.readthedocs.io
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/error-recovery/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/error-recovery/SKILL.md` (fonte da verdade).

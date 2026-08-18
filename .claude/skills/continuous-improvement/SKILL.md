@@ -47,4 +47,4 @@ Se o aprendizado for genérico o bastante, sugira a atualização de uma skill o
 - Continuous improvement in software engineering (Kaizen / Post-mortem culture): Google SRE Book (Incident Post-mortems).
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/continuous-improvement/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/continuous-improvement/SKILL.md` (fonte da verdade).

@@ -256,4 +256,4 @@ refactoring_plan:
 - *Working Effectively with Legacy Code* (Feathers) — testes de caracterização para código sem cobertura: https://www.oreilly.com/library/view/working-effectively-with/0131177052/
 - Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/refactoring-specialist/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/refactoring-specialist/SKILL.md` (fonte da verdade).

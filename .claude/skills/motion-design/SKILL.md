@@ -146,4 +146,4 @@ const container = { show: { transition: { staggerChildren: 0.08 } } };
 - 60fps; INP < 200ms; bundle de animação < 60KB gzip (apenas o que usa).
 - Reflection: qual lib usada e por quê, o que o usuário achou do "feel".
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/motion-design/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/motion-design/SKILL.md` (fonte da verdade).

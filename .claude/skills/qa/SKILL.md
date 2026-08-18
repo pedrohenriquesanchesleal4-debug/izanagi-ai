@@ -250,4 +250,4 @@ Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (
 
 Atualizações usadas nesta revisão: [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (spec oficial — 9 critérios novos vs. 2.1, incluindo Target Size 2.5.8 e Accessible Authentication 3.3.8); [Playwright — Locators](https://playwright.dev/docs/locators) (prioridade `getByRole`); Kent C. Dodds — [Testing Trophy](https://kentcdodds.com/blog/write-tests) (proporção de testes para frontend component-driven).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/qa/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/qa/SKILL.md` (fonte da verdade).

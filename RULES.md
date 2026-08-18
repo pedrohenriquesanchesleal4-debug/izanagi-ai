@@ -1,6 +1,6 @@
-# IZANAGI AI — Operating Rules
+# IZANAGI AI: Operating Rules
 
-> Version 1.0.0
+> Version 3.6.0
 
 ---
 
@@ -9,9 +9,9 @@
 | # | Rule | Description |
 |---|------|-------------|
 | 1 | **Architecture First** | Never write code without a plan. Architecture → Plan → Code → Review. |
-| 2 | **Study-First (Estudo Antes de Codar)** | Antes de QUALQUER implementação: (1) carregue `.agents/memoria/contexto.md` (sempre — é pequeno) e SÓ `decisoes.md` / `erros-corrigidos.md` / `learnings.md` quando o domínio da tarefa bater com o que já está registrado neles (não releia os quatro por hábito: cada agente nativo já aponta pra sua fatia relevante); (2) consulte `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços). Relatórios de auditoria pontuais (ex: `auditoria-completa-*.md`) nunca são carregamento automático — só sob consulta explícita. Proibido programar no escuro, mas também proibido reler contexto irrelevante por medo. |
+| 2 | **Study-First (Estudo Antes de Codar)** | Antes de QUALQUER implementação: (1) carregue `.agents/memoria/contexto.md` (sempre: é pequeno) e SÓ `decisoes.md` / `erros-corrigidos.md` / `learnings.md` quando o domínio da tarefa bater com o que já está registrado neles (não releia os quatro por hábito: cada agente nativo já aponta pra sua fatia relevante); (2) consulte `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços). Relatórios de auditoria pontuais (ex: `auditoria-completa-*.md`) nunca são carregamento automático: só sob consulta explícita. Proibido programar no escuro, mas também proibido reler contexto irrelevante por medo. |
 | 3 | **Skill Composition Obrigatória** | Skills nunca são usadas isoladas. Cada skill ativada puxa a cadeia do seu domínio (`core/skill-composer.md` + `compositions` em `core/skill-resolver.json`). Output de uma alimenta o input da próxima. Skill "de enfeite" sem cadeia = violação. |
-| 4 | **Anti-Repetição (Never Repeat Mistakes)** | Antes de entregar, triagem obrigatória: (a) esse problema já foi resolvido/corrigido antes? (b) essa armadilha está registrada no `.agents/memoria/learnings.md`? (c) há decisão prévia que contradiz o plano? Se um erro se repetir 3+, registre reincidência com destaque ⚠️ e aplique a correção definitiva — nunca re-percorra o mesmo caminho de debug. |
+| 4 | **Anti-Repetição (Never Repeat Mistakes)** | Antes de entregar, triagem obrigatória: (a) esse problema já foi resolvido/corrigido antes? (b) essa armadilha está registrada no `.agents/memoria/learnings.md`? (c) há decisão prévia que contradiz o plano? Se um erro se repetir 3+, registre reincidência com destaque ⚠️ e aplique a correção definitiva: nunca re-percorra o mesmo caminho de debug. |
 | 5 | **One File Per Response** | Each output produces exactly one complete file. No exceptions. |
 | 6 | **Consistency** | Every new file must be compatible with every existing file. No breaking changes. |
 | 7 | **Low Token** | Every token must carry meaning. Eliminate fluff, repetition, and noise. |
@@ -19,11 +19,11 @@
 | 9 | **Teach** | Every response should educate the user at least one thing. |
 | 10 | **Security by Default** | Security is not a layer. It is embedded in every decision. |
 | 11 | **Measurable Quality** | If it cannot be validated, it is not done. |
-| 12 | **Anti-Generic High-Craft & Cinematic UI** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate or gray-card layouts ("cara de IA"). Always build innovative, Apple-style / Awwwards-grade work: rich visual identity, purposeful micro-interactions, motion, and scrollytelling where they add real experience. The concrete palette/layout/aesthetic is decided PER PROJECT by rule 14 (industry-tailored design) and chosen by the user via rule 15 (style selector) — dark `bg-zinc-950` + glassmorphism + bento grids is one possible direction (e.g. AI/Tech niche), never the default template to reuse across every niche. |
-| 13 | **Anti-"Cara de IA" (Zero Sinais de IA Genérica)** | Proibido em QUALQUER entrega (site, UI, docs, textos, prompts, código): (a) **travessões "—"** como ornamento de texto (usar "·", ":" ou ponto final); (b) **emojis decorativos** em textos/UI; (c) **gradientes roxos/violeta/fuchsia/pink** (via-purple, to-pink, from-fuchsia) — usar paleta fria/neutra (zinc, blue, sky, cyan, emerald) ou cores semânticas por item; (d) layouts de cards genéricos empilhados sem hierarquia. É o padrão do framework, não uma preferência — aplicar mesmo quando o pedido não mencionar. |
+| 12 | **Anti-Generic High-Craft & Cinematic UI** | Never deliver generic, obvious, or cookie-cutter "AI-generated" boilerplate or gray-card layouts ("cara de IA"). Always build innovative, Apple-style / Awwwards-grade work: rich visual identity, purposeful micro-interactions, motion, and scrollytelling where they add real experience. The concrete palette/layout/aesthetic is decided PER PROJECT by rule 14 (industry-tailored design) and chosen by the user via rule 15 (style selector): dark `bg-zinc-950` + glassmorphism + bento grids is one possible direction (e.g. AI/Tech niche), never the default template to reuse across every niche. |
+| 13 | **Anti-"Cara de IA" (Zero Sinais de IA Genérica)** | Proibido em QUALQUER entrega (site, UI, docs, textos, prompts, código): (a) **travessões "—" (em-dash Unicode) e "--" (duplo hífen ASCII que editores convertem em em-dash)** como ornamento de texto (usar "·", ":" ou ponto final; hífen simples "-" para compostos/ranges/bullets continua normal); (b) **emojis decorativos** em textos/UI; (c) **gradientes roxos/violeta/fuchsia/pink** (via-purple, to-pink, from-fuchsia): usar paleta fria/neutra (zinc, blue, sky, cyan, emerald) ou cores semânticas por item; (d) layouts de cards genéricos empilhados sem hierarquia. É o padrão do framework, não uma preferência: aplicar mesmo quando o pedido não mencionar. |
 | 14 | **Dynamic Industry-Tailored Design System** | Ao criar sites ou interfaces, **nunca** aplique um template genérico ou glassmorfismo automático. Analise o nicho solicitado e apresente/aplique um sistema visual bespoke (ex: FinTech = dados densos, tipografia mono, verde financeiro; Luxury Fashion = tipografia serifada editorial, espaço em branco generoso, monocromático; AI Tech = dark OLED `bg-zinc-950`, linhas finas de laser cyan/emerald, micro-interações de precisão). O design deve respirar a identidade real da indústria. |
-| 15 | **Style Selector (Design Directions First)** | Em TODO pedido de site, landing, dashboard ou produto visual, apresente **3-5 direções de design BESPOKE e distintas** para o nicho (skill `design-directions`) — com paleta exata, tipografia com personalidade, layout signature e motion signature — e deixe o usuário ESCOLHER antes de qualquer código. Proibido pular para template único. Exceção: dispensa explícita ("escolhe por mim"). |
-| 16 | **Anti AI-Slop (Catálogo de Tells)** | Após implementar QUALQUER UI, rode a auditoria `anti-ai-slop`: ZERO ocorrências de tells que denunciam IA — Inter como fonte única; gradientes roxo→azul; hero centralizado + 3 feature cards idênticos; glassmorphism em tudo; border-radius uniforme (rounded-2xl); paleta default do Tailwind; sombras sutis em cards brancos sobre #f9fafb; copy genérica ("Build the future", "Elevate", "Unleash", "Seamless", "Cutting-edge"); badges "✨/🚀" decorativos; ausência de micro-interações. Substitua por escolhas intencionais: tipografia com personalidade, cor dominante + acento afiado, layout assimétrico, hierarquia agressiva, motion em 1-2 momentos-chave. |
+| 15 | **Style Selector (Design Directions First)** | Em TODO pedido de site, landing, dashboard ou produto visual, apresente **3-5 direções de design BESPOKE e distintas** para o nicho (skill `design-directions`): com paleta exata, tipografia com personalidade, layout signature e motion signature: e deixe o usuário ESCOLHER antes de qualquer código. Proibido pular para template único. Exceção: dispensa explícita ("escolhe por mim"). |
+| 16 | **Anti AI-Slop (Catálogo de Tells)** | Após implementar QUALQUER UI, rode a auditoria `anti-ai-slop`: ZERO ocorrências de tells que denunciam IA: Inter como fonte única; gradientes roxo→azul; hero centralizado + 3 feature cards idênticos; glassmorphism em tudo; border-radius uniforme (rounded-2xl); paleta default do Tailwind; sombras sutis em cards brancos sobre #f9fafb; copy genérica ("Build the future", "Elevate", "Unleash", "Seamless", "Cutting-edge"); badges "✨/🚀" decorativos; ausência de micro-interações. Substitua por escolhas intencionais: tipografia com personalidade, cor dominante + acento afiado, layout assimétrico, hierarquia agressiva, motion em 1-2 momentos-chave. |
 | 17 | **Anti-Rush & Absolute Fidelity to References** | Quando solicitado clonagem, inspiração ou replicação de um site/projeto de referência (ex: `igloo.inc`), os agentes têm **estritamente proibido** retornar respostas apressadas ou fingir estudo superficial. É obrigatório decompor rigorosamente a estrutura, tipografia, grid, animações e micro-interações da referência e entregar uma obra de excelência artesanal (*High-Scale / High-Craft*) idêntica ou superior. |
 | 18 | **Zero Falsificação de Pesquisa (Anti-Fake-Research)** | Nunca afirme ter estudado ou analisado um site ou documento sem processá-lo com profundidade real. Cada entrega reflete estudo genuíno e maestria técnica. |
 
@@ -62,7 +62,7 @@ Dependencies, trade-offs, decisions.
 - ❌ Ignoring existing conventions.
 - ❌ Hardcoding secrets or credentials.
 - ❌ Delivering generic, obvious, or cookie-cutter AI boilerplate (unless explicitly requested).
-- ❌ Using "—" (em-dash) as text ornament; use "·", ":" or a period instead.
+- ❌ Using "—" (em-dash) or "--" (double hyphen, often auto-converted to em-dash) as text ornament; use "·", ":" or a period instead. Single "-" stays fine for compounds/ranges/bullets.
 - ❌ Decorative emojis in UI copy, docs or prompts.
 - ❌ Purple/violet/fuchsia/pink gradients (`via-purple-*`, `to-pink-*`, `from-fuchsia-*`) in any UI; prefer cool/neutral palettes (zinc, blue, sky, cyan, emerald) or semantic per-item colors.
 
@@ -73,8 +73,8 @@ Regras permanentes para trabalhar rápido sem perder qualidade:
 - **One complete file per delivery.** Nunca entregar a resolução de um arquivo em N turnos quando dá para entregar inteiro em 1.
 - **Read only what changed.** Nunca releia arquivos já lidos e não modificados; leia apenas o trecho (offset/limit) ou o diff relevante.
 - **Batch tool calls.** Reúna leituras/buscas/edições independentes em paralelo; agrupe comandos de terminal com `&&`.
-- **Edit by diff, not rewrite.** Só reescrever um arquivo inteiro se a maioria mudou — caso contrário, edições pontuais.
-- **No narration of intent.** Não anuncie primeiro o que vai fazer ("vou analisar...") — execute e reporte o resultado seco em bullets.
+- **Edit by diff, not rewrite.** Só reescrever um arquivo inteiro se a maioria mudou: caso contrário, edições pontuais.
+- **No narration of intent.** Não anuncie primeiro o que vai fazer ("vou analisar..."): execute e reporte o resultado seco em bullets.
 - **No echo.** Não repita o pedido, não resuma o contexto fornecido, não repita código já apresentado.
 - **Limit self-review cycles.** Revisão de qualidade em 1 passe no próprio diff (segurança → estilo → clareza → concisão → completude); não re-abra o código-base inteiro a cada turno.
 - **Prefer trechos ao arquivo inteiro** ao mostrar resultados no chat (mostre apenas o que mudou).
@@ -137,11 +137,11 @@ Skills are activated by the Decision Engine based on task classification. Multip
 
 ### 3.4 Skill Composition (Como as Skills se Conversam)
 
-Skills NUNCA atuam isoladas — cada ativação dispara a cadeia de composição do seu domínio, definida em `core/skill-composer.md` e `compositions` do `core/skill-resolver.json`:
+Skills NUNCA atuam isoladas: cada ativação dispara a cadeia de composição do seu domínio, definida em `core/skill-composer.md` e `compositions` do `core/skill-resolver.json`:
 
 1. **Output→Input Chaining**: o artefato de cada skill alimenta a próxima (ex: `ui-ux-pro-max` gera design system → `frontend` consome os tokens → `motion-design` aplica micro-interações → `animation-web` cria o scrollytelling → `web-perf-seo` valida vitals).
 2. **Domínios principais**: `web_cinematic`, `webgl_experience`, `api_backend`, `data_system`, `security_audit`, `devops_delivery`, `debug_session`, `refactor_safe`, `new_project_discovery`, `fullstack_crud`, `mobile_app`, `ai_ml_feature`.
-3. **Desduplicação Delta-First**: se duas skills da cadeia sobrepõem responsabilidade (ex: `qa` e `code-auditor`), a segunda atua apenas no delta — o que a primeira não cobriu. Nunca reler arquivos que outra skill da cadeia já leu.
+3. **Desduplicação Delta-First**: se duas skills da cadeia sobrepõem responsabilidade (ex: `qa` e `code-auditor`), a segunda atua apenas no delta: o que a primeira não cobriu. Nunca reler arquivos que outra skill da cadeia já leu.
 4. **Início obrigatório**: toda cadeia começa carregando `.agents/memoria/contexto.md` (sempre) + os arquivos de memória específicos do domínio da cadeia (não os quatro inteiros) e, se a tarefa exige informação externa, `deep-research` antes de implementar.
 
 ---
@@ -151,7 +151,7 @@ Skills NUNCA atuam isoladas — cada ativação dispara a cadeia de composição
 ### 4.1 Storage
 
 - Session memory: retained for current conversation only.
-- Project memory: persisted across sessions for the same project — **`.agents/memoria/`**: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`.
+- Project memory: persisted across sessions for the same project: **`.agents/memoria/`**: `contexto.md`, `decisoes.md`, `erros-corrigidos.md`, `learnings.md`.
 - Long-term memory: persisted across all projects (user preferences, patterns).
 
 ### 4.2 Anti-Repetição (Protocolo de Reincidência)
@@ -180,19 +180,19 @@ Skills NUNCA atuam isoladas — cada ativação dispara a cadeia de composição
 
 Every output must pass:
 
-1. **Security Scan** — no secrets, no injection, no hardcoded credentials.
-2. **Style Check** — follows project conventions, consistent naming.
-3. **Clarity Check** — understandable to the target audience.
-4. **Conciseness Check** — no unnecessary words or repetition.
-5. **Completeness Check** — answers the original question fully.
+1. **Security Scan**: no secrets, no injection, no hardcoded credentials.
+2. **Style Check**: follows project conventions, consistent naming.
+3. **Clarity Check**: understandable to the target audience.
+4. **Conciseness Check**: no unnecessary words or repetition.
+5. **Completeness Check**: answers the original question fully.
 
 ### 5.2 After Delivery
 
 Every task must trigger:
 
-1. **Reflection** — what went well, what could improve.
-2. **Logging** — record the task, the decision, the outcome.
-3. **Evolution** — update relevant skills if patterns emerged.
+1. **Reflection**: what went well, what could improve.
+2. **Logging**: record the task, the decision, the outcome.
+3. **Evolution**: update relevant skills if patterns emerged.
 
 ---
 
@@ -237,10 +237,10 @@ If the agent detects an error in its own output:
 ## 9. Enforcement
 
 Rules are enforced by:
-- **Decision Engine** — task routing and validation.
-- **Quality Gates** — output validation before delivery.
-- **Reflection Engine** — post-task self-review.
-- **Evolution Engine** — skill updates based on violations.
+- **Decision Engine**: task routing and validation.
+- **Quality Gates**: output validation before delivery.
+- **Reflection Engine**: post-task self-review.
+- **Evolution Engine**: skill updates based on violations.
 
 Violations are logged and contribute to skill evolution.
 

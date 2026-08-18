@@ -66,4 +66,4 @@ task_plan:
 - Agile Planning & WBS (Work Breakdown Structure): PMI / Scrum Guide.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/task-planner/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/task-planner/SKILL.md` (fonte da verdade).

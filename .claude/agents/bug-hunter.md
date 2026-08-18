@@ -1,6 +1,6 @@
 ---
 name: bug-hunter
-description: "Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes — root cause analysis com teste de regressão."
+description: "Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes: root cause analysis com teste de regressão."
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: sonnet
 ---
@@ -37,7 +37,7 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 - Modificar código sem antes ter lido o stack trace ou sem um teste que reproduza a falha
 - Encerrar a tarefa declarando correção sem rodar o teste de verificação empírica
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/systematic-debugging/SKILL.md` (+ `references.md`)
 - `skills/hallucination-detection/SKILL.md` (+ `references.md`)
@@ -55,6 +55,6 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 
 ## Handoff
 
-- `senior-engineer` — implementacao
+- `senior-engineer`: implementacao
 
 > Fonte: `agents/bug-hunter-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

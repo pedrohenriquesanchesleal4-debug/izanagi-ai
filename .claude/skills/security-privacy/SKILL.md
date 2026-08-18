@@ -224,4 +224,4 @@ Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (
 
 Atualizações 2025/2026 usadas nesta revisão: [OWASP Top 10:2025](https://owasp.org/Top10/2025/) (8ª edição — Software Supply Chain Failures e Mishandling of Exceptional Conditions são novas; SSRF mesclado em Broken Access Control) e o site oficial da [ANPD](https://www.gov.br/anpd/pt-br) (Mapa de Temas Prioritários 2026-2027 e Agenda Regulatória).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/security-privacy/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/security-privacy/SKILL.md` (fonte da verdade).

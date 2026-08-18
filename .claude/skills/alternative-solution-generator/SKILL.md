@@ -74,4 +74,4 @@ Redis — the performance and scalability benefits far outweigh the minimal setu
 
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/alternative-solution-generator/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/alternative-solution-generator/SKILL.md` (fonte da verdade).

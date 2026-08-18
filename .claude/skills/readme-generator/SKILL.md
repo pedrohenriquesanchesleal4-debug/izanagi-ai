@@ -162,4 +162,4 @@ Leia do topo ao fim simulando um clone: `git clone`, seguir cada passo. Se algum
 - SemVer: https://semver.org · Conventional Commits: https://www.conventionalcommits.org · Keep a Changelog: https://keepachangelog.com
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/readme-generator/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/readme-generator/SKILL.md` (fonte da verdade).

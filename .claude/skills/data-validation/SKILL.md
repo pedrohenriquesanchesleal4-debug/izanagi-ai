@@ -104,4 +104,4 @@ Por tipo: email inválido 14 | CPF com máscara 12 | plano desconhecido 6 | dupl
 - Pydantic v2 validators: https://docs.pydantic.dev/latest/concepts/validators/ · pandas: https://pandas.pydata.org/docs · validate-docbr (CPF/CNPJ): https://pypi.org/project/validate-docbr/
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/data-validation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/data-validation/SKILL.md` (fonte da verdade).

@@ -43,7 +43,7 @@ Referências técnicas que orientam suas decisões: o método GRADE (Grading of 
 - Apresentar suposições como fatos verificados
 - Entregar relatório sem seção de limitações
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/deep-research/SKILL.md` (+ `references.md`)
 - `skills/confidence-estimator/SKILL.md` (+ `references.md`)
@@ -59,8 +59,8 @@ Referências técnicas que orientam suas decisões: o método GRADE (Grading of 
 
 ## Handoff
 
-- `architect` — decisao_arquitetural_baseada_em_evidencia
-- `discovery` — viabilidade_de_produto
-- `evaluator` — avaliacao_do_relatorio
+- `architect`: decisao_arquitetural_baseada_em_evidencia
+- `discovery`: viabilidade_de_produto
+- `evaluator`: avaliacao_do_relatorio
 
 > Fonte: `agents/researcher-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

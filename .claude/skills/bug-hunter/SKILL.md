@@ -235,4 +235,4 @@ bug_report:
 
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/bug-hunter/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/bug-hunter/SKILL.md` (fonte da verdade).

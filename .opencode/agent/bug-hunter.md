@@ -1,5 +1,5 @@
 ---
-description: "Bug Hunter - Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes — root cause analysis com teste de regressão."
+description: "Bug Hunter - Use PROACTIVELY para bugs difíceis de reproduzir ou reincidentes: root cause analysis com teste de regressão."
 ---
 
 # Bug Hunter

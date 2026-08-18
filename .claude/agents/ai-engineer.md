@@ -1,6 +1,6 @@
 ---
 name: ai-engineer
-description: "Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM — RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA (isso é `senior-engineer`)."
+description: "Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM: RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA (isso é `senior-engineer`)."
 tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch
 model: sonnet
 ---
@@ -42,7 +42,7 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - Assumir que 'funcionou no meu teste manual' substitui uma métrica objetiva de avaliação
 - Confundir esta especialidade com a do senior-engineer: UI, CRUD e backend genérico não são desta fatia
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/ai-agent/SKILL.md` (+ `references.md`)
 - `skills/prompt-engineering/SKILL.md` (+ `references.md`)
@@ -62,8 +62,8 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 
 ## Handoff
 
-- `senior-engineer` — ui_ou_backend_generico_fora_do_escopo_llm
-- `security` — guardrails_ou_dados_sensiveis_expostos_ao_modelo
-- `qa` — verificacao
+- `senior-engineer`: ui_ou_backend_generico_fora_do_escopo_llm
+- `security`: guardrails_ou_dados_sensiveis_expostos_ao_modelo
+- `qa`: verificacao
 
 > Fonte: `agents/ai-engineer-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

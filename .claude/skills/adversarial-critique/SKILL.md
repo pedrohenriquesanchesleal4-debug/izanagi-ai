@@ -37,4 +37,4 @@ Você é o ADVERSARIAL CRITIC do Izanagi. Recebe uma implementação e procura a
 - Findings classificados com severidade.
 - Veredicto final claro com lista priorizada.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/adversarial-critique/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/adversarial-critique/SKILL.md` (fonte da verdade).

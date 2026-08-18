@@ -34,7 +34,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Permitir consultas N+1 dentro de loops em aplicações web ou APIs
 - Alterar o schema e o código da aplicação que depende dele no mesmo deploy — sempre separar em fases Expand-Contract independentes e retrocompatíveis
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/data-engineering/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
@@ -52,6 +52,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Handoff
 
-- `senior-engineer` — schema_aprovado
+- `senior-engineer`: schema_aprovado
 
 > Fonte: `agents/database-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

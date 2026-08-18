@@ -110,4 +110,4 @@ export function AccessibleButton({ isLoading, children, disabled, ...props }: Bu
 - WCAG 2.2 QuickRef: https://www.w3.org/WAI/WCAG22/quickref/ · ARIA Authoring Practices Guide (APG): https://www.w3.org/WAI/ARIA/apg/ · axe-core: https://www.deque.com/axe/
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/accessibility-reviewer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/accessibility-reviewer/SKILL.md` (fonte da verdade).

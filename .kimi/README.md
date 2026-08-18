@@ -1,11 +1,11 @@
-# Izanagi AI — Kimi CLI (Moonshot)
+# Izanagi AI: Kimi CLI (Moonshot)
 
 O **Kimi CLI** é compatível com a convenção do opencode: ele lê `AGENTS.md` e os comandos slash em `.opencode/agent/*.md` nativamente.
 
 ## Como usar
 
 - **Fonte da verdade**: `AGENTS.md` (leia antes de qualquer tarefa).
-- **Comandos slash**: `.opencode/agent/*.md` — ative agentes com `/<nome>` (`/architect`, `/security`, `/devops`, ...).
+- **Comandos slash**: `.opencode/agent/*.md`: ative agentes com `/<nome>` (`/architect`, `/security`, `/devops`, ...).
 - **Fundação**: `SYSTEM.md` e `RULES.md`.
 - **Skills**: biblioteca em `skills/<name>/SKILL.md` (79+ skills).
 - **Config**: `opencode.json` aponta as instruções do projeto.
@@ -23,4 +23,4 @@ O **Kimi CLI** é compatível com a convenção do opencode: ele lê `AGENTS.md`
 - **Sempre**: IaC versionado; monitoramento desde o dia 1; secrets por ferramenta própria.
 - **Nunca**: commit `.env`; container root; deploy sem CI; hardcode de config de ambiente.
 
-> Gerado pelo Izanagi AI em `/home/pedro/Documentos/VsCode/izanagi-ai/izanagi-ai` — `izanagi export --cli kimi`
+> Gerado pelo Izanagi AI em `C:\Users\pedro.leal\Documents\NexusAI`: `izanagi export --cli kimi`

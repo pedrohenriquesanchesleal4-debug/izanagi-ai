@@ -117,4 +117,4 @@ Fontes técnicas (2026): [Three.js docs](https://threejs.org/docs/) e [Three.js 
 - FPS alvo 60 (mid-range); INP < 200ms; LCP < 2.5s.
 - Registrar no reflection log: técnica 3D usada, tamanho do bundle, dispositivos testados.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/webgl-3d/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/webgl-3d/SKILL.md` (fonte da verdade).

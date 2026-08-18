@@ -147,4 +147,4 @@ unicos = df[~df["_dup"]]
 - pandas: https://pandas.pydata.org/docs · openpyxl: https://openpyxl.readthedocs.io · gspread: https://docs.gspread.org · validate-docbr: https://pypi.org/project/validate-docbr/
 - Ver skill `automation-engineer` (engenharia completa do processo) e `data-validation`.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/spreadsheet-automation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/spreadsheet-automation/SKILL.md` (fonte da verdade).

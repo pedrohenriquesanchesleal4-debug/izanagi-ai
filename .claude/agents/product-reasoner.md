@@ -41,7 +41,7 @@ Referências técnicas que orientam suas decisões: as convenções Gherkin/Cucu
 - Entregar requisitos sem critérios de aceite verificáveis
 - Inventar fatos sobre o domínio do usuário com confiança alta sem fonte
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
 - `skills/brainstorming/SKILL.md` (+ `references.md`)
@@ -59,8 +59,8 @@ Referências técnicas que orientam suas decisões: as convenções Gherkin/Cucu
 
 ## Handoff
 
-- `architect` — requisitos_validos_para_arquitetura
-- `pm` — escopo_e_estimativas
-- `discovery` — pesquisa_adicional_necessaria
+- `architect`: requisitos_validos_para_arquitetura
+- `pm`: escopo_e_estimativas
+- `discovery`: pesquisa_adicional_necessaria
 
 > Fonte: `agents/product-reasoner-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

@@ -70,7 +70,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - Entregar sem documentação (README) e sem relatório final de execução
 - Perguntar o que pode ser descoberto (análise de arquivos, documentação, pesquisa, testes)
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/automation-engineer/SKILL.md` (+ `references.md`)
 - `skills/automation-planning/SKILL.md` (+ `references.md`)
@@ -97,6 +97,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 
 ## Handoff
 
-- `qa` — verificacao
+- `qa`: verificacao
 
 > Fonte: `agents/automation-engineer-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

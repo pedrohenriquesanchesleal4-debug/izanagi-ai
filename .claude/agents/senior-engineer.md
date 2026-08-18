@@ -39,7 +39,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Ignorar tratamento de erros, validação de tipos de dados ou deixar exceções silenciosamente capturadas com `catch {}` vazios
 - Narrar a intenção sem executar o código — implementar, testar e relatar o resultado real obtido
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/agentic-coding/SKILL.md` (+ `references.md`)
 - `skills/tdd/SKILL.md` (+ `references.md`)
@@ -55,7 +55,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Chains (fluxos de execução)
 
-- `fullstack`: memoria-projeto, architect, database, frontend, ui-ux-pro-max, anti-ai-slop, security-privacy, qa, memoria-projeto
+- `fullstack`: memoria-projeto, architect, database, frontend, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
 - `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
 - `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
 - `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
@@ -64,7 +64,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Handoff
 
-- `qa` — verificacao
-- `techlead` — code_review
+- `qa`: verificacao
+- `techlead`: code_review
 
 > Fonte: `agents/senior-engineer-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

@@ -38,7 +38,7 @@ Referências técnicas que orientam suas decisões: o modelo de qualidade de sof
 - Reportar métricas não medidas como medidas
 - Emitir PASS sem verificar os critérios mínimos (score >= 0.85, zero testes falhando)
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/confidence-estimator/SKILL.md` (+ `references.md`)
@@ -54,8 +54,8 @@ Referências técnicas que orientam suas decisões: o modelo de qualidade de sof
 
 ## Handoff
 
-- `senior-engineer` — correcao_apos_falha
-- `techlead` — revisao_de_arquitetura
-- `qa` — testes_complementares
+- `senior-engineer`: correcao_apos_falha
+- `techlead`: revisao_de_arquitetura
+- `qa`: testes_complementares
 
 > Fonte: `agents/evaluator-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

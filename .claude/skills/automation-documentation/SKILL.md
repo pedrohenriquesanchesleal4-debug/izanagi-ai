@@ -102,4 +102,4 @@ python main.py --self-check        # validação da própria instalação
 - Write the Docs: https://www.writethedocs.org/guide/ · Diátaxis (documentação por tarefa): https://diataxis.fr · Conventional README (makeareadme): https://github.com/matiassingers/awesome-readme
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/automation-documentation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/automation-documentation/SKILL.md` (fonte da verdade).

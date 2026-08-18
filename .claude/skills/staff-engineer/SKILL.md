@@ -33,4 +33,4 @@ Use ao: liderar projetos cross-team; conduzir refatorações sistêmicas que afe
 - *Staff Engineer: Leadership Beyond the Management Track* (Will Larson).
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/staff-engineer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/staff-engineer/SKILL.md` (fonte da verdade).

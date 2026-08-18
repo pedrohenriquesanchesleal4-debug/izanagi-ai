@@ -90,4 +90,4 @@ Antes de escrever ou mudar testes, leia `references/writing-good-tests.md` — r
 - Repo original: [obra/superpowers](https://github.com/obra/superpowers) — skill `skills/test-driven-development/SKILL.md` (+ `writing-good-tests.md`, portado localmente em `references/writing-good-tests.md`).
 - Curadoria completa em `references.md`.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/tdd/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/tdd/SKILL.md` (fonte da verdade).

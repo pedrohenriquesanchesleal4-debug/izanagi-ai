@@ -73,4 +73,4 @@ Cria um novo projeto no workspace autenticado.
 - Diátaxis Framework: https://diataxis.fr · Google Technical Writing Courses: https://developers.google.com/tech-writing.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/technical-writer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/technical-writer/SKILL.md` (fonte da verdade).

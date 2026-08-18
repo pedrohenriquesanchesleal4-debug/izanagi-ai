@@ -80,4 +80,4 @@ def redact(value: str) -> str:
 - 12-factor config: https://12factor.net/config · python-dotenv: https://github.com/theskumar/python-dotenv · GitHub Secrets: https://docs.github.com/actions/security-guides/using-secrets-in-github-actions
 - Ver skill `security-privacy` (OWASP/LGPD completo) do framework.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/automation-security/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/automation-security/SKILL.md` (fonte da verdade).

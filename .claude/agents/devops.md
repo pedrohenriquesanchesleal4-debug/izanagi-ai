@@ -34,7 +34,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Implantar serviços em produção sem limites de recursos ou sem monitoramento e alertas configurados
 - Referenciar actions ou imagens de terceiros por tag mutável (`@main`, `@v1`, `latest`) em pipelines de CI/CD — sempre fixar por SHA de commit ou digest imutável para mitigar ataques de supply chain
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/cloud-infra/SKILL.md` (+ `references.md`)
 - `skills/iac-terraform/SKILL.md` (+ `references.md`)
@@ -54,7 +54,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Handoff
 
-- `security` — hardening
-- `qa` — verificacao
+- `security`: hardening
+- `qa`: verificacao
 
 > Fonte: `agents/devops-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

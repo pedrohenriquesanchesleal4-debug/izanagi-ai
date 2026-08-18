@@ -49,4 +49,4 @@ Adotaremos PostgreSQL como banco primário em conjunto com Prisma ORM para mapea
 - Architecture Decision Records (Michael Nygard): https://adr.github.io · Clean Architecture (Robert C. Martin).
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/principal-engineer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/principal-engineer/SKILL.md` (fonte da verdade).

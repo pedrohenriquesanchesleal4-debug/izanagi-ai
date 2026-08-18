@@ -1,6 +1,6 @@
 ---
 name: qa
-description: "Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada — testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG)."
+description: "Use PROACTIVELY quando a pergunta é: os testes passam / a cobertura é adequada: testes unitários, integração, E2E (Playwright) e acessibilidade (WCAG)."
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: sonnet
 ---
@@ -36,7 +36,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - Silenciar ou desabilitar testes falhos sem investigar e resolver a causa raiz subjacente
 - Usar seletores genéricos vinculados à estilização CSS (`.flex > div:nth-child(2)`) que quebram com refatoraçoes de layout
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/tdd/SKILL.md` (+ `references.md`)
@@ -57,6 +57,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 
 ## Handoff
 
-- `senior-engineer` — fix_necessario
+- `senior-engineer`: fix_necessario
 
 > Fonte: `agents/qa-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

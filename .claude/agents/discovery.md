@@ -52,7 +52,7 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - Decidir stack/orçamento/prazo pela cabeça do agente
 - Repetir contexto no chat (economia de tokens); entregar o prompt em arquivo quando pedido
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/brainstorming/SKILL.md` (+ `references.md`)
 - `skills/deep-research/SKILL.md` (+ `references.md`)
@@ -87,6 +87,6 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 
 ## Handoff
 
-- `architect` — blueprint_aprovado
+- `architect`: blueprint_aprovado
 
 > Fonte: `agents/discovery-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

@@ -114,4 +114,4 @@ RUIM: {"severidade":"alta","arquivo":"auth.ts","linha":12,"achado":"coisa errada
 - OpenAI prompt engineering: https://platform.openai.com/docs/guides/prompt-engineering · Anthropic prompt docs: https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering · Learn Prompting: https://learnprompting.org
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/prompt-engineering/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/prompt-engineering/SKILL.md` (fonte da verdade).

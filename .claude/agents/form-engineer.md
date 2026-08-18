@@ -34,7 +34,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Permitir múltiplos cliques/submissões simultâneas que disparem requisições duplicadas à API
 - Utilizar placeholders genéricos no lugar de labels visíveis permanentes
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/web-forms/SKILL.md` (+ `references.md`)
 - `skills/frontend/SKILL.md` (+ `references.md`)
@@ -52,6 +52,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Handoff
 
-- `qa` — verificacao
+- `qa`: verificacao
 
 > Fonte: `agents/form-engineer-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

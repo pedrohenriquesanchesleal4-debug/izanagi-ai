@@ -58,4 +58,4 @@ Use ao: arquitetar sistemas com tecnologias pouco conhecidas; responder pergunta
 - Epistemic calibration: https://en.wikipedia.org/wiki/Confidence_assessment · Calibrated probability assessment: Good, D. J.
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/confidence-estimator/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/confidence-estimator/SKILL.md` (fonte da verdade).

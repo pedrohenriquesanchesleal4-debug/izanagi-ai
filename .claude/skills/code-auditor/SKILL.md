@@ -111,4 +111,4 @@ Regras do relatório: **todo** achado tem arquivo+linha+trecho+fix. Severidade c
 - Secure code review: Snyk https://snyk.io/learn/secure-code-review/ · Trivy (scanner de componentes/containers) https://trivy.dev
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/code-auditor/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/code-auditor/SKILL.md` (fonte da verdade).

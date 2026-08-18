@@ -43,4 +43,4 @@ description: "Protocolo de handoff estruturado entre agentes (motivo, contexto m
 Discovery → [requirements] → Architect → [architecture + ADR] → Database → [schema] → Senior Engineer → [implementation] → Critic → [fixes] → Evaluator → [report]
 ```
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/handoff-protocol/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/handoff-protocol/SKILL.md` (fonte da verdade).

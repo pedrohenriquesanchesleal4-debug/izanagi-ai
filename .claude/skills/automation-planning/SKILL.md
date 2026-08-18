@@ -71,4 +71,4 @@ Use **sempre no início** de qualquer tarefa de automação (planilha, API, brow
 - 12-factor (config/processos): https://12factor.net · Definition of Done: https://www.agilealliance.org/glossary/definition-of-done/ · Risk management (PMI): https://www.pmi.org/learning/library/risk-analysis-project-management-7070
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/automation-planning/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/automation-planning/SKILL.md` (fonte da verdade).

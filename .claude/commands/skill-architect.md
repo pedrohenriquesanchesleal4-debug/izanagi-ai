@@ -1,5 +1,5 @@
 ---
-description: Use quando faltar uma skill comprovadamente necessária — cura duplicação e lacunas da biblioteca de skills.
+description: Use quando faltar uma skill comprovadamente necessária: cura duplicação e lacunas da biblioteca de skills.
 model: opus
 ---
 

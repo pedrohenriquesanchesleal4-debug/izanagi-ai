@@ -145,4 +145,4 @@ Persista rascunhos automaticamente a cada alteração em `watch()`, evitando per
 - React Hook Form: https://react-hook-form.com · Zod: https://zod.dev · WAI-ARIA Form Tutorial: https://www.w3.org/WAI/tutorials/forms/
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/web-forms/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/web-forms/SKILL.md` (fonte da verdade).

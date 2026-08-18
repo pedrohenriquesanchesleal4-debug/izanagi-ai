@@ -115,4 +115,4 @@ gsap.to(panels, { xPercent: -100 * (panels.length - 1), ease: 'none',
 - Objetivos: 60fps no scroll, LCP < 2.5s, INP < 200ms, CLS < 0.1.
 - Registrar no reflection log: técnica usada por cena, problemas de perf encontrados, o que funcionou para o usuário.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/animation-web/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/animation-web/SKILL.md` (fonte da verdade).

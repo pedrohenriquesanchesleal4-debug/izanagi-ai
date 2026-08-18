@@ -169,4 +169,4 @@ Leia `references/pro-rules.md` e percorra seu checklist canônico pré-entrega (
 - **Privacidade**: dados do projeto permanecem na máquina do usuário.
 - **Licença**: MIT (ui-ux-pro-max-skill, 115k★) — integrado e adaptado ao framework Izanagi.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/ui-ux-pro-max/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/ui-ux-pro-max/SKILL.md` (fonte da verdade).

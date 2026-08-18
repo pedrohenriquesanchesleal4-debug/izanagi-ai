@@ -119,4 +119,4 @@ browser.close()
 - Playwright Python: https://playwright.dev/python/docs/intro · Playwright locators: https://playwright.dev/python/docs/locators · Selenium (legado): https://www.selenium.dev/documentation
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/browser-automation/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/browser-automation/SKILL.md` (fonte da verdade).

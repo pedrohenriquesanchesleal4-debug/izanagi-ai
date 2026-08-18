@@ -84,4 +84,4 @@ ux_audit:
 - Nielsen Norman Group (NN/g) Heuristics: https://www.nngroup.com/articles/ten-usability-heuristics/ · Don Norman, *The Design of Everyday Things* · About Face (Alan Cooper).
 - Veja `references.md` nesta pasta — curadoria de continuação (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/ux-reviewer/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/ux-reviewer/SKILL.md` (fonte da verdade).

@@ -85,4 +85,4 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ESCALAR: mudar abordagem ou perguntar." }
 - pytest: https://docs.pytest.org · Node.js: https://nodejs.org/api · Git: https://git-scm.com/doc
 - Veja `references.md` nesta pasta — curadoria de fontes canônicas (2026).
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/agentic-coding/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/agentic-coding/SKILL.md` (fonte da verdade).

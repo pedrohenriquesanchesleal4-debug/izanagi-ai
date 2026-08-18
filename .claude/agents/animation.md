@@ -34,7 +34,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Deixar loops de renderização WebGL ou ScrollTriggers executando em segundo plano quando os elementos estão fora da viewport
 - Compromover a acessibilidade ou legibilidade de texto em prol de efeitos visuais excessivos
 
-## Skills relevantes (lidas sob demanda — zero custo até este agente ser ativado)
+## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/animation-web/SKILL.md` (+ `references.md`)
 - `skills/motion-design/SKILL.md` (+ `references.md`)
@@ -53,6 +53,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Handoff
 
-- `qa` — verificacao
+- `qa`: verificacao
 
 > Fonte: `agents/animation-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli claude`)

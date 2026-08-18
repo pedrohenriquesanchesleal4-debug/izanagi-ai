@@ -116,4 +116,4 @@ Cache com **TTL ou invalidação explícita** (nunca cache eterno de dado mutáv
 - httpx (client reutilizável): https://www.python-httpx.org · tenacity (retry+backoff+rate limit): https://tenacity.readthedocs.io · concurrent.futures: https://docs.python.org/3/library/concurrent.futures.html
 - Ver skills `automation-engineer`, `api-automation`, `error-recovery`.
 
-> Gerado pelo Izanagi AI — cópia fiel de `skills/automation-optimization/SKILL.md` (fonte da verdade).
+> Gerado pelo Izanagi AI: cópia fiel de `skills/automation-optimization/SKILL.md` (fonte da verdade).

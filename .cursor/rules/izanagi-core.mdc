@@ -1,11 +1,11 @@
 ---
-description: Izanagi AI Core — regras essenciais do framework (arquitetura antes de código, anti-generic, segurança, tokens)
+description: Izanagi AI Core: regras essenciais do framework (arquitetura antes de código, anti-generic, segurança, tokens)
 globs: ["**/*"]
 ---
 
-# Izanagi AI — Core Rules
+# Izanagi AI: Core Rules
 
-O Cursor também lê `AGENTS.md` — a referência canônica do framework. Estas regras são o essencial operacional.
+O Cursor também lê `AGENTS.md`: a referência canônica do framework. Estas regras são o essencial operacional.
 
 ## Arquitetura antes de código
 
@@ -36,4 +36,4 @@ O Cursor também lê `AGENTS.md` — a referência canônica do framework. Estas
 
 - Commit `.env`; container root; deploy sem CI; hardcode de configuração de ambiente.
 
-> Gerado pelo Izanagi AI — `izanagi export --cli cursor`
+> Gerado pelo Izanagi AI: `izanagi export --cli cursor`
