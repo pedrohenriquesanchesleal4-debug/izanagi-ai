@@ -63,6 +63,7 @@
 - [ ] **Izanagi API**: interface REST para interrogção do framework 💡
 - [ ] **Web UI**: editor visual de skills e monitor de execuções 📋
 - [ ] **Analytics Dashboard**: token usage, custo e evolução por execução 📋
+- [ ] **Histórico persistente entre sessões/dispositivos + login por conta** (pedido do usuário, ainda não escopado 💡): hoje `izanagi dashboard` é local, single-user, lê `TraceStore`/`MemoryStore` do disco (`.agents/memoria/`) — sobrevive a fechar o terminal, mas não a trocar de computador. Login multi-dispositivo real exige backend hospedado + banco + auth, o que contradiz o design zero-infra/local-first atual do framework (roda 100% offline, sem servidor próprio). Antes de implementar: decidir explicitamente entre (a) continuar local-first e oferecer só *export/import* do estado (`.agents/memoria/` sincronizado via Git/Dropbox/etc, zero conta), ou (b) aceitar a mudança de filosofia e construir um serviço hospedado (conta, banco, sync) como produto separado do CLI. Não implementar às pressas sem essa decisão.
 
 ## Fase 5: Runtime de Produção v2.11 ✅
 
