@@ -1,0 +1,23 @@
+{
+  "name": "@izanagi/skill-migrator",
+  "version": "1.0.0",
+  "description": "Conversor determinístico e idempotente de skills v1 (skills/) para Agent Skills v2 (.skills/) com divulgação progressiva e biblioteca anti-racionalização por domínio (ADR-004). Node puro, zero dependências.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "skill-migrator": "./cli.mjs"
+  },
+  "main": "./migrate.mjs",
+  "exports": {
+    ".": "./migrate.mjs",
+    "./rationalizations": "./rationalizations.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node cli.mjs",
+    "dry-run": "node cli.mjs --dry-run"
+  },
+  "license": "UNLICENSED"
+}

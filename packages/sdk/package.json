@@ -1,0 +1,29 @@
+{
+  "name": "@izanagi/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript SDK bridging the Izanagi polyglot cores: Rust quality gate, Rust MCP client, Go swarm orchestrator (UDS) and Python AST analyzer.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test \"dist/tests/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
