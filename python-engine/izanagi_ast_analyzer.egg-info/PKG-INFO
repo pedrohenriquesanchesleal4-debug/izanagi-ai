@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: izanagi-ast-analyzer
+Version: 0.1.0
+Summary: Izanagi semantic multi-language code analysis engine (symbols, cyclomatic complexity, imports, embedding chunks)
+License: MIT
+Requires-Python: >=3.10
+Provides-Extra: tree-sitter
+Requires-Dist: tree-sitter<0.26,>=0.23; extra == "tree-sitter"
+Requires-Dist: tree-sitter-python>=0.23; extra == "tree-sitter"
+Requires-Dist: tree-sitter-typescript>=0.23; extra == "tree-sitter"
+Requires-Dist: tree-sitter-go>=0.23; extra == "tree-sitter"
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
