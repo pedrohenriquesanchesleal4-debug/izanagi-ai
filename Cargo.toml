@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/izanagi_core",
+    "crates/izanagi_mcp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
+
+[profile.release]
+lto = "thin"
+strip = true

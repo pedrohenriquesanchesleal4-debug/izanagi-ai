@@ -1,0 +1,28 @@
+[package]
+name = "izanagi_core"
+version.workspace = true
+edition.workspace = true
+description = "Izanagi Quality Engine: static code validation over a JSON line-delimited protocol"
+license = "MIT"
+
+[lib]
+name = "izanagi_core"
+path = "src/lib.rs"
+# `cdylib` produces the `.wasm` artifact consumed by wasm-bindgen-cli when the
+# `wasm` feature is enabled; on native hosts it is inert extra output.
+crate-type = ["lib", "cdylib"]
+
+[[bin]]
+name = "izanagi-core"
+path = "src/main.rs"
+
+[features]
+# WASM bindings (ADR-003): type-checked natively via `cargo check --features
+# wasm`; the real `.wasm` build targets wasm32-unknown-unknown in CI.
+wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+wasm-bindgen = { workspace = true, optional = true }
+serde-wasm-bindgen = { workspace = true, optional = true }
