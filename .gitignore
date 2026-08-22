@@ -25,3 +25,16 @@ my-project/
 # (evita repetir o incidente de placeholders de teste comitados por engano).
 agents/generated/*
 !agents/generated/c-systems-engineer.json
+
+# --- Refatoração poliglota: artefatos de build/runtime por linguagem ---
+# Rust (cargo build/test/check em crates/)
+target/
+# Python (venv do python-engine e caches de bytecode)
+.python-engine-venv/
+python-engine/.venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Cargo.lock da workspace raiz É commitado (crates produzem binários);
+# não adicionar ao ignore.
