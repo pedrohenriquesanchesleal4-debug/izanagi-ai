@@ -11,6 +11,9 @@
 //! ← {"ok":true,"rules":["STUB_BODY", …]}
 //! → {"op":"version"}
 //! ← {"ok":true,"version":"0.1.0"}
+//! → {"op":"scan-rationalizations","text":"…"}
+//! ← {"ok":true,"clean":false,"findings":[{"pattern_id":"ENG-STUB-MARKER","category":"engineering",
+//!                                         "severity":"blocker","excerpt":"// TODO: implement later","line":1}]}
 //! → anything malformed
 //! ← {"ok":false,"error":"…"}
 //! ```
@@ -23,6 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::engine;
 use crate::lang::Language;
+use crate::rationalizations::{self, RationalizationFinding};
 use crate::rules::{Finding, RULE_IDS};
 
 /// Engine version reported by the `version` operation.
@@ -37,6 +41,8 @@ enum Request {
     Rules,
     #[serde(rename = "version")]
     Version,
+    #[serde(rename = "scan-rationalizations")]
+    ScanRationalizations { text: String },
 }
 
 #[derive(Serialize)]
@@ -44,8 +50,16 @@ struct Response {
     ok: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     score: Option<u32>,
+    /// Quality-Engine findings (`validate` op only).
+    #[serde(rename = "findings", skip_serializing_if = "Option::is_none")]
+    quality_findings: Option<Vec<Finding>>,
+    /// Anti-Rationalization findings (`scan-rationalizations` op only); the
+    /// two finding lists are mutually exclusive per operation, so the shared
+    /// wire key never collides.
+    #[serde(rename = "findings", skip_serializing_if = "Option::is_none")]
+    rationalization_findings: Option<Vec<RationalizationFinding>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    findings: Option<Vec<Finding>>,
+    clean: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     rules: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -59,7 +73,9 @@ impl Response {
         Self {
             ok: true,
             score: None,
-            findings: None,
+            quality_findings: None,
+            rationalization_findings: None,
+            clean: None,
             rules: None,
             version: None,
             error: None,
@@ -70,7 +86,9 @@ impl Response {
         Self {
             ok: false,
             score: None,
-            findings: None,
+            quality_findings: None,
+            rationalization_findings: None,
+            clean: None,
             rules: None,
             version: None,
             error: Some(message.into()),
@@ -92,7 +110,7 @@ pub fn handle_request(line: &str) -> Option<String> {
             let result = engine::analyze(language, &code);
             Response {
                 score: Some(result.score),
-                findings: Some(result.findings),
+                quality_findings: Some(result.findings),
                 ..Response::success()
             }
         }
@@ -104,6 +122,14 @@ pub fn handle_request(line: &str) -> Option<String> {
             version: Some(PROTOCOL_VERSION),
             ..Response::success()
         },
+        Ok(Request::ScanRationalizations { text }) => {
+            let report = rationalizations::scan_text(&text);
+            Response {
+                clean: Some(report.clean),
+                rationalization_findings: Some(report.findings),
+                ..Response::success()
+            }
+        }
         Err(parse_error) => Response::failure(format!("invalid request: {parse_error}")),
     };
 

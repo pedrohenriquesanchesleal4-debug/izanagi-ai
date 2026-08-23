@@ -138,3 +138,54 @@ fn python_pass_only_body_flags_stub_not_double_reported() {
     assert_eq!(report.findings[0].rule, "STUB_BODY");
     assert_eq!(report.findings[0].line, 1);
 }
+
+// ---------------------------------------------------------------------------
+// Anti-Rationalization surface (feature-gated like the rest of the bridge)
+// ---------------------------------------------------------------------------
+
+use izanagi_core::wasm::{
+    rationalization_pattern_ids, scan_rationalizations_report, RationalizationReport,
+};
+
+#[test]
+fn rationalization_scan_is_clean_for_benign_text() {
+    let report = scan_rationalizations_report("Relatório trimestral consolidado.");
+    assert!(report.clean);
+    assert!(report.findings.is_empty());
+
+    let json = serde_json::to_value(&report).expect("report serializes");
+    assert_eq!(json["clean"], true);
+    assert_eq!(json["findings"].as_array().expect("array").len(), 0);
+}
+
+#[test]
+fn rationalization_scan_flags_stub_marker_in_camel_case_wire_shape() {
+    let source = "relato da tarefa:\n// TODO: implement later\nfim";
+    let report: RationalizationReport = scan_rationalizations_report(source);
+    assert!(!report.clean);
+
+    let hit = report
+        .findings
+        .iter()
+        .find(|hit| hit.pattern_id == "ENG-STUB-MARKER")
+        .expect("stub marker flagged");
+    assert_eq!(hit.category, "engineering");
+    assert_eq!(hit.severity, "blocker");
+    assert_eq!(hit.line, 2);
+    assert!(hit.excerpt.contains("TODO"));
+
+    // Exact serialized bytes stay deterministic across repeated scans.
+    let again = scan_rationalizations_report(source);
+    assert_eq!(
+        serde_json::to_string(&report).expect("serialize"),
+        serde_json::to_string(&again).expect("serialize")
+    );
+}
+
+#[test]
+fn rationalization_pattern_ids_are_unique_and_canonical() {
+    let ids = rationalization_pattern_ids();
+    assert!(!ids.is_empty());
+    let unique: std::collections::HashSet<&String> = ids.iter().collect();
+    assert_eq!(unique.len(), ids.len());
+}

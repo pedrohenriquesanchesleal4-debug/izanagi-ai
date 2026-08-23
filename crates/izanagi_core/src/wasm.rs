@@ -46,6 +46,7 @@ use wasm_bindgen::prelude::*;
 use crate::engine::{self, AnalysisResult};
 use crate::lang::{Language, UnknownLanguageError};
 use crate::protocol::PROTOCOL_VERSION;
+use crate::rationalizations::{self as anti_rationalization, ScanReport};
 use crate::rules::{Finding, RULE_IDS};
 
 /// Stable machine-readable discriminator carried by every rejected call of
@@ -151,6 +152,60 @@ pub fn parse_language(raw: &str) -> Result<Language, WasmError> {
         .map_err(|failure| WasmError::unknown_language(&failure))
 }
 
+// --------------------------------------------------------------------------
+// Anti-Rationalization surface: same split as the validation report — a
+// camelCase DTO mirroring the protocol's snake_case finding shape one-to-one.
+// --------------------------------------------------------------------------
+
+/// One anti-rationalization hit, shaped exactly as the JS consumer sees it.
+///
+/// Mirrors [`crate::rationalizations::RationalizationFinding`] field-by-field
+/// in camelCase; `excerpt` stays ≤120 chars and `line` is 1-based.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RationalizationHit {
+    pub pattern_id: String,
+    pub category: String,
+    pub severity: String,
+    pub excerpt: String,
+    pub line: u32,
+}
+
+/// Outcome of a successful [`scan_rationalizations`] call.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct RationalizationReport {
+    /// `true` when no curated rationalization pattern fired.
+    pub clean: bool,
+    /// Findings ordered by line, then canonical pattern order (deterministic).
+    pub findings: Vec<RationalizationHit>,
+}
+
+impl RationalizationReport {
+    /// Maps the protocol-shape scan report onto the camelCase wire DTO.
+    /// Pure function: identical inputs always produce identical reports.
+    pub fn from_scan(report: &ScanReport) -> Self {
+        RationalizationReport {
+            clean: report.clean,
+            findings: report
+                .findings
+                .iter()
+                .map(|finding| RationalizationHit {
+                    pattern_id: finding.pattern_id.clone(),
+                    category: finding.category.as_str().to_string(),
+                    severity: finding.severity.as_str().to_string(),
+                    excerpt: finding.excerpt.clone(),
+                    line: finding.line,
+                })
+                .collect(),
+        }
+    }
+}
+
+/// Scans arbitrary agent output against every curated rationalization.
+pub fn scan_rationalizations_report(text: &str) -> RationalizationReport {
+    RationalizationReport::from_scan(&anti_rationalization::scan_text(text))
+}
+
 /// Accepted language spellings derived from [`Language::ALL`], in protocol order.
 pub fn supported_language_names() -> Vec<String> {
     Language::ALL
@@ -226,6 +281,38 @@ pub fn rule_ids() -> Vec<String> {
 #[wasm_bindgen(js_name = engineVersion)]
 pub fn engine_version() -> String {
     PROTOCOL_VERSION.to_string()
+}
+
+/// Scans arbitrary agent output against the Anti-Rationalization Engine and
+/// returns a structured report object.
+///
+/// # JavaScript
+/// ```ts
+/// import init, { scanRationalizations } from "./izanagi_core.js";
+/// await init();
+/// const report = scanRationalizations("// TODO: implement later");
+/// // { clean: false,
+/// //   findings: [{ patternId: "ENG-STUB-MARKER", category: "engineering",
+/// //                severity: "blocker", excerpt: "// TODO: implement later",
+/// //                line: 1 }] }
+/// ```
+#[wasm_bindgen(js_name = scanRationalizations)]
+pub fn scan_rationalizations(text: &str) -> Result<JsValue, JsValue> {
+    let report = scan_rationalizations_report(text);
+    serde_wasm_bindgen::to_value(&report).map_err(|failure| {
+        marshal_error(WasmError::serialization_failed(format!(
+            "rationalization report: {failure}"
+        )))
+    })
+}
+
+/// Stable ids of every curated rationalization pattern, in canonical order.
+#[wasm_bindgen(js_name = rationalizationPatternIds)]
+pub fn rationalization_pattern_ids() -> Vec<String> {
+    anti_rationalization::PATTERNS
+        .iter()
+        .map(|candidate| candidate.id.to_string())
+        .collect()
 }
 
 #[cfg(test)]
@@ -339,5 +426,75 @@ mod tests {
 
         let json = serde_json::to_value(&error).expect("serializes");
         assert!(json.get("supportedLanguages").is_none());
+    }
+
+    // ----------------------------------------------------------------------
+    // Anti-Rationalization surface (pure layer + wire shapes)
+    // ----------------------------------------------------------------------
+
+    use crate::rationalizations::Severity as RationalizationSeverity;
+
+    #[test]
+    fn clean_scan_maps_to_clean_report_without_hits() {
+        let report = scan_rationalizations_report("Relatório trimestral consolidado.");
+        assert!(report.clean);
+        assert!(report.findings.is_empty());
+    }
+
+    #[test]
+    fn rationalization_report_keeps_camel_case_wire_shape() {
+        let sloppy = "Vou pular os testes porque o prazo apertou.";
+        let report = scan_rationalizations_report(sloppy);
+        assert!(!report.clean);
+
+        let json = serde_json::to_value(&report).expect("report serializes");
+        let keys = json
+            .as_object()
+            .expect("object")
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+        assert_eq!(keys, vec!["clean", "findings"]);
+
+        let hit = &json["findings"][0];
+        for key in ["patternId", "category", "severity", "excerpt", "line"] {
+            assert!(hit.get(key).is_some(), "missing camelCase key {key}");
+        }
+        assert_eq!(hit["patternId"], "TST-DEFER-WRITING");
+        assert_eq!(hit["category"], "testing");
+        assert_eq!(hit["severity"], "major");
+        assert_eq!(hit["line"], 1);
+        assert!(hit["excerpt"].as_str().expect("excerpt").contains("pular"));
+    }
+
+    #[test]
+    fn stub_marker_hit_carries_blocker_severity_and_exact_line() {
+        let source = "linha um\n// TODO: implement later";
+        let report = scan_rationalizations_report(source);
+        let hit = report
+            .findings
+            .iter()
+            .find(|hit| hit.pattern_id == "ENG-STUB-MARKER")
+            .expect("stub marker flagged");
+        assert_eq!(hit.severity, "blocker");
+        assert_eq!(hit.line, 2);
+        assert_eq!(
+            RationalizationSeverity::Blocker.as_str(),
+            "blocker",
+            "canonical spelling stays in sync with the wire"
+        );
+    }
+
+    #[test]
+    fn pattern_ids_export_matches_curated_order() {
+        let ids = rationalization_pattern_ids();
+        assert!(!ids.is_empty());
+        assert_eq!(
+            ids[0],
+            anti_rationalization::PATTERNS[0].id,
+            "export order must follow canonical PATTERNS order"
+        );
+        let unique: std::collections::HashSet<&String> = ids.iter().collect();
+        assert_eq!(unique.len(), ids.len(), "pattern ids must be unique");
     }
 }

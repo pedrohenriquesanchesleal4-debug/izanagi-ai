@@ -3,8 +3,11 @@
 //! Static structural validation of TypeScript, Python and Go sources against
 //! seven slop/stub heuristics (`STUB_BODY`, `EMPTY_FUNCTION`, `GENERIC_CATCH`,
 //! `GENERIC_NAME`, `REDUNDANT_COMMENT`, `AI_WATERMARK`, `LONG_FUNCTION`),
-//! exposed both as a library and through the `izanagi-core` binary speaking a
-//! JSON line-delimited protocol on stdin/stdout.
+//! plus the Anti-Rationalization Engine, which lexically detects the
+//! rationalizations and red flags catalogued by the framework inside any
+//! agent output. Both engines are exposed as a library and through the
+//! `izanagi-core` binary speaking a JSON line-delimited protocol on
+//! stdin/stdout.
 //!
 //! Library usage:
 //!
@@ -16,24 +19,38 @@
 //! assert!(result.findings.iter().any(|finding| finding.rule == "STUB_BODY"));
 //! ```
 //!
+//! Rationalization scanning (deterministic, regex-free):
+//!
+//! ```
+//! use izanagi_core::rationalizations::scan_text;
+//!
+//! let report = scan_text("vou pular os testes porque o prazo apertou");
+//! assert!(!report.clean);
+//! assert!(report.findings.iter().any(|f| f.pattern_id == "TST-DEFER-WRITING"));
+//! ```
+//!
 //! Protocol usage (one request per line, one response per line, EOF ends):
 //!
 //! ```text
 //! $ echo '{"op":"validate","language":"go","code":"func f() {}"}' | izanagi-core
 //! {"ok":true,"score":85,"findings":[{"rule":"EMPTY_FUNCTION",…}]}
+//! $ echo '{"op":"scan-rationalizations","text":"// TODO: implement later"}' | izanagi-core
+//! {"ok":true,"clean":false,"findings":[{"pattern_id":"ENG-STUB-MARKER",…}]}
 //! ```
 //!
 //! Architecture: [`mask`] blanks comments/strings while preserving line
 //! structure; [`functions`] extracts function extents from that skeleton;
 //! [`rules`] evaluates the seven heuristics with exact line attribution;
-//! [`engine`] scores; [`protocol`] owns the wire contract; under the `wasm`
-//! feature, [`wasm`] exposes the same engine to JavaScript/WebAssembly.
+//! [`engine`] scores; [`rationalizations`] curates and scans anti-pattern
+//! rationalizations; [`protocol`] owns the wire contract; under the `wasm`
+//! feature, [`wasm`] exposes both engines to JavaScript/WebAssembly.
 
 pub mod engine;
 pub mod functions;
 pub mod lang;
 pub mod mask;
 pub mod protocol;
+pub mod rationalizations;
 pub mod rules;
 #[cfg(feature = "wasm")]
 pub mod wasm;
@@ -43,6 +60,7 @@ pub use functions::{extract_functions, ExtentKind, FunctionExtent};
 pub use lang::Language;
 pub use mask::{scan, CommentHit, CommentKind, LineIndex, Scan, StringHit};
 pub use protocol::{handle_request, run as run_protocol, PROTOCOL_VERSION};
+pub use rationalizations::{scan_text, ScanReport};
 pub use rules::{run_rules, Finding, Severity, RULE_IDS};
 
 #[cfg(test)]
