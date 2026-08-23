@@ -1,6 +1,6 @@
 ---
 name: economia-tokens
-description: "Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff. Use sempre, em toda tarefa, por padrão."
+description: "Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff, incluindo silenciamento de ferramentas (quiet flags), geração orientada a diff e higiene de observação (resumir outputs longos antes de reportar). Use sempre, em toda tarefa, por padrão."
 ---
 
 # Context Engineering — Economia de Tokens (v2)
@@ -12,6 +12,22 @@ Manual operacional denso de **Engenharia de Contexto** para agentes de código. 
 **Regra absoluta**: Economia se aplica a **contexto inútil** (releituras, narração, histórico inchado, logs ruidosos). **NUNCA** ao entregável (código completo, estados reais, testes, tipagem estrita são obrigatórios mesmo que custem tokens).
 
 ---
+
+## Fluxo Zero-Waste de Execução (Passo a Passo)
+
+Diretrizes transversais de execução que valem para toda sessão; os pilares abaixo detalham cada uma.
+
+### Silencie ferramentas por padrão
+
+Comandos cuja saída bruta você não precisa ler integralmente devem rodar com flags quiet: `--quiet`/`--silent`/`-s` quando existirem, `pytest -q --tb=short`, `npm test --silent`, `cargo build 2>&1 | tail -n 20`, `git log -n 5 --oneline`. Saída ruidosa é contexto desperdiçado: filtre na origem em vez de limpar depois. Exceção consciente: debug real, onde o stack trace completo é necessário (Pilar 6).
+
+### Gere código orientado a DIFF
+
+Proibido reescrever um arquivo inteiro para mudança pontual: use edição cirúrgica/unified diff (replace pontual; multi-replace para vários trechos não-adjacentes). Rewrite integral só quando a maioria do arquivo muda de verdade (matriz completa no Pilar 4). Nunca cole o arquivo inteiro de volta "para mostrar o resultado": mostre só o trecho alterado.
+
+### Higiene de observação antes de reportar
+
+Output longo de ferramenta (build, testes, diff) deve ser RESUMIDO antes de entrar no relatório ou no contexto: grep da falha, `--stat`, `| tail`. Reporte o que importa (erro, arquivo, linha), nunca o dump integral. O mesmo vale ao encerrar a sessão: resumo curto, não histórico completo (Pilares 3 e 5).
 
 ## Pilar 1 — Protocolo de Leitura de Arquivos
 
@@ -195,6 +211,8 @@ Comandos de terminal geram saída massiva que polui o contexto (builds, logs, te
 | `git log` completo | 5.000-50.000 tokens | `git log -n 5 --oneline` | ~100-200 tokens |
 | `find . -type f` em projeto | 2.000-20.000 tokens | `find . -type f -name "*.ts" --not -path "*/node_modules/*"` | ~200-500 tokens |
 | Testes falhando (output longo) | 2.000-10.000 tokens | Ler só a seção de falha (grep "FAIL") | ~200-500 tokens |
+| Suíte pytest verbosa | 1.000-8.000 tokens | `pytest -q --tb=short` | ~100-400 tokens |
+| `cargo build`/`cargo test` com warnings | 1.000-10.000 tokens | `2>&1 \| tail -n 20` | ~200-500 tokens |
 | `ls -R` recursivo | 1.000-50.000 tokens | `list_dir` do diretório específico | ~100-300 tokens |
 
 ### Regras rígidas
@@ -243,8 +261,9 @@ Use este checklist mental antes de cada ação na sessão:
 
 - [ ] **Vou ler um arquivo?** → Grep resolve? Se sim, grep. Se não, range mínimo.
 - [ ] **Já li esse arquivo nesta sessão?** → Não releia. Já está no contexto.
-- [ ] **Vou rodar um comando?** → Tem filtro de saída? (--stat, | head, -n 5)
+- [ ] **Vou rodar um comando?** → Tem flag quiet ou filtro de saída? (--quiet/-s, pytest -q --tb=short, --stat, | head)
 - [ ] **Vou editar código?** → Edição pontual (diff) ou preciso reescrever tudo?
+- [ ] **Output longo para reportar?** → Resumo antes (grep da falha, --stat, | tail); nunca colo o dump integral.
 - [ ] **Vou responder ao usuário?** → Sem narração? Sem repetir o pedido? Bullets curtos?
 - [ ] **Sessão está longa (>20 turnos)?** → Hora de compactar. Re-injetar objetivo.
 - [ ] **Vou criar sub-agente?** → Contexto mínimo para a sub-tarefa. Não replique a sessão.

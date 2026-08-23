@@ -1,6 +1,6 @@
 ---
 name: "economia-tokens"
-description: "Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff. Use sempre, em toda tarefa, por padrão. Gatilhos de ativação: context engineering — economia de tokens (v2); pilar 1 — protocolo de leitura de arquivos; pilar 2 — alinhamento de cache de prompt (cache-first architecture); pilar 3 — higiene de contexto (context hygiene)."
+description: "Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff, incluindo silenciamento de ferramentas (quiet flags), geração orientada a diff e higiene de observação (resumir outputs longos antes de reportar). Use sempre, em toda tarefa, por padrão. Gatilhos de ativação: context engineering — economia de tokens (v2); fluxo zero-waste de execução (passo a passo); pilar 1 — protocolo de leitura de arquivos; pilar 2 — alinhamento de cache de prompt (cache-first architecture)."
 version: 2.0.0
 category: ai
 tools:
@@ -19,35 +19,31 @@ references:
 ## Triggering Criteria
 
 - **Domínio:** IA & Agentes (`ai`)
-- **Resumo:** Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff.
+- **Resumo:** Engenharia de contexto para reduzir consumo de tokens sem perder profundidade: leitura direcionada (grep-first), cache de prompt, higiene de contexto e edição em diff, incluindo silenciamento de ferramentas (quiet flags), geração orientada a diff e higiene de observação (resumir outputs longos antes de reportar).
 - **Ativar quando:** Use sempre, em toda tarefa, por padrão.
 - **Escopo canônico:** Context Engineering — Economia de Tokens (v2)
-- **Seções do corpo original:** Pilar 1 — Protocolo de Leitura de Arquivos · Pilar 2 — Alinhamento de Cache de Prompt (Cache-First Architecture) · Pilar 3 — Higiene de Contexto (Context Hygiene) · Pilar 4 — Protocolo de Edição Delta · Pilar 5 — Protocolo de Comunicação (Zero Fluff)
+- **Seções do corpo original:** Fluxo Zero-Waste de Execução (Passo a Passo) · Pilar 1 — Protocolo de Leitura de Arquivos · Pilar 2 — Alinhamento de Cache de Prompt (Cache-First Architecture) · Pilar 3 — Higiene de Contexto (Context Hygiene) · Pilar 4 — Protocolo de Edição Delta
 - **Ferramentas MCP esperadas:** mcp:fs_read, mcp:fs_write, mcp:execute_command
 
 ## Step-by-Step Workflow
 
-<!-- estratégia de extração: top-level-ordered -->
+<!-- estratégia de extração: workflow-section-steps -->
 
-### Passo 1 — Grep-First:
+### Passo 1 — Contexto do workflow
 
-**Grep-First**: Antes de abrir qualquer arquivo, pergunte: "uma busca direcionada (grep/glob) resolve?". Se sim, use busca.
+Diretrizes transversais de execução que valem para toda sessão; os pilares abaixo detalham cada uma.
 
-### Passo 2 — Range-Read:
+### Passo 2 — Silencie ferramentas por padrão
 
-**Range-Read**: Ao investigar bug ou função, leia SÓ o trecho relevante (intervalo de linhas). Nunca o arquivo inteiro quando só 20 linhas importam.
+Comandos cuja saída bruta você não precisa ler integralmente devem rodar com flags quiet: `--quiet`/`--silent`/`-s` quando existirem, `pytest -q --tb=short`, `npm test --silent`, `cargo build 2>&1 | tail -n 20`, `git log -n 5 --oneline`. Saída ruidosa é contexto desperdiçado: filtre na origem em vez de limpar depois. Exceção consciente: debug real, onde o stack trace completo é necessário (Pilar 6).
 
-### Passo 3 — Zero-Releitura:
+### Passo 3 — Gere código orientado a DIFF
 
-**Zero-Releitura**: Nunca releia um arquivo que já está no contexto e não mudou desde a última leitura. Se editou, releia SÓ o trecho editado para confirmar.
+Proibido reescrever um arquivo inteiro para mudança pontual: use edição cirúrgica/unified diff (replace pontual; multi-replace para vários trechos não-adjacentes). Rewrite integral só quando a maioria do arquivo muda de verdade (matriz completa no Pilar 4). Nunca cole o arquivo inteiro de volta "para mostrar o resultado": mostre só o trecho alterado.
 
-### Passo 4 — Batch-Read:
+### Passo 4 — Higiene de observação antes de reportar
 
-**Batch-Read**: Se precisar ver 3 partes de um mesmo arquivo, agrupe numa leitura com range abrangente (ex: L1-L150) em vez de 3 chamadas (L10-L30, L50-L70, L120-L140).
-
-### Passo 5 — Tamanho máximo:
-
-**Tamanho máximo**: Evite ler mais de 200 linhas por vez, a menos que a tarefa exija (ex: auditoria de código inteiro, reescrita completa). Se o arquivo tem 800 linhas e só 50 importam, leia 50.
+Output longo de ferramenta (build, testes, diff) deve ser RESUMIDO antes de entrar no relatório ou no contexto: grep da falha, `--stat`, `| tail`. Reporte o que importa (erro, arquivo, linha), nunca o dump integral. O mesmo vale ao encerrar a sessão: resumo curto, não histórico completo (Pilares 3 e 5).
 
 ## Verification Steps
 
@@ -55,8 +51,9 @@ references:
 
 - [ ] **Vou ler um arquivo?** → Grep resolve? Se sim, grep. Se não, range mínimo.
 - [ ] **Já li esse arquivo nesta sessão?** → Não releia. Já está no contexto.
-- [ ] **Vou rodar um comando?** → Tem filtro de saída? (--stat, | head, -n 5)
+- [ ] **Vou rodar um comando?** → Tem flag quiet ou filtro de saída? (--quiet/-s, pytest -q --tb=short, --stat, | head)
 - [ ] **Vou editar código?** → Edição pontual (diff) ou preciso reescrever tudo?
+- [ ] **Output longo para reportar?** → Resumo antes (grep da falha, --stat, | tail); nunca colo o dump integral.
 - [ ] **Vou responder ao usuário?** → Sem narração? Sem repetir o pedido? Bullets curtos?
 - [ ] **Sessão está longa (>20 turnos)?** → Hora de compactar. Re-injetar objetivo.
 - [ ] **Vou criar sub-agente?** → Contexto mínimo para a sub-tarefa. Não replique a sessão.
@@ -98,6 +95,22 @@ Manual operacional denso de **Engenharia de Contexto** para agentes de código. 
 **Regra absoluta**: Economia se aplica a **contexto inútil** (releituras, narração, histórico inchado, logs ruidosos). **NUNCA** ao entregável (código completo, estados reais, testes, tipagem estrita são obrigatórios mesmo que custem tokens).
 
 ---
+
+## Fluxo Zero-Waste de Execução (Passo a Passo)
+
+Diretrizes transversais de execução que valem para toda sessão; os pilares abaixo detalham cada uma.
+
+### Silencie ferramentas por padrão
+
+Comandos cuja saída bruta você não precisa ler integralmente devem rodar com flags quiet: `--quiet`/`--silent`/`-s` quando existirem, `pytest -q --tb=short`, `npm test --silent`, `cargo build 2>&1 | tail -n 20`, `git log -n 5 --oneline`. Saída ruidosa é contexto desperdiçado: filtre na origem em vez de limpar depois. Exceção consciente: debug real, onde o stack trace completo é necessário (Pilar 6).
+
+### Gere código orientado a DIFF
+
+Proibido reescrever um arquivo inteiro para mudança pontual: use edição cirúrgica/unified diff (replace pontual; multi-replace para vários trechos não-adjacentes). Rewrite integral só quando a maioria do arquivo muda de verdade (matriz completa no Pilar 4). Nunca cole o arquivo inteiro de volta "para mostrar o resultado": mostre só o trecho alterado.
+
+### Higiene de observação antes de reportar
+
+Output longo de ferramenta (build, testes, diff) deve ser RESUMIDO antes de entrar no relatório ou no contexto: grep da falha, `--stat`, `| tail`. Reporte o que importa (erro, arquivo, linha), nunca o dump integral. O mesmo vale ao encerrar a sessão: resumo curto, não histórico completo (Pilares 3 e 5).
 
 ## Pilar 1 — Protocolo de Leitura de Arquivos
 
@@ -281,6 +294,8 @@ Comandos de terminal geram saída massiva que polui o contexto (builds, logs, te
 | `git log` completo | 5.000-50.000 tokens | `git log -n 5 --oneline` | ~100-200 tokens |
 | `find . -type f` em projeto | 2.000-20.000 tokens | `find . -type f -name "*.ts" --not -path "*/node_modules/*"` | ~200-500 tokens |
 | Testes falhando (output longo) | 2.000-10.000 tokens | Ler só a seção de falha (grep "FAIL") | ~200-500 tokens |
+| Suíte pytest verbosa | 1.000-8.000 tokens | `pytest -q --tb=short` | ~100-400 tokens |
+| `cargo build`/`cargo test` com warnings | 1.000-10.000 tokens | `2>&1 \| tail -n 20` | ~200-500 tokens |
 | `ls -R` recursivo | 1.000-50.000 tokens | `list_dir` do diretório específico | ~100-300 tokens |
 
 ### Regras rígidas
@@ -329,8 +344,9 @@ Use este checklist mental antes de cada ação na sessão:
 
 - [ ] **Vou ler um arquivo?** → Grep resolve? Se sim, grep. Se não, range mínimo.
 - [ ] **Já li esse arquivo nesta sessão?** → Não releia. Já está no contexto.
-- [ ] **Vou rodar um comando?** → Tem filtro de saída? (--stat, | head, -n 5)
+- [ ] **Vou rodar um comando?** → Tem flag quiet ou filtro de saída? (--quiet/-s, pytest -q --tb=short, --stat, | head)
 - [ ] **Vou editar código?** → Edição pontual (diff) ou preciso reescrever tudo?
+- [ ] **Output longo para reportar?** → Resumo antes (grep da falha, --stat, | tail); nunca colo o dump integral.
 - [ ] **Vou responder ao usuário?** → Sem narração? Sem repetir o pedido? Bullets curtos?
 - [ ] **Sessão está longa (>20 turnos)?** → Hora de compactar. Re-injetar objetivo.
 - [ ] **Vou criar sub-agente?** → Contexto mínimo para a sub-tarefa. Não replique a sessão.

@@ -87,6 +87,14 @@ Regras obrigatórias de autonomia e execução:
 - **Autonomia de ponta a ponta:** Execute a tarefa até a conclusão total (planejamento → instalação de deps → código completo → build e verificação), sem parar pela metade ou exigir intervenção manual desnecessária.
 - **Execução proativa de comandos:** Sempre que houver comandos utilitários, de build, teste ou instalação necessários para o sucesso da tarefa, execute-os autonomamente.
 
+### 2.6 Zero-Waste Execution (Tools & Edits)
+
+Diretrizes de desperdício-zero ao executar e editar; detalhamento completo na skill `economia-tokens` (Fluxo Zero-Waste + Pilares 4 e 6):
+
+- **Silenciamento de ferramentas:** prefira flags quiet em comandos cuja saída bruta não será lida integralmente (`--quiet`/`--silent`/`-s`, `pytest -q --tb=short`, `cargo build 2>&1 | tail -n 20`, `git log --oneline -n 5`).
+- **Geração orientada a DIFF:** proibido reescrever arquivo inteiro para mudança pontual; use edição cirúrgica/unified diff ("Edit by diff", seção 2.4). Rewrite integral só quando a maioria do arquivo muda.
+- **Observation hygiene:** resuma outputs longos antes de reportar ou manter em contexto (grep da falha, `--stat`, `| tail`); nunca cole dumps integrais no contexto nem na resposta.
+
 ## 3. Skills
 
 ### 3.1 Skill Declaration

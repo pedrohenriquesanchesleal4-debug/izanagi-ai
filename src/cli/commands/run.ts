@@ -5,6 +5,7 @@ import { buildBlueprintCtx } from '../blueprint.js';
 import { Orchestrator, type ExecuteCtx } from '../../runtime/orchestrator.js';
 import { LLMClient } from '../../runtime/llm/client.js';
 import type { GraphNode } from '../../runtime/types.js';
+import { layeredSkillSummary, findV2Counterpart } from '../../runtime/text/frontmatter.js';
 import { printTrace } from './trace.js';
 
 interface RunArgs {
@@ -137,9 +138,10 @@ export function resolveChainForCategory(agent: any, category: string): string[] 
 }
 
 /**
- * Compacta o conteúdo de uma skill para o prompt: mantém apenas a parte de
- * alto sinal (descrição + primeiras seções até o limite de linhas).
- * Evita despejar arquivos inteiros de skill (200+ linhas) no prompt gerado.
+ * Compacta conteúdo de documento NÃO-skill (references curadas, SYSTEM.md,
+ * RULES.md) para o prompt: mantém apenas as primeiras linhas até o limite.
+ * Skills usam a política em camadas de `layeredSkillSummary` (front-matter
+ * v2 primeiro, corpo por prioridade de seção; legadas caem neste truncamento).
  */
 function summarizeSkill(fullPath: string, maxLines: number): string {
   const content = fs.readFileSync(fullPath, 'utf-8');
@@ -214,7 +216,10 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
   for (const skill of compactSkillChain) {
     const skillPath = resolveSkillPath(cwd, baseDir, skill);
     if (skillPath) {
-      console.log(`  \x1b[32m✔\x1b[0m \x1b[1m${skill}\x1b[0m -> ${path.relative(cwd, skillPath)}`);
+      const v2Path = findV2Counterpart(cwd, baseDir, skillPath);
+      const sourceLabel = path.relative(cwd, v2Path ?? skillPath);
+      const v2Tag = v2Path ? ' \x1b[90m[v2 progressive disclosure]\x1b[0m' : '';
+      console.log(`  \x1b[32m✔\x1b[0m \x1b[1m${skill}\x1b[0m -> ${sourceLabel}${v2Tag}`);
       resolvedCount++;
     } else if (aliases[skill]) {
       console.log(`  \x1b[33m⚠\x1b[0m \x1b[1m${skill}\x1b[0m -> alias exists, but file not found (${aliases[skill]})`);
@@ -290,7 +295,10 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     for (const skill of compactSkillChain) {
       const sPath = resolveSkillPath(cwd, baseDir, skill);
       if (sPath && fs.existsSync(sPath)) {
-        fullPrompt += `### SKILL: ${skill}\n` + summarizeSkill(sPath, compact ? 60 : 160) + `\n\n`;
+        // Progressive disclosure: prefere a contraparte v2 (.skills/<name>/SKILL.md)
+        // quando existe; sem v2, o truncamento legado preserva compatibilidade.
+        const source = findV2Counterpart(cwd, baseDir, sPath) ?? sPath;
+        fullPrompt += `### SKILL: ${skill}\n` + layeredSkillSummary(source, compact ? 60 : 160) + `\n\n`;
       }
     }
 
@@ -463,7 +471,8 @@ function buildNodePrompt(node: GraphNode, opts: { task: string; agent: any; skil
     for (const skill of skills) {
       const sPath = resolveSkillPath(process.cwd(), baseDir, skill);
       if (sPath && fs.existsSync(sPath)) {
-        prompt += `\n### Skill: ${skill}\n${summarizeSkill(sPath, 80)}\n`;
+        const source = findV2Counterpart(process.cwd(), baseDir, sPath) ?? sPath;
+        prompt += `\n### Skill: ${skill}\n${layeredSkillSummary(source, 80)}\n`;
       }
     }
   }
