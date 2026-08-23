@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_read
     - mcp:fs_write
+references:
+  - "references.md"
 ---
 
 # Automation Research — Pesquisar Antes de Reinventar

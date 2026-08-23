@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_write
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Staff Engineer (Liderança Técnica Transversal)

@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_read
     - mcp:fs_write
+references:
+  - "references.md"
 ---
 
 # Sequence Diagram Builder (Diagramas de Sequência via Mermaid)

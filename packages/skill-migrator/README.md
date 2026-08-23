@@ -15,6 +15,10 @@ node packages/skill-migrator/cli.mjs --src skills --dest .skills
 
 # Simula e valida tudo sem escrever nada
 node packages/skill-migrator/cli.mjs --dry-run
+
+# Verifica drift: re-migra para um catálogo temporário e compara byte-a-byte
+# com o destino real (somente leitura; exit 1 em qualquer diferença)
+node packages/skill-migrator/cli.mjs --check
 ```
 
 | Flag | Descrição |
@@ -23,10 +27,11 @@ node packages/skill-migrator/cli.mjs --dry-run
 | `--dest <dir>` | Destino do catálogo v2 (padrão `.skills`) |
 | `--dry-run` | Processa e valida em memória; não cria arquivos |
 | `--clean` | Remove o destino antes de migrar |
+| `--check` | Detecta drift (ausente/extra/diferente) entre re-migração limpa e destino, sem escrever |
 | `--json` | Imprime o relatório estruturado em JSON |
 | `-h`, `--help` | Ajuda |
 
-Exit codes: `0` sucesso · `1` falha de migração/validação · `2` uso inválido.
+Exit codes: `0` sucesso · `1` falha de migração/validação/drift · `2` uso inválido.
 
 Requisito: Node ≥ 18. Zero dependências npm.
 
@@ -42,6 +47,8 @@ tools:
   mcp:
     - mcp:fs_write           # mapeado por categoria
     - mcp:execute_command
+references:                  # progressive disclosure: arquivos disponíveis
+  - "references.md"          # em .skills/<name>/references/ (opcional)
 ---
 
 # <Título original>
@@ -54,7 +61,7 @@ tools:
 ## Legacy Reference (v1)        # corpo original preservado byte-a-byte
 ```
 
-`references.md` existente na fonte é copiado para `.skills/<name>/references/references.md`.
+`references.md` existente na fonte é copiado para `.skills/<name>/references/references.md`, e o front-matter declara `references:` com a lista EXATA do que foi disponibilizado — consumidores leem metadados leves no `skill list` e carregam o conteúdo sob demanda (`skill show <name> --ref <file>` no izanagi-next).
 
 ### Categorias e MCP
 
@@ -97,7 +104,7 @@ A estratégia usada fica registrada em comentário HTML dentro da seção (rastr
 
 ```
 packages/skill-migrator/
-├── cli.mjs               # entrada CLI (--src --dest --dry-run --clean --json)
+├── cli.mjs               # entrada CLI (--src --dest --dry-run --clean --check --json)
 ├── migrate.mjs           # biblioteca: parse, heurística, extração, render, validação
 ├── rationalizations.mjs  # biblioteca anti-racionalização + fallbacks por categoria
 └── package.json

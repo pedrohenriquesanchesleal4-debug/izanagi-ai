@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_read
     - mcp:fs_write
+references:
+  - "references.md"
 ---
 
 # Motion Design — Bibliotecas de Animação

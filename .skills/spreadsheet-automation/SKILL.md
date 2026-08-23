@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:execute_command
     - mcp:fs_read
+references:
+  - "references.md"
 ---
 
 # Spreadsheet Automation — Planilhas como Fonte de Dados Confiável

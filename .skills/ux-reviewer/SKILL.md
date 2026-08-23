@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_read
     - mcp:fs_write
+references:
+  - "references.md"
 ---
 
 # UX Reviewer (Heurísticas de Nielsen & Usabilidade)

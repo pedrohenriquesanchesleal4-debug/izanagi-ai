@@ -8,6 +8,8 @@ tools:
     - mcp:fs_read
     - mcp:fs_write
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Model Context Protocol (MCP) Server Development

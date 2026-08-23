@@ -6,6 +6,8 @@ category: testing
 tools:
   mcp:
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Webapp Testing — Automação Playwright de Aplicações Web

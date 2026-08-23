@@ -6,6 +6,8 @@ category: testing
 tools:
   mcp:
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Self-Critique (Auto-Revisão Crítica de Entrega)

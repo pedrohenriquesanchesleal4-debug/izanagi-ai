@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_read
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Code Auditor & Vulnerability Scanner

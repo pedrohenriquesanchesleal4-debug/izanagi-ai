@@ -8,6 +8,8 @@ tools:
     - mcp:fs_read
     - mcp:fs_write
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Agentic Coding (Codificação Autônoma em Loop)

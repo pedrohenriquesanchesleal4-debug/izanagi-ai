@@ -21,7 +21,7 @@ import {
 } from "./context.js";
 import { runCommand } from "./commands/run.js";
 import { agentListCommand } from "./commands/agents.js";
-import { skillListCommand } from "./commands/skills.js";
+import { skillListCommand, skillShowCommand } from "./commands/skills.js";
 import { gatesCheckCommand } from "./commands/gates.js";
 
 export { UsageError };
@@ -34,6 +34,7 @@ Usage:
       [--standalone] [--timeout-ms=120000] [--json]
   izanagi-next agent list
   izanagi-next skill list [--category=x] [--search=termo] [--json]
+  izanagi-next skill show <name> [--ref=<file>]
   izanagi-next gates check <file>
 
 Environment:
@@ -133,13 +134,28 @@ async function main(argv: readonly string[]): Promise<number> {
         return await agentListCommand(context);
       }
       case "skill": {
-        if (subcommand !== "list") {
-          throw new UsageError("usage: izanagi-next skill list [--category=x] [--search=termo]");
+        if (subcommand === "list") {
+          return await skillListCommand(context, {
+            category: flagString(parsed.flags, "category"),
+            search: flagString(parsed.flags, "search"),
+          });
         }
-        return await skillListCommand(context, {
-          category: flagString(parsed.flags, "category"),
-          search: flagString(parsed.flags, "search"),
-        });
+        if (subcommand === "show") {
+          const name = parsed.positionals[2];
+          if (name === undefined || name.startsWith("--")) {
+            throw new UsageError("usage: izanagi-next skill show <name> [--ref=<file>]");
+          }
+          if (parsed.flags["ref"] === true) {
+            throw new UsageError("flag --ref requires a value (--ref=<file> or --ref <file>)");
+          }
+          return await skillShowCommand(context, {
+            name,
+            ref: flagString(parsed.flags, "ref"),
+          });
+        }
+        throw new UsageError(
+          "usage: izanagi-next skill list [--category=x] [--search=termo] | skill show <name> [--ref=<file>]",
+        );
       }
       case "gates": {
         if (subcommand !== "check") {

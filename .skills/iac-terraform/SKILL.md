@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:execute_command
     - mcp:fs_write
+references:
+  - "references.md"
 ---
 
 # Skill IaC & Terraform — Izanagi

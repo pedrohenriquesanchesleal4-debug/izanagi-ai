@@ -12,6 +12,11 @@
  *  - Determinístico e idempotente: mesma árvore de entrada → output byte-idêntico.
  *  - Fonte legado (skills/) somente leitura.
  *  - Zero dependências externas (Node >= 18).
+ *
+ * Progressive disclosure: o front-matter v2 declara `references:` — a lista
+ * dos arquivos efetivamente disponíveis em `.skills/<name>/references/` —
+ * para que consumidores leiam metadados leves e carreguem referências só
+ * sob demanda.
  */
 
 import { createHash } from "node:crypto";
@@ -669,8 +674,10 @@ function renderWorkflow(steps) {
 /**
  * Monta o SKILL.md v2 completo a partir do conteúdo REAL da skill v1.
  * Função pura: mesma entrada → mesmo bytes (idempotência estrutural).
+ * `references`: nomes de arquivo disponíveis em references/ (opcional —
+ * quando ausente/vazio o campo é omitido do front-matter).
  */
-export function renderSkillV2({ name, description, body }) {
+export function renderSkillV2({ name, description, body, references }) {
   if (!name) throw new Error("campo 'name' obrigatório no front-matter de origem");
   if (!description) throw new Error("campo 'description' obrigatório no front-matter de origem");
 
@@ -688,6 +695,12 @@ export function renderSkillV2({ name, description, body }) {
 
   const fmToolsMcp = mcp.map((tool) => `    - ${tool}`).join("\n");
 
+  // Lista determinística: dedup + ordenação estável (idempotência byte-a-byte).
+  const referenceNames = [...new Set(references ?? [])].sort();
+  const fmReferences = referenceNames.length
+    ? `\nreferences:\n${referenceNames.map((file) => `  - ${yamlQuote(file)}`).join("\n")}`
+    : "";
+
   return `---
 name: ${yamlQuote(name)}
 description: ${yamlQuote(enrichedDescription)}
@@ -695,7 +708,7 @@ version: ${SCHEMA_VERSION}
 category: ${category}
 tools:
   mcp:
-${fmToolsMcp}
+${fmToolsMcp}${fmReferences}
 ---
 
 # ${title}
@@ -828,10 +841,20 @@ export async function migrateAll({ srcRoot, destRoot, dryRun = false }) {
           `name do front-matter ("${data.name}") difere do diretório ("${dirName}")`
         );
       }
+
+      // Referências que existirão no destino: hoje a cópia legada é o
+      // references.md raiz; a lista declarada reflete EXATAMENTE o que
+      // é escrito em references/ (nunca mente sobre disponibilidade).
+      const referenceNames = [];
+      if (await exists(path.join(srcSkillDir, "references.md"))) {
+        referenceNames.push("references.md");
+      }
+
       const rendered = renderSkillV2({
         name: data.name || dirName,
         description: data.description,
         body,
+        references: referenceNames,
       });
 
       // Auto-validação do render: nenhuma seção obrigatória vazia.
@@ -843,6 +866,7 @@ export async function migrateAll({ srcRoot, destRoot, dryRun = false }) {
         category: rendered.match(/^category: (\S+)$/m)?.[1] ?? "?",
         workflowSteps: (rendered.match(/^### Passo \d+/gm) || []).length,
         verificationItems: countVerificationItems(rendered),
+        references: referenceNames.length,
         destination: path.join(destSkillDir, "SKILL.md"),
       };
 

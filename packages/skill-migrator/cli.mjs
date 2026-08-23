@@ -5,18 +5,24 @@
  * CLI do skill-migrator — migra skills/ (v1) → .skills/ (v2, Agent Skills).
  *
  * Uso:
- *   node packages/skill-migrator/cli.mjs [--src <dir>] [--dest <dir>] [--dry-run] [--clean] [--json]
+ *   node packages/skill-migrator/cli.mjs [--src <dir>] [--dest <dir>] [--dry-run] [--clean] [--check] [--json]
  *
  * Flags:
  *   --src      diretório de skills legadas (padrão: skills)
  *   --dest     destino do catálogo v2     (padrão: .skills)
  *   --dry-run  processa e valida tudo, escreve nada
  *   --clean    apaga --dest antes de migrar
+ *   --check    modo somente leitura: re-migra para um diretório temporário e
+ *              compara byte-a-byte com --dest; exit 1 em qualquer drift
+ *              (arquivo ausente, extra ou diferente). Nunca escreve em --dest.
  *   --json     relatório em JSON no stdout (além do resumo humano)
  *
- * Códigos de saída: 0 = sucesso · 1 = falhas de migração/validação · 2 = uso inválido.
+ * Códigos de saída: 0 = sucesso · 1 = falhas de migração/validação/drift · 2 = uso inválido.
  */
 
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 
@@ -28,6 +34,7 @@ function parseArgs(argv) {
     dest: ".skills",
     dryRun: false,
     clean: false,
+    check: false,
     json: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -48,6 +55,9 @@ function parseArgs(argv) {
         break;
       case "--clean":
         args.clean = true;
+        break;
+      case "--check":
+        args.check = true;
         break;
       case "--json":
         args.json = true;
@@ -77,11 +87,84 @@ function printUsage() {
       "  --dest <dir>    destino do catálogo v2       (padrão: .skills)",
       "  --dry-run       valida tudo sem escrever",
       "  --clean         remove o destino antes de migrar",
+      "  --check         compara o destino com uma re-migração limpa (exit 1 em drift)",
       "  --json          imprime relatório JSON ao final",
       "  -h | --help     esta ajuda",
       "",
     ].join("\n")
   );
+}
+
+/** Mapa relPath → sha256(hex) de toda a árvore (determinístico). */
+async function hashMapTree(root) {
+  const files = new Map();
+  async function walk(dir, relBase) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      const abs = path.join(dir, entry.name);
+      const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) await walk(abs, rel);
+      else if (entry.isFile()) {
+        files.set(rel, createHash("sha256").update(await readFile(abs)).digest("hex"));
+      }
+    }
+  }
+  await walk(root, "");
+  return files;
+}
+
+/**
+ * Modo --check: re-migra a fonte para um catálogo temporário limpo e compara
+ * byte-a-byte (sha256 por arquivo) com o destino real. Somente leitura.
+ * Retorna { ok, missing, extra, changed, expectedFiles, actualFiles }.
+ */
+export async function checkDrift({ srcRoot, destRoot }) {
+  const tmpRoot = await mkdtemp(path.join(os.tmpdir(), "izanagi-skill-check-"));
+  try {
+    const expectedRoot = path.join(tmpRoot, "catalog");
+    const fresh = await migrateAll({
+      srcRoot,
+      destRoot: expectedRoot,
+      dryRun: false,
+    });
+    if (fresh.failures.length > 0) {
+      return {
+        ok: false,
+        renderFailures: fresh.failures,
+        missing: [],
+        extra: [],
+        changed: [],
+        expectedFiles: 0,
+        actualFiles: 0,
+      };
+    }
+
+    const expected = await hashMapTree(expectedRoot);
+    const actual = await hashMapTree(destRoot);
+
+    const missing = [...expected.keys()].filter((rel) => !actual.has(rel)).sort();
+    const extra = [...actual.keys()].filter((rel) => !expected.has(rel)).sort();
+    const changed = [...expected.keys()]
+      .filter((rel) => actual.has(rel) && actual.get(rel) !== expected.get(rel))
+      .sort();
+
+    return {
+      ok: missing.length === 0 && extra.length === 0 && changed.length === 0,
+      renderFailures: [],
+      missing,
+      extra,
+      changed,
+      expectedFiles: expected.size,
+      actualFiles: actual.size,
+    };
+  } finally {
+    await rm(tmpRoot, { recursive: true, force: true });
+  }
 }
 
 function formatReport(report) {
@@ -94,7 +177,7 @@ function formatReport(report) {
   for (const entry of report.migrated) {
     byCategory.set(entry.category, (byCategory.get(entry.category) ?? 0) + 1);
     lines.push(
-      `  ok  ${entry.name.padEnd(32)} cat=${entry.category.padEnd(12)} passos=${String(entry.workflowSteps).padStart(2)} verificação=${entry.verificationItems}`
+      `  ok  ${entry.name.padEnd(32)} cat=${entry.category.padEnd(12)} passos=${String(entry.workflowSteps).padStart(2)} verificação=${String(entry.verificationItems).padStart(2)} refs=${entry.references ?? 0}`
     );
   }
   for (const failure of report.failures) {
@@ -131,10 +214,52 @@ async function main() {
     return;
   }
 
+  const srcRoot = path.resolve(args.src);
+  const destRoot = path.resolve(args.dest);
+
+  if (args.check) {
+    try {
+      const drift = await checkDrift({ srcRoot, destRoot });
+      if (drift.renderFailures.length > 0) {
+        process.stderr.write(
+          `[skill-migrator] --check: ${drift.renderFailures.length} skill(s) falharam ao re-renderizar:\n` +
+            drift.renderFailures.map((f) => `  FALHA  ${f.name}: ${f.reason}`).join("\n") +
+            "\n"
+        );
+        process.exitCode = 1;
+        return;
+      }
+      const lines = [
+        `skill-migrator :: --check src=${args.src} dest=${args.dest}`,
+        "",
+      ];
+      for (const rel of drift.changed) lines.push(`  DIFERENTE  ${rel}`);
+      for (const rel of drift.missing) lines.push(`  AUSENTE    ${rel}`);
+      for (const rel of drift.extra) lines.push(`  EXTRA      ${rel}`);
+      lines.push("");
+      lines.push(
+        drift.ok
+          ? `Catálogo em sincronia: ${drift.expectedFiles} arquivos idênticos (byte-a-byte) entre re-migração limpa e destino.`
+          : `Drift detectado: ${drift.changed.length} diferente(s), ${drift.missing.length} ausente(s), ${drift.extra.length} extra(s).`
+      );
+      process.stdout.write(lines.join("\n") + "\n");
+      if (args.json) {
+        process.stdout.write(JSON.stringify(drift, null, 2) + "\n");
+      }
+      process.exitCode = drift.ok ? 0 : 1;
+    } catch (error) {
+      process.stderr.write(
+        `[skill-migrator] erro fatal no --check: ${error instanceof Error ? error.stack : String(error)}\n`
+      );
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   try {
     const report = await migrateAll({
-      srcRoot: path.resolve(args.src),
-      destRoot: path.resolve(args.dest),
+      srcRoot,
+      destRoot,
       dryRun: args.dryRun,
     });
 

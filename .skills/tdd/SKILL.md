@@ -6,6 +6,8 @@ category: testing
 tools:
   mcp:
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # TDD — Test-Driven Development (Iron Law)

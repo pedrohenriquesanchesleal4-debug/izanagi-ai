@@ -7,6 +7,8 @@ tools:
   mcp:
     - mcp:fs_write
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Tech Lead (Liderança Técnica Operacional e Code Review Pedagógico)

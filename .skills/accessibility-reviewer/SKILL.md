@@ -6,6 +6,8 @@ category: testing
 tools:
   mcp:
     - mcp:execute_command
+references:
+  - "references.md"
 ---
 
 # Accessibility Reviewer (WCAG 2.2 AA)
