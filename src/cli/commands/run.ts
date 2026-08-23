@@ -4,6 +4,8 @@ import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig }
 import { buildBlueprintCtx } from '../blueprint.js';
 import { Orchestrator, type ExecuteCtx } from '../../runtime/orchestrator.js';
 import { LLMClient } from '../../runtime/llm/client.js';
+import type { CompletionOptions, CompletionResult } from '../../runtime/llm/client.js';
+import { DYNAMIC_MARKER, estimateStaticTokens, MIN_CACHEABLE_TOKENS } from '../../runtime/llm/prompt-cache.js';
 import type { GraphNode } from '../../runtime/types.js';
 import { layeredSkillSummary, findV2Counterpart } from '../../runtime/text/frontmatter.js';
 import { printTrace } from './trace.js';
@@ -14,13 +16,16 @@ interface RunArgs {
   /** Só compila e salva izanagi-prompt.md — não executa (sem graph/eval/trace). */
   promptOnly: boolean;
   verbose: boolean;
+  /** Desliga a fundação estática (RULES.md) e o marker CAPC — prompt idêntico ao pré-wave. */
+  noCacheFoundation: boolean;
 }
 
-function parseRunArgs(args: string[]): RunArgs {
+export function parseRunArgs(args: string[]): RunArgs {
   let agentId: string | undefined;
   let task: string | undefined;
   let promptOnly = false;
   let verbose = false;
+  let noCacheFoundation = false;
   const positionals: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -33,6 +38,8 @@ function parseRunArgs(args: string[]): RunArgs {
       task = arg.slice(7);
     } else if (arg === '--prompt-only' || arg === '-p') {
       promptOnly = true;
+    } else if (arg === '--no-cache-foundation') {
+      noCacheFoundation = true;
     } else if (arg === '--runtime' || arg === '-r') {
       // Compatibilidade: execução via runtime é o comportamento default desde a
       // unificação dos caminhos de 'run' — a flag é aceita e ignorada (no-op).
@@ -54,7 +61,7 @@ function parseRunArgs(args: string[]): RunArgs {
     agentId = positionals[0];
   }
 
-  return { agentId, task, promptOnly, verbose };
+  return { agentId, task, promptOnly, verbose, noCacheFoundation };
 }
 
 interface TaskClassification {
@@ -155,7 +162,7 @@ function agentLabel(agent: any): string {
 }
 
 export async function runCommand(baseDir: string, args: string[]): Promise<void> {
-  const { agentId, task, promptOnly, verbose } = parseRunArgs(args);
+  const { agentId, task, promptOnly, verbose, noCacheFoundation } = parseRunArgs(args);
 
   if (!task) {
     console.error('\x1b[31mError:\x1b[0m Please provide a task description.');
@@ -164,6 +171,7 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     console.error('  izanagi run "Create a login page"   (Adaptive Runtime: graph + eval + trace + recovery + memory)');
     console.error('  izanagi run architect --task "Design a microservices architecture"');
     console.error('  izanagi run "..." --prompt-only   (só compila izanagi-prompt.md, sem executar)');
+    console.error('  izanagi run "..." --no-cache-foundation   (desliga fundação RULES.md estática/marker de prompt caching)');
     process.exit(1);
   }
 
@@ -333,7 +341,17 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     skillChain: compactSkillChain,
     agent,
     verbose,
+    noCacheFoundation,
   });
+}
+
+/**
+ * Superfície mínima do LLMClient consumida pelo run — permite injetar um
+ * client de teste (structural typing) sem tocar no Orchestrator.
+ */
+export interface RuntimeLLMClient {
+  configuredProviders(): string[];
+  complete(provider: string, opts: CompletionOptions): Promise<CompletionResult>;
 }
 
 /**
@@ -355,11 +373,15 @@ export async function runRuntime(
     verbose: boolean;
     /** Retoma um run interrompido/pausado em vez de planejar do zero (izanagi resume/approve/reject). */
     resumeRunId?: string;
+    /** Desliga fundação RULES.md estática + marker CAPC (prompt pré-wave). */
+    noCacheFoundation?: boolean;
+    /** Client LLM injetável (testes). Default: LLMClient real lido do ambiente. */
+    client?: RuntimeLLMClient;
   },
 ): Promise<void> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
 
-  const client = new LLMClient();
+  const client: RuntimeLLMClient = opts.client ?? new LLMClient();
   const llmProviders = client.configuredProviders();
   if (llmProviders.length === 0) {
     console.log('  \x1b[33m⚠ Modo headless:\x1b[0m nenhuma API key encontrada (IZANAGI_OPENAI_API_KEY /');
@@ -369,6 +391,10 @@ export async function runRuntime(
   } else {
     console.log(`  \x1b[32m✔ Execução real via LLM:\x1b[0m providers configurados: ${llmProviders.join(', ')}\n`);
   }
+
+  // Telemetria de tokens/cache (só faz sentido com provider real — headless não
+  // consome tokens de verdade e nunca imprime esta linha).
+  const tokenStats = { input: 0, cached: 0, nodes: 0 };
 
   const orchestrator = new Orchestrator({
     baseDir,
@@ -403,13 +429,21 @@ export async function runRuntime(
 
       // Execução real: compila o prompt do nó e chama o LLM com o modelo/provider
       // já roteados pelo Orchestrator (mesma fonte de verdade, sem recomputar aqui).
-      const system = buildNodePrompt(node, opts, baseDir);
+      const system = buildNodePrompt(node, { task: opts.task, agent: opts.agent, skillChain: opts.skillChain }, baseDir, {
+        noCacheFoundation: opts.noCacheFoundation,
+      });
       const result = await client.complete(ctx.provider, {
         model: ctx.model,
         system,
         messages: [{ role: 'user', content: opts.task }],
         maxTokens: node.tokenBudget ?? 4000,
       });
+      tokenStats.input += result.tokens;
+      tokenStats.cached += result.cachedTokens ?? 0;
+      tokenStats.nodes++;
+      if (opts.verbose) {
+        console.log(`  \x1b[90m[tokens]\x1b[0m nó "${node.id}": entrada ${result.tokens} · cache-hit ${result.cachedTokens ?? 0}`);
+      }
       return {
         content: result.text,
         kind: node.outputs?.[0] ?? 'raw',
@@ -425,6 +459,11 @@ export async function runRuntime(
   });
 
   const result = await orchestrator.run();
+
+  if (llmProviders.length > 0 && tokenStats.nodes > 0) {
+    const pct = tokenStats.input > 0 ? Math.round((tokenStats.cached / tokenStats.input) * 100) : 0;
+    console.log(`[tokens] entrada ${tokenStats.input} · cache-hit ${tokenStats.cached} (${pct}% do input)`);
+  }
 
   if (result.pendingApproval) {
     console.log(`\n\x1b[1m\x1b[33m⏸ Execução pausada — aguardando aprovação humana\x1b[0m`);
@@ -450,32 +489,125 @@ export async function runRuntime(
   console.log(`\x1b[90mExplicação da execução:\x1b[0m \x1b[36mizanagi explain ${result.trace.runId}\x1b[0m\n`);
 }
 
+/* ==================== CAPC — fundação estática do prompt de nó ==================== */
+
+/**
+ * Budget máximo (em chars) da fundação RULES.md embutida no prefixo estático.
+ * 6000 chars ≈ 1500 tokens estimados (~4 chars/token) — folga sobre o piso
+ * MIN_CACHEABLE_TOKENS (1024) mesmo após o corte determinístico.
+ */
+export const RULES_FOUNDATION_MAX_CHARS = 6000;
+
+/** Header genérico do prefixo estático: SEM dados do nó (id/outputs), senão o bloco cacheável divergiria entre nós. */
+const STATIC_PROMPT_HEADER = '# IZANAGI AI — Adaptive Runtime\n';
+const SUPREME_RULE_LINE = '- Regra suprema: NUNCA entregar checklists, resumos ou stubs — gerar conteúdo real, completo e pronto para produção.\n';
+const FOUNDATION_TITLE = '## FUNDAÇÃO OPERACIONAL (RULES.md · seções 1–2)\n';
+
+/**
+ * Localiza RULES.md na ordem canônica do framework: instalação distribuída
+ * (`<cwd>/.agents/RULES.md`) primeiro, repo-fonte (`<baseDir>/RULES.md`)
+ * depois. null = ausente nos dois roots (guard retrocompatível).
+ */
+function findRulesDoc(baseDir: string): string | null {
+  for (const candidate of [path.join(process.cwd(), '.agents', 'RULES.md'), path.join(baseDir, 'RULES.md')]) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/** Header que abre a seção 3 no RULES.md canônico (`## 3. Skills`) — "ou equivalente" aceita `#`–`######`, `:` e espaço. */
+const SECTION_3_HEADER = /^#{1,6}\s*3(\.|:|\s)/;
+
+/**
+ * Corte DETERMINÍSTICO da fundação: linhas 1 até (exclusive) o header `## 3.`
+ * — as Golden Rules + Communication Rules (seções 1–2) são invariantes entre
+ * runs; o resto é específico demais para valer cache. Sem header `## 3.`,
+ * usa o arquivo inteiro. Acima do budget, trunca por linha inteira (nunca no
+ * meio) e declara o corte em comentário determinístico (sem timestamps).
+ */
+function extractRulesFoundation(content: string, sourcePath: string): string {
+  const lines = content.split('\n');
+  const cutIdx = lines.findIndex((line) => SECTION_3_HEADER.test(line));
+  const selected = cutIdx === -1 ? [...lines] : lines.slice(0, cutIdx);
+  while (selected.length > 0 && selected[selected.length - 1].trim() === '') selected.pop();
+
+  const total = selected.join('\n');
+  if (total.length <= RULES_FOUNDATION_MAX_CHARS) {
+    return `${total}\n\n<!-- fundação RULES.md: linhas 1–${selected.length} até o header "## 3." (corte determinístico) · conteúdo completo em ${sourcePath} -->`;
+  }
+
+  const kept: string[] = [];
+  let used = 0;
+  for (const line of selected) {
+    const cost = line.length + 1;
+    if (used + cost > RULES_FOUNDATION_MAX_CHARS) break;
+    kept.push(line);
+    used += cost;
+  }
+  return `${kept.join('\n')}\n\n<!-- fundação RULES.md truncada em ${used - 1} chars (budget ${RULES_FOUNDATION_MAX_CHARS}) até o header "## 3." (corte determinístico) · conteúdo completo em ${sourcePath} -->`;
+}
+
 /**
  * Compila o system prompt de um nó do grafo: identidade do agente do nó,
  * regras obrigatórias, skills resolvidas (resumidas) e contrato do artefato.
+ *
+ * Cache-Aware Prompt Compression (CAPC): quando existe RULES.md e o prefixo
+ * estático atinge MIN_CACHEABLE_TOKENS tokens estimados, o prompt vira
+ * `[ESTÁTICO] + <!-- IZANAGI:DYNAMIC --> + [VOLÁTIL]`:
+ *   ESTÁTICO = header genérico + regra suprema + fundação RULES.md (seções 1–2)
+ *   VOLÁTIL  = nó em execução + artefato esperado + identidade + always/never
+ *              + TAREFA + skills — tudo na ordem pré-wave.
+ * O bloco estático fica BYTE-IDÊNTICO entre nós do mesmo run (condição para
+ * o provider cachear: Anthropic via cache_control automático no client;
+ * OpenAI-compatible via prefix caching). Guardas retrocompatíveis: sem
+ * RULES.md OU estático abaixo do piso → formato pré-wave SEM marker.
+ * flags.noCacheFoundation desliga a fundação/marker incondicionalmente.
  */
-function buildNodePrompt(node: GraphNode, opts: { task: string; agent: any; skillChain: string[] }, baseDir: string): string {
+export function buildNodePrompt(
+  node: GraphNode,
+  opts: { task: string; agent: any; skillChain: string[] },
+  baseDir: string,
+  flags?: { noCacheFoundation?: boolean },
+): string {
   const agent = node.agent ? findAgentJson(node.agent, baseDir) : undefined;
   const identity = agent?.identity || agent?.role || opts.agent.identity || opts.agent.role || `Agente especialista (${node.agent ?? node.id})`;
   const skills = (node.skills ?? opts.skillChain).slice(0, 4);
 
-  let prompt = `# IZANAGI AI — Adaptive Runtime · Nó "${node.id}"\n`;
-  prompt += `- Regra suprema: NUNCA entregar checklists, resumos ou stubs — gerar conteúdo real, completo e pronto para produção.\n`;
-  prompt += `- Artefato esperado deste nó: \`${node.outputs?.[0] ?? 'raw'}\` (conteúdo estruturado, sem markdown desnecessário).\n\n`;
-  prompt += `## IDENTIDADE & PAPEL\n${identity}\n\n`;
-  if (agent?.always?.length) prompt += `## REGRAS OBRIGATÓRIAS\n- ${agent.always.join('\n- ')}\n\n`;
-  if (agent?.never?.length) prompt += `## PROIBIDO\n- ${agent.never.join('\n- ')}\n\n`;
-  prompt += `## TAREFA\n${opts.task}\n`;
+  // Corpo volátil compartilhado pelas duas formas do prompt (ordem pré-wave preservada).
+  const artifactLine = `- Artefato esperado deste nó: \`${node.outputs?.[0] ?? 'raw'}\` (conteúdo estruturado, sem markdown desnecessário).\n\n`;
+  let body = `## IDENTIDADE & PAPEL\n${identity}\n\n`;
+  if (agent?.always?.length) body += `## REGRAS OBRIGATÓRIAS\n- ${agent.always.join('\n- ')}\n\n`;
+  if (agent?.never?.length) body += `## PROIBIDO\n- ${agent.never.join('\n- ')}\n\n`;
+  body += `## TAREFA\n${opts.task}\n`;
   if (skills.length > 0) {
-    prompt += `\n## SKILLS APLICÁVEIS\n`;
+    body += `\n## SKILLS APLICÁVEIS\n`;
     for (const skill of skills) {
       const sPath = resolveSkillPath(process.cwd(), baseDir, skill);
       if (sPath && fs.existsSync(sPath)) {
         const source = findV2Counterpart(process.cwd(), baseDir, sPath) ?? sPath;
-        prompt += `\n### Skill: ${skill}\n${layeredSkillSummary(source, 80)}\n`;
+        body += `\n### Skill: ${skill}\n${layeredSkillSummary(source, 80)}\n`;
       }
     }
   }
+
+  if (!flags?.noCacheFoundation) {
+    const rulesPath = findRulesDoc(baseDir);
+    if (rulesPath) {
+      const foundation = extractRulesFoundation(fs.readFileSync(rulesPath, 'utf-8'), rulesPath);
+      const staticText = `${STATIC_PROMPT_HEADER}${SUPREME_RULE_LINE}${FOUNDATION_TITLE}${foundation}\n`;
+      // Guard do piso: abaixo de 1024 tokens estimados o provider ignora o
+      // cache_control — não vale mudar a forma do prompt; cai no formato pré-wave.
+      if (estimateStaticTokens(staticText) >= MIN_CACHEABLE_TOKENS) {
+        return `${staticText}${DYNAMIC_MARKER}\n- Nó em execução: "${node.id}"\n${artifactLine}${body}`;
+      }
+    }
+  }
+
+  // Formato pré-wave (retrocompatível byte-a-byte): sem fundação, sem marker.
+  let prompt = `# IZANAGI AI — Adaptive Runtime · Nó "${node.id}"\n`;
+  prompt += SUPREME_RULE_LINE;
+  prompt += artifactLine;
+  prompt += body;
   return prompt;
 }
 
