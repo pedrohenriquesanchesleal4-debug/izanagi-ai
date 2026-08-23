@@ -29,7 +29,6 @@ my-project/
 # Só entram no repo com 'git add -f' deliberado após passar por validação/scan/benchmark real
 # (evita repetir o incidente de placeholders de teste comitados por engano).
 agents/generated/*
-!agents/generated/c-systems-engineer.json
 
 # --- Refatoração poliglota: artefatos de build/runtime por linguagem ---
 # Rust (cargo build/test/check em crates/)
