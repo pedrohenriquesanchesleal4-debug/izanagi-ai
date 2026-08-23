@@ -1,12 +1,14 @@
 # Izanagi AI
 
-Framework **meta**: **Adaptive Agent & Skill Runtime**: para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 22 agentes especializados, 106 skills, execution graph, evaluation engine, self-healing e CLI executável publicada no npm (`izanagi-ai`).
+> **v3.10.0** · Framework **meta** para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 22 agentes especializados, catálogo de skills v2, Adaptive Runtime com execution graph e self-healing, CLI publicada no npm (`izanagi-ai`) e **topologia poliglota** (Rust · Go · Python · TypeScript) orquestrada ao lado do runtime legado.
 
-> **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
+**Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
 ---
 
 ## Instalação
+
+Requisito: Node.js ≥ 18.
 
 ```bash
 npm install -g izanagi-ai    # instalação global
@@ -18,93 +20,188 @@ izanagi --version
 
 ---
 
+## Quick Start
+
+```bash
+# 1. Inicializa um projeto com .agents/ e seleção interativa de packs de skills
+izanagi init my-project
+#    ou sem interação: izanagi init my-project --packs core,agents,coding,database
+
+# 2. Executa uma tarefa via Adaptive Runtime
+izanagi run "Criar uma landing page de um SaaS de analytics"
+
+# 3. Observabilidade e auditoria
+izanagi trace            # spans, healing, graph, avaliação
+izanagi explain <run-id> # por que o Izanagi decidiu o que decidiu
+izanagi doctor           # integridade da instalação (--deep inclui security scan das skills)
+```
+
+O caminho único de execução é o Adaptive Runtime: graph + adaptive routing + evaluation engine + self-healing + memory. Com `--prompt-only`, apenas compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. Nós de aprovação (`human-in-the-loop`) pausam a execução até `izanagi approve <run-id>`.
+
+---
+
+## Arquitetura Poliglota
+
+Desde as Waves 1–5, o crescimento novo vive numa topologia poliglota que coexiste com o runtime npm legado em padrão Strangler Fig (ADR-001): contratos IPC, error codes e env vars canônicos em [`docs/POLYGLOT.md`](docs/POLYGLOT.md).
+
+| Componente | Linguagem | O que faz | Como testar |
+|---|---|---|---|
+| `crates/izanagi_core` | Rust | Quality engine: 7 heurísticas anti-slop sobre TS/Python/Go; protocolo NDJSON stdin/stdout (`validate`/`rules`/`version`) + op `scan-rationalizations`; bindings WASM feature-gated | `cargo test --workspace` (111 testes) |
+| `crates/izanagi_mcp` | Rust | Cliente MCP JSON-RPC 2.0 sobre stdio: discovery + invocação pontual (`izanagi-mcp call --tool=<name>`) | incluso no `cargo test --workspace` |
+| `go-services/swarm_orchestrator` | Go | Orquestrador de swarm (Uber Fx): pipeline architect→engineer→qa→security via JSON-RPC 2.0 sobre UDS com event push | `go build ./... && go vet ./... && go test ./...` |
+| `python-engine/ast_analyzer` | Python ≥ 3.10 | Análise semântica multilíngue: símbolos, complexidade ciclomática, imports (tree-sitter + fallback estrutural) | `.venv/bin/python -m pytest tests/ -q` (70 testes) |
+| `packages/sdk` (`@izanagi/sdk`) | TypeScript | Clientes tipados strict para os 4 núcleos + catálogo de skills; zero dependências de runtime | `npm test` dentro de `packages/sdk` (42 testes) |
+| `packages/cli` (`izanagi-next`) | TypeScript | CLI de nova geração: run em 4 fases com auto-heal (N=2) + gate anti-racionalização; `agent list`, `skill list/show --ref`, `gates check` | `npm test` dentro de `packages/cli` (13 testes) |
+
+Diagnóstico rápido de todos os componentes:
+
+```bash
+izanagi polyglot status          # saúde dos núcleos poliglotas (--json | --strict)
+node packages/agent-migrator/cli.mjs --check   # drift YAML ↔ JSON dos agentes
+node packages/skill-migrator/cli.mjs --dry-run # valida migração skills v1 → v2 sem escrever
+```
+
+### Estrutura do Repositório
+
+```text
+izanagi-ai/
+├── bin/                        Executável da CLI legado (bin/izanagi.js → dist/cli)
+├── src/                        Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, factories, tools, tracer, llm, cli)
+├── core/                       Engines (.md) + skill-resolver.json (aliases → targets + compositions)
+├── agents/                     22 definições de agentes em JSON (fonte da verdade dos comandos)
+├── skills/                     Skills legado v1 (skills/<name>/SKILL.md + references.md opcional)
+├── .skills/                    Catálogo ativo v2 (.skills/<name>/SKILL.md + references/)
+├── crates/                     Rust: izanagi_core (quality engine + WASM) e izanagi_mcp (cliente MCP stdio)
+├── go-services/swarm_orchestrator/  Orquestrador de swarm em Go (Uber Fx, JSON-RPC 2.0 sobre UDS)
+├── python-engine/              Analisador AST multilíngue (tree-sitter + fallback estrutural)
+├── packages/                   sdk (@izanagi/sdk) · cli (izanagi-next) · agent-migrator · skill-migrator
+├── references/                 Curadoria de referências reais por domínio (webgl-3d, scrollytelling, stack-2026...)
+├── .agents/memoria/            Memória persistente anti-repetição (contexto, decisoes, erros-corrigidos, learnings)
+├── .opencode/                  Comandos slash do Opencode (adapters em .claude/, .codex/, .cursor/...)
+├── docs/POLYGLOT.md            Contratos IPC, error codes, env vars e resumo dos ADRs
+├── AGENTS.md                   Instruções de operação do framework
+├── ARCHITECTURE.md             Visão arquitetural
+├── SYSTEM.md                   Fundação do sistema (arquitetura real do runtime)
+└── RULES.md                    Regras operacionais (Anti-Generic High-Craft & Cinematic UI)
+```
+
+---
+
 ## Comandos Principais da CLI
+
+CLI legado (`izanagi`, publicada no npm):
 
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
 | `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory): caminho único, sem modo estático paralelo. `--prompt-only` só compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. |
+| `izanagi chat` | REPL interativo da CLI. |
+| `izanagi dashboard [--port N]` | Dashboard local (Run Explorer, Arena, Memory). |
 | `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 22 core). |
 | `izanagi agent list \| inspect <name>` | Lista/inspeta agentes (inclui `agents/generated/`) com genome. |
 | `izanagi skill create <nome> --gap="<descrição>" [--force]` | Skill Factory: cria skill com frontmatter, security scan pré-escrita e recusa de lacuna já coberta. |
-| `izanagi skill list \| search <q> \| inspect <name>` | Lista, busca e detalha skills. |
-| `izanagi create <agent\|skill> <name>` | Cria scaffold de agente (JSON) ou skill (SKILL.md). |
+| `izanagi skill list \| search <q> \| show <name>` | Lista, busca e detalha skills (catálogo v2, com progressive disclosure). |
+| `izanagi create <agent\|skill> <name>` | Cria scaffold cru de agente (JSON) ou skill (SKILL.md), sem validação. |
 | `izanagi compile <agente> [arquivo]` | Compila um System Prompt completo do agente + fundação do sistema. |
 | `izanagi workflow list \| inspect <template>` | Templates de grafo de execução por categoria (11). |
 | `izanagi eval <file.json> \| --metrics ... \| --report <run-id>` | Evaluation Engine: métricas ponderadas + veredito (PASS/.../UNKNOWN). |
-| `izanagi benchmark [compare]` | 10 benchmarks builtin + comparação de regressões entre builds. |
+| `izanagi benchmark [compare]` | 10 benchmarks builtin + comparação de regressões entre builds. Alias histórico: `arena`. |
 | `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
 | `izanagi memory inspect \| search <q>` | Estado da memória de execução e busca em `.agents/memoria/`. |
-| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das 106 skills. |
+| `izanagi polyglot status [--json\|--strict]` | Saúde dos núcleos poliglotas (Rust, Go, Python, packages TS): checagens de existência + probes baratos; `--strict` sai com código 1 se algo estiver ausente. |
+| `izanagi doctor [--deep]` | Auditoria de integridade; `--deep` adiciona security scan das skills. |
 | `izanagi diagnose` | Diagnóstico profundo do runtime (state, agent genome, contratos de artifact). |
 | `izanagi resume <run-id>` | Retoma execução interrompida (crash) ou pausada a partir do checkpoint: sem replanejar nem reexecutar nós concluídos. |
 | `izanagi approve <run-id> [node-id]` | Aprova uma ação de alto risco pausada (nó `kind: 'approval'`) e retoma. |
 | `izanagi reject <run-id> [node-id] [--reason]` | Rejeita a ação pausada (o nó falha com o motivo) e retoma: self-healing/abort seguem normalmente. |
 | `izanagi explain <run-id>` | Por que o Izanagi decidiu isso: decisões (Decision Journal) + self-healing + veredito, sem chain-of-thought. |
-| `izanagi export --cli <cli>` | Regenera adapters multi-CLI (opencode, claude, codex, cursor, copilot, kimi, all). |
+| `izanagi export --cli <cli>` | Regenera adapters multi-CLI (opencode, claude, codex, cursor, copilot, kimi, all). Idempotente. |
 | `izanagi --version` | Exibe a versão da CLI. |
 
-### Exemplos
+CLI de nova geração (`izanagi-next`, em `packages/cli`, requer Node ≥ 22): pipeline de agentes sobre os núcleos poliglotas, com gate anti-racionalização via Rust core e auto-heal (N=2 tentativas) no run em 4 fases.
 
 ```bash
-izanagi run "Criar uma landing page de um SaaS de analytics"
-izanagi run architect --task "Design a microservices architecture"
-izanagi run "Deploy em produção" --verbose   # pausa em nós de aprovação (human-in-the-loop)
-izanagi approve <run-id>                     # aprova e retoma
-izanagi explain <run-id>                     # por que o Izanagi decidiu o que decidiu
-izanagi agent create "Especialista em Laravel" --skills=php,api
-izanagi skill create rabbitmq-orchestrator --gap="Orquestração de mensageria RabbitMQ"
-izanagi workflow inspect fullstack
-izanagi eval --metrics correctness=0.9,security=0.8
-izanagi benchmark compare
-izanagi doctor --deep
+cd packages/cli && npm install && npm run build
+node dist/cli/src/index.js run --agent=architect --task="Design a caching layer"
+node dist/cli/src/index.js agent list
+node dist/cli/src/index.js skill list --category=rust   # ou --search=<termo>
+node dist/cli/src/index.js skill show <nome> --ref=<arquivo>
+node dist/cli/src/index.js gates check <file>
 ```
 
 ---
 
-## Estrutura do Repositório
+## Skills & Agentes
 
-```
-izanagi-ai/
-├── bin/             Executável da CLI (bin/izanagi.js → dist/cli)
-├── src/             Runtime real em TypeScript (orchestrator, evaluation, resolver, scanner, factories, tools, tracer, llm, cli)
-├── core/            Engines (.md) + skill-resolver.json (aliases → targets + compositions)
-├── agents/          22 definições de agentes em JSON (fonte da verdade dos comandos)
-├── skills/          106 skills em skills/<name>/SKILL.md (+ references.md opcional)
-├── references/      Curadoria de referências reais por domínio (webgl-3d, scrollytelling, stack-2026...)
-├── .agents/memoria/ Memória persistente anti-repetição (contexto, decisoes, erros-corrigidos, learnings)
-├── .opencode/       Comandos slash do Opencode (adapters em .claude/, .codex/, .cursor/...)
-├── AGENTS.md        Instruções de operação do framework
-├── SYSTEM.md        Fundação do sistema (arquitetura real do runtime)
-└── RULES.md         Regras operacionais (Anti-Generic High-Craft & Cinematic UI)
-```
+**22 agentes especializados** (`agents/*.json`, fonte da verdade): `/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/ai-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`. Cada um carrega um Agent Genome de 13 campos e chains compostas; a tabela completa com papéis está em [`AGENTS.md`](AGENTS.md).
 
+**Skills**: 106 módulos legado v1 (`skills/`) e o catálogo ativo **v2** (`.skills/<name>/SKILL.md`), ambos distribuídos no pacote npm. O formato v2 usa front-matter estruturado:
+
+```yaml
 ---
+name: "anti-ai-slop"
+description: "Detecta e corrige design 'cara de IA'..."
+version: 2.0.0
+category: design
+tools:
+  mcp:
+    - mcp:fs_read
+references:
+  - "references.md"
+---
+```
 
-## Agentes e Skills
-
-O framework possui **22 agentes especializados** (`/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`, `/ai-engineer`) e **106 skills** encadeadas por domínio via `compositions` do `core/skill-resolver.json` (258 aliases, 16 composições). Ver `AGENTS.md` para a tabela completa.
+Seguido de seções fixas: *Triggering Criteria*, *Step-by-Step Workflow*, *Verification Steps*, *Common Rationalizations* e *Red Flags*. O consumo é por **progressive disclosure** (`skill show` carrega só o módulo necessário); skills nunca rodam isoladas — encadeiam via `compositions` do `core/skill-resolver.json` (258 aliases, 16 composições).
 
 ---
 
 ## Desenvolvimento
 
+Ordem importa: `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js` — rode `npm run build` antes de qualquer comando CLI local (`doctor`, `polyglot status`, `export`...), senão roda código obsoleto ou quebra. O mesmo vale para `packages/*/dist`.
+
 ```bash
-npm install       # instala dependências
-npm run build     # tsc && regenera .manifest
-npm run doctor    # auditoria de integridade
-node --test dist/runtime/tests/*.test.js   # 262 testes do runtime
-npm run verify    # build + teste de instalação em sandbox
+# Legado npm (raiz)
+npm install
+npm run build       # tsc && node dist/scripts/generate-manifest.js
+npm test            # build + node --test dist/runtime/tests/*.test.js (288 testes)
+npm run verify      # build + teste de instalação em sandbox (passa todos os pack IDs)
+npm run doctor      # node bin/izanagi.js doctor [--deep]
+
+# Núcleos poliglotas
+cargo test --workspace                                        # Rust: core + mcp (111 testes)
+cargo check -p izanagi_core --features wasm                   # type-check dos bindings WASM
+(cd go-services/swarm_orchestrator && go build ./... && go vet ./... && go test ./...)
+(cd python-engine && .venv/bin/python -m pytest tests/ -q)    # 70 testes
+(cd packages/sdk && npm install && npm test)                  # 42 testes
+(cd packages/cli && npm install && npm test)                  # 13 testes
 ```
 
-> **Gotcha:** `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js`: rode `npm run build` antes de qualquer comando CLI local.
+Requisitos por componente: Node ≥ 18 (raiz) e ≥ 22 nos pacotes novos, Rust stable, Go 1.26, Python ≥ 3.10.
 
 ### Publicando no NPM
+
+CD exclusivo de tag `v*` (`.github/workflows/publish.yml`): bump → commit → tag → push; o workflow publica com provenance OIDC (SLSA v1). Localmente, o fluxo manual permanece:
 
 ```bash
 npm run bump:patch   # ou bump:minor / bump:major
 npm publish          # prepublishOnly roda o build automaticamente
 ```
+
+CI (`.github/workflows/polyglot.yml`): 7 jobs paralelos em push/PR para `main` — legacy-npm, rust (clippy+test+wasm check), wasm-build E2E, go, python, ts-packages.
+
+---
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
+| [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Visão arquitetural do framework e da topologia poliglota. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Guia de contribuição: convenções, fluxo de PR e padrões do repo. |
+| [`ROADMAP.md`](ROADMAP.md) | Planejamento de evolução por waves e marcos. |
+| [`SYSTEM.md`](SYSTEM.md) / [`RULES.md`](RULES.md) | Fundação do runtime e regras operacionais (Anti-Generic High-Craft & Cinematic UI). |
+| [`CHANGELOG.md`](CHANGELOG.md) | Histórico de versões. |
 
 ---
 
