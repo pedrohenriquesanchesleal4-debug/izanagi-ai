@@ -72,15 +72,15 @@ Fluxo típico de uma tarefa: a `izanagi-next` roteia skills pelo front-matter, c
 
 | Caminho | Linguagem | Papel | Entrypoints | Testes |
 |---|---|---|---|---|
-| `crates/izanagi_core` | Rust | Quality Engine: validação estrutural estática de TS/Python/Go contra 7 heurísticas anti-slop | lib `izanagi_core::analyze`; binário `izanagi-core` (NDJSON stdin/stdout); bindings WASM sob feature `wasm` | `cargo test --workspace` (81 testes na verificação de 2026-08-23: 59 lib core + 7 lib mcp + 15 mock_server) |
+| `crates/izanagi_core` | Rust | Quality Engine: validação estrutural estática de TS/Python/Go contra 7 heurísticas anti-slop + scanner anti-racionalização | lib `izanagi_core::analyze`; binário `izanagi-core` (NDJSON stdin/stdout + modo `scan-rationalizations`); bindings WASM sob feature `wasm` | `cargo test --workspace` (**111 testes** na verificação de 2026-08-23: 66 lib core + 4 bin core + 16 integração `rationalizations` + 2 doc-tests core + 7 lib mcp + 15 mock_server + 1 doc-test mcp) |
 | `crates/izanagi_mcp` | Rust | Cliente MCP: JSON-RPC 2.0 sobre stdio delimitado por newlines; ciclo spawn → handshake → request → teardown | binário `izanagi-mcp` (modos discovery e `call --tool=`) | inclusos no `cargo test --workspace` |
 | `go-services/swarm_orchestrator` | Go 1.26 | Orquestrador de swarm: pipeline concorrente multi-estágio por canais, exposto via JSON-RPC 2.0 sobre Unix Domain Socket com push de eventos; wiring com Uber Fx | `main.go` → `app.Run()` | `go build ./... && go vet ./... && go test ./...` |
 | `python-engine/ast_analyzer` | Python ≥3.10 | Analisador semântico multilíngue (py/ts/tsx/go): símbolos, complexidade ciclomática, imports, chunks para embedding | `python -m ast_analyzer analyze <path>`; console script `ast-analyzer` | `pytest tests/ -q` no `python-engine/` (70 passed na verificação) |
-| `packages/sdk` | TypeScript | `@izanagi/sdk`: clientes tipados strict para os quatro núcleos + catálogo de skills. Zero dependências runtime | `composePipeline()` em `src/index.ts` | `npm test` (= tsc + `node --test dist/tests/*.test.js`; 41 testes na verificação) |
-| `packages/cli` | TypeScript | `@izanagi/cli-next`: CLI sobre o SDK — pipeline de 4 fases com auto-heal, listagem de agents/skills, checagem de gates | `src/index.ts` → `dist/cli/src/index.js` (`bin: izanagi-next`) | smoke manual (`help`, `agent list`, `skill list`, `gates check`); sem suíte automatizada própria (**Gap**) |
-| `packages/skill-migrator` | Node (ESM, `.mjs`) | Conversor determinístico idempotente skills v1 → v2 | `cli.mjs` (`--src --dest --dry-run --clean --json`) | dry-run + sha256 da árvore (documentado no README do pacote) |
+| `packages/sdk` | TypeScript | `@izanagi/sdk`: clientes tipados strict para os quatro núcleos + catálogo de skills. Zero dependências runtime | `composePipeline()` em `src/index.ts` | `npm test` (= tsc + `node --test dist/tests/*.test.js`; **42 testes** na verificação de 2026-08-23, incluindo o novo cliente `RustCoreClient.scanRationalizations`) |
+| `packages/cli` | TypeScript | `@izanagi/cli-next`: CLI sobre o SDK — pipeline de 4 fases com auto-heal e gates duplos (código + anti-racionalização), listagem/inspeção de agents/skills, checagem de gates | `src/index.ts` → `dist/cli/src/index.js` (`bin: izanagi-next`) | `npm test` (= tsc + node --test; **13 testes** na verificação de 2026-08-23, suíte própria desde a v3.10.0) + smoke manual (`help`, `agent list`, `skill list/show`, `gates check`) |
+| `packages/skill-migrator` | Node (ESM, `.mjs`) | Conversor determinístico idempotente skills v1 → v2 (+ campo `references:` no front-matter v2) | `cli.mjs` (`--src --dest --dry-run --clean --check --json`) | dry-run e `--check` anti-drift (exit 1 em drift) + sha256 da árvore (documentado no README do pacote) |
 | `packages/agent-migrator` | Node (ESM, `.mjs`) | Gerador determinístico idempotente dos YAMLs v2 a partir de `agents/*.json` | `cli.mjs` (`--src --dest --check --json`) | modo `--check` (round-trip interno byte-a-byte) |
-| raiz (`package.json`, `src/`, `core/`, …) | TypeScript | Framework npm legado `izanagi-ai` (v3.7.0), fonte canônica de agentes/skills | `bin/izanagi.js`; scripts `npm run build/test/verify/doctor` | `npm test` na raiz |
+| raiz (`package.json`, `src/`, `core/`, …) | TypeScript | Framework npm legado `izanagi-ai` (v3.10.0), fonte canônica de agentes/skills | `bin/izanagi.js`; scripts `npm run build/test/verify/doctor` | `npm test` na raiz |
 
 ---
 
@@ -173,19 +173,25 @@ Fonte da verdade: `crates/izanagi_core/src/protocol.rs`. Uma linha = um request;
 → {"op":"version"}
 ← {"ok":true,"version":"0.1.0"}
 
+→ {"op":"scan-rationalizations","text":"// TODO: implement later"}
+← {"ok":true,"clean":false,"findings":[{"pattern_id":"ENG-STUB-MARKER","category":"engineering",
+                                         "severity":"blocker","excerpt":"// TODO: implement later","line":1}]}
+
 → <qualquer coisa malformada>
 ← {"ok":false,"error":"invalid request: …"}
 ```
 
 - `language` aceita somente `typescript | python | go` (fora disso: `{"ok":false,"error":"unknown language …"}`).
 - `version` = versão do crate (`PROTOCOL_VERSION` derivado de `CARGO_PKG_VERSION`; `0.1.0` no workspace atual).
+- `scan-rationalizations` aceita só a chave obrigatória `text` e devolve relatório próprio: `clean` booleano + findings com `pattern_id`/`category`/`severity` (`blocker|major|minor`)/`excerpt`/`line`. As duas listas de findings (`validate` vs. `scan-rationalizations`) são mutuamente exclusivas por operação.
+- O mesmo scanner existe como **modo CLI** do binário: `izanagi-core scan-rationalizations --file=<path>` ou `--stdin` (relatório JSON numa linha no stdout; **exit 0** limpo · **exit 1** com findings · **exit 2** fonte ilegível/uso).
 - Score 100 = sem findings; severidades possíveis nos findings: `error` (crítico, recusa gate) e demais níveis informativos.
 - O SDK (`RustCoreClient`) usa **um processo curto por request** — enquadramento FIFO à prova de dessincronização. Resolução do binário: opção explícita > `$IZANAGI_CORE_BIN` > busca em `<repoRoot>/target/{debug,release}` e `<repoRoot>/crates/target/{debug,release}`.
 - Descoberta de repo-root (`resolveRepoRoot`): sobe diretórios até achar pasta com `package.json` **e** `crates/`; `$IZANAGI_REPO_ROOT` atalha a busca.
 
 #### Bindings WASM (feature `wasm`, ADR-003)
 
-- Sob `#[cfg(feature = "wasm")]` em `src/wasm.rs`: exports `validateSource(source, language)`, `supportedLanguages()`, `ruleIds()`, `engineVersion()`. Erros lançam envelope tipado (`{code:"UNKNOWN_LANGUAGE", message, supportedLanguages[]}`), nunca string parseável.
+- Sob `#[cfg(feature = "wasm")]` em `src/wasm.rs`: exports `validateSource(source, language)`, `supportedLanguages()`, `ruleIds()`, `engineVersion()`, `scanRationalizations(text)` e `rationalizationPatternIds()` (o scanner anti-racionalização também cruza a fronteira WASM). Erros lançam envelope tipado (`{code:"UNKNOWN_LANGUAGE", message, supportedLanguages[]}`), nunca string parseável.
 - Compilação nativa type-checka tudo: `cargo check -p izanagi_core --features wasm` (executado e verde na auditoria). Chamadas diretas em host abortam por design — a fronteira de interop só existe sob `wasm32`.
 - Artefato `.wasm` real: apenas no job CI `wasm-build` (requer `rustup`/target `wasm32-unknown-unknown` + `wasm-bindgen-cli` na mesma versão do `Cargo.lock`, hoje 0.2.127). Local dev desta máquina **não tem rustup/wasm-pack** — não é possível gerar `.wasm` localmente (**Gap**, por design do ADR-003).
 
@@ -267,9 +273,10 @@ sequenceDiagram
     else socket ausente ou --standalone
         C->>C: grava .izanagi/tasks/<taskId>/prompt.md<br/>(via MCP fs_write se houver servidor; senão fs direto)
     end
-    loop Fase 4 · Quality gate + auto-heal (até max-heal-attempts re-submissões)
+    loop Fase 4 · Quality gates (código + anti-racionalização) + auto-heal (até max-heal-attempts)
         C->>G: validate por cada arquivo de --files
-        alt findings severity=error
+        C->>G: scan-rationalizations pelos mesmos conteúdos
+        alt findings severity=error · racionalização severity=blocker
             G-->>C: REFUSED
             C->>O: re-submit com relatório de violações anexado (taskId base-rN)
         else sem violações
@@ -284,8 +291,8 @@ Detalhes confirmados em `packages/cli/src/commands/run.ts`:
 
 - **Fase 1**: scoring heurístico tokeniza a task (+3 nome da skill, +2 categoria, +1 prefixo na descrição) e mantém top-5 com score > 0; skill pedida e inexistente = erro loud.
 - **Fase 3**: `taskId` base = `t<epoch36>-<agent sanitizado[12]>`; re-submissões de heal usam sufixo `-r<N>`. Queda de socket no meio do submit também cai para standalone.
-- **Fase 4**: sem `--files`, a fase de gate é pulada (exit 0 após submissão). Recusa final grava `violations.md` e sai 1 — sucesso nunca é registrado com violação crítica pendente.
-- Outros comandos: `agent list` (lê `agents/*.json`: nome, role, chains), `skill list [--category] [--search] [--json]` (catálogo v2 com fallback legado), `gates check <file>` (gate em um arquivo; exit 1 se houver finding severity=error).
+- **Fase 4**: sem `--files`, a fase de gate é pulada (exit 0 após submissão). Dois gates rodam sobre os mesmos conteúdos, em ordem: o quality gate estrutural primeiro (findings `severity=error` recusam); só quando ele aceita todos os arquivos é que o gate anti-racionalização via `RustCoreClient.scanRationalizations` julga a prontidão da entrega (findings `severity=blocker` recusam; `major`/`minor` ficam advisory, sem reprovar). Recusa final grava `violations.md` com ambos os relatórios e sai 1 — cada tentativa de auto-heal re-submete com o relatório anexado ao payload. Binário Rust ausente ⇒ a fase inteira degrada para advisory: warnings loud no stderr, receipt registra `qualityGate`/`rationalizations` com `status:"skipped"` e a delivery prossegue com exit 0.
+- Outros comandos: `agent list` (lê `agents/*.json`: nome, role, chains), `skill list [--category] [--search] [--json]` (catálogo v2 com fallback legado), `skill show <name>` (front-matter resumido + arquivos declarados em `references:` — disclosure progressivo: o corpo completo só entra no payload quando pedido) e `skill show <name> --ref=<file>` (imprime uma referência; o caminho é confinado ao `references/` da skill — absoluto, contendo `..` ou escapando do diretório = erro loud, anti-traversal), `gates check <file>` (gate em um arquivo; exit 1 se houver finding severity=error).
 
 ---
 
@@ -331,6 +338,8 @@ tools:
   mcp:
     - mcp:fs_read
     - mcp:fs_write
+references:              ← disclosure progressivo (v3.10.0)
+  - "references.md"
 ---
 ## Triggering Criteria
 ## Step-by-Step Workflow
@@ -346,15 +355,18 @@ Garantias (implementadas em `migrate.mjs`, README do pacote):
 - **Fidelidade**: nada inventado; corpo original íntegro em Legacy Reference; estratégias de extração do workflow registradas em comentário HTML dentro da seção.
 - **Falha loud**: skill sem corpo aproveitável ou divergência nome/diretório interrompe com exit 1 — nunca stub silencioso.
 - Estado atual: 106/106 módulos migrados; todas as seis seções obrigatórias presentes em todos os arquivos (grep verificado em 2026-08-23).
+- **Progressive disclosure (v3.10.0)**: o migrador copia `.skills/<name>/references/` e declara no front-matter `references:` a lista ordenada/deduplicada dos arquivos efetivamente disponíveis — é essa declaração que o `izanagi-next skill show --ref` consome (com fallback para scan do diretório).
 
 Uso:
 
 ```bash
 node packages/skill-migrator/cli.mjs             # migra (src=skills dest=.skills)
 node packages/skill-migrator/cli.mjs --dry-run   # valida sem escrever (exit codes 0/1/2)
+node packages/skill-migrator/cli.mjs --check     # anti-drift: re-migra em temp dir limpo e compara;
+                                                 # drift/ausência/sobras = exit 1, uso inválido = exit 2
 ```
 
-**Gap**: o skill-migrador não possui flag `--check` equivalente ao agent-migrator (anti-drift do catálogo v2 é feito hoje por re-execução + comparação de hash, não por comando dedicado).
+O modo `--check` (desde a v3.10.0) fecha o antigo gap anti-drift do catálogo v2: compara o destino com uma re-migração limpa byte-a-byte, no mesmo espírito do `--check` do agent-migrador.
 
 ### Agents YAML — `.agents/agents/<slug>.yaml`
 
@@ -403,7 +415,7 @@ Comandos copiáveis por linguagem. Os marcados ✅ foram executados com sucesso 
 
 ```bash
 cargo build --workspace                       # binários em target/debug/{izanagi-core,izanagi-mcp}
-cargo test --workspace                        # ✅ 81 testes verdes
+cargo test --workspace                        # ✅ 111 testes verdes
 cargo clippy --workspace --all-targets        # ⚠️ não-bloqueante: 4 warnings pre-existentes
 cargo check -p izanagi_core --features wasm   # ✅ type-check dos bindings (ADR-003)
 cargo fmt --check                             # ❌ falha hoje (44 pontos de diff) — NÃO bloqueante no CI
@@ -444,13 +456,16 @@ python -m venv .venv
 ### Packages TypeScript (SDK e CLI)
 
 ```bash
-cd packages/sdk && npm install && npm test   # ✅ 41/41 (tsc + node --test dist/tests/*.test.js)
-cd ../cli   && npm install && npm run build  # ✅ gera dist/cli/src/index.js
+cd packages/sdk && npm install && npm test   # ✅ 42/42 (tsc + node --test dist/tests/*.test.js)
+cd ../cli   && npm install && npm test && npm run build
+# ✅ cli: 13/13 na suíte própria (dist/cli/tests) + dist/cli/src/index.js gerado
 
 # smoke (✅ executado):
 node dist/cli/src/index.js help
 node dist/cli/src/index.js agent list
 node dist/cli/src/index.js skill list --search=wasm
+node dist/cli/src/index.js skill show tdd                      # front-matter + referências declaradas
+node dist/cli/src/index.js skill show tdd --ref=references.md  # conteúdo da referência (path confinado)
 node dist/cli/src/index.js gates check <arquivo>   # exit 1 se houver violation severity=error
 
 # pipeline completo (requer binários Rust construídos; orquestrador Go opcional):
@@ -464,6 +479,7 @@ node dist/cli/src/index.js run --agent=senior-engineer --task="…" --files=a.ts
 ```bash
 node packages/agent-migrator/cli.mjs --check    # ✅ EM SINCRONIA (22/22)
 node packages/skill-migrator/cli.mjs --dry-run  # ✅ 106/106 ok
+node packages/skill-migrator/cli.mjs --check    # ✅ SEM DRIFT (106/106)
 ```
 
 ### Requer toolchain indisponível localmente (🔧)
@@ -474,16 +490,17 @@ node packages/skill-migrator/cli.mjs --dry-run  # ✅ 106/106 ok
 ### Verificação global sugerida (ordem)
 
 ```bash
-npm test                                        # raiz legado (build + suíte node:test) ✅ 284/284 em 2026-08-23*
+npm test                                        # raiz legado (build + suíte node:test) ✅ 288/288 em 2026-08-23*
 (cd go-services/swarm_orchestrator && go build ./... && go vet ./... && go test ./...)
 cargo test --workspace
 (cd python-engine && .venv/bin/python -m pytest tests/ -q)
 (cd packages/sdk && npm test)
-(cd packages/cli && npm run build)
+(cd packages/cli && npm test && npm run build)
 node packages/agent-migrator/cli.mjs --check
+node packages/skill-migrator/cli.mjs --check
 ```
 
-\* O número de testes da raiz muda conforme o legado evolui (262 no AGENTS.md → 266 na memória → 284 na auditoria); o valor canônico é sempre o resultado corrente de `npm test`.
+\* Os números de testes mudam conforme o código evolui (raiz: 262 no AGENTS.md → 266 na memória → 284 na auditoria anterior → 288 hoje; Rust workspace: 81 → **111**; SDK: 41 → **42**; CLI-next: 0 → **13**); o valor canônico é sempre o resultado corrente de cada suíte.
 
 ---
 
@@ -513,7 +530,7 @@ Notas registradas no próprio workflow (fatos medidos, não opinião):
 
 Dois circuitos independentes:
 
-1. **npm legado (intocado)**: fluxo vigente do `package.json` da raiz — `npm run bump:{patch,minor,major}` → commit (`chore: bump to vX.Y.Z`) → `npm publish` (`prepublishOnly` roda o build) → `git push`. A whitelist `files` do pacote publicado **não inclui** `crates/`, `go-services/`, `python-engine/`, `packages/` — decisão deliberada (zero inchaço até consumo real; ver gaps em `.agents/memoria/contexto.md`).
+1. **npm legado (intocado)**: fluxo vigente do `package.json` da raiz — `npm run bump:{patch,minor,major}` → commit (`chore: bump to vX.Y.Z`) → `npm publish` (`prepublishOnly` roda o build) → `git push`. A whitelist `files` do pacote publicado **não inclui** `crates/`, `go-services/`, `python-engine/`, `packages/` — decisão deliberada (zero inchaço até consumo real; ver gaps em `.agents/memoria/contexto.md`). Desde a v3.10.0 o job `publish` roda `npm publish --access public --provenance`: provenance OIDC do npm com permissão `id-token: write` escopada exclusivamente ao job (least privilege — o bloco de job sobrescreve o top-level read-only) e direção **fail-closed** (sem OIDC/provenance o release falha; nunca publica silenciosamente sem attestation). Provado em produção: `izanagi-ai@3.10.0` está no registry com attestation SLSA v1. Os adapters multi-CLI gerados por `izanagi export --cli …` também ganharam rodapé de proveniência **determinístico** (``Gerado pelo Izanagi AI: `izanagi export --cli <cli>``) — o caminho absoluto da máquina geradora saiu do output (`src/exporters.ts`), restaurando a idempotência byte-a-byte cross-machine.
 2. **Pacotes poliglotas (`@izanagi/sdk`, `@izanagi/cli-next`)**: ambos `"private": true` — não publicados. O CLI consome o SDK por caminho relativo. Integração SDK→CLI legado no npm é gap aberto registrado em memória.
 
 ---
@@ -527,14 +544,13 @@ Resumo operativo abaixo. Texto integral e racional em `.agents/memoria/decisoes.
 | **ADR-001** Strangler Fig | Legado npm intocado e publicável; topologia nova cresce em `crates/`, `go-services/`, `python-engine/`, `packages/`; sem npm workspaces na raiz nesta fase | Vigente. Trade-off assumido: duplicação temporária de tooling vs. risco zero de regressão para usuários npm |
 | **ADR-002** IPC = UDS + JSON-RPC 2.0 | Prompt master pedia gRPC; `protoc` ausente no ambiente. Mantido JSON-RPC 2.0 sobre UDS (já implementado e testado em Go); migração futura seria só de transporte (payloads preservados) | Vigente. **Gap**: gRPC condicionado ao provisionamento de `protoc` em CI; nada de gRPC existe no código hoje |
 | **ADR-003** WASM feature-gated | Bindings wasm-bindgen sob feature `wasm` em `izanagi_core`; verificação local via `cargo check -p izanagi_core --features wasm`; build `.wasm` real (target `wasm32-unknown-unknown`) apenas em CI com rustup | Vigente. Local dev sem rustup/wasm-pack não gera `.wasm` (por design); job CI `wasm-build` cobre o fluxo |
-| **ADR-004** Skills v2 via migrador determinístico | Conversor idempotente deriva SKILL.md v2 do conteúdo REAL original + biblioteca de Rationalizations/Red Flags por categoria; proibido inventar conteúdo; falha loud | Vigente. 106/106 migrados. Gap menor: sem `--check` dedicado |
+| **ADR-004** Skills v2 via migrador determinístico | Conversor idempotente deriva SKILL.md v2 do conteúdo REAL original + biblioteca de Rationalizations/Red Flags por categoria; proibido inventar conteúdo; falha loud | Vigente. 106/106 migrados; `--check` anti-drift desde a v3.10.0 |
 | **ADR-005** Agents v2 em YAML derivado | `.agents/agents/<slug>.yaml` gerado exclusivamente pelo `agent-migrator` a partir de `agents/*.json` (fonte canônica); idempotência byte-a-byte, round-trip interno, `--check` anti-drift; proibido editar YAML à mão; `.gitignore` afinado (memória local fora, YAMLs versionados) | Vigente. 22/22 em sincronia |
 
 ### Lacunas conhecidas (consolidadas)
 
 - **Socket default divergente** Go (`/tmp/izanagi-orch.sock`) vs. TS (`/tmp/izanagi-swarm.sock`), com nomes de env distintos — alinhar via env (seção 3.1); unificação de default não existe no código.
 - **`-32005` reservado sem uso em fio**: colisão de socket falha o boot do processo, não vira resposta RPC.
-- **Sem suíte automatizada do `packages/cli`** (apenas smoke manual + 41 testes do SDK que cobrem os clientes subjacentes).
 - **Publicação npm dos pacotes novos**: pendente por decisão (fora do `files` do legado; pacotes `private`).
 - **`cargo fmt`/clippy `-D warnings`** preparados para endurecer no CI após limpeza do código Rust.
 - Drift documental pontual fora deste arquivo: `AGENTS.md` ainda menciona `agents/generated/c-systems-engineer.json`, que não existe mais na árvore (registrado em memória; correção pertence à frente responsável pelo AGENTS.md).
