@@ -1,8 +1,8 @@
 # Izanagi AI — Target Architecture
 
-> Version: 2.11.0 (Target)
-> Status: Being implemented across 19 phases
-> Source of Truth: This document drives implementation
+> Version: 3.10.0
+> Status: Legacy runtime implemented; polyglot topology growing alongside it (Strangler Fig, ADR-001)
+> Source of Truth: This document drives implementation · Canonical polyglot IPC contracts & ADRs: docs/POLYGLOT.md
 
 ---
 
@@ -113,6 +113,24 @@ src/runtime/
     ├── runner.ts                # BenchmarkRunner (EXISTS)
     └── definitions.ts           # Builtin cases (EXISTS)
 ```
+
+---
+
+## Polyglot Topology (ADR-001: Strangler Fig)
+
+The `src/runtime` tree above is the legacy npm runtime (CLI `izanagi`, the published package). New growth lives in a polyglot layer beside it, never inside it. Canonical reference for IPC contracts, error codes (`-32001..-32005`), environment variables and the full ADR index: **[`docs/POLYGLOT.md`](docs/POLYGLOT.md)**.
+
+| Component | Language | Responsibility |
+|-----------|----------|----------------|
+| `crates/izanagi_core` | Rust | Quality engine: 7 anti-slop heuristics over TS/Python/Go; NDJSON stdin/stdout protocol (`validate`/`rules`/`version`, `scan-rationalizations`); WASM bindings feature-gated |
+| `crates/izanagi_mcp` | Rust | MCP client (JSON-RPC 2.0 over stdio): discovery + point invocation |
+| `go-services/swarm_orchestrator` | Go | Swarm orchestrator (Uber Fx): architect→engineer→qa→security pipeline via JSON-RPC 2.0 over UDS with event push |
+| `python-engine/ast_analyzer` | Python ≥3.10 | Multilingual semantic AST analysis: symbols, cyclomatic complexity, imports (tree-sitter + structural fallback) |
+| `packages/sdk` | TypeScript | `@izanagi/sdk`: typed clients for the 4 native cores + skill catalog (zero runtime deps) |
+| `packages/cli` | TypeScript | `izanagi-next`: 4-phase run with auto-heal (N=2) and anti-rationalization gate |
+| `packages/skill-migrator` · `agent-migrator` | Node ESM | Deterministic idempotent migrations: skills v1→v2 and agents JSON→YAML |
+
+Derived artifacts are generated, never hand-edited: skills catalog v2 in `.skills/<name>/SKILL.md` (106 modules) comes from the legacy `skills/` via `skill-migrator`; agent YAMLs in `.agents/agents/*.yaml` come from `agents/*.json` via `agent-migrator`.
 
 ---
 
@@ -231,6 +249,7 @@ Evaluate → Verdict + Score + Recommendations
 | `izanagi benchmark` | Benchmarks + regression |
 | `izanagi memory` | Memory inspection |
 | `izanagi doctor` | Integrity audit |
+| `izanagi polyglot status` | Polyglot component health audit (`--strict` exits 1 on missing pieces) |
 | `izanagi diagnose` | Deep runtime diagnosis |
 | `izanagi explain` | Explain routing decisions |
 | `izanagi resume` | Resume from checkpoint |

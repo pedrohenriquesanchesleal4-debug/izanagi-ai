@@ -4,6 +4,71 @@
 
 ---
 
+## [3.10.1]: 2026-08-23
+
+### Changed
+- **Documentação auditada para a era poliglota**: README reescrito em torno da topologia poliglota (instalação, variáveis de ambiente e comandos de teste por núcleo), `docs/POLYGLOT.md` sincronizada com as medições atuais, SYSTEM/RULES/CONTRIBUTING/ROADMAP e `core/*.md` revisados contra a realidade do repositório.
+- **Actions do CI unificadas e pinadas por SHA**: `actions/checkout@v7.0.1` e `actions/setup-node@v6.1.0` em todos os workflows, eliminando o warning de deprecação do Node 20 nos runners.
+
+---
+
+## [3.10.0]: 2026-08-23
+
+### Added
+- **Progressive disclosure nas skills v2**: front-matter `references:` declara os arquivos de apoio de cada skill em `.skills/<name>/`; `izanagi-next skill show <name> [--ref <arquivo>]` exibe skill e references sob demanda; `skill-migrator --check` valida a sincronia sem escrever.
+- **Gate anti-racionalização na fase 4 do `izanagi-next run`**: o artefato final passa pelo Anti-Rationalization Engine antes da entrega. Blocker reprova o gate e dispara auto-heal (N=2); Major/Minor são advisory; `rust-core` ausente degrada o gate para advisory com exit 0.
+- **Provenance OIDC no publish npm**: `publish.yml` ganha `id-token: write` escopado ao job e publica com `--provenance` (fail-closed); attestation SLSA v1 verificável no registry.
+
+### Fixed
+- **Rodapé de proveniência determinístico nos exporters**: os adapters gerados por `izanagi export` incluem um rodapé gerado deterministicamente, idempotente byte-a-byte entre máquinas (elimina diffs falsos entre execuções/regenerações).
+
+---
+
+## [3.9.0]: 2026-08-23
+
+### Added
+- **Anti-Rationalization Engine em Rust** (`crates/izanagi_core`): scanner determinístico regex-free de racionalizações (33 padrões / 8 categorias), exposto como operação NDJSON `scan-rationalizations` com subcomandos `--file=<path>`/`--stdin` e flags `--version`/`--help`; exposto nos bindings WASM; 30 testes novos.
+
+### Changed
+- **Consolidação CI/CD (ADR-006)**: `publish.yml` vira CD exclusivo de tag `v*`/release (guard idempotente, least privilege) e o pipeline poliglota (`polyglot.yml`) absorve o teste sandbox do `npm run verify`.
+
+### Fixed
+- Higiene de repositório: `.gitignore` cobre os artefatos de build poliglotas; comentário de `engines` corrigido no workflow legado; removida a negação órfã de `agents/generated/c-systems-engineer.json` (arquivo não existe desde a 2.13.0).
+
+---
+
+## [3.8.0]: 2026-08-23
+
+### Added
+- **`izanagi polyglot status [--json|--strict]`**: auditoria de saúde dos 7 componentes poliglotas (binários Rust, orquestrador Go, engine Python, pacotes TS); `--strict` sai com exit 1 se algo estiver ausente.
+- **`docs/POLYGLOT.md`**: referência canônica da topologia poliglota — contratos IPC, error codes (-32001..-32005), tabela de variáveis de ambiente, gaps conhecidos e resumo dos ADRs.
+
+### Changed
+- **Gates de qualidade Rust ativados no CI**: `cargo fmt` aplicado integralmente + 4 fixes semânticos do clippy (zero `#[allow]`); `fmt-check` e `clippy -D warnings` agora bloqueiam o pipeline; guard de idempotência e least privilege também reforçados no workflow legado.
+
+### Fixed
+- **postinstall tolerante a checkout sem `dist/`** (bug de CI): a auto-ativação do `izanagi-ai` não falha mais quando executada a partir de um checkout recém-clonado sem build prévio.
+
+---
+
+## [3.7.0]: 2026-08-23
+
+### Added
+- **Topologia poliglota ao lado do runtime npm legado** (Strangler Fig, ADR-001):
+  - `crates/izanagi_core` (Rust): quality engine com 7 heurísticas anti-slop sobre TS/Python/Go, protocolo NDJSON stdin/stdout (`validate`/`rules`/`version`) e bindings WASM feature-gated.
+  - `crates/izanagi_mcp` (Rust): cliente MCP JSON-RPC 2.0 sobre stdio (discovery + invocação pontual), agora com subcomando `call --tool=<name>` coberto por testes E2E.
+  - `go-services/swarm_orchestrator` (Go): orquestrador de swarm (Uber Fx) com pipeline architect→engineer→qa→security via JSON-RPC 2.0 sobre UDS e event push.
+  - `python-engine/ast_analyzer` (Python ≥3.10): análise semântica multilíngue (símbolos, complexidade ciclomática, imports) com tree-sitter + fallback estrutural.
+  - `packages/sdk` (`@izanagi/sdk`, clientes tipados strict para os 4 núcleos + catálogo de skills) e `packages/cli` (binário `izanagi-next`, run em 4 fases com auto-heal N=2), mais o `skill-migrator` determinístico (skills v1→v2).
+- **Catálogo de skills v2 (`.skills/<name>/SKILL.md`)**: 106 módulos migrados deterministicamente do legado `skills/` com seções Triggering Criteria / Step-by-Step Workflow / Verification Steps / Common Rationalizations / Red Flags (ADR-004).
+- **CI poliglota GitHub Actions** (`.github/workflows/polyglot.yml`): jobs paralelos para npm legado, Rust+WASM, Go, Python e pacotes TS, com `requirements-dev.txt` pinado.
+- **Topologia `.agents/agents/*.yaml` via `agent-migrator`**: os 22 agentes derivados JSON→YAML por migrador determinístico idempotente (ADR-005); `--check` detecta drift YAML↔JSON.
+
+### Fixed
+- **`doctor`**: a heurística de raiz não confunde mais os YAMLs derivados (`.agents/agents/*.yaml`) com uma instalação completa (que exige agentes em JSON); regressão coberta por testes.
+
+---
+
 ## [3.6.0]: 2026-08-18
 
 ### Fixed
