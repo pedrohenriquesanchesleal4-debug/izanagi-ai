@@ -23,6 +23,7 @@ import { resumeCommand } from './commands/resume.js';
 import { approveCommand } from './commands/approve.js';
 import { rejectCommand } from './commands/reject.js';
 import { explainCommand } from './commands/explain.js';
+import { polyglotCommand } from './commands/polyglot.js';
 
 /**
  * `packageDir` é SEMPRE a instalação do próprio izanagi-ai (node_modules/izanagi-ai ou
@@ -127,6 +128,12 @@ export async function runCLI(args: string[]): Promise<void> {
       explainCommand(baseDir, rest);
       break;
 
+    // Ponte de diagnóstico com os núcleos poliglotas (Rust/Go/Python/packages TS):
+    // só checagens de existência + probes baratos, nunca executa os núcleos.
+    case 'polyglot':
+      await polyglotCommand(rest);
+      break;
+
     case 'chat':
     case 'repl':
     case 'interactive':
@@ -195,6 +202,7 @@ function showHelp(): void {
   \x1b[32mbenchmark list|run|compare\x1b[0m     Suíte de benchmarks + regression comparison.
   \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
   \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
+  \x1b[32mpolyglot status [--json|--strict]\x1b[0m Saúde dos núcleos poliglotas (Rust, Go, Python, packages TS) — diagnóstico, exit 0; --strict sai 1 se algo ausente.
   \x1b[32mdashboard [--port N]\x1b[0m           Sobe o Dashboard local (Run Explorer, Arena, Memory) em http://localhost.
   \x1b[32mresume <run-id>\x1b[0m                Retoma execução interrompida/pausada a partir do checkpoint.
   \x1b[32mapprove <run-id> [node-id]\x1b[0m     Aprova ação de alto risco pausada (human-in-the-loop) e retoma.

@@ -41,7 +41,8 @@ O framework conta com **22 agentes especializados** em `agents/*.json` + orquest
 | `/form-engineer` | `agents/form-engineer-agent.json` | Formulários high-craft: validação, wizard, acessibilidade |
 | `/agent-architect` | `agents/agent-architect-agent.json` | Projeta novos agentes (Genome, guardrails, avaliação) por lacuna real |
 | `/skill-architect` | `agents/skill-architect-agent.json` | Curadoria de skills: security scan, anti-duplicação, lacunas comprovadas |
-| *Dinâmico* | `agents/generated/c-systems-engineer.json` | Engenharia C & Baixo Nível: gestão de memória, ponteiros, GCC/CMake, Valgrind |
+
+> **Histórico:** `agents/generated/` não é versionado — agentes gerados pela Agent Factory (`izanagi agent create`) ficam locais por padrão. O antigo exemplo `c-systems-engineer.json` foi removido na v2.13.0 e não deve mais ser listado como agente do framework.
 
 ---
 
