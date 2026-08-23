@@ -2,6 +2,26 @@ import fs from 'fs';
 import path from 'path';
 import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest, checkSkillLifecycle, checkNestedDuplicate } from '../checks.js';
 
+/**
+ * Decide a raiz do framework para auditoria.
+ *
+ * Instalação completa = `.agents/agents/` contendo definições de agente em JSON
+ * (formato distribuído). A presença isolada de `.agents/memoria/` não conta — é
+ * memória local gitignored e um repo raiz-based cairia por engano no modo
+ * "projeto instalado".
+ *
+ * Topologia v2 (ADR-005): o repo-fonte mantém `.agents/agents/*.yaml` DERIVADOS
+ * (nunca .json) apenas como interface de leitura; nesse caso a raiz segue sendo
+ * `baseDir` (o pacote instalado), senão o doctor procuraria SYSTEM.md/RULES.md
+ * dentro de `.agents/` e falharia.
+ */
+export function resolveProjectRoot(cwd: string, baseDir: string): string {
+  const agentsDotDir = path.join(cwd, '.agents', 'agents');
+  if (!fs.existsSync(agentsDotDir)) return baseDir;
+  const hasJsonAgents = fs.readdirSync(agentsDotDir).some((f: string) => f.endsWith('.json'));
+  return hasJsonAgents ? path.join(cwd, '.agents') : baseDir;
+}
+
 export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   const deep = args.includes('--deep') || args.includes('-d');
 
@@ -9,10 +29,7 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
 
   const cwd = process.cwd();
 
-  // Raiz do framework: .agents do projeto SE for uma instalação completa (tem agents/ dentro),
-  // não só a presença da pasta — `.agents/memoria/` sozinha (comum, é gitignored) não conta,
-  // senão um repo raiz-based com só memória local cai por engano no modo "projeto instalado".
-  const projectRoot = fs.existsSync(path.join(cwd, '.agents', 'agents')) ? path.join(cwd, '.agents') : baseDir;
+  const projectRoot = resolveProjectRoot(cwd, baseDir);
 
   let errors = 0;
   let warnings = 0;
