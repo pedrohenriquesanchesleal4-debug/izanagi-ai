@@ -13,7 +13,10 @@ use crate::mask::{LineIndex, Scan};
 #[derive(Debug, Clone)]
 pub enum ExtentKind {
     /// Brace-delimited body; indices refer to the joined masked text.
-    Braced { open_index: usize, close_index: usize },
+    Braced {
+        open_index: usize,
+        close_index: usize,
+    },
     /// Python indentation-delimited body.
     Indented,
 }
@@ -137,10 +140,36 @@ fn go_headers(text: &str) -> Vec<Header> {
 }
 
 const TS_RESERVED: [&[u8]; 30] = [
-    b"if", b"else", b"for", b"while", b"do", b"switch", b"case", b"default", b"try", b"catch",
-    b"finally", b"return", b"function", b"class", b"new", b"typeof", b"void", b"delete",
-    b"instanceof", b"in", b"of", b"async", b"await", b"yield", b"const", b"let", b"var",
-    b"static", b"readonly", b"declare",
+    b"if",
+    b"else",
+    b"for",
+    b"while",
+    b"do",
+    b"switch",
+    b"case",
+    b"default",
+    b"try",
+    b"catch",
+    b"finally",
+    b"return",
+    b"function",
+    b"class",
+    b"new",
+    b"typeof",
+    b"void",
+    b"delete",
+    b"instanceof",
+    b"in",
+    b"of",
+    b"async",
+    b"await",
+    b"yield",
+    b"const",
+    b"let",
+    b"var",
+    b"static",
+    b"readonly",
+    b"declare",
 ];
 
 fn ts_headers(text: &str) -> Vec<Header> {
@@ -193,7 +222,7 @@ fn ts_method_headers(b: &[u8]) -> Vec<Header> {
         }
         let len = word_len(b, p);
         let word = &b[p..p + len];
-        if TS_RESERVED.iter().any(|reserved| *reserved == word) {
+        if TS_RESERVED.contains(&word) {
             p += len.max(1);
             continue;
         }
@@ -291,8 +320,7 @@ fn extract_python(lines: &[String]) -> Vec<FunctionExtent> {
             continue;
         };
         let mut end = i;
-        for j in (i + 1)..lines.len() {
-            let candidate = &lines[j];
+        for (j, candidate) in lines.iter().enumerate().skip(i + 1) {
             if candidate.trim().is_empty() {
                 continue;
             }
@@ -498,7 +526,8 @@ mod tests {
 
     #[test]
     fn absorbs_nested_closures_into_parent() {
-        let source = "function outer() {\n  const inner = () => { return 1; };\n  return inner;\n}\n";
+        let source =
+            "function outer() {\n  const inner = () => { return 1; };\n  return inner;\n}\n";
         assert_eq!(names(Language::TypeScript, source), vec!["outer"]);
     }
 
@@ -510,7 +539,10 @@ mod tests {
 
     #[test]
     fn python_extents_cover_full_indented_block() {
-        let masked = scan(Language::Python, "def f():\n    a = 1\n    b = 2\nrest = 3\n");
+        let masked = scan(
+            Language::Python,
+            "def f():\n    a = 1\n    b = 2\nrest = 3\n",
+        );
         let extents = extract_functions(Language::Python, &masked);
         let extent = extents.first().expect("one function");
         assert_eq!(extent.header_line, 1);

@@ -113,8 +113,9 @@ pub fn handle_request(line: &str) -> Option<String> {
 /// Serialization can only fail on a broken `Serializer`; fall back to a fixed
 /// error envelope so the loop below can never panic on the wire.
 fn serialize_response(response: Response) -> String {
-    serde_json::to_string(&response)
-        .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"response serialization failed\"}".to_string())
+    serde_json::to_string(&response).unwrap_or_else(|_| {
+        "{\"ok\":false,\"error\":\"response serialization failed\"}".to_string()
+    })
 }
 
 /// Reads newline-delimited requests until EOF, writing exactly one response
@@ -154,7 +155,8 @@ mod tests {
 
     #[test]
     fn validate_returns_scored_findings_for_typescript() {
-        let response = respond(r#"{"op":"validate","language":"typescript","code":"function f() {}"}"#);
+        let response =
+            respond(r#"{"op":"validate","language":"typescript","code":"function f() {}"}"#);
         assert_eq!(response["ok"], true);
         let score = response["score"].as_u64().expect("numeric score");
         assert!(score < 100);
@@ -167,7 +169,8 @@ mod tests {
 
     #[test]
     fn validate_works_for_python_and_go() {
-        let python = respond(r#"{"op":"validate","language":"python","code":"def f():\n    pass\n"}"#);
+        let python =
+            respond(r#"{"op":"validate","language":"python","code":"def f():\n    pass\n"}"#);
         assert_eq!(python["ok"], true);
         assert!(python["findings"]
             .as_array()
@@ -199,13 +202,15 @@ mod tests {
     fn invalid_json_yields_structured_error() {
         let response = respond("{not json");
         assert_eq!(response["ok"], false);
-        assert!(response["error"].as_str().expect("error").starts_with("invalid request"));
+        assert!(response["error"]
+            .as_str()
+            .expect("error")
+            .starts_with("invalid request"));
     }
 
     #[test]
     fn unknown_language_is_rejected_by_contract() {
-        let response =
-            respond(r#"{"op":"validate","language":"rust","code":"fn main() {}"}"#);
+        let response = respond(r#"{"op":"validate","language":"rust","code":"fn main() {}"}"#);
         assert_eq!(response["ok"], false);
         let message = response["error"].as_str().expect("error");
         assert!(message.contains("unknown language"));
@@ -231,15 +236,18 @@ mod tests {
             .iter()
             .map(|value| value.as_str().expect("string id"))
             .collect();
-        assert_eq!(ids, vec![
-            "STUB_BODY",
-            "EMPTY_FUNCTION",
-            "GENERIC_CATCH",
-            "GENERIC_NAME",
-            "REDUNDANT_COMMENT",
-            "AI_WATERMARK",
-            "LONG_FUNCTION",
-        ]);
+        assert_eq!(
+            ids,
+            vec![
+                "STUB_BODY",
+                "EMPTY_FUNCTION",
+                "GENERIC_CATCH",
+                "GENERIC_NAME",
+                "REDUNDANT_COMMENT",
+                "AI_WATERMARK",
+                "LONG_FUNCTION",
+            ]
+        );
     }
 
     #[test]
@@ -258,10 +266,13 @@ mod tests {
     #[test]
     fn transport_loop_survives_mixed_traffic_until_eof() {
         let input = concat!(
-            r#"{"op":"version"}"#, "\n",
+            r#"{"op":"version"}"#,
             "\n",
-            "garbage line", "\n",
-            r#"{"op":"validate","language":"typescript","code":"function g() {}"}"#, "\n",
+            "\n",
+            "garbage line",
+            "\n",
+            r#"{"op":"validate","language":"typescript","code":"function g() {}"}"#,
+            "\n",
         );
         let mut wire = Vec::new();
         run(Cursor::new(input.as_bytes()), &mut wire).expect("transport succeeds");

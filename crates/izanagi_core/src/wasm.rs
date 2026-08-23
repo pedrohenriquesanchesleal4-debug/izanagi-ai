@@ -177,16 +177,15 @@ fn marshal_error(error: WasmError) -> JsValue {
         Ok(envelope) => envelope,
         // Unreachable for owned strings in practice; keeps the bridge total
         // instead of silently swallowing a serializer failure.
-        Err(secondary) => {
-            JsValue::from_str(&format!("{error} (error envelope serialization failed: {secondary})"))
-        }
+        Err(secondary) => JsValue::from_str(&format!(
+            "{error} (error envelope serialization failed: {secondary})"
+        )),
     }
 }
 
 fn marshal_report(report: &ValidationReport) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(report).map_err(|failure| {
-        marshal_error(WasmError::serialization_failed(failure))
-    })
+    serde_wasm_bindgen::to_value(report)
+        .map_err(|failure| marshal_error(WasmError::serialization_failed(failure)))
 }
 
 /// Validates `source` written in `language` against the seven Quality-Engine

@@ -29,10 +29,7 @@ pub enum McpError {
     /// The server reported an internal error (`-32603`).
     Internal(String),
     /// Server-defined error outside the reserved code range.
-    Server {
-        code: i64,
-        message: String,
-    },
+    Server { code: i64, message: String },
     /// No response arrived within the configured timeout.
     Timeout,
     /// The peer closed the connection.

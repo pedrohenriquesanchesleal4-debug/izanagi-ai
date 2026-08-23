@@ -33,7 +33,10 @@ pub fn analyze(language: Language, source: &str) -> AnalysisResult {
     };
     let findings = run_rules(&analysis);
 
-    let penalty: u32 = findings.iter().map(|finding| finding.severity.penalty()).sum();
+    let penalty: u32 = findings
+        .iter()
+        .map(|finding| finding.severity.penalty())
+        .sum();
     AnalysisResult {
         score: 100u32.saturating_sub(penalty),
         findings,

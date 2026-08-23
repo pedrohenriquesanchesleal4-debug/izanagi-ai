@@ -189,8 +189,7 @@ fn triple_end(chars: &[char], open: usize) -> (usize, bool) {
             j += 2;
             continue;
         }
-        if chars[j] == quote && at(chars, j + 1) == Some(quote) && at(chars, j + 2) == Some(quote)
-        {
+        if chars[j] == quote && at(chars, j + 1) == Some(quote) && at(chars, j + 2) == Some(quote) {
             return (j + 3, true);
         }
         j += 1;
@@ -219,8 +218,19 @@ fn regex_can_start(out: &[char], idx: usize) -> bool {
         let word: String = out[s..=k].iter().collect();
         return matches!(
             word.as_str(),
-            "return" | "typeof" | "case" | "in" | "of" | "new" | "delete" | "void" | "do"
-                | "else" | "yield" | "await" | "throw"
+            "return"
+                | "typeof"
+                | "case"
+                | "in"
+                | "of"
+                | "new"
+                | "delete"
+                | "void"
+                | "do"
+                | "else"
+                | "yield"
+                | "await"
+                | "throw"
         );
     }
     true
@@ -263,7 +273,11 @@ fn step_ts(
             let end = until_newline(chars, i + 2);
             blank(out, i, end);
             for (line, text) in collect_lines(chars, i + 2, end) {
-                comments.push(CommentHit { kind: CommentKind::Line, line, text });
+                comments.push(CommentHit {
+                    kind: CommentKind::Line,
+                    line,
+                    text,
+                });
             }
             end
         }
@@ -272,7 +286,11 @@ fn step_ts(
             let content_end = if terminated { end - 2 } else { end };
             blank(out, i, end);
             for (line, text) in collect_lines(chars, i + 2, content_end) {
-                comments.push(CommentHit { kind: CommentKind::Block, line, text });
+                comments.push(CommentHit {
+                    kind: CommentKind::Block,
+                    line,
+                    text,
+                });
             }
             end
         }
@@ -328,7 +346,11 @@ fn step_go(
             let end = until_newline(chars, i + 2);
             blank(out, i, end);
             for (line, text) in collect_lines(chars, i + 2, end) {
-                comments.push(CommentHit { kind: CommentKind::Line, line, text });
+                comments.push(CommentHit {
+                    kind: CommentKind::Line,
+                    line,
+                    text,
+                });
             }
             end
         }
@@ -337,7 +359,11 @@ fn step_go(
             let content_end = if terminated { end - 2 } else { end };
             blank(out, i, end);
             for (line, text) in collect_lines(chars, i + 2, content_end) {
-                comments.push(CommentHit { kind: CommentKind::Block, line, text });
+                comments.push(CommentHit {
+                    kind: CommentKind::Block,
+                    line,
+                    text,
+                });
             }
             end
         }
@@ -379,7 +405,11 @@ fn step_python(
             let end = until_newline(chars, i + 1);
             blank(out, i, end);
             for (line, text) in collect_lines(chars, i + 1, end) {
-                comments.push(CommentHit { kind: CommentKind::Line, line, text });
+                comments.push(CommentHit {
+                    kind: CommentKind::Line,
+                    line,
+                    text,
+                });
             }
             end
         }
@@ -472,7 +502,10 @@ mod tests {
 
     #[test]
     fn ts_regex_after_return_is_detected_via_keyword_lookbehind() {
-        let scan = scan(Language::TypeScript, "function f() {\n  return /error/;\n}\n");
+        let scan = scan(
+            Language::TypeScript,
+            "function f() {\n  return /error/;\n}\n",
+        );
         assert!(!scan.masked_lines[1].contains("/error/"));
     }
 

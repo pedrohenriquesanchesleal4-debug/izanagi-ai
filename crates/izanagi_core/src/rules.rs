@@ -156,11 +156,7 @@ fn warning_finding(rule: &str, line: usize, message: impl Into<String>) -> Findi
 fn normalize(mut findings: Vec<Finding>) -> Vec<Finding> {
     let mut seen = HashSet::new();
     findings.retain(|finding| {
-        seen.insert((
-            finding.rule.clone(),
-            finding.line,
-            finding.message.clone(),
-        ))
+        seen.insert((finding.rule.clone(), finding.line, finding.message.clone()))
     });
     findings.sort_by(|x, y| {
         x.line
@@ -250,7 +246,10 @@ fn stub_body(analysis: &Analysis<'_>) -> Vec<Finding> {
                 findings.push(error_finding(
                     "STUB_BODY",
                     extent.header_line,
-                    format!("function '{}' declares only a stub body ('pass')", extent.name),
+                    format!(
+                        "function '{}' declares only a stub body ('pass')",
+                        extent.name
+                    ),
                 ));
             }
         }
@@ -338,7 +337,9 @@ fn ts_generic_catches(analysis: &Analysis<'_>) -> Vec<Finding> {
 /// calls and `throw` statements — i.e. it was empty, log-only or rethrow-only.
 fn generic_ts_catch_body(body: &str) -> bool {
     let stripped = strip_throw_statements(&strip_console_calls(body));
-    stripped.bytes().all(|byte| byte.is_ascii_whitespace() || byte == b';')
+    stripped
+        .bytes()
+        .all(|byte| byte.is_ascii_whitespace() || byte == b';')
 }
 
 fn strip_console_calls(source: &str) -> String {
@@ -425,9 +426,11 @@ fn python_generic_catches(analysis: &Analysis<'_>) -> Vec<Finding> {
             }
         }
         let pass_only = body.is_empty()
-            || body.iter().all(|&statement| statement == "pass" || statement == "...");
-        let rethrow_only = !body.is_empty()
-            && body.iter().all(|statement| statement.starts_with("raise"));
+            || body
+                .iter()
+                .all(|&statement| statement == "pass" || statement == "...");
+        let rethrow_only =
+            !body.is_empty() && body.iter().all(|statement| statement.starts_with("raise"));
         if pass_only || rethrow_only {
             findings.push(warning_finding(
                 "GENERIC_CATCH",
@@ -554,17 +557,15 @@ fn generic_name(analysis: &Analysis<'_>) -> Vec<Finding> {
                         idx += 1;
                     }
                     let ident: String = chars[start..idx].iter().collect();
-                    if previous_meaningful != '.' && reported.insert(ident.clone()) {
-                        if is_generic_identifier(&ident.to_lowercase()) {
-                            findings.push(warning_finding(
-                                "GENERIC_NAME",
-                                line_no,
-                                format!(
-                                    "generic identifier '{ident}' in function '{}'",
-                                    extent.name
-                                ),
-                            ));
-                        }
+                    if previous_meaningful != '.'
+                        && reported.insert(ident.clone())
+                        && is_generic_identifier(&ident.to_lowercase())
+                    {
+                        findings.push(warning_finding(
+                            "GENERIC_NAME",
+                            line_no,
+                            format!("generic identifier '{ident}' in function '{}'", extent.name),
+                        ));
                     }
                     previous_meaningful = chars[idx - 1];
                     continue;
@@ -953,7 +954,8 @@ mod tests {
 
     #[test]
     fn ts_substantive_handler_is_not_generic() {
-        let source = "try {\n  sync();\n} catch (err) {\n  report(err);\n  throw new SyncError(err);\n}\n";
+        let source =
+            "try {\n  sync();\n} catch (err) {\n  report(err);\n  throw new SyncError(err);\n}\n";
         assert!(rule_hits(analyze(Language::TypeScript, source), "GENERIC_CATCH").is_empty());
     }
 
@@ -1047,7 +1049,9 @@ mod tests {
     fn ladder(count: usize) -> String {
         let mut body = String::from("function decisionSoup(input) {\n  let acc = 0;\n");
         for k in 0..count {
-            body.push_str(&format!("  if (input.a{k} && input.b{k}) {{\n    acc += {k};\n  }}\n"));
+            body.push_str(&format!(
+                "  if (input.a{k} && input.b{k}) {{\n    acc += {k};\n  }}\n"
+            ));
         }
         body.push_str("  return acc;\n}\n");
         body
@@ -1088,7 +1092,7 @@ mod tests {
     #[test]
     fn keyword_lookalikes_do_not_count() {
         let source = "function f(items) {\n  items.forEach(item => item.testCases.length);\n  return items.length;\n}\n";
-        assert!(rule_hits(analyze(Language::TypeScript, &source), "LONG_FUNCTION").is_empty());
+        assert!(rule_hits(analyze(Language::TypeScript, source), "LONG_FUNCTION").is_empty());
     }
 
     // normalization ---------------------------------------------------------
@@ -1103,9 +1107,6 @@ mod tests {
             .filter(|finding| finding.line == 2)
             .map(|finding| finding.rule.as_str())
             .collect();
-        assert_eq!(
-            first_line_rules,
-            vec!["EMPTY_FUNCTION", "GENERIC_NAME"]
-        );
+        assert_eq!(first_line_rules, vec!["EMPTY_FUNCTION", "GENERIC_NAME"]);
     }
 }

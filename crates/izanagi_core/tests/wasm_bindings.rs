@@ -17,7 +17,7 @@ use izanagi_core::lang::Language;
 use izanagi_core::wasm::{
     parse_language, supported_language_names, ValidationReport, ERR_UNKNOWN_LANGUAGE,
 };
-use izanagi_core::{RULE_IDS, PROTOCOL_VERSION};
+use izanagi_core::{PROTOCOL_VERSION, RULE_IDS};
 
 const CLEAN_GO: &str = "func Sum(items []int) int {\n\ttotal := 0\n\tfor _, item := range items {\n\t\ttotal += item\n\t}\n\treturn total\n}\n";
 
@@ -43,10 +43,7 @@ fn clean_code_passes_with_full_score_and_no_findings() {
     let findings = json["findings"].as_array().expect("findings array");
     assert!(findings.is_empty());
     assert_eq!(
-        json["rulesChecked"]
-            .as_array()
-            .expect("rules array")
-            .len(),
+        json["rulesChecked"].as_array().expect("rules array").len(),
         RULE_IDS.len()
     );
 }
@@ -59,10 +56,14 @@ fn stub_todo_source_is_detected_as_violation() {
     let report = ValidationReport::from_analysis(language, &result);
 
     assert!(report.score < 100);
-    assert!(report.findings.iter().any(|finding| finding.rule == "STUB_BODY"
-        && finding.line == 1));
-    assert!(report.findings.iter().any(|finding| finding.rule == "EMPTY_FUNCTION"
-        && finding.line == 2));
+    assert!(report
+        .findings
+        .iter()
+        .any(|finding| finding.rule == "STUB_BODY" && finding.line == 1));
+    assert!(report
+        .findings
+        .iter()
+        .any(|finding| finding.rule == "EMPTY_FUNCTION" && finding.line == 2));
 
     let json = serde_json::to_value(&report).expect("report serializes");
     let severities: Vec<&str> = json["findings"]
@@ -71,7 +72,10 @@ fn stub_todo_source_is_detected_as_violation() {
         .iter()
         .filter_map(|finding| finding["severity"].as_str())
         .collect();
-    assert!(severities.contains(&"error"), "STUB_BODY/EMPTY_FUNCTION are errors");
+    assert!(
+        severities.contains(&"error"),
+        "STUB_BODY/EMPTY_FUNCTION are errors"
+    );
 }
 
 #[test]
@@ -81,7 +85,10 @@ fn unknown_language_returns_typed_actionable_error() {
     assert_eq!(error.code, ERR_UNKNOWN_LANGUAGE);
     assert!(error.message.contains("\"kotlin\""));
     for spelling in ["\"typescript\"", "\"python\"", "\"go\""] {
-        assert!(error.message.contains(spelling), "message missing {spelling}");
+        assert!(
+            error.message.contains(spelling),
+            "message missing {spelling}"
+        );
     }
     assert_eq!(
         error.supported_languages.as_deref(),
@@ -106,11 +113,14 @@ fn unknown_language_returns_typed_actionable_error() {
 
 #[test]
 fn exported_metadata_agrees_with_engine_internals() {
-    assert_eq!(supported_language_names(), vec![
-        "typescript".to_string(),
-        "python".to_string(),
-        "go".to_string(),
-    ]);
+    assert_eq!(
+        supported_language_names(),
+        vec![
+            "typescript".to_string(),
+            "python".to_string(),
+            "go".to_string(),
+        ]
+    );
     for name in supported_language_names() {
         assert!(
             name.parse::<Language>().is_ok(),

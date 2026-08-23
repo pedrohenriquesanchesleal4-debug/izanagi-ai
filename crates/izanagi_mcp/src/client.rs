@@ -109,9 +109,8 @@ impl<W: Write> McpClient<W> {
     pub fn list_tools(&mut self) -> Result<Vec<Tool>, McpError> {
         let result = self.request("tools/list", Some(json!({})))?;
         let tools_value = result.get("tools").cloned().unwrap_or_else(|| json!([]));
-        serde_json::from_value(tools_value).map_err(|error| {
-            McpError::Internal(format!("malformed tools/list payload: {error}"))
-        })
+        serde_json::from_value(tools_value)
+            .map_err(|error| McpError::Internal(format!("malformed tools/list payload: {error}")))
     }
 
     /// Calls a tool by name with object arguments; returns the raw result
@@ -127,14 +126,15 @@ impl<W: Write> McpClient<W> {
         } else {
             arguments
         };
-        self.request("tools/call", Some(json!({ "name": name, "arguments": arguments })))
+        self.request(
+            "tools/call",
+            Some(json!({ "name": name, "arguments": arguments })),
+        )
     }
 
     /// Drains notifications that arrived while no request was being awaited.
     pub fn drain_notifications(&self) -> Vec<Value> {
-        self.notifications()
-            .drain(..)
-            .collect()
+        self.notifications().drain(..).collect()
     }
 
     fn notifications(&self) -> std::sync::MutexGuard<'_, VecDeque<Value>> {

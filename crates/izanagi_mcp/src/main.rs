@@ -30,8 +30,7 @@ use serde_json::{json, Value};
 
 use izanagi_mcp::{ClientInfo, McpClient};
 
-const USAGE_DISCOVER: &str =
-    "usage: izanagi-mcp [--timeout-ms=N] <server-command> [args…]";
+const USAGE_DISCOVER: &str = "usage: izanagi-mcp [--timeout-ms=N] <server-command> [args…]";
 const USAGE_CALL: &str = "usage: izanagi-mcp call --tool=<name> [--args=<json>] [--timeout-ms=N] <server-command> [args…]";
 
 /// How the server is launched once mode-specific flags are peeled off.

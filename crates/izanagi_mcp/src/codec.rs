@@ -89,7 +89,9 @@ mod tests {
         let wire = br#"{"id":7}"#;
         let mut cursor = Cursor::new(&wire[..]);
         let mut buffer = String::new();
-        let frame = decode_frame(&mut cursor, &mut buffer).unwrap().expect("frame");
+        let frame = decode_frame(&mut cursor, &mut buffer)
+            .unwrap()
+            .expect("frame");
         assert_eq!(frame["id"], 7);
         assert!(decode_frame(&mut cursor, &mut buffer).unwrap().is_none());
     }

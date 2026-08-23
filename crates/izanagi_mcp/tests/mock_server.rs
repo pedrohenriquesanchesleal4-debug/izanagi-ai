@@ -19,8 +19,8 @@ use std::time::{Duration, Instant};
 use serde_json::{json, Value};
 
 use izanagi_mcp::{
-    decode_frame, encode_frame, ClientInfo, McpClient, McpError, ERR_INTERNAL,
-    ERR_INVALID_PARAMS, ERR_INVALID_REQUEST, ERR_METHOD_NOT_FOUND, ERR_PARSE, PROTOCOL_VERSION,
+    decode_frame, encode_frame, ClientInfo, McpClient, McpError, ERR_INTERNAL, ERR_INVALID_PARAMS,
+    ERR_INVALID_REQUEST, ERR_METHOD_NOT_FOUND, ERR_PARSE, PROTOCOL_VERSION,
 };
 
 type MockClient = McpClient<io::PipeWriter>;
@@ -77,7 +77,10 @@ fn respond_to<W: Write>(writer: &mut W, frame: &Value) {
         "tools/call" => {
             let name = frame["params"]["name"].as_str().unwrap_or("");
             if name == "echo" {
-                let arguments = frame["params"].get("arguments").cloned().unwrap_or(json!({}));
+                let arguments = frame["params"]
+                    .get("arguments")
+                    .cloned()
+                    .unwrap_or(json!({}));
                 json!({
                     "jsonrpc": "2.0",
                     "id": id,
@@ -120,8 +123,8 @@ fn standard_client(timeout_ms: u64) -> (MockClient, JoinHandle<()>) {
     let (client_reader, server_writer) = io::pipe().expect("pipe pair 1");
     let (server_reader, client_writer) = io::pipe().expect("pipe pair 2");
     let handle = spawn_standard_mock(server_reader, server_writer);
-    let client =
-        MockClient::new(client_reader, client_writer).with_timeout(Duration::from_millis(timeout_ms));
+    let client = MockClient::new(client_reader, client_writer)
+        .with_timeout(Duration::from_millis(timeout_ms));
     (client, handle)
 }
 
@@ -153,7 +156,9 @@ fn tool_call_round_trips_arguments() {
     client.initialize(demo_info()).expect("handshake");
 
     let arguments = json!({ "payload": "ping 🛠" });
-    let result = client.call_tool("echo", arguments.clone()).expect("call ok");
+    let result = client
+        .call_tool("echo", arguments.clone())
+        .expect("call ok");
     assert_eq!(result["isError"], false);
     assert_eq!(result["structuredContent"], arguments);
     assert_eq!(result["content"][0]["text"], arguments.to_string());
@@ -546,11 +551,7 @@ fn cli_call_against_silent_server_times_out_without_hanging() {
     let run = run_izanagi_mcp(&arguments);
     let elapsed = started.elapsed();
 
-    assert_eq!(
-        run.success,
-        Some(false),
-        "silent server must fail the run"
-    );
+    assert_eq!(run.success, Some(false), "silent server must fail the run");
     assert!(
         run.stderr.contains("timed out"),
         "stderr must surface the standardized Timeout error; got: {}",
