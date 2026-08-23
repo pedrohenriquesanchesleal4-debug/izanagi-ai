@@ -1,6 +1,6 @@
 # Roadmap
 
-> Versão atual: **3.6.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
+> Versão atual: **3.10.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
 > Legenda: ✅ Done · 🔧 In progress · 📋 Planned · 💡 Future idea
 > Histórico linha-a-linha de cada release em `CHANGELOG.md`: este arquivo resume por fase, não duplica o changelog.
 
@@ -47,7 +47,7 @@
 - [x] **Skill Security Scanner** (`src/runtime/security/`): prompt injection, instruções perigosas, scripts, permissões, requisitos de rede/fs; LOW/MEDIUM/HIGH/CRITICAL
 - [x] **Benchmarks** (`benchmarks/` + `src/runtime/benchmarks/`): 10 domínios, validators, expectativas de artefatos, `izanagi benchmark run/list/compare` com relatório comparável entre versões
 - [x] **CLI runtime**: `izanagi agent list|inspect`, `skill list|search|inspect|create`, `workflow list|inspect`, `run`, `trace`, `eval`, `benchmark`, `memory inspect|search`, `doctor --deep`, `diagnose`
-- [x] **Docotr expandido**: valida system/agents/skills/resolver/memória/providers/tools/contratos/avaliação/benchmarks
+- [x] **Doctor expandido**: valida system/agents/skills/resolver/memória/providers/tools/contratos/avaliação/benchmarks
 - [x] Testes node:test cobrindo resolver, scoring, contracts, evaluation, graph, parallel, retry, healing, memory, handoff, factories, model routing, CLI, tracer, scanner, tools, benchmarks, orchestrator
 
 ## Fase 4: Evolução v2.11 (🔧 / 📋)

@@ -9,7 +9,7 @@
 
 ## Identity
 
-Quality Gates are the final validation layer before any output is delivered to the user. Every response passes through 5 gates: Security, Style, Clarity, Conciseness, and Completeness. If any gate fails, the output is rejected and reworked.
+Quality Gates are the final validation layer before any output is delivered to the user. Every response passes through 6 gates: Security, Style, Clarity, Conciseness, Completeness, and Masterpiece (Gate 6). If any fatal gate fails, the output is rejected and reworked. Os heurísticos anti-slop/anti-racionalização também existem como engine Rust runtime (`crates/izanagi_core`) — contratos e integração em `docs/POLYGLOT.md`.
 
 ---
 
@@ -210,7 +210,7 @@ quality_result:
 
 ### Always
 
-- ✅ Run all 5 gates on every output.
+- ✅ Run all 6 gates on every output.
 - ✅ Block output on security gate failure.
 - ✅ Log gate results for Reflection Engine.
 - ✅ Fix style issues automatically when possible.

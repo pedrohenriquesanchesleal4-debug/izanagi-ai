@@ -1,6 +1,6 @@
 # IZANAGI AI: System Foundation
 
-> Version 3.6.0
+> Version 3.10.0
 > Codename: "The Architect's Mind"
 
 ---
@@ -63,7 +63,7 @@ User Input / Comando CLI
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
-│  Memory & Observability    │ ← MemoryStore (JSON), TraceStore (JSONL),
+│  Memory & Observability    │ ← MemoryStore (JSON), TraceStore (JSON por run),
 │                            │   .agents/memoria/ persistente
 └─────────────┬──────────────┘
               ▼
@@ -87,7 +87,7 @@ User Input / Comando CLI
 | **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
 | **Failure Memory** (`memory/store.ts`) | `recordFailure` + `findRelevantFailures` por categoria: erros reais registrados são injetados como evidência em runs futuros (anti-repetição). |
 | **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
-| **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSONL com spans, load/close e retry de escrita. |
+| **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSON (um arquivo por run em `.izanagi/state/traces/`) com spans, load/close e retry de escrita. |
 | **Benchmarks** (`benchmarks/`) | 10 casos builtin (parse, scoring, scanner, genome, composer...) executáveis via `izanagi benchmark` + `compare` entre builds. |
 | **LLM Executor** (`llm/`) | Adapters reais OpenAI/Anthropic/Google com env key, timeout e propagação de erro HTTP. |
 | **Evidence System** (`research/evidence.ts`) | Claims FACT/ASSUMPTION/INFERENCE/UNKNOWN com fonte, confiança e hierarquia de sourceType (official docs > source code > tests > package metadata > reliable tech > community); relatório de claims críticas. ⚠️ Implementado e testado, mas **nenhum caller em produção** hoje: nem `Orchestrator` nem `planner.ts` o invocam; só o próprio teste do módulo o exercita. Roadmap: ligar à execução do agente `researcher`. |
@@ -123,7 +123,7 @@ Não há "compression engine" mágico: a economia de tokens é uma **skill opera
 
 ## Quality Gates: Every Output
 
-Todo output passa por gates reais antes de ser considerado entregue:
+Todo output passa por gates reais antes de ser considerado entregue (os heurísticos anti-slop/anti-racionalização também rodam como engine Rust em `crates/izanagi_core`: contratos e integração em `docs/POLYGLOT.md`):
 
 1. ✅ **Security Gate**: sem segredos no código; `skill-scanner` varre skills por injeção, comandos destrutivos, exfiltração e hardcode (11 regras), ignorando contexto defensivo/educativo.
 2. ✅ **Validation Gate**: artefatos validados contra schema (campos obrigatórios + tamanho mínimo); inválido → healing `skill_replacement`.
@@ -141,7 +141,7 @@ Todo output passa por gates reais antes de ser considerado entregue:
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
 │  │ Agent    │  │Learnings │  │  Runs/   │ │
 │  │ Stats    │  │ (erros   │  │  Trace   │ │
-│  │ (JSON)   │  │  evitados)│  │ (JSONL)  │ │
+│  │ (JSON)   │  │  evitados)│  │ (JSON)   │ │
 │  └──────────┘  └──────────┘  └──────────┘ │
 │       └──────────────┬──────────────────┘ │
 │                      ▼                    │
@@ -153,7 +153,7 @@ Todo output passa por gates reais antes de ser considerado entregue:
 └────────────────────────────────────────────┘
 ```
 
-Memória entre sessões vive em `.agents/memoria/` (markdown curado). Memória de execução (stats, traces, learnings) vive no runtime (JSON/JSONL): consulte `MemoryStore` e `TraceStore`.
+Memória entre sessões vive em `.agents/memoria/` (markdown curado). Memória de execução (stats, traces, learnings) vive no runtime (JSON em disco): consulte `MemoryStore` e `TraceStore`.
 
 ## Evolution Cycle
 

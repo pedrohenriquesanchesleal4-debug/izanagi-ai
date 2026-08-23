@@ -167,9 +167,6 @@ explain:
   budget: 1200
   quality_gates: [clarity, completeness]
 
-
-  quality_gates: [security, completeness]
-
 plan:
   chain:
     - core/planning-engine

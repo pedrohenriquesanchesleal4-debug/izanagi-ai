@@ -7,9 +7,9 @@ Obrigado pelo seu interesse em contribuir com o **Izanagi AI**! Este framework �
 ## 🛠️ Como Contribuir
 
 ### 1. Adicionar uma Nova Skill
-1. Crie um novo arquivo Markdown em `skills/<nome-da-skill>.md` ou subdiretório correspondente.
+1. Crie a skill no catálogo legado em `skills/<nome-da-skill>/SKILL.md` (subdiretório por skill) e sincronize o catálogo ativo v2 em `.skills/<nome-da-skill>/SKILL.md` via `node packages/skill-migrator/cli.mjs` (idempotente; valide com `--dry-run`/`--check`).
 2. Siga o padrão de estrutura de Skills do Izanagi AI:
-   - Header (Versão, Domínio, Budget de Tokens)
+   - Frontmatter mínimo (`name`, `description`; opcional: `version`, `category`, `triggers`)
    - Contexto & Objetivo
    - Workflow
    - Checklist de Qualidade
@@ -22,10 +22,10 @@ Obrigado pelo seu interesse em contribuir com o **Izanagi AI**! Este framework �
 2. Garanta que o JSON contenha os campos obrigatórios: `name`, `version`, `role`, `identity`, `model`, `token_budget`, `skills`, `chains`, `always`, `never`.
 
 ### 3. Melhorar a CLI
-1. O código da CLI reside em `src/cli/` e o binário em `bin/izanagi.js`.
+1. O código da CLI reside em `src/cli/` e o binário em `bin/izanagi.js` (importa de `dist/`, que é gitignored: rode `npm run build` antes de qualquer comando local).
 2. Após fazer alterações, execute a verificação de integridade:
    ```bash
-   node bin/izanagi.js doctor
+   npm run build && node bin/izanagi.js doctor
    ```
 
 ---
@@ -35,8 +35,10 @@ Obrigado pelo seu interesse em contribuir com o **Izanagi AI**! Este framework �
 Antes de abrir um Pull Request, certifique-se de que o diagnóstico do framework passa sem erros:
 
 ```bash
-izanagi doctor
+npm run build && izanagi doctor
 ```
+
+Referências canônicas: comandos completos de desenvolvimento e testes em [`AGENTS.md`](AGENTS.md); contratos dos núcleos poliglotas (Rust, Go, Python, TS) em [`docs/POLYGLOT.md`](docs/POLYGLOT.md); histórico de releases em [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
