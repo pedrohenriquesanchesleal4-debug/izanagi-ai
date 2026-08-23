@@ -27,9 +27,9 @@
 #    desta frente.
 #
 # 2) SUPPLY CHAIN: actions fixadas por SHA de commit completo (imutável).
-#    SHAs conferidos nos logs reais de execução deste repo:
-#      - actions/checkout@v4     => 11d5960a326750d5838078e36cf38b85af677262
-#      - actions/setup-node@v4   => 49933ea5288caeca8642d1e84afbd3f7d6820020
+#    SHAs conferidos na GitHub API em 2026-08-23 (tags = commits):
+#      - actions/checkout@v7.0.1   => 3d3c42e5aac5ba805825da76410c181273ba90b1
+#      - actions/setup-node@v6.1.0 => 395ad3262231945c25e8478fd5baf05154b1d79f
 #    Nunca referenciar tags mutáveis (@v4/@main) diretamente.
 #
 # 3) LEAST PRIVILEGE:
@@ -77,10 +77,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      # actions/checkout@v4
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      # actions/setup-node@v4 - SEM registry-url/token: job não publica nada.
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      # actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-node@v6 - SEM registry-url/token: job não publica nada.
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
         with:
           node-version: '24'
           cache: npm
@@ -105,11 +105,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      # actions/checkout@v4
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      # actions/setup-node@v4 - registry-url apenas aqui: gera o .npmrc com
+      # actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-node@v6 - registry-url apenas aqui: gera o .npmrc com
       # NODE_AUTH_TOKEN injetado pelo setup-node SOMENTE neste job.
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
         with:
           node-version: '24'
           cache: npm
