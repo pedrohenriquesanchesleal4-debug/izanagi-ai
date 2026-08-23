@@ -25,7 +25,23 @@
  *
  * Sem chave/servidor configurado, o framework continua 100% funcional em modo
  * headless (gera prompt) — o executor apenas informa que não está configurado.
+ *
+ * Cache-Aware Prompt Compression (CAPC): o system prompt pode carregar o
+ * delimitador `<!-- IZANAGI:DYNAMIC -->` (ver runtime/llm/prompt-cache.ts).
+ * A detecção é AUTOMÁTICA dentro de cada adapter — nenhum chamador precisa
+ * mudar: Anthropic ganha blocos com cache_control no prefixo estático quando
+ * ele atinge o piso de 1024 tokens; providers OpenAI-compatible recebem o
+ * conteúdo estável primeiro (prefix caching automático, wire format inalterado).
  */
+
+import { splitStaticDynamic, joinWithoutMarker, estimateTokens, estimateStaticTokens, MIN_CACHEABLE_TOKENS } from './prompt-cache.js';
+import { dietHistory } from './session-diet.js';
+
+/** Reexports públicos das utilidades de cache (mesma heurística, fonte única). */
+export { DYNAMIC_MARKER, MIN_CACHEABLE_TOKENS, splitStaticDynamic, joinWithoutMarker, estimateStaticTokens, isPromptCacheEligible } from './prompt-cache.js';
+
+/** Reexports públicos do AgentDiet (observation masking determinístico). */
+export { dietHistory, summarizeObservation, MIN_TURNS, RECENT_WINDOW, MAX_OBS_CHARS } from './session-diet.js';
 
 export interface CompletionMessage {
   role: 'system' | 'user' | 'assistant';
@@ -38,6 +54,14 @@ export interface CompletionOptions {
   messages: CompletionMessage[];
   maxTokens?: number;
   temperature?: number;
+  /**
+   * AgentDiet (observation masking): quando true, aplica `dietHistory()` ao
+   * histórico ANTES de despachar ao adapter — observações antigas e longas
+   * (fora da janela recente) viram resumos sintéticos de 1 linha; mensagens
+   * 'system' e a janela recente ficam byte-a-byte. Default (ausente/false):
+   * histórico segue intacto, comportamento idêntico ao pré-AgentDiet.
+   */
+  diet?: boolean;
 }
 
 export interface CompletionResult {
@@ -46,6 +70,12 @@ export interface CompletionResult {
   latencyMs: number;
   model: string;
   provider: string;
+  /**
+   * Tokens servidos do cache de prompt pelo provider (quando reportado):
+   * Anthropic `cache_read_input_tokens`, OpenAI `prompt_tokens_details.cached_tokens`,
+   * Google `usageMetadata.cachedContentTokenCount`. Ausente = provider não reportou.
+   */
+  cachedTokens?: number;
 }
 
 export interface ModelAdapter {
@@ -119,12 +149,20 @@ function timeoutMs(): number {
  * provider que fala esse wire format (OpenAI de verdade, LM Studio, Ollama,
  * OpenRouter, e qualquer endpoint "custom" compatível). `apiKey` vazio
  * simplesmente omite o header Authorization (servidores locais não exigem).
+ *
+ * Prefix caching: esses providers cacheiam automaticamente o INÍCIO idêntico
+ * do payload — por isso a ordem é ESTÁVEL (system primeiro, messages na ordem
+ * recebida) e o delimitador CAPC é removido do content antes do envio, de modo
+ * que o prefixo estático fique byte-idêntico entre chamadas. Wire format
+ * inalterado: nenhuma chave nova é adicionada ao body.
  */
 async function completeOpenAICompatible(provider: string, baseUrl: string, apiKey: string, opts: CompletionOptions): Promise<CompletionResult> {
   const started = Date.now();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
+  // Estático→dinâmico concatenado SEM o delimitador (prefixo estável no topo).
+  const systemContent = opts.system ? joinWithoutMarker(opts.system) : '';
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers,
@@ -132,8 +170,8 @@ async function completeOpenAICompatible(provider: string, baseUrl: string, apiKe
       model: opts.model,
       max_tokens: opts.maxTokens ?? 2048,
       temperature: opts.temperature ?? 0.4,
-      messages: opts.system
-        ? [{ role: 'system', content: opts.system }, ...opts.messages]
+      messages: systemContent
+        ? [{ role: 'system', content: systemContent }, ...opts.messages]
         : opts.messages,
     }),
     signal: AbortSignal.timeout(timeoutMs()),
@@ -146,11 +184,24 @@ async function completeOpenAICompatible(provider: string, baseUrl: string, apiKe
 
   const data = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
-    usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number };
+    usage?: {
+      total_tokens?: number;
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      prompt_tokens_details?: { cached_tokens?: number };
+    };
   };
   const text = data.choices?.[0]?.message?.content ?? '';
   const tokens = data.usage?.total_tokens ?? estimateTokens(text, opts.system ?? '');
-  return { text, tokens, latencyMs: Date.now() - started, model: opts.model, provider };
+  const cached = data.usage?.prompt_tokens_details?.cached_tokens;
+  return {
+    text,
+    tokens,
+    latencyMs: Date.now() - started,
+    model: opts.model,
+    provider,
+    ...(typeof cached === 'number' ? { cachedTokens: cached } : {}),
+  };
 }
 
 /** Provider OpenAI (e qualquer API compatível via base URL). */
@@ -278,7 +329,14 @@ export class CustomOpenAICompatibleAdapter implements ModelAdapter {
   }
 }
 
-/** Provider Anthropic (Messages API). */
+/** Bloco de system da Messages API (com cache_control opcional no prefixo estático). */
+interface AnthropicSystemBlock {
+  type: 'text';
+  text: string;
+  cache_control?: { type: 'ephemeral' };
+}
+
+/** Provider Anthropic (Messages API) com prompt caching no prefixo estático. */
 export class AnthropicAdapter implements ModelAdapter {
   readonly provider = 'anthropic';
   private readonly apiKey: string;
@@ -296,6 +354,24 @@ export class AnthropicAdapter implements ModelAdapter {
     return this.apiKey.length > 0;
   }
 
+  /**
+   * System → wire format cache-aware:
+   *   - estático >= MIN_CACHEABLE_TOKENS (1024): array de blocos, com
+   *     cache_control ephemeral APENAS no prefixo estático (o sufixo dinâmico
+   *     fica num bloco separado, fora do cache);
+   *   - caso contrário: string simples exatamente como antes (retrocompatível —
+   *     o provider ignoraria o header abaixo do piso de qualquer forma).
+   * Sem system, o campo segue ausente do payload.
+   */
+  private static systemToWire(system?: string): string | AnthropicSystemBlock[] | undefined {
+    if (!system) return undefined;
+    const split = splitStaticDynamic(system);
+    if (estimateStaticTokens(split.staticText) < MIN_CACHEABLE_TOKENS) return system;
+    const blocks: AnthropicSystemBlock[] = [{ type: 'text', text: split.staticText, cache_control: { type: 'ephemeral' } }];
+    if (split.dynamicText) blocks.push({ type: 'text', text: split.dynamicText });
+    return blocks;
+  }
+
   async complete(opts: CompletionOptions): Promise<CompletionResult> {
     const started = Date.now();
     const system = opts.system ?? '';
@@ -310,7 +386,7 @@ export class AnthropicAdapter implements ModelAdapter {
         model: opts.model,
         max_tokens: opts.maxTokens ?? 2048,
         temperature: opts.temperature ?? 0.4,
-        system: system || undefined,
+        system: AnthropicAdapter.systemToWire(opts.system),
         messages: opts.messages.filter((m) => m.role !== 'system'),
       }),
       signal: AbortSignal.timeout(timeoutMs()),
@@ -323,16 +399,24 @@ export class AnthropicAdapter implements ModelAdapter {
 
     const data = (await res.json()) as {
       content?: Array<{ type?: string; text?: string }>;
-      usage?: { input_tokens?: number; output_tokens?: number };
+      usage?: {
+        input_tokens?: number;
+        output_tokens?: number;
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+      };
     };
     const text = (data.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('');
     const tokens = (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0) || estimateTokens(text, system);
+    // Tokens servidos do cache: só populamos quando o provider REPORTA a chave.
+    const cachedRead = data.usage?.cache_read_input_tokens;
     return {
       text,
       tokens,
       latencyMs: Date.now() - started,
       model: opts.model,
       provider: this.provider,
+      ...(typeof cachedRead === 'number' ? { cachedTokens: cachedRead } : {}),
     };
   }
 }
@@ -363,8 +447,11 @@ export class GoogleAdapter implements ModelAdapter {
         'Content-Type': 'application/json',
         'x-goog-api-key': this.apiKey,
       },
+      // Prefix caching (context caching do Gemini): system_instruction estável
+      // primeiro no body, contents na ordem recebida — o início do payload fica
+      // byte-idêntico entre chamadas com o mesmo prefixo estático.
       body: JSON.stringify({
-        system_instruction: opts.system ? { parts: [{ text: opts.system }] } : undefined,
+        system_instruction: opts.system ? { parts: [{ text: joinWithoutMarker(opts.system) }] } : undefined,
         contents: opts.messages
           .filter((m) => m.role !== 'system')
           .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
@@ -380,21 +467,32 @@ export class GoogleAdapter implements ModelAdapter {
 
     const data = (await res.json()) as {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      usageMetadata?: { totalTokenCount?: number };
+      usageMetadata?: { totalTokenCount?: number; cachedContentTokenCount?: number };
     };
     const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('');
     const tokens = data.usageMetadata?.totalTokenCount ?? estimateTokens(text, opts.system ?? '');
+    const cachedContent = data.usageMetadata?.cachedContentTokenCount;
     return {
       text,
       tokens,
       latencyMs: Date.now() - started,
       model: opts.model,
       provider: this.provider,
+      ...(typeof cachedContent === 'number' ? { cachedTokens: cachedContent } : {}),
     };
   }
 }
 
-/** Cliente único: resolve o adapter do provider e executa. */
+/**
+ * Cliente único: resolve o adapter do provider e executa.
+ *
+ * CAPC é automático: se o `system` contiver `<!-- IZANAGI:DYNAMIC -->`, cada
+ * adapter aplica a estratégia de cache do seu provider por conta própria
+ * (blocos cache_control no Anthropic, prefixo estável nos OpenAI-compatible,
+ * system_instruction estável no Google). Chamadores existentes (run/chat/
+ * dashboard/arena) não precisam de NENHUMA mudança — basta incluir o
+ * delimitador no system quando houver parte volátil.
+ */
 export class LLMClient {
   private readonly adapters: Map<string, ModelAdapter>;
 
@@ -432,12 +530,13 @@ export class LLMClient {
     if (!adapter.configured) {
       throw new Error(`Provider "${provider}" não configurado — defina ${ENV_KEYS[provider]?.apiKey.join(' ou ') ?? 'a chave de API'} no ambiente`);
     }
-    return adapter.complete(opts);
+    // AgentDiet opt-in: sem diet, opts passa INTACTO (mesma referência — wire
+    // byte-a-byte idêntico ao pré-AgentDiet); com diet, o histórico é mascarado
+    // aqui, ponto único central, e os adapters/chamadores não mudam nada.
+    if (!opts.diet) return adapter.complete(opts);
+    return adapter.complete({ ...opts, messages: dietHistory(opts.messages) });
   }
 }
 
-/** Estimativa grosseira de tokens (chars/4) para quando a API não reporta. */
-function estimateTokens(...texts: string[]): number {
-  const chars = texts.reduce((acc, t) => acc + t.length, 0);
-  return Math.max(1, Math.round(chars / 4));
-}
+// estimateTokens vive em ./prompt-cache.js (fonte única compartilhada com a
+// decisão de cacheabilidade) e é reexportada acima junto das demais utilidades.
