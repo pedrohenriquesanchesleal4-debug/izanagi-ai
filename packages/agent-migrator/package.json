@@ -1,0 +1,22 @@
+{
+  "name": "@izanagi/agent-migrator",
+  "version": "1.0.0",
+  "description": "Migrador determinístico e idempotente de definições de agentes v1 (agents/*.json, Agent Genome + chains) para representação v2 em YAML estrito (.agents/agents/<slug>.yaml), com round-trip interno e modo --check anti-drift (ADR-005). Node puro, zero dependências.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "agent-migrator": "./cli.mjs"
+  },
+  "main": "./migrate.mjs",
+  "exports": {
+    ".": "./migrate.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node cli.mjs",
+    "check": "node cli.mjs --check"
+  },
+  "license": "UNLICENSED"
+}

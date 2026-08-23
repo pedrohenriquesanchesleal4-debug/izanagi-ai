@@ -6,7 +6,12 @@ tmp/
 dist/
 site/node_modules/
 site/.next/
-.agents/
+# .agents/: memória persistente e artefatos locais NUNCA são versionados; o resto
+# (ex.: .agents/agents/*.yaml derivados pelo agent-migrator, ADR-005) é rastreável.
+# Gitignore não reinclui filhos de diretório inteiramente excluído ("parent directory
+# excluded"), então o antigo `.agents/` vira negativa fina por artefato local:
+.agents/memoria/
+.agents/auditoria/
 .Izanagi/
 .izanagi/
 site/
