@@ -35,6 +35,57 @@ export interface QualityGateResult {
 /** Languages accepted by the Rust engine (`lang.rs::Language`). */
 export type GateLanguage = "typescript" | "python" | "go";
 
+/* ------------------------------------------------------------------------- */
+/* Anti-Rationalization Engine (`rationalizations.rs`, op scan-rationalizations) */
+/* ------------------------------------------------------------------------- */
+
+/** How heavily a rationalization weighs against delivery (`Severity`). */
+export type RationalizationSeverity = "blocker" | "major" | "minor";
+
+/** Domains inherited from the skill-migrator library (`Category`). */
+export type RationalizationCategory =
+  | "engineering"
+  | "testing"
+  | "security"
+  | "design"
+  | "docs"
+  | "devops"
+  | "data"
+  | "ai";
+
+const RATIONALIZATION_SEVERITIES: readonly RationalizationSeverity[] = [
+  "blocker",
+  "major",
+  "minor",
+];
+
+const RATIONALIZATION_CATEGORIES: readonly RationalizationCategory[] = [
+  "engineering",
+  "testing",
+  "security",
+  "design",
+  "docs",
+  "devops",
+  "data",
+  "ai",
+];
+
+/** One detected rationalization (`rationalizations.rs::RationalizationFinding`). */
+export interface RationalizationFinding {
+  readonly patternId: string;
+  readonly category: RationalizationCategory;
+  readonly severity: RationalizationSeverity;
+  /** Hit context, ≤120 chars, kept verbatim from the scanned text. */
+  readonly excerpt: string;
+  readonly line: number;
+}
+
+/** Outcome of scanning one text blob (`rationalizations.rs::ScanReport`). */
+export interface ScanRationalizationsResult {
+  readonly clean: boolean;
+  readonly findings: readonly RationalizationFinding[];
+}
+
 /** Task identifier enforced by the Go orchestrator (`domain.ValidateTaskID`). */
 declare const taskBrand: unique symbol;
 export type TaskId = string & { readonly [taskBrand]: "TaskId" };
@@ -467,6 +518,7 @@ export type CoreResponse =
   | { readonly kind: "validate"; readonly result: QualityGateResult }
   | { readonly kind: "rules"; readonly rules: readonly string[] }
   | { readonly kind: "version"; readonly version: string }
+  | { readonly kind: "scan-rationalizations"; readonly result: ScanRationalizationsResult }
   | { readonly kind: "error"; readonly message: string };
 
 export function parseCoreResponse(line: string): CoreResponse {
@@ -487,6 +539,19 @@ export function parseCoreResponse(line: string): CoreResponse {
   }
 
   // Success responses carry exactly one payload key depending on the op.
+  // The scan-rationalizations branch is checked first because both ops share
+  // the `findings` wire key with disjoint element shapes (`clean` only exists
+  // on the rationalization report).
+  if (typeof parsed["clean"] === "boolean") {
+    const findingsRaw = Array.isArray(parsed["findings"]) ? parsed["findings"] : [];
+    return {
+      kind: "scan-rationalizations",
+      result: {
+        clean: parsed["clean"],
+        findings: findingsRaw.map(parseRationalizationFinding),
+      },
+    };
+  }
   if (typeof parsed["score"] === "number") {
     const findingsRaw = Array.isArray(parsed["findings"]) ? parsed["findings"] : [];
     return {
@@ -510,7 +575,7 @@ export function parseCoreResponse(line: string): CoreResponse {
   if (typeof parsed["version"] === "string") {
     return { kind: "version", version: parsed["version"] };
   }
-  throw new ContractViolationError("score|rules|version payload", parsed);
+  throw new ContractViolationError("score|rules|version|clean payload", parsed);
 }
 
 export function parseViolation(value: unknown): Violation {
@@ -526,6 +591,30 @@ export function parseViolation(value: unknown): Violation {
     severity,
     line: expectNumber(value, "line"),
     message: expectString(value, "message"),
+  };
+}
+
+/** Parses one anti-rationalization finding from the scan report wire shape. */
+export function parseRationalizationFinding(value: unknown): RationalizationFinding {
+  if (!isRecord(value)) {
+    throw new ContractViolationError("rationalization finding object", value);
+  }
+  const severity = value["severity"];
+  const severityMatch = RATIONALIZATION_SEVERITIES.find((candidate) => candidate === severity);
+  if (severityMatch === undefined) {
+    throw new ContractViolationError('"blocker"|"major"|"minor" severity', severity);
+  }
+  const category = value["category"];
+  const categoryMatch = RATIONALIZATION_CATEGORIES.find((candidate) => candidate === category);
+  if (categoryMatch === undefined) {
+    throw new ContractViolationError("rationalization category", category);
+  }
+  return {
+    patternId: expectString(value, "pattern_id"),
+    category: categoryMatch,
+    severity: severityMatch,
+    excerpt: expectString(value, "excerpt"),
+    line: expectNumber(value, "line"),
   };
 }
 

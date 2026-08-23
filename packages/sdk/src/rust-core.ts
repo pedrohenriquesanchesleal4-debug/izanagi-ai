@@ -17,6 +17,7 @@ import {
   type CoreResponse,
   type GateLanguage,
   type QualityGateResult,
+  type ScanRationalizationsResult,
   inferGateLanguage,
   parseCoreResponse,
 } from "./contracts.js";
@@ -80,6 +81,23 @@ export class RustCoreClient {
       throw new Error(`izanagi-core answered "${response.kind}" to a version request`);
     }
     return response.version;
+  }
+
+  /**
+   * Scans raw text for curated rationalization patterns (anti-rationalization
+   * gate). Severity semantics live in the engine: blocker = stub-grade
+   * deliveries, major = concrete process failures, minor = review-worthy
+   * smells.
+   */
+  async scanRationalizations(text: string): Promise<ScanRationalizationsResult> {
+    const response = await this.exchange(
+      JSON.stringify({ op: "scan-rationalizations", text }),
+      "scan-rationalizations",
+    );
+    if (response.kind !== "scan-rationalizations") {
+      throw new Error(`izanagi-core answered "${response.kind}" to a scan-rationalizations request`);
+    }
+    return response.result;
   }
 
   /**

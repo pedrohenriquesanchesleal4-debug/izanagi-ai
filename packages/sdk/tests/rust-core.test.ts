@@ -37,6 +37,19 @@ rl.on("line", (line) => {
       process.stdout.write(JSON.stringify({ ok: true, version: "9.9.9-fake" }) + "\\n");
     } else if (request.op === "rules") {
       process.stdout.write(JSON.stringify({ ok: true, rules: ["STUB_BODY", "EMPTY_FUNCTION"] }) + "\\n");
+    } else if (request.op === "scan-rationalizations") {
+      const findings = [];
+      const lines = String(request.text).split("\\n");
+      lines.forEach((textLine, index) => {
+        if (/TODO|implement later/i.test(textLine)) {
+          findings.push({ pattern_id: "ENG-STUB-MARKER", category: "engineering", severity: "blocker", excerpt: textLine.slice(0, 120), line: index + 1 });
+        } else if (/checklist:/i.test(textLine)) {
+          findings.push({ pattern_id: "ENG-CHECKLIST-DELIVERY", category: "engineering", severity: "major", excerpt: textLine.slice(0, 120), line: index + 1 });
+        } else if (/nice to have/i.test(textLine)) {
+          findings.push({ pattern_id: "DESIGN-NICE-TO-HAVE", category: "design", severity: "minor", excerpt: textLine.slice(0, 120), line: index + 1 });
+        }
+      });
+      process.stdout.write(JSON.stringify({ ok: true, clean: findings.length === 0, findings }) + "\\n");
     } else if (request.op === "validate") {
       const dirty = /TODO|implement later/.test(request.code);
       process.stdout.write(JSON.stringify({
@@ -95,6 +108,29 @@ describe("RustCoreClient against a fake engine binary", () => {
     const client = new RustCoreClient({ binaryPath: enginePath, requestTimeoutMs: 5_000 });
     assert.deepEqual(await client.rules(), ["STUB_BODY", "EMPTY_FUNCTION"]);
     assert.equal(await client.version(), "9.9.9-fake");
+  });
+
+  it("scans text for rationalizations and maps severities into typed findings", async () => {
+    const client = new RustCoreClient({ binaryPath: enginePath, requestTimeoutMs: 5_000 });
+
+    const clean = await client.scanRationalizations("const value = compute();\n");
+    assert.equal(clean.clean, true);
+    assert.deepEqual(clean.findings, []);
+
+    const dirty = await client.scanRationalizations("const a = 1;\n// TODO: implement later\nconst b = 2;\n");
+    assert.equal(dirty.clean, false);
+    assert.equal(dirty.findings.length, 1);
+    const blocker = dirty.findings[0];
+    assert.ok(blocker !== undefined);
+    assert.equal(blocker.patternId, "ENG-STUB-MARKER");
+    assert.equal(blocker.severity, "blocker");
+    assert.equal(blocker.category, "engineering");
+    assert.equal(blocker.line, 2);
+    assert.match(blocker.excerpt, /TODO/);
+
+    const graded = await client.scanRationalizations("// checklist: steps\n// nice to have: cache\n");
+    const severities = graded.findings.map((finding) => finding.severity).sort();
+    assert.deepEqual(severities, ["major", "minor"]);
   });
 
   it("validates files from disk inferring the language by extension", async () => {
@@ -175,6 +211,14 @@ describe("RustCoreClient against the real compiled engine", () => {
       assert.equal(result.ok, true);
       assert.ok(result.score < 100);
       assert.ok(result.findings.some((finding) => finding.rule === "EMPTY_FUNCTION"));
+
+      const scan = await client.scanRationalizations("function f() {}\n// [x] done one\n// [x] done two\n");
+      assert.equal(scan.clean, false);
+      assert.ok(scan.findings.some((finding) => finding.patternId === "ENG-CHECKBOX-DELIVERY" && finding.severity === "blocker"));
+
+      const cleanScan = await client.scanRationalizations("export function add(a: number, b: number): number {\n  return a + b;\n}\n");
+      assert.equal(cleanScan.clean, true);
+      assert.deepEqual(cleanScan.findings, []);
     }
 
     // Sanity-check that cargo itself is present so the skip reason above is

@@ -12,24 +12,31 @@
  *                           locally and persisting the composed payload via
  *                           MCP (when an MCP server is configured) or plain
  *                           filesystem writes.
- *   Fase 4 - Quality gate   runs the Rust engine on every produced file.
- *                           Critical violations REFUSE the final receipt and
- *                           trigger the auto-heal loop: up to N retries that
- *                           re-submit the task with the violation report
- *                           attached.
+ *   Fase 4 - Quality gate   runs the Rust engine on every produced file,
+ *                           then the Anti-Rationalization Engine over the
+ *                           same contents. Critical violations REFUSE the
+ *                           final receipt and trigger the auto-heal loop:
+ *                           up to N retries that re-submit the task with
+ *                           the violation report attached. When the rust
+ *                           core binary itself is absent the whole phase
+ *                           degrades to advisory mode (loud warnings, no
+ *                           refusal), mirroring how phases 3 handles an
+ *                           unreachable orchestrator socket.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
   type QualityGateResult,
+  type RationalizationFinding,
+  type ScanRationalizationsResult,
   type SkillMeta,
   SocketUnavailableError,
   makeTaskId,
 } from "../../../sdk/src/index.ts";
 import { EXIT_FAILURE, EXIT_OK, type CommandContext } from "../context.js";
-import { out } from "../console.js";
+import { out, warn } from "../console.js";
 
 export interface RunOptions {
   readonly agent: string;
@@ -218,7 +225,10 @@ function criticalViolations(report: FileGateReport): readonly string[] {
     .map((finding) => `${path.basename(report.file)}:${finding.line} [${finding.rule}] ${finding.message}`);
 }
 
-function renderViolationReport(reports: readonly FileGateReport[]): string {
+function renderViolationReport(
+  reports: readonly FileGateReport[],
+  rationalizationReports: readonly RationalizationFileReport[] = [],
+): string {
   const lines: string[] = ["# Quality gate violations", ""];
   for (const report of reports) {
     lines.push(`## ${report.file}`);
@@ -231,6 +241,12 @@ function renderViolationReport(reports: readonly FileGateReport[]): string {
       lines.push(`- L${finding.line} [${finding.severity}] ${finding.rule}: ${finding.message}`);
     }
     lines.push("");
+  }
+  const hasRationalizationContent = rationalizationReports.some(
+    (report) => report.result === null || (report.result?.findings.length ?? 0) > 0,
+  );
+  if (hasRationalizationContent) {
+    lines.push(renderRationalizationSection(rationalizationReports));
   }
   lines.push("Fix every severity=error violation above and re-submit.");
   return lines.join("\n");
@@ -250,6 +266,110 @@ async function gateAllFiles(pipeline: CommandContext["pipeline"], files: readonl
     }
   }
   return reports;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Phase 4b - anti-rationalization gate                                      */
+/* ------------------------------------------------------------------------ */
+
+interface RationalizationFileReport {
+  readonly file: string;
+  readonly result: ScanRationalizationsResult | null;
+  readonly error?: string;
+}
+
+interface SeverityCounts {
+  readonly blocker: number;
+  readonly major: number;
+  readonly minor: number;
+}
+
+function countSeverities(findings: readonly RationalizationFinding[]): SeverityCounts {
+  const counts = { blocker: 0, major: 0, minor: 0 };
+  for (const finding of findings) {
+    counts[finding.severity] += 1;
+  }
+  return counts;
+}
+
+/**
+ * Runs the Anti-Rationalization Engine over the raw content of every produced
+ * file. One request per file keeps the reported line numbers faithful to the
+ * artifact on disk.
+ */
+async function scanRationalizationFiles(
+  pipeline: CommandContext["pipeline"],
+  files: readonly string[],
+): Promise<RationalizationFileReport[]> {
+  const reports: RationalizationFileReport[] = [];
+  for (const file of files) {
+    try {
+      const content = await readFile(file, "utf8");
+      reports.push({ file, result: await pipeline.gate.scanRationalizations(content) });
+    } catch (error) {
+      reports.push({
+        file,
+        result: null,
+        ...(error instanceof Error ? { error: error.message } : {}),
+      });
+    }
+  }
+  return reports;
+}
+
+/** Blocker findings (and scan failures) refuse delivery; majors/minors do not. */
+function rationalizationRefusals(reports: readonly RationalizationFileReport[]): readonly string[] {
+  const refusals: string[] = [];
+  for (const report of reports) {
+    if (report.result === null) {
+      refusals.push(`rationalization scan failed (${path.basename(report.file)}): ${report.error ?? "unknown"}`);
+      continue;
+    }
+    for (const finding of report.result.findings) {
+      if (finding.severity === "blocker") {
+        refusals.push(`${path.basename(report.file)}:${finding.line} [${finding.patternId}] ${finding.excerpt}`);
+      }
+    }
+  }
+  return refusals;
+}
+
+/** Markdown section appended to violation reports and auto-heal payloads. */
+function renderRationalizationSection(reports: readonly RationalizationFileReport[]): string {
+  const lines: string[] = ["## Anti-rationalization findings", ""];
+  for (const report of reports) {
+    if (report.result === null) {
+      lines.push(`- ${path.basename(report.file)}: scan failed: ${report.error ?? "unknown"}`);
+      continue;
+    }
+    if (report.result.findings.length === 0) {
+      continue;
+    }
+    lines.push(`- ${path.basename(report.file)} (${report.result.findings.length} finding(s))`);
+    for (const finding of report.result.findings) {
+      lines.push(`  - L${finding.line} [${finding.severity}/${finding.patternId}] ${finding.excerpt}`);
+    }
+  }
+  lines.push("");
+  lines.push("Deliver complete code instead: remove every blocker-severity rationalization and re-submit.");
+  return lines.join("\n");
+}
+
+interface RationalizationReceipt {
+  readonly status: "passed";
+  readonly counts: SeverityCounts;
+  readonly findings: ReadonlyArray<
+    RationalizationFinding & { readonly file: string }
+  >;
+}
+
+function buildRationalizationReceipt(
+  reports: readonly RationalizationFileReport[],
+): RationalizationReceipt {
+  const findings = reports.flatMap((report) =>
+    (report.result?.findings ?? []).map((finding) => ({ ...finding, file: report.file })),
+  );
+  return { status: "passed", counts: countSeverities(findings), findings };
 }
 
 /* ------------------------------------------------------------------------ */
@@ -281,7 +401,7 @@ export async function runCommand(context: CommandContext, runOptions: RunOptions
   let submission = await submitTask(context.pipeline, runOptions, taskIdBase, payload, "");
   out(`[3/4] submission: mode=${submission.mode}, taskId=${submission.taskId} (${submission.detail})`);
 
-  // ---- Phase 4: quality gates + auto-heal loop --------------------------
+  // ---- Phase 4: quality gates + anti-rationalization + auto-heal loop ---
   let attempt = 0;
   for (;;) {
     if (runOptions.files.length === 0) {
@@ -289,14 +409,75 @@ export async function runCommand(context: CommandContext, runOptions: RunOptions
       return EXIT_OK;
     }
 
+    // Environment without the Rust core: the whole gate phase degrades to
+    // advisory mode instead of failing the delivery (same philosophy as the
+    // phase-3 orchestrator fallback). Warnings stay loud on stderr.
+    let coreUnavailableReason: string | null = null;
+    try {
+      await context.pipeline.gate.ensureBinary();
+    } catch (error) {
+      coreUnavailableReason = error instanceof Error ? error.message : String(error);
+    }
+    if (coreUnavailableReason !== null) {
+      warn(`quality gates skipped: izanagi-core unavailable (${coreUnavailableReason})`);
+      warn("anti-rationalization gate skipped: izanagi-core unavailable");
+      out("[4/4] quality gates: SKIPPED (rust core unavailable); delivery proceeds ungraded");
+      const receiptsDir = path.join(process.cwd(), ".izanagi", "tasks", submission.taskId);
+      await mkdir(receiptsDir, { recursive: true });
+      await writeFile(
+        path.join(receiptsDir, "result.json"),
+        JSON.stringify(
+          {
+            taskId: submission.taskId,
+            agent: runOptions.agent,
+            mode: submission.mode,
+            attempts: attempt + 1,
+            files: runOptions.files.map((file) => ({ file, score: null, findings: [] })),
+            qualityGate: { status: "skipped", reason: coreUnavailableReason },
+            rationalizations: { status: "skipped", reason: coreUnavailableReason },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+      out(`receipt: ${path.join(receiptsDir, "result.json")}`);
+      return EXIT_OK;
+    }
+
     const reports = await gateAllFiles(context.pipeline, runOptions.files);
-    const violations = reports.flatMap(criticalViolations);
+    const structuralViolations = reports.flatMap(criticalViolations);
+
+    // The anti-rationalization scan judges DELIVERY READINESS (rationalized
+    // stubs, deferred tests, checklist-as-delivery...), so it only runs once
+    // the structural gate has accepted every file.
+    let rationalizationReports: RationalizationFileReport[] = [];
+    if (structuralViolations.length === 0) {
+      rationalizationReports = await scanRationalizationFiles(context.pipeline, runOptions.files);
+    }
+    const violations = [...structuralViolations, ...rationalizationRefusals(rationalizationReports)];
 
     if (violations.length === 0) {
       const scores = reports
         .filter((report): report is FileGateReport & { result: QualityGateResult } => report.result !== null)
         .map((report) => `${path.basename(report.file)}=${String(report.result.score)}`);
       out(`[4/4] quality gates: PASSED (${scores.join(", ")})`);
+
+      const receipt = buildRationalizationReceipt(rationalizationReports);
+      if (receipt.findings.length === 0) {
+        out(`[4/4] anti-rationalization: clean (0 findings across ${String(runOptions.files.length)} file(s))`);
+      } else {
+        const notes = receipt.counts.major + receipt.counts.minor;
+        out(
+          `[4/4] anti-rationalization: ${String(notes)} note(s) (blocker=0, major=${String(receipt.counts.major)}, minor=${String(receipt.counts.minor)})`,
+        );
+        for (const finding of receipt.findings.slice(0, 5)) {
+          out(
+            `       - ${path.basename(finding.file)}:${String(finding.line)} [${finding.severity.toUpperCase()}/${finding.patternId}] ${finding.excerpt}`,
+          );
+        }
+      }
+
       const receiptsDir = path.join(process.cwd(), ".izanagi", "tasks", submission.taskId);
       await mkdir(receiptsDir, { recursive: true });
       await writeFile(
@@ -312,6 +493,8 @@ export async function runCommand(context: CommandContext, runOptions: RunOptions
               score: report.result?.score ?? null,
               findings: report.result?.findings ?? [],
             })),
+            qualityGate: { status: "passed" },
+            rationalizations: receipt,
           },
           null,
           2,
@@ -336,14 +519,14 @@ export async function runCommand(context: CommandContext, runOptions: RunOptions
       const reportDir = path.join(process.cwd(), ".izanagi", "tasks", submission.taskId);
       await mkdir(reportDir, { recursive: true });
       const reportPath = path.join(reportDir, "violations.md");
-      await writeFile(reportPath, renderViolationReport(reports), "utf8");
+      await writeFile(reportPath, renderViolationReport(reports, rationalizationReports), "utf8");
       process.stderr.write(`violation report: ${reportPath}\n`);
       return EXIT_FAILURE;
     }
 
     attempt += 1;
     out(`auto-heal: re-submitting with violation report attached (attempt ${String(attempt + 1)})`);
-    const healPayload = `${payload}\n\n---\n# Previous attempt rejected by quality gate\n\n${renderViolationReport(reports)}`;
+    const healPayload = `${payload}\n\n---\n# Previous attempt rejected by quality gate\n\n${renderViolationReport(reports, rationalizationReports)}`;
     submission = await submitTask(
       context.pipeline,
       runOptions,

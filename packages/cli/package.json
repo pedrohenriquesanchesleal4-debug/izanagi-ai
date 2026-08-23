@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/cli/src/index.js"
+    "start": "node dist/cli/src/index.js",
+    "test": "tsc -p tsconfig.json && node --test \"dist/cli/tests/*.test.js\""
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

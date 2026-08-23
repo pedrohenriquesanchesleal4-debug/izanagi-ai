@@ -22,5 +22,5 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*.ts", "../sdk/src/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "../sdk/src/**/*.ts"]
 }
