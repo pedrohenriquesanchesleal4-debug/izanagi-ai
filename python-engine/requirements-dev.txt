@@ -1,0 +1,16 @@
+# python-engine/requirements-dev.txt — dependências de desenvolvimento PINADAS.
+#
+# Fonte: `python-engine/.venv/bin/pip freeze` (venv local, Python 3.14.3),
+# filtrado às dependências REAIS dos fontes/testes de ast_analyzer.
+# As transitivas do pytest (iniconfig, pluggy, packaging, pygments) são
+# resolvidas pelo pip a partir destes pins diretos.
+#
+# Compatibilidade de wheels no CI (ubuntu-latest, verificado no PyPI):
+#   - tree-sitter 0.25.2 publica wheel cp314 manylinux nativo;
+#   - os grammars publicam wheels abi3 (cp310/cp39), forward-compatible
+#     com Python 3.14 => instalação 100% binária, sem compilar extensão.
+pytest==9.1.1
+tree-sitter==0.25.2
+tree-sitter-go==0.25.0
+tree-sitter-python==0.25.0
+tree-sitter-typescript==0.23.2
