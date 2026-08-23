@@ -32,6 +32,9 @@ jobs:
   # ---------------------------------------------------------------------------
   # 1) Framework npm legado na raiz (tsc + generate-manifest + 262 testes)
   #    Comandos validados localmente: npm ci / build / test => verde.
+  #    ADR-006: "npm run verify" (= verify-build.js sandbox install + testes)
+  #    foi ABSORVIDO do extinto trigger push/PR do publish.yml, que virou CD
+  #    exclusivo de tag/release. Push/PR mantém paridade total de verificação.
   # ---------------------------------------------------------------------------
   legacy-npm:
     name: legacy npm (root)
@@ -41,7 +44,7 @@ jobs:
       # actions/checkout@v5
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       # actions/setup-node@v4 - Node 24 por paridade com dev local (v24.18.0);
-      # engines declarados >=22 nos pacotes, time roda 24.
+      # engines: raiz declara >=18, pacotes poliglotas (sdk/cli) declaram >=22.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
@@ -52,6 +55,9 @@ jobs:
         run: npm run build
       - name: Test
         run: npm test
+      # Requer dist/ do step Build anterior (verify não builda; consome).
+      - name: Verify (sandbox install)
+        run: npm run verify
 
   # ---------------------------------------------------------------------------
   # 2) Rust workspace (crates/izanagi_core + crates/izanagi_mcp)

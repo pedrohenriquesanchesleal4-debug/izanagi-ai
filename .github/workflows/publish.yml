@@ -1,5 +1,15 @@
 # =============================================================================
-# CI & Publish to NPM - workflow legado do framework npm na raiz
+# Publish to NPM - workflow EXCLUSIVO de CD (tag v*/release) do pacote raiz
+#
+# CONSOLIDAÇÃO 2026-08-23 (ADR-006): os triggers push-main/pull_request foram
+# REMOVIDOS deste arquivo - o CI de integração em push/PR vive exclusivamente
+# no Polyglot CI (.github/workflows/polyglot.yml), cujo job legacy-npm absorviu
+# o `npm run verify` (sandbox install) que rodava aqui. Isso elimina o build
+# duplicado a cada push de main. Este workflow agora dispara SOMENTE em:
+#   - push de tag v*   (ex.: git tag v3.9.0 && git push origin v3.9.0)
+#   - release published
+# Os dois eventos disparam juntos num release normal; o guard de idempotência
+# abaixo torna o segundo disparo um no-op seguro (SKIP, nunca republica).
 #
 # AUDITORIA 2026-08-23 (frente DevOps/CI) - correções aplicadas:
 #
@@ -34,14 +44,13 @@
 #    onde o job legacy-npm validou ci/build/test no 24). O 20.x era drift.
 # =============================================================================
 
-name: CI & Publish to NPM
+name: Publish to NPM
 
+# CD apenas: nenhum trigger de push de branch ou pull_request.
+# CI de push/PR = Polyglot CI (polyglot.yml) - ver ADR-006.
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
   release:
     types: [published]
 
