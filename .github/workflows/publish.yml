@@ -42,6 +42,21 @@
 #
 # 4) PARIDADE DE RUNTIME: Node 24 (igual dev local e igual Polyglot CI,
 #    onde o job legacy-npm validou ci/build/test no 24). O 20.x era drift.
+#
+# 5) PROVENANCE OIDC DO NPM (Wave 5 - frente C, 2026-08-23):
+#    `npm publish --provenance` anexa uma declaração de proveniência SLSA
+#    assinada via keyless Sigstore ao pacote, provando que o artefato foi
+#    construído NESTE workflow, NESTE repo, a partir da tag publicada.
+#    - Permissão `id-token: write` declarada APENAS no job publish (least
+#      privilege): build-and-verify não publica e não deve mintar OIDC.
+#      Bloco de permissions de job SOBRESCREVE o global, por isso
+#      contents:read é redeclarado nele.
+#    - Direção de falha segura (fail-closed): se o token OIDC/provenance
+#      falhar, o npm ABORTA o publish antes do upload - nunca há pacote
+#      publicado sem provenance silenciosamente.
+#    Pré-requisitos conferidos: npm >=9.5 (Node 24 => npm 11.x), registry
+#      npmjs.org, campo repository do package.json = este repo, evento
+#      push tag/release suportado.
 # =============================================================================
 
 name: Publish to NPM
@@ -81,6 +96,14 @@ jobs:
     needs: build-and-verify
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Least privilege no nível de JOB (não global): id-token:write é exigido
+    # pelo provenance OIDC do npm e vale só aqui. Este bloco SOBRESCREVE o
+    # permissions do topo do workflow para este job - por isso contents:read
+    # é redeclarado (checkout continua funcionando). build-and-verify segue
+    # herdando apenas contents:read do escopo global.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       # actions/checkout@v4
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -112,6 +135,8 @@ jobs:
           fi
       - name: Publish (only if version is new)
         if: steps.version_guard.outputs.already_published == 'false'
-        run: npm publish --access public
+        # --provenance: exige id-token:write (acima). Fail-closed: sem OIDC
+        # válido o npm aborta ANTES do upload - nunca publica sem assinatura.
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
