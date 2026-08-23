@@ -47,4 +47,4 @@
 Definições completas em `agents/*.json` e skills em `skills/<name>/SKILL.md`.
 
 ---
-Gerado pelo Izanagi AI em `C:\Users\pedro.leal\Documents\NexusAI`: `izanagi export --cli copilot`
+Gerado pelo Izanagi AI: `izanagi export --cli copilot`

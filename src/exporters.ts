@@ -93,6 +93,19 @@ export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
 export const GENERATED_MARKER = 'Gerado pelo Izanagi AI';
 
 /**
+ * Rodapé de proveniência DETERMINÍSTICO: nunca embute caminho absoluto da máquina geradora.
+ *
+ * Histórico (Wave 5): o formato antigo era `Gerado pelo Izanagi AI em \`${baseDir}\``, o que
+ * quebrava a idempotência byte-a-byte cross-machine — regenerar os adapters em outra máquina
+ * mudava essa linha, e o repositório chegou a congelar o cwd de uma geração Windows antiga
+ * (`C:\Users\pedro.leal\Documents\NexusAI`) nos arquivos commitados. O comando real de
+ * reprodução (`izanagi export --cli <cli>`) continua registrado; a máquina de origem, não.
+ */
+export function provenanceFooter(cli: string): string {
+  return `${GENERATED_MARKER}: \`izanagi export --cli ${cli}\``;
+}
+
+/**
  * Subconjunto curado histórico: mantido só para não quebrar imports externos.
  * `exportToClaude` não usa mais isto: exporta a biblioteca inteira (ver
  * `listAllSkillNames`) para que os agentes nativos encontrem sob demanda
@@ -393,7 +406,7 @@ ${a.handoffs && a.handoffs.length > 0 ? bullet(a.handoffs.map((h) => `\`${h.to}\
 `;
 }
 
-function claudeMainTemplate(baseDir: string, agents: IzanagiAgentInfo[], skills: SkillSummary[]): string {
+function claudeMainTemplate(agents: IzanagiAgentInfo[], skills: SkillSummary[]): string {
   const agentTable = agents
     .map((a) => `| \`${a.slug}\` | ${truncate(a.role, 140)} |`)
     .join('\n');
@@ -457,7 +470,7 @@ Todas as ${skills.length} skills da biblioteca (\`skills/<name>/SKILL.md\`) fora
 > Regras específicas de cada agente (always/never) vivem em \`.claude/agents/<slug>.md\`: lidas sob demanda só quando aquele agente é ativado, não duplicadas aqui.
 
 ---
-Gerado pelo Izanagi AI em \`${baseDir}\`: \`izanagi export --cli claude\`
+${provenanceFooter('claude')}
 `;
 }
 
@@ -523,7 +536,7 @@ export function exportToClaude(baseDir: string): string[] {
     .filter((s): s is SkillSummary => s !== null);
 
   // CLAUDE.md na raiz (fonte da verdade + regras essenciais inline)
-  const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(baseDir, agents, skills));
+  const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(agents, skills));
   if (main) created.push(main);
 
   // subagents nativos em .claude/agents/<slug>.md: aparecem no Agent tool e são auto-selecionados
@@ -582,7 +595,7 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 `;
 }
 
-function codexInstructionsTemplate(baseDir: string, agents: IzanagiAgentInfo[]): string {
+function codexInstructionsTemplate(agents: IzanagiAgentInfo[]): string {
   const agentList = agents.map((a) => `- \`${a.slug}\`: ${a.role}`).join('\n');
   return `# Izanagi AI: Codex Instructions
 
@@ -612,7 +625,7 @@ ${agentList}
 - \`.opencode/agent/*.md\`: integração com opencode (compatível com Kimi CLI)
 
 ---
-Gerado pelo Izanagi AI em \`${baseDir}\`: \`izanagi export --cli codex\`
+${provenanceFooter('codex')}
 `;
 }
 
@@ -620,7 +633,7 @@ export function exportToCodex(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
 
-  const instr = writeIfAbsent(baseDir, '.codex/instructions.md', codexInstructionsTemplate(baseDir, agents));
+  const instr = writeIfAbsent(baseDir, '.codex/instructions.md', codexInstructionsTemplate(agents));
   if (instr) created.push(instr);
 
   for (const agent of agents) {
@@ -770,7 +783,7 @@ export function exportToCursor(baseDir: string): string[] {
 /* Copilot (GitHub)                                                    */
 /* ------------------------------------------------------------------ */
 
-function copilotInstructionsTemplate(baseDir: string, agents: IzanagiAgentInfo[]): string {
+function copilotInstructionsTemplate(agents: IzanagiAgentInfo[]): string {
   const agentList = agents.map((a) => `- \`${a.slug}\`: ${a.role}`).join('\n');
   return `# Izanagi AI: GitHub Copilot Instructions
 
@@ -800,14 +813,14 @@ ${agentList}
 Definições completas em \`agents/*.json\` e skills em \`skills/<name>/SKILL.md\`.
 
 ---
-Gerado pelo Izanagi AI em \`${baseDir}\`: \`izanagi export --cli copilot\`
+${provenanceFooter('copilot')}
 `;
 }
 
 export function exportToCopilot(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
-  const rel = writeIfAbsent(baseDir, '.github/copilot-instructions.md', copilotInstructionsTemplate(baseDir, agents));
+  const rel = writeIfAbsent(baseDir, '.github/copilot-instructions.md', copilotInstructionsTemplate(agents));
   if (rel) created.push(rel);
   return created;
 }
@@ -816,7 +829,7 @@ export function exportToCopilot(baseDir: string): string[] {
 /* Kimi CLI (Moonshot): compatível com convenção opencode             */
 /* ------------------------------------------------------------------ */
 
-function kimiReadmeTemplate(baseDir: string): string {
+function kimiReadmeTemplate(): string {
   return `# Izanagi AI: Kimi CLI (Moonshot)
 
 O **Kimi CLI** é compatível com a convenção do opencode: ele lê \`AGENTS.md\` e os comandos slash em \`.opencode/agent/*.md\` nativamente.
@@ -842,11 +855,11 @@ O **Kimi CLI** é compatível com a convenção do opencode: ele lê \`AGENTS.md
 - **Sempre**: IaC versionado; monitoramento desde o dia 1; secrets por ferramenta própria.
 - **Nunca**: commit \`.env\`; container root; deploy sem CI; hardcode de config de ambiente.
 
-> Gerado pelo Izanagi AI em \`${baseDir}\`: \`izanagi export --cli kimi\`
+> ${provenanceFooter('kimi')}
 `;
 }
 
-function kimiRootTemplate(baseDir: string): string {
+function kimiRootTemplate(): string {
   return `# Izanagi AI: Kimi CLI
 
 > **Fonte da verdade: \`AGENTS.md\`**: leia antes de qualquer tarefa.
@@ -865,16 +878,16 @@ O Kimi CLI (Moonshot) é compatível com a convenção do opencode: \`AGENTS.md\
 
 Definições completas em \`agents/*.json\`; ativação via \`/.opencode/agent/\`.
 
-> Gerado pelo Izanagi AI em \`${baseDir}\`: \`izanagi export --cli kimi\`
+> ${provenanceFooter('kimi')}
 `;
 }
 
 export function exportToKimi(baseDir: string): string[] {
   const created: string[] = [];
-  const readme = writeIfAbsent(baseDir, '.kimi/README.md', kimiReadmeTemplate(baseDir));
+  const readme = writeIfAbsent(baseDir, '.kimi/README.md', kimiReadmeTemplate());
   if (readme) created.push(readme);
 
-  const root = writeIfAbsent(baseDir, 'kimi.md', kimiRootTemplate(baseDir));
+  const root = writeIfAbsent(baseDir, 'kimi.md', kimiRootTemplate());
   if (root) created.push(root);
 
   return created;

@@ -78,4 +78,4 @@ Todas as 106 skills da biblioteca (`skills/<name>/SKILL.md`) foram exportadas fi
 > Regras específicas de cada agente (always/never) vivem em `.claude/agents/<slug>.md`: lidas sob demanda só quando aquele agente é ativado, não duplicadas aqui.
 
 ---
-Gerado pelo Izanagi AI em `C:\Users\pedro.leal\Documents\NexusAI`: `izanagi export --cli claude`
+Gerado pelo Izanagi AI: `izanagi export --cli claude`

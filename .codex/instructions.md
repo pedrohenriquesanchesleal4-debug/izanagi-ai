@@ -47,4 +47,4 @@
 - `.opencode/agent/*.md`: integração com opencode (compatível com Kimi CLI)
 
 ---
-Gerado pelo Izanagi AI em `C:\Users\pedro.leal\Documents\NexusAI`: `izanagi export --cli codex`
+Gerado pelo Izanagi AI: `izanagi export --cli codex`

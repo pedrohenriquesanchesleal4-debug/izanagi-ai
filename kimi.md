@@ -16,4 +16,4 @@ O Kimi CLI (Moonshot) é compatível com a convenção do opencode: `AGENTS.md` 
 
 Definições completas em `agents/*.json`; ativação via `/.opencode/agent/`.
 
-> Gerado pelo Izanagi AI em `C:\Users\pedro.leal\Documents\NexusAI`: `izanagi export --cli kimi`
+> Gerado pelo Izanagi AI: `izanagi export --cli kimi`
