@@ -1,3 +1,39 @@
+# =============================================================================
+# CI & Publish to NPM - workflow legado do framework npm na raiz
+#
+# AUDITORIA 2026-08-23 (frente DevOps/CI) - correções aplicadas:
+#
+# 1) GUARD DE IDEMPOTÊNCIA NO PUBLISH (causa raiz histórica):
+#    Este workflow dispara DUAS vezes por release (push da tag v* +
+#    evento release published). Sem guard, a segunda tentativa falha com
+#    E403 "cannot overwrite pre-existing version". O publish agora roda
+#    APENAS se `npm view izanagi-ai@<versão>` confirmar que a versão ainda
+#    NÃO existe no registry. Direção de falha segura: erro de rede também
+#    resulta em SKIP (nunca republica nem força).
+#    Histórico real: em 2026-08-17 o publish nunca chegou a rodar porque o
+#    job build-and-verify falhou antes (`node --test` não encontrava os
+#    testes da época); desde 2026-08-18 ambos os workflows falham no
+#    postinstall (dist/ ausente em checkout limpo) - fix fora do escopo
+#    desta frente.
+#
+# 2) SUPPLY CHAIN: actions fixadas por SHA de commit completo (imutável).
+#    SHAs conferidos nos logs reais de execução deste repo:
+#      - actions/checkout@v4     => 11d5960a326750d5838078e36cf38b85af677262
+#      - actions/setup-node@v4   => 49933ea5288caeca8642d1e84afbd3f7d6820020
+#    Nunca referenciar tags mutáveis (@v4/@main) diretamente.
+#
+# 3) LEAST PRIVILEGE:
+#    - permissions: contents:read global (antes: GITHUB_TOKEN herdava write
+#      em TUDO - visível no log do run 31989520688).
+#    - NODE_AUTH_TOKEN/registry-url REMOVIDOS do job build-and-verify:
+#      pacote público não precisa de credencial para ci/build/verify, e o
+#      token ficava exposto ao env de TODOS os steps (incl. scripts de
+#      postinstall de dependências). Credencial só no único step que publica.
+#
+# 4) PARIDADE DE RUNTIME: Node 24 (igual dev local e igual Polyglot CI,
+#    onde o job legacy-npm validou ci/build/test no 24). O 20.x era drift.
+# =============================================================================
+
 name: CI & Publish to NPM
 
 on:
@@ -9,31 +45,64 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   build-and-verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # actions/setup-node@v4 - SEM registry-url/token: job não publica nada.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
-      - run: npm ci
-      - run: npm run build
-      - run: npm run verify
+          node-version: '24'
+          cache: npm
+      - name: Install (npm ci)
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Verify (sandbox install + testes)
+        run: npm run verify
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'
     needs: build-and-verify
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # actions/setup-node@v4 - registry-url apenas aqui: gera o .npmrc com
+      # NODE_AUTH_TOKEN injetado pelo setup-node SOMENTE neste job.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: '20.x'
+          node-version: '24'
+          cache: npm
           registry-url: 'https://registry.npmjs.org'
-      - run: npm ci
-      - run: npm run build
-      - run: npm publish --access public
+      - name: Install (npm ci)
+        run: npm ci
+      - name: Build
+        run: npm run build
+      # Guard de idempotência: consulta o registry ANTES de publicar.
+      # `npm view <pkg>@<ver>` sai 0 quando a versão existe (=> pula o
+      # publish) e não-zero quando não existe (=> publica). Republish da
+      # mesma versão deixaria de falhar com E403 cannot overwrite.
+      - name: Guard - version must not exist in registry yet
+        id: version_guard
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if npm view "izanagi-ai@${PKG_VERSION}" version >/dev/null 2>&1; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::izanagi-ai@${PKG_VERSION} já existe no registry - npm publish pulado (idempotente)."
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            echo "izanagi-ai@${PKG_VERSION} ainda não publicada - liberando publish."
+          fi
+      - name: Publish (only if version is new)
+        if: steps.version_guard.outputs.already_published == 'false'
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
