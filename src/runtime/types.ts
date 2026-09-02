@@ -128,6 +128,13 @@ export interface ArtifactSchema {
   forbidden?: string[];
   /** Validação custom (assinatura simples de função). */
   validate?: (content: unknown) => string[];
+  /**
+   * Trecho que a SIMULAÇÃO headless precisa conter para satisfazer `validate`.
+   * Só existe em schema com validação custom: os campos de `required` já são
+   * derivados automaticamente. Mora aqui, junto do schema, porque schema e
+   * simulação divergirem em silêncio é exatamente o bug que isto evita.
+   */
+  simulationHint?: string;
 }
 
 /* ============================ EXECUTION GRAPH ============================ */
@@ -545,6 +552,12 @@ export interface AgentStats {
   avgScore: number;
   avgTokens: number;
   lastRunAt?: string;
+  /**
+   * Mesma estatística recortada por domínio técnico do run. Um agente que vai
+   * bem em backend e mal em frontend não pode ser julgado por uma média só.
+   * Ausente em estado gravado antes desta versão (o global continua valendo).
+   */
+  byDomain?: Record<string, { runs: number; successes: number; failures: number; avgScore: number }>;
 }
 
 export interface SkillStats {

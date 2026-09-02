@@ -82,7 +82,7 @@ export class MemoryStore {
 
   /* ==================== AGENT STATS ==================== */
 
-  recordAgentRun(agent: string, opts: { success: boolean; score: number; tokens: number }): void {
+  recordAgentRun(agent: string, opts: { success: boolean; score: number; tokens: number; domains?: string[] }): void {
     const s = (this.state.agents[agent] ??= { runs: 0, successes: 0, failures: 0, avgScore: 0, avgTokens: 0 });
     s.runs++;
     if (opts.success) s.successes++;
@@ -90,11 +90,37 @@ export class MemoryStore {
     s.avgScore = (s.avgScore * (s.runs - 1) + opts.score) / s.runs;
     s.avgTokens = (s.avgTokens * (s.runs - 1) + opts.tokens) / s.runs;
     s.lastRunAt = nowIso();
+    // Recorte por domínio: um agente que vai bem em backend e mal em frontend
+    // não pode ser julgado por uma média só. O run conta em TODOS os domínios
+    // que ele tocou, porque o trabalho foi de fato feito em todos eles.
+    for (const domain of opts.domains ?? []) {
+      const d = ((s.byDomain ??= {})[domain] ??= { runs: 0, successes: 0, failures: 0, avgScore: 0 });
+      d.runs++;
+      if (opts.success) d.successes++;
+      else d.failures++;
+      d.avgScore = (d.avgScore * (d.runs - 1) + opts.score) / d.runs;
+    }
     this.save();
   }
 
-  agentStats(agent: string) {
-    return this.state.agents[agent];
+  /**
+   * Estatística do agente. Com `domain`, devolve o recorte daquele domínio —
+   * e `undefined` quando não há histórico ali, o que é diferente de "vai mal":
+   * quem chama precisa tratar ausência como ausência de sinal, não como falha.
+   */
+  agentStats(agent: string, domain?: string) {
+    const stats = this.state.agents[agent];
+    if (!stats || !domain) return stats;
+    const scoped = stats.byDomain?.[domain];
+    if (!scoped) return undefined;
+    return {
+      runs: scoped.runs,
+      successes: scoped.successes,
+      failures: scoped.failures,
+      avgScore: scoped.avgScore,
+      avgTokens: stats.avgTokens,
+      ...(stats.lastRunAt ? { lastRunAt: stats.lastRunAt } : {}),
+    };
   }
 
   /* ==================== SKILL STATS ==================== */

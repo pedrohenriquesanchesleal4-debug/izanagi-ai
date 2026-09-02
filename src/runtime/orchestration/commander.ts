@@ -253,7 +253,11 @@ export interface CommanderInput {
  */
 export interface PlanningMemory {
   findRelevantFailures(query: string): Array<{ pattern: string; occurrences: number; confidence: number }>;
-  agentStats(agent: string): { runs: number; successes: number; failures: number } | undefined;
+  /**
+   * Com `domain`, o recorte daquele domínio; sem ele, o agregado do agente.
+   * `undefined` significa ausência de histórico, não histórico ruim.
+   */
+  agentStats(agent: string, domain?: string): { runs: number; successes: number; failures: number } | undefined;
 }
 
 /** Runs mínimos antes de confiar na taxa de sucesso de um agente. */
@@ -347,7 +351,7 @@ export class Commander {
     // Recuperação SELETIVA: só os padrões de falha que casam com este objetivo.
     // Injetar a memória inteira no planejamento é o que a arquitetura proíbe.
     const knownFailures = input.memory?.findRelevantFailures(input.objective) ?? [];
-    const unreliable = this.unreliableAgents(input);
+    const unreliable = this.unreliableAgents(input, classification.domains[0]);
     const decided = decideMode(classification, input.mode, { knownFailures: knownFailures.length });
     const decisions: string[] = [
       `classificação: complexidade ${classification.complexity}/5, domínios [${classification.domains.join(', ') || 'nenhum'}], risco ${classification.risk}`,
@@ -722,15 +726,16 @@ export class Commander {
    * Agentes reprovados pelo histórico: taxa de sucesso abaixo do piso, com
    * amostra suficiente para a taxa significar alguma coisa.
    *
-   * Ressalva honesta: a estatística do `MemoryStore` é GLOBAL por agente, não
-   * por domínio. Um agente que vai mal em frontend e bem em backend é
-   * despriorizado nos dois. Refinar isso exige stats por (agente, domínio),
-   * que o store ainda não guarda.
+   * O recorte por DOMÍNIO vem primeiro: um agente que vai mal em frontend e bem
+   * em backend não pode ser descartado de um trabalho de backend. Só quando não
+   * há amostra suficiente naquele domínio o agregado global entra como sinal —
+   * é menos preciso, mas é o único disponível enquanto o histórico é curto.
    */
-  private unreliableAgents(input: CommanderInput): string[] {
+  private unreliableAgents(input: CommanderInput, domain?: string): string[] {
     if (!input.memory || !input.capabilities) return [];
     return input.capabilities.ids().filter((id) => {
-      const stats = input.memory!.agentStats(id);
+      const scoped = domain ? input.memory!.agentStats(id, domain) : undefined;
+      const stats = scoped && scoped.runs >= MIN_RUNS_FOR_TRUST ? scoped : input.memory!.agentStats(id);
       return Boolean(stats && stats.runs >= MIN_RUNS_FOR_TRUST && stats.successes / stats.runs < MIN_SUCCESS_RATE);
     });
   }

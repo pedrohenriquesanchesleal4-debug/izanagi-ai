@@ -22,7 +22,7 @@ export class LearningEngine {
   /**
    * Processa um relatório de avaliação pós-run.
    */
-  process(report: EvaluationReport, opts: { agentId?: string; skillIds?: string[]; tokens?: number }): LearningOutcome {
+  process(report: EvaluationReport, opts: { agentId?: string; skillIds?: string[]; tokens?: number; domains?: string[] }): LearningOutcome {
     const learnings: string[] = [];
     let patternsRecorded = 0;
 
@@ -32,6 +32,7 @@ export class LearningEngine {
         success: report.verdict === 'PASS' || report.verdict === 'PASS_WITH_WARNINGS',
         score: report.score,
         tokens: opts.tokens ?? 0,
+        ...(opts.domains && opts.domains.length > 0 ? { domains: opts.domains } : {}),
       });
     }
 

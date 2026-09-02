@@ -677,6 +677,10 @@ export class Orchestrator {
       agentId: this.opts.primaryAgent,
       skillIds: this.opts.skillChain,
       tokens: tokensUsed(),
+      // Domínios classificados pelo Commander: sem eles a estatística do agente
+      // fica só global, e o planejamento não consegue distinguir "vai mal
+      // nisto" de "vai mal em tudo".
+      ...(this.opts.plan ? { domains: this.opts.plan.classification.domains } : {}),
     });
     closeLearn();
     memory.save();
