@@ -245,7 +245,7 @@ CI (`.github/workflows/polyglot.yml`): 7 jobs paralelos em push/PR para `main` �
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
 | [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
-| [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | O que ainda falta no runtime, verificado no código, mais a tabela do que já foi fechado e em qual commit. Restam três itens, todos por falta de decisão ou de caso de uso — nenhum por falta de código. |
+| [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | O que ainda falta no runtime, verificado no código, mais a tabela do que já foi fechado e em qual commit. Resta **um** item, e ele é uma decisão de produto (local-first ou serviço), não um gap técnico. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Visão arquitetural do framework e da topologia poliglota. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Guia de contribuição: convenções, fluxo de PR e padrões do repo. |
 | [`ROADMAP.md`](ROADMAP.md) | Planejamento de evolução por waves e marcos. |

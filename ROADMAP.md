@@ -159,17 +159,27 @@ O que sobrava depois da Fase 9 era, quase tudo, "existe mas não está no caminh
 
 Três bugs reais corrigidos no caminho: `toText` podia devolver `undefined` (validar retorno vazio de tool estourava em vez de reprovar); caminho relativo de tool escapava da sandbox resolvendo contra o cwd do processo; e a tabela de economia do dashboard referenciava campos que não existem em `TokenTelemetry`.
 
-### Limitações reais desta fase (não resolvidas)
+### Limitações desta fase: todas fechadas na Fase 11
 
-> Versão completa e acionável: [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md). Ao fechar um item lá, atualizar esta lista na mesma mudança.
+## Fase 11: Autonomia contida (v3.16.0) ✅
 
-Restam três, e nas três falta a **decisão ou o caso de uso**, não o código:
+Os três itens que restavam eram os de maior risco da lista: cada um destrava
+autonomia, e cada um erra caro se destravar demais.
 
-- **Sub-orquestradores hierárquicos**: o grafo é plano. A quebra de tarefa do replanejamento cobre o caso comum; sub-orquestração só se justifica quando existir tarefa que precise se decompor DURANTE a execução, e nenhuma apareceu.
-- **`execute_code`**: exige isolamento de processo (CPU, memória, rede, syscall), que o framework não tem. As camadas atuais cobrem permissão, trust tier e sandbox de filesystem — não isolamento. Fingir que cobrem seria pior que não ter a feature.
-- **Ideias do Hermes (FTS5, síntese de skills, daemon, compressão neural)**: cada uma precisa de uma medição ou de uma decisão de produto antes de virar código.
+- [x] **Sub-orquestração**: uma tarefa pode descobrir, executando, que é maior do que o plano previu, e abrir um subgrafo próprio. Os limites são o ponto: orçamento do pai **dividido** (decompor não libera gasto), profundidade com teto do RUNTIME e não do agente, largura máxima de 5, sub-tarefa que não decompõe de novo, pedido malformado recusado inteiro, e falha de filho sendo falha de quem pediu.
+- [x] **`execute_code` com isolamento imposto pelo runtime**: processo Node separado com Permission Model. Filesystem restrito ao diretório de trabalho, subprocessos/workers/addons/WASI bloqueados, ambiente montado do zero (nenhuma chave de API atravessa), timeout com kill, teto de saída. Sem isolamento disponível, a execução é RECUSADA.
+- [x] **Síntese de skill por trajetória recorrente**: o simétrico de converter falha em padrão. A barra é recorrência (3 execuções verificadas), a assinatura é o caminho e não o objetivo, e a skill gerada declara o próprio limite.
+- [x] **A medição que destravava FTS5 e compressão neural**: `izanagi benchmark memory`. Busca p95 2.0ms sobre 296KB e compressão a 8.3% do original — as duas trocas não se pagam neste volume, e o comando dirá sozinho quando isso mudar.
 
-E três coisas que parecem dívida mas são escolha, com o motivo registrado: templates não geram nós de tool (depende do projeto do usuário), decomposição por LLM não tem caller (planejar é determinístico de propósito), e o Token Benchmark mede plano e não execução (os dois números nunca dividem o mesmo campo).
+Dois bugs reais corrigidos: a busca de memória tinha **recall truncado em silêncio** (buscava só nos primeiros 4000 chars de cada arquivo, então tudo que o projeto aprendeu depois era invisível), e a sandbox concedia leitura de `os.tmpdir()` inteiro, onde o próprio diretório de trabalho vive.
+
+### O que resta: uma decisão, não um gap
+
+> [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) tem o detalhe.
+
+**Local-first ou serviço hospedado.** Modo daemon, cron e integração com canais dependem todos da mesma escolha, e ela não é técnica. Local-first é o pressuposto sobre o qual sandbox, trust tier e Policy Engine foram desenhados; virar serviço significa um processo de longa duração com credenciais em repouso, autenticação e isolamento entre usuários — as decisões de segurança tomadas até aqui teriam que ser revisitadas, não estendidas. A mesma decisão já está registrada como pendente na Fase 4.
+
+Fora isso, o que existe são escolhas com motivo registrado (rede não isolada na sandbox, templates sem nós de tool, Token Benchmark medindo plano), não dívida.
 
 ## Critérios de aceite das próximas fases
 

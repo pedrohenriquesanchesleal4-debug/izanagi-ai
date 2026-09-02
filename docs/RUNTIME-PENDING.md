@@ -1,55 +1,30 @@
 # Runtime: trabalho pendente
 
-> Estado em **v3.15.0** (2026-09-02). Este documento é o handoff vivo da rearquitetura do runtime: o que **ainda falta**, por que falta, e o que exatamente precisa ser feito para fechar cada item.
+> Estado em **v3.16.0** (2026-09-02). Handoff vivo da rearquitetura do runtime: o que **ainda falta**, por que falta, e o que exatamente precisa ser feito para fechar.
 >
-> Regra deste arquivo: só entra o que é gap **verificado no código**. Nada aqui é aspiracional sem lastro. Cada item declara o arquivo real onde a mudança precisa acontecer. Ao fechar um item, remover daqui **e** atualizar `ROADMAP.md` na mesma mudança.
+> Regra deste arquivo: só entra o que é gap **verificado no código**. Nada aqui é aspiracional sem lastro. Ao fechar um item, remover daqui **e** atualizar `ROADMAP.md` na mesma mudança.
 
 ---
 
-## Como ler
+## Estado
 
-| Marca | Significado |
-|---|---|
-| 🔴 | Gap que faz uma promessa da arquitetura não se cumprir hoje |
-| 🟡 | Peça existe e é testada, mas **não tem caller em produção** |
-| 🔵 | Não implementado, decisão consciente de escopo |
-
-Os quinze itens da lista original foram fechados (tabela no fim). Restam três itens, todos 🔵, e todos com o mesmo motivo: **falta a decisão ou o caso de uso, não o código.** Implementá-los agora seria construir sobre suposição.
+Os dezoito itens da lista original foram fechados (tabela no fim). **Resta um**, e ele não é técnico: é uma decisão de produto que muda a natureza do Izanagi.
 
 ---
 
-## 🔵 1. Sub-orquestradores hierárquicos
+## ⏸ 1. Local-first ou serviço hospedado (decisão pendente)
 
-**Onde:** `src/runtime/orchestrator.ts`, `src/runtime/orchestration/commander.ts`.
+**O que está em jogo:** modo daemon, execução por cron, e integração com canais (Slack, Telegram, webhooks). Todos os três dependem da mesma escolha: o Izanagi continua sendo uma **CLI local-first** que roda quando alguém invoca, ou vira um **serviço** que fica de pé recebendo trabalho?
 
-**O que falta:** o grafo é plano. Um nó não abre um subgrafo próprio com `maxOrchestrationDepth`.
+**Por que não é uma decisão técnica:** cada caminho é implementável, e cada um custa coisas diferentes.
 
-**Por que continua fora:** o Commander decompõe tudo ANTES de executar, e a quebra de tarefa do `Commander.replan` (rascunho + fechamento) já cobre o caso de "a tarefa era maior do que parecia" sem recursão. Sub-orquestração só se justifica quando existir uma tarefa que precise se decompor **durante** a execução, e nenhum caso desses apareceu. Implementar antes de ter o caso é over-engineering (regra 47), e recursão mal delimitada é a forma mais cara de errar isso.
+*Local-first* mantém a propriedade que sustenta o resto da arquitetura: o runtime roda na máquina de quem o usa, com as chaves de quem o usa, sem estado compartilhado. Sandbox, trust tier e Policy Engine foram desenhados nesse pressuposto. Custo: nada acontece sem alguém invocar.
 
-**O que destravaria:** um objetivo real em que uma tarefa descubra, no meio da execução, que precisa de 3 a 5 sub-tarefas que o planejamento não tinha como prever. Quando aparecer, `maxOrchestrationDepth` (2, provavelmente) e um `ExecuteCtx` filho com orçamento derivado do nó pai são o desenho mínimo.
+*Serviço* destrava trabalho agendado, notificação, e uso por quem não abre um terminal. Custo: passa a existir um processo de longa duração com credenciais em repouso, autenticação, isolamento entre usuários, e uma superfície de ataque que hoje não existe. As decisões de segurança tomadas até aqui teriam que ser revisitadas, não estendidas.
 
----
+**Decisão já registrada como pendente** na Fase 4 do `ROADMAP.md` (histórico multi-dispositivo). É a mesma escolha, e ela precisa ser feita **uma vez**, explicitamente, antes de qualquer linha de código nessa direção.
 
-## 🔵 2. Programmatic tool calling (`execute_code`)
-
-**Onde:** dependeria de `src/runtime/tools/registry.ts`.
-
-**O que falta:** colapsar uma sequência de chamadas de tool num único script executado em sandbox, para reduzir round-trips de inferência.
-
-**Bloqueio real:** exige **isolamento de processo**, que o framework não tem. O caminho de tool já passa por permissão declarada no contrato, trust tier por origem e sandbox de filesystem (fechado na v3.15.0), mas nada disso isola CPU, memória, rede ou syscall. Executar código arbitrário gerado por modelo sem esse isolamento é uma superfície de ataque que as camadas atuais não cobrem — e fingir que cobrem seria pior do que não ter a feature.
-
-**O que destravaria:** uma decisão sobre o mecanismo de isolamento (worker thread com permissões do Node, container, WASM). É decisão de arquitetura e de dependência, não de implementação.
-
----
-
-## 🔵 3. Ideias do Hermes ainda não avaliadas contra o Izanagi
-
-Da pesquisa que motivou a rearquitetura, quatro itens ficaram fora **de propósito**: implementar sem comparar com o que o Izanagi já tem seria duplicação.
-
-- **Índice de memória em SQLite FTS5 + passe de extração pós-sessão.** O Izanagi já tem `MemoryStore` (JSON) + `.agents/memoria/` (markdown) + busca textual simples. Antes de trocar por FTS5, medir se a busca atual é de fato o gargalo. Hoje não há medição que diga isso.
-- **Síntese autônoma de skills a partir de trajetórias bem-sucedidas.** Já existem `SkillFactory` (criação por lacuna comprovada, com security scan) e `LearningEngine`. O que falta é o gatilho: transformar um run `VERIFIED` de N tarefas numa skill procedural. Risco alto de gerar skill genérica sem valor — exigir evidência de **recorrência** antes de sintetizar.
-- **Modo daemon / cron / integração com canais (Slack, Telegram).** Muda a filosofia do produto: de CLI local-first para serviço. Mesma decisão pendente já registrada na Fase 4 do `ROADMAP.md` sobre histórico multi-dispositivo. Decidir **explicitamente** antes de escrever qualquer linha.
-- **Compressão neural de contexto (LLMLingua-2).** Dependência externa pesada (modelo próprio) num framework que hoje tem **uma** dependência de runtime. `ContextResolver` + `session-diet` já entregam compressão determinística e auditável. Só reavaliar com medição mostrando que a determinística é insuficiente.
+**O que destravaria:** uma resposta a "o Izanagi deve ficar de pé sozinho?". Se sim, o primeiro passo não é o daemon: é o modelo de autenticação e de isolamento entre execuções.
 
 ---
 
@@ -57,32 +32,36 @@ Da pesquisa que motivou a rearquitetura, quatro itens ficaram fora **de propósi
 
 Coisas que alguém pode confundir com dívida ao ler o código. São escolhas, e o motivo está registrado.
 
-- **Templates do Planner não geram nós de tool.** O caminho `kind: 'tool'` existe, é seguro e é testado; quem monta grafo com tool hoje é o SDK ou uma decomposição externa. Colocar tool nos templates exige saber QUAL tool cada workflow precisa, e isso depende do projeto do usuário.
-- **Decomposição por LLM não tem caller.** `Commander.plan({ decompose })` valida e aceita decomposição externa, mas nem CLI nem SDK injetam uma. O planejamento em produção é 100% template + heurística, e é determinístico por isso — planejar não gasta token.
-- **Token Benchmark mede plano, não execução.** Continua verdade e continua separado de propósito. Consumo real sai de `izanagi budget <run-id>` ou de `izanagi benchmark run --execute`; os dois números nunca dividem o mesmo campo.
-- **Cache de validação economiza CPU, não token.** Nenhuma chamada de modelo é evitada, e por isso ele não aparece na telemetria de economia.
-- **Estatística por domínio depende de volume.** `agentStats(agent, domain)` só é usada quando há amostra mínima naquele domínio; abaixo disso o agregado global decide. Com histórico curto, a precisão do recorte é menor que o ruído dele.
+- **Rede não é isolada na sandbox de código.** O Permission Model do Node não cobre rede: um script executado por `code.execute` pode fazer requisição de saída. Existe um teste que MEDE isso e quebra se o comportamento mudar. A mitigação é a permissão `shell` no contrato, que a `PolicyEngine` nega a trust tier `generated` e `community`. Isolar rede de verdade exige container ou firewall de processo — outra ordem de dependência.
+- **Templates do Planner não geram nós de tool.** O caminho `kind: 'tool'` existe, é seguro e testado; quem monta grafo com tool é o SDK ou uma decomposição externa. Colocar tool nos templates exige saber QUAL tool cada workflow precisa, e isso depende do projeto.
+- **Decomposição por LLM no planejamento não tem caller.** `Commander.plan({ decompose })` aceita decomposição externa, mas nem CLI nem SDK injetam uma. O planejamento em produção é template + heurística, e é determinístico por isso: planejar não gasta token. (Decomposição em EXECUÇÃO é outra coisa e existe — ver `orchestration/subgraph.ts`.)
+- **Token Benchmark mede plano, não execução.** Continua separado de propósito. Consumo real sai de `izanagi budget <run-id>` ou de `izanagi benchmark run --execute`.
+- **Cache de validação economiza CPU, não token.** Nenhuma chamada de modelo é evitada, e por isso não aparece na telemetria de economia.
+- **Estatística por domínio depende de volume.** `agentStats(agent, domain)` só decide com amostra mínima no domínio; abaixo disso vale o agregado global.
+- **A medição de compressão não avalia qualidade.** Mede razão de tamanho, não se o que sobrou é o que importava. Avaliar isso exigiria gabarito anotado, e é por isso que a reavaliação de compressão neural fica condicionada a essa medida existir.
+- **Sub-orquestração só é oferecida a papel `commander` em modo `autonomous`.** Não é limitação técnica: é onde o planejamento tem mais chance de subestimar escopo e onde o orçamento comporta a divisão.
 
 ---
 
 ## Fechados
 
-Registro do que saiu desta lista, para que ninguém reabra um item já resolvido nem procure um gap que não existe mais.
-
 | Item original | Fechado em | Como |
 |---|---|---|
-| 🔴 1. Degradação registrada mas nunca aplicada | `8a5d04c` | Cada degrau muda a execução: contexto pela metade, saída a 60%, `demoteRole`, concorrência dividida, opcionais cortadas, pausa por aprovação. Limiar por degrau (0.60 a 0.93) e pressão calculada pela maior razão **por fase**. |
-| 🔴 2. Artefato sem content store | `8a5d04c` | Conteúdo persistido em `.izanagi/state/artifacts/<runId>/`, com `contentRef`, teto de 512KB e truncamento declarado. `izanagi explain --artifacts` mostra. |
-| 🔴 3. Paralelismo sem teto de concorrência | `8a5d04c` | `orchestration/concurrency.ts`: pool com ordem preservada e falha isolada, default 3, configurável por `maxConcurrency`. |
-| 🟡 4. Protocolo A2A e crítica sem caller | `c108699` | `interpretCritique` no Orchestrator: crítica bloqueante reprova o nó criticado com correção mínima; `ConversationLog` registra task/result/critique/correction por referência de artefato; `critique` virou ArtifactKind com formato obrigatório. |
-| 🟡 5. Juiz semântico não injetado | `e977b7a` | `verification/judge.ts` + `createSemanticJudge` no wiring compartilhado. Papel `worker`, artefato resumido, saída ilegível vira `inconclusive` (nunca reprovação). `--no-judge` desliga. |
-| 🟡 6. Replan não passa pelo Commander | `e803837` | `Commander.replan`: troca agente → sobe papel → quebra a tarefa em duas. Recebe só o delta da falha; `changes` vazio quando não há alternativa. |
-| 🟡 7. Memória não informa o planejamento | `96714ff` | `PlanningMemory` no `CommanderInput`: padrão de falha conhecido sobe o modo um degrau, agente com histórico ruim sai da disputa, consulta registrada nas decisões. |
-| 🟡 8. Skills resolvidas por run | `96714ff` | `resolveSkills` por tarefa (teto de 3), com memoização de manifesto no `SkillResolver`. |
-| 🔵 9. Sub-orquestradores | — | Continua aberto por decisão. Ver item 1. |
-| 🔵 10. `execute_code` | — | Continua aberto por bloqueio real de isolamento. Ver item 2. |
-| 🔵 11. Cache além de resposta de modelo | `35ade52` | Cache de `validateArtifact` por `(kind, hash)` com teto de 512 e eviction FIFO. Ressalva registrada: economiza CPU, não token. |
-| 🔵 12. Policy Engine fora do caminho de run | `641e198` | Nó `kind: 'tool'` roteado por `ToolRegistry` + `PolicyEngine`, com `TaskContract.permissions` (menor privilégio) e trust tier derivado da ORIGEM do arquivo do agente. Dois bugs reais corrigidos junto: `toText` podia devolver `undefined`, e caminho relativo escapava da sandbox resolvendo contra o cwd. |
-| 🔵 13. Dashboard sem os campos novos | `6e0b0da` | Run Explorer mostra modo, verificação por tarefa, economia e conversa A2A. Bug corrigido: a tabela de economia referenciava campos que não existem em `TokenTelemetry`. |
-| 🔵 14. Arena sem métricas de execução | `6e0b0da` | `benchmarks/arena.ts` + `izanagi benchmark run --execute`: verificação, recuperação, retries, healing, tokens e custo REAIS por caso e agregados. Métrica ausente aparece como ausente. |
-| 🔵 15. Producer headless não satisfazia schema tipado | `35ade52` | `simulatedArtifact` deriva do schema real, com teste que valida TODO kind registrado contra o validador de verdade. `izanagi run` headless deixou de terminar FAIL por motivo alheio ao runtime. |
+| 🔴 1. Degradação registrada mas nunca aplicada | `8a5d04c` | Cada degrau muda a execução: contexto pela metade, saída a 60%, `demoteRole`, concorrência dividida, opcionais cortadas, pausa por aprovação. Limiar por degrau e pressão pela maior razão **por fase**. |
+| 🔴 2. Artefato sem content store | `8a5d04c` | Conteúdo em `.izanagi/state/artifacts/<runId>/`, com `contentRef`, teto de 512KB e truncamento declarado. |
+| 🔴 3. Paralelismo sem teto de concorrência | `8a5d04c` | Pool com ordem preservada e falha isolada, default 3, reduzido pela degradação. |
+| 🟡 4. Protocolo A2A e crítica sem caller | `c108699` | `interpretCritique`: crítica bloqueante reprova o nó criticado com correção mínima. `ConversationLog` por referência de artefato. `critique` virou ArtifactKind com formato obrigatório. |
+| 🟡 5. Juiz semântico não injetado | `e977b7a` | `verification/judge.ts` no papel `worker`. Saída ilegível vira `inconclusive`, nunca reprovação. `--no-judge` desliga. |
+| 🟡 6. Replan não passa pelo Commander | `e803837` | `Commander.replan`: troca agente → sobe papel → quebra em duas. Só o delta da falha; `changes` vazio quando não há alternativa. |
+| 🟡 7. Memória não informa o planejamento | `96714ff` | Padrão de falha sobe o modo um degrau; agente com histórico ruim sai da disputa; consulta no Decision Journal. |
+| 🟡 8. Skills resolvidas por run | `96714ff` | `resolveSkills` por tarefa (teto de 3), com memoização de manifesto. |
+| 🔵 9. Cache além de resposta de modelo | `35ade52` | `validateArtifact` por `(kind, hash)`, teto 512, FIFO. Economiza CPU, não token. |
+| 🔵 10. Producer headless não satisfazia schema | `35ade52` | `simulatedArtifact` derivado do schema real, com teste sobre TODO kind registrado. |
+| 🔵 11. Estatística de agente global | `35ade52` | `AgentStats.byDomain`; ausência no domínio é ausência de sinal, não sinal ruim. |
+| 🔵 12. Policy Engine fora do caminho de run | `641e198` | Nó `kind: 'tool'` por `ToolRegistry` + `PolicyEngine`, `TaskContract.permissions`, trust tier pela ORIGEM do arquivo. Corrigidos: `toText` devolvendo `undefined` e caminho relativo escapando da sandbox pelo cwd. |
+| 🔵 13. Dashboard sem os campos novos | `6e0b0da` | Modo, verificação por tarefa, economia e conversa A2A no Run Explorer. Corrigidos os campos inexistentes na tabela de economia. |
+| 🔵 14. Arena sem métricas de execução | `6e0b0da` | `benchmark run --execute`: verificação, recuperação, retries, healing, tokens e custo reais. Métrica ausente aparece como ausente. |
+| 🔵 15. Sub-orquestradores hierárquicos | `5ae9b57` | `orchestration/subgraph.ts`: decomposição em execução com orçamento do pai DIVIDIDO, profundidade com teto do runtime, largura máxima 5, sub-tarefa não decompõe, pedido malformado recusado inteiro. |
+| 🔵 16. `execute_code` | `1387bb0` | `tools/code-sandbox.ts`: processo isolado com Permission Model. FS restrito ao diretório de trabalho, subprocessos/workers/addons bloqueados, ambiente montado do zero, timeout com kill. Rede continua não isolada, e isso está testado como limite. |
+| 🔵 17. Síntese de skills por trajetória | `4490dbf` | `evolution/trajectories.ts`: barra de recorrência (3 execuções verificadas), assinatura por caminho e não por objetivo, skill que declara o próprio limite. |
+| 🔵 18. FTS5 e compressão neural | `4490dbf` | `izanagi benchmark memory` mede e aplica limiar declarado: busca p95 2.0ms sobre 296KB (FTS5 não se paga), compressão a 8.3% do original (neural não se justifica pelo tamanho). Bug encontrado pela medição: a busca tinha recall truncado em 4000 chars por arquivo. |

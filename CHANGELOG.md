@@ -4,6 +4,37 @@
 
 ---
 
+## [3.16.0]: 2026-09-02
+
+Os três itens que restavam eram os de maior risco da lista: cada um destrava autonomia, e cada um erra caro se destravar demais. O que resta depois desta versão é uma decisão de produto, não um gap técnico.
+
+### Added
+- **Sub-orquestração** (`orchestration/subgraph.ts`): uma tarefa com `contract.decomposable` pode responder com `{ reason, decompose: [...] }` em vez do artefato, e o runtime abre um subgrafo. Os LIMITES são o ponto, porque agente decompondo à vontade é a colmeia que a arquitetura proíbe: orçamento do pai **dividido** entre os filhos com piso de 512 (decompor não libera gasto novo); profundidade com teto do RUNTIME (`maxOrchestrationDepth`, default 2) e não do agente; no máximo 5 sub-tarefas, com o excesso cortado; sub-tarefa nasce com `decomposable: false`; ids prefixados pelo pai; pedido malformado recusado INTEIRO; e falha de sub-tarefa sendo falha de quem pediu a decomposição. O filho herda restrições, política de verificação e critérios de aceite do pai — decompor não afrouxa o que o pai prometeu. Só papel `commander` em modo `autonomous` recebe a permissão, e o protocolo só entra no prompt quando ainda há profundidade disponível.
+- **`code.execute` em sandbox** (`tools/code-sandbox.ts`): processo Node separado com o Permission Model ligado. O isolamento é do runtime, não de varredura de `import` sobre o código — varredura é evasível. Verificado por teste: filesystem restrito ao diretório de trabalho da execução, `child_process`/workers/addons/WASI bloqueados, ambiente montado do ZERO (nenhuma variável do pai atravessa, então nenhuma chave de API atravessa), timeout com SIGKILL, teto de saída com truncamento declarado, leitura do projeto opt-in e nunca acompanhada de escrita. Sem isolamento disponível (Node < 20) a execução é RECUSADA.
+- **Síntese de skill por trajetória recorrente** (`evolution/trajectories.ts`): o simétrico de converter falha em padrão. A assinatura de uma trajetória é a sequência (agente → kind) das tarefas VERIFICADAS, não o texto do objetivo — dois runs sobre objetivos diferentes que percorreram o mesmo caminho são a mesma trajetória. A barra é RECORRÊNCIA (3 execuções, todas verificadas, nunca sintetizada antes), não sucesso: sintetizar a cada run bem-sucedido produziria uma biblioteca de skills genéricas competindo com as boas no ranking. A skill gerada descreve o caminho observado e declara o próprio limite.
+- **`izanagi benchmark memory`** (`benchmarks/memory-benchmark.ts`): a medição que duas ideias do Hermes exigiam antes de virar código. Mede e aplica o limiar declarado no módulo — não opina. Neste repo, sobre corpus sintético de 240 entradas: busca textual p95 **2.0ms sobre 296KB** (abaixo do teto de 25ms: FTS5 não se paga neste volume) e compressão determinística levando 48000 chars a 3993, **8.3%** (abaixo do alvo de 35%: compressão neural não se justifica pelo tamanho). O comando declara o que NÃO mede: se o que sobrou na compressão é o que importava.
+
+### Fixed
+- **A busca de memória tinha recall truncado em silêncio.** `search()` operava sobre o conteúdo já cortado em 4000 chars por `listEntries`, então tudo que o projeto aprendeu depois das primeiras páginas de cada arquivo era invisível para a busca. É a pior forma de estar errado: busca lenta se percebe, busca cega não. Agora a busca varre o arquivo inteiro e devolve a JANELA em volta da ocorrência (não o começo do arquivo); o preview continua cortado, porque entrada inteira no contexto é o que a arquitetura proíbe. Depois do conserto a mesma medição alcança 296KB em vez de 16KB, com a mesma latência.
+- **A sandbox concedia leitura de `os.tmpdir()` inteiro** — e o diretório de trabalho da execução vive lá dentro, então qualquer arquivo temporário de terceiro ficava legível pelo script. Removido; o Node não precisava dele.
+- **O timeout da sandbox resolvia antes do processo morrer**, deixando o diretório de trabalho com handle aberto (EPERM na limpeza no Windows, resíduo em `.izanagi/state/sandbox/`). Agora o timeout marca e mata, e quem resolve é o `close`, com rede de segurança de 2s.
+
+### Changed
+- `MemoryStore.listEntries()` aceita `{ full: true }`. Sem a opção, o comportamento é o de antes (corte em 4000 chars).
+- `SkillFactory.generate()` aceita `body` e `description` prontos. A síntese por trajetória usa isso porque o template genérico acrescentaria seções que a evidência não sustenta.
+- `Orchestrator` aceita `generatedSkillsDir`: um run de teste não pode escrever no repositório de quem roda o teste.
+
+### Compatibility
+- `TaskContract.decomposable` é opcional e falso por padrão: contrato sem ele executa exatamente como antes.
+- `RuntimeState.trajectories` e `AgentStats.byDomain` são opcionais; estado gravado antes continua legível.
+- `ToolRegistry.execute()` virou `async` (breaking interno). `ToolDefinition.execute` pode devolver Promise. Fazer a execução de código de forma síncrona travaria o event loop e mataria o paralelismo dos outros nós do batch.
+- Nenhum comando ou flag da CLI foi removido.
+
+### Tests
+562 testes passando. O único vermelho é `polyglot: bin Rust presente com --version barato`, que exige executar um binário com shebang bash — não roda no Windows, e é anterior a estas mudanças.
+
+---
+
 ## [3.15.0]: 2026-09-02
 
 O que sobrava depois da 3.14.0 era, quase tudo, "existe mas não está no caminho". Esta versão coloca as peças no caminho e passa a medir execução real. As sete limitações registradas na 3.14.0 foram fechadas; restam três, e nas três falta uma decisão ou um caso de uso, não código.
