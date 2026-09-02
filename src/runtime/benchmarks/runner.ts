@@ -13,6 +13,7 @@ import type { BenchmarkCase, BenchmarkReport, BenchmarkResult } from '../types.j
 import { EvaluationEngine } from '../evaluation/engine.js';
 import { makeArtifact, validateArtifact } from '../contracts/artifacts.js';
 import { safeEvaluate } from '../orchestration/safe-eval.js';
+import { aggregateExecution, type ExecutionEvidence } from './arena.js';
 
 export interface BenchmarkRunOptions {
   baseDir: string;
@@ -31,7 +32,7 @@ export class BenchmarkRunner {
    * Executa um único caso contra um output produzido.
    * O output pode ser: diretório (verifica arquivos), string, ou objeto.
    */
-  runCase(c: BenchmarkCase, output: unknown, opts: { durationMs?: number; tokensUsed?: number } = {}): BenchmarkResult {
+  runCase(c: BenchmarkCase, output: unknown, opts: { durationMs?: number; tokensUsed?: number; execution?: ExecutionEvidence } = {}): BenchmarkResult {
     const started = Date.now();
     const artifactsFound: string[] = [];
     const artifactsMissing: string[] = [];
@@ -91,7 +92,8 @@ export class BenchmarkRunner {
       validatorFailures,
       metrics,
       durationMs,
-      tokensUsed: opts.tokensUsed,
+      tokensUsed: opts.tokensUsed ?? opts.execution?.tokensUsed,
+      ...(opts.execution ? { execution: opts.execution } : {}),
     };
     return result;
   }
@@ -108,8 +110,13 @@ export class BenchmarkRunner {
     const results: BenchmarkResult[] = [];
     for (const c of cases) {
       try {
-        const output = await producer(c);
-        results.push(this.runCase(c, output));
+        const produced = await producer(c);
+        // O producer pode devolver só o output (caminho antigo) ou output +
+        // evidência de execução real (Arena). As duas formas coexistem: um
+        // relatório pode ter casos com e sem execução.
+        const withEvidence = isProducedWithEvidence(produced);
+        const output = withEvidence ? produced.output : produced;
+        results.push(this.runCase(c, output, withEvidence ? { execution: produced.execution } : {}));
       } catch (err) {
         results.push({
           caseId: c.id,
@@ -140,6 +147,10 @@ export class BenchmarkRunner {
       byDomain[d] = Math.round((byDomain[d] / (counts[d] ?? 1)) * 100) / 100;
     }
 
+    const executionSummary = aggregateExecution(
+      results.map((r) => r.execution).filter((e): e is ExecutionEvidence => Boolean(e)),
+    );
+
     const report: BenchmarkReport = {
       id: `bench-${crypto.randomBytes(3).toString('hex')}`,
       suite: opts.suite ?? 'default',
@@ -155,6 +166,7 @@ export class BenchmarkRunner {
         totalDurationMs,
       },
       byDomain,
+      ...(executionSummary ? { execution: executionSummary } : {}),
     };
 
     const dir = path.join(opts.baseDir, '.izanagi', 'state', 'benchmarks');
@@ -266,4 +278,11 @@ function readFrameworkVersion(baseDir: string): string {
   } catch {
     return '0.0.0';
   }
+}
+
+/** Producer que devolve output + evidência de execução real (Arena). */
+function isProducedWithEvidence(value: unknown): value is { output: unknown; execution: ExecutionEvidence } {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as { output?: unknown; execution?: { verificationRate?: unknown } };
+  return 'output' in v && typeof v.execution === 'object' && v.execution !== null && 'verificationRate' in v.execution;
 }

@@ -485,6 +485,13 @@ export interface BenchmarkResult {
   metrics: Metrics;
   durationMs: number;
   tokensUsed?: number;
+  /**
+   * Evidência de uma execução REAL deste caso (verificação, recuperação,
+   * retries, custo). Ausente quando o caso foi avaliado só pelo output
+   * esperado — e a ausência é informação: significa que o relatório não mede
+   * verificação nem recuperação.
+   */
+  execution?: import('./benchmarks/arena.js').ExecutionEvidence;
 }
 
 export interface BenchmarkReport {
@@ -503,6 +510,11 @@ export interface BenchmarkReport {
   };
   /** Pontuação média por domínio. */
   byDomain: Record<string, number>;
+  /**
+   * Agregado das métricas de execução real (Izanagi Arena). Presente só quando
+   * ao menos um caso rodou pelo runtime de verdade.
+   */
+  execution?: import('./benchmarks/arena.js').ExecutionSummary;
 }
 
 /* ============================ SECURITY (SKILL SCAN) ============================ */

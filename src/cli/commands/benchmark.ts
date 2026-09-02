@@ -8,6 +8,8 @@ import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
 import { BenchmarkRunner } from '../../runtime/benchmarks/runner.js';
 import type { BenchmarkReport } from '../../runtime/types.js';
 import { runTokenBenchmark, formatTokenBenchmark } from '../../runtime/benchmarks/token-benchmark.js';
+import { evidenceFromRun, formatExecutionSummary } from '../../runtime/benchmarks/arena.js';
+import { run as runObjective } from '../../sdk.js';
 
 export async function benchmarkCommand(baseDir: string, args: string[]): Promise<void> {
   const sub = args[0]?.toLowerCase() ?? 'list';
@@ -17,7 +19,8 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
     return;
   }
   if (sub === 'run') {
-    await benchmarkRun(baseDir, args[1]);
+    const domain = args.slice(1).find((a) => !a.startsWith('-'));
+    await benchmarkRun(baseDir, domain, { execute: args.includes('--execute') });
     return;
   }
   if (sub === 'compare') {
@@ -66,7 +69,7 @@ function benchmarkList(baseDir: string): void {
   console.log('Executar: \x1b[33mizanagi benchmark run [domain]\x1b[0m\n');
 }
 
-async function benchmarkRun(baseDir: string, domain?: string): Promise<void> {
+async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?: boolean } = {}): Promise<void> {
   const registry = new BenchmarkRegistry();
   const cases = registry.filterByDomain(registry.load(baseDir), domain);
   if (cases.length === 0) {
@@ -75,21 +78,54 @@ async function benchmarkRun(baseDir: string, domain?: string): Promise<void> {
   }
 
   const runner = new BenchmarkRunner();
-  console.log(`\n\x1b[35m=== Benchmark Run${domain ? `: ${domain}` : ''} (${cases.length} casos) ===\x1b[0m\n`);
+  console.log(`\n\x1b[35m=== Benchmark Run${domain ? `: ${domain}` : ''} (${cases.length} casos)${flags.execute ? ' — execução real' : ''} ===\x1b[0m\n`);
 
-  // Producer headless: simula output a partir dos requisitos do caso.
-  // O output é o texto dos requirements — os validators reais determinam a nota.
+  if (!flags.execute) {
+    console.log('  \x1b[90mModo output: mede se o artefato esperado apareceu. NÃO mede verificação,');
+    console.log('  recuperação nem custo — para isso, use --execute.\x1b[0m\n');
+  }
+
+  // Producer sem --execute: deriva o output dos requisitos do caso. Os
+  // validators reais determinam a nota, mas nenhum run acontece — por isso o
+  // relatório não traz métricas de verificação ou recuperação.
+  const outputOnly = (c: (typeof cases)[number]) => ({
+    caseId: c.id,
+    task: c.task,
+    requirements: c.requirements.join('; '),
+    expectedArtifacts: c.expectedArtifacts.join(', '),
+    validators: c.validators?.map((v) => v.name).join(', ') ?? '',
+    implementation: `${c.task} — implementação produzida pelo framework.`,
+  });
+
+  // Producer com --execute: roda CADA caso pelo runtime de verdade (o mesmo
+  // `izanagi.run()` do SDK) e devolve output + evidência da execução. Sem
+  // provider configurado a execução é headless, e isso continua sendo uma
+  // execução real do runtime: o grafo roda, a verificação roda, o healing roda.
+  // O que não é real ali é o conteúdo dos artefatos, e o relatório diz isso.
+  const executed = async (c: (typeof cases)[number]) => {
+    const result = await runObjective({ baseDir, objective: c.task });
+    return {
+      output: {
+        ...outputOnly(c),
+        ...Object.fromEntries(Object.entries(result.artifacts).map(([id, a]) => [id, a.content])),
+      },
+      execution: evidenceFromRun({
+        status: result.status,
+        ...(result.mode ? { mode: result.mode } : {}),
+        healing: result.healing,
+        // O grafo executado vive no trace: o resultado do SDK não o repete.
+        ...(result.trace.graph ? { graph: result.trace.graph } : {}),
+        ...(result.verification ? { verification: result.verification } : {}),
+        ...(result.telemetry ? { telemetry: result.telemetry } : {}),
+        trace: result.trace,
+      }),
+    };
+  };
+
   const report = await runner.runSuite(
     cases,
-    (c) => ({
-      caseId: c.id,
-      task: c.task,
-      requirements: c.requirements.join('; '),
-      expectedArtifacts: c.expectedArtifacts.join(', '),
-      validators: c.validators?.map((v) => v.name).join(', ') ?? '',
-      implementation: `${c.task} — implementação produzida pelo framework.`,
-    }),
-    { baseDir, suite: domain ?? 'all' },
+    flags.execute ? executed : outputOnly,
+    { baseDir, suite: `${domain ?? 'all'}${flags.execute ? ':executed' : ''}` },
   );
 
   for (const r of report.results) {
@@ -105,6 +141,7 @@ async function benchmarkRun(baseDir: string, domain?: string): Promise<void> {
 
   const s = report.summary;
   console.log(`\n\x1b[1mSummary:\x1b[0m ${s.passed}/${s.total} passaram | score médio ${s.avgScore} | ${s.totalDurationMs}ms`);
+  console.log(`\x1b[1mArena:\x1b[0m ${formatExecutionSummary(report.execution ?? null)}`);
   console.log(`\x1b[90mRelatório salvo em .izanagi/state/benchmarks/${report.id}.json\x1b[0m`);
   console.log(`\x1b[90mComparar versões: \x1b[0mizanagi benchmark compare <anterior> ${report.id}\n`);
 }

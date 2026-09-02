@@ -99,6 +99,39 @@ test('dashboard: /api/runs/:id devolve trace + artifacts do registry, e 404 para
   });
 });
 
+test('dashboard: os campos do runtime novo chegam inteiros à página (modo, economia, verificação, conversa)', async () => {
+  const baseDir = tmpDir();
+  const store = new TraceStore({ baseDir });
+  const tracer = new Tracer(store, { task: 'x', command: 'run' });
+  const { trace } = tracer.finishAndSave({
+    mode: 'orchestrated',
+    telemetry: { inputTokens: 1200, outputTokens: 400, costUsd: 0.0031, cacheHits: 2, parallelTasks: 3 },
+    verification: [{ nodeId: 'execute', status: 'UNVERIFIED', score: 0.75, reason: 'sem juiz', unmet: ['critério semântico'] }],
+    conversation: [
+      { id: 'm1', from: 'commander', to: 'senior-engineer', type: 'task', taskId: 'execute', summary: 'produzir', artifactRefs: ['r:architecture'], timestamp: new Date().toISOString() },
+    ],
+  });
+
+  await withServer(baseDir, async (base) => {
+    const res = await getJson(`${base}/api/runs/${trace.runId}`);
+    assert.equal(res.status, 200);
+    const body = res.body as { trace: Record<string, unknown> };
+    // O servidor devolve o trace inteiro; a página renderiza a partir daqui.
+    // Se um destes campos sumir do contrato, o Run Explorer volta a esconder
+    // exatamente o que a rearquitetura passou a medir.
+    assert.equal(body.trace.mode, 'orchestrated');
+    assert.equal((body.trace.telemetry as { costUsd: number }).costUsd, 0.0031);
+    assert.equal((body.trace.verification as Array<{ status: string }>)[0].status, 'UNVERIFIED');
+    assert.equal((body.trace.conversation as Array<{ type: string }>)[0].type, 'task');
+
+    const page = await fetch(`${base}/`);
+    const html = await page.text();
+    for (const fn of ['renderVerification', 'renderEconomy', 'renderConversation']) {
+      assert.ok(html.includes(fn), `a página deveria renderizar ${fn}`);
+    }
+  });
+});
+
 test('dashboard: /api/benchmarks lista relatórios salvos, /api/benchmarks/:id devolve um e 404 se não existir', async () => {
   const baseDir = tmpDir();
   const dir = path.join(baseDir, '.izanagi', 'state', 'benchmarks');

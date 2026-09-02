@@ -61,6 +61,10 @@ export const DASHBOARD_HTML = `<!doctype html>
   .badge.fail, .badge.error, .badge.blocked { background: var(--bad-bg); color: var(--bad); }
   .badge.running, .badge.pending { background: var(--warn-bg); color: var(--warn); }
   .badge.unknown { background: var(--bg-3); color: var(--text-dim); }
+  .badge.verified { background: var(--ok-bg); color: var(--ok); }
+  .badge.unverified { background: var(--warn-bg); color: var(--warn); }
+  .badge.failed { background: var(--bad-bg); color: var(--bad); }
+  .muted { color: var(--text-dim); font-weight: 400; font-size: 12px; }
   #live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-faint); }
   #live .dot { width: 6px; height: 6px; border-radius: 50%; background: #3f3f46; transition: background .2s; }
   #live.on .dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: pulse 2s ease-in-out infinite; }
@@ -214,6 +218,7 @@ function renderRun(trace, artifacts) {
   html += '<div class="kv"><b>id</b>' + esc(trace.runId) + '</div>';
   html += '<div class="kv"><b>task</b>' + esc(trace.task) + '</div>';
   html += '<div class="kv"><b>status</b>' + (running ? badge('running') : badge(ev.verdict)) + '</div>';
+  html += '<div class="kv"><b>modo</b>' + esc(trace.mode || 'legado (sem Commander)') + '</div>';
   html += '<div class="kv"><b>duração</b>' + fmtMs(trace.durationMs) + (running ? ' (em andamento)' : '') + '</div>';
   html += '<div class="kv"><b>modelo</b>' + esc(trace.model || '-') + '</div>';
   html += '<div class="kv"><b>agentes</b>' + esc((trace.agents || []).join(', ')) + '</div>';
@@ -231,7 +236,10 @@ function renderRun(trace, artifacts) {
     html += '</section>';
   }
 
+  html += renderVerification(trace);
+  html += renderEconomy(trace);
   html += '<section><h2>Execution Graph</h2>' + renderExecutionGraph(trace) + '</section>';
+  html += renderConversation(trace);
 
   if (trace.healing && trace.healing.length) {
     html += '<section><h2>Healing</h2>';
@@ -247,6 +255,67 @@ function renderRun(trace, artifacts) {
     '</table></section>';
 
   document.getElementById('detail').innerHTML = html;
+}
+
+/**
+ * Verificacao por no. O que importa aqui nao e o numero de VERIFIED, e quais
+ * ficaram sem evidencia conclusiva: e a diferenca entre "terminou" e "o agente
+ * disse que terminou".
+ */
+function renderVerification(trace) {
+  const rows = trace.verification || [];
+  if (!rows.length) return '';
+  const verified = rows.filter((v) => v.status === 'VERIFIED').length;
+  let html = '<section><h2>Verificação <span class="muted">' + verified + '/' + rows.length + ' VERIFIED</span></h2>';
+  html += '<table><tr><th>tarefa</th><th>status</th><th>score</th><th>motivo</th></tr>';
+  html += rows.map((v) =>
+    '<tr><td>' + esc(v.nodeId) + '</td><td>' + badge(v.status) + '</td><td>' + (v.score != null ? v.score.toFixed(2) : '-') +
+    '</td><td>' + esc(v.reason || '') + (v.unmet && v.unmet.length ? '<div class="muted">' + esc(v.unmet.slice(0, 3).join('; ')) + '</div>' : '') + '</td></tr>'
+  ).join('');
+  return html + '</table></section>';
+}
+
+/** Token Economy Engine: para onde foi o orcamento deste run. */
+function renderEconomy(trace) {
+  const t = trace.telemetry;
+  if (!t) return '';
+  const linhas = [
+    ['tokens entrada', t.inputTokens],
+    ['tokens saída', t.outputTokens],
+    ['custo estimado', t.estimatedCostUsd != null ? '$' + Number(t.estimatedCostUsd).toFixed(4) : null],
+    ['cache local (hits)', t.cacheHits],
+    ['cache do provider (tokens)', t.providerCachedTokens],
+    ['contexto poupado (chars)', t.contextCharsSaved],
+    ['tarefas em paralelo', t.parallelTasks],
+    ['escaladas de modelo', t.modelEscalations],
+    ['retries', t.retries],
+    ['tool calls', t.toolCalls],
+    ['degradações aplicadas', Array.isArray(t.degradationsApplied) ? t.degradationsApplied.join(', ') : t.degradationsApplied],
+  ].filter((l) => l[1] !== undefined && l[1] !== null && l[1] !== '' && l[1] !== 0);
+  if (!linhas.length) return '';
+  let html = '<section><h2>Economia</h2><table>';
+  html += linhas.map((l) => '<tr><td>' + esc(l[0]) + '</td><td>' + esc(String(l[1])) + '</td></tr>').join('');
+  return html + '</table></section>';
+}
+
+/**
+ * Conversa entre agentes. Carrega referencia de artefato e resumo de uma
+ * linha, nunca o conteudo produzido — o dashboard mostra exatamente o que o
+ * trace guarda, sem reconstruir nada.
+ */
+function renderConversation(trace) {
+  const msgs = trace.conversation || [];
+  if (!msgs.length) return '';
+  const tipos = {};
+  msgs.forEach((m) => { tipos[m.type] = (tipos[m.type] || 0) + 1; });
+  const resumo = Object.keys(tipos).map((k) => k + '=' + tipos[k]).join(', ');
+  let html = '<section><h2>Conversa entre agentes <span class="muted">' + msgs.length + ' mensagens · ' + esc(resumo) + '</span></h2>';
+  html += '<table><tr><th>de</th><th>para</th><th>tipo</th><th>resumo</th><th>artefatos</th></tr>';
+  html += msgs.map((m) =>
+    '<tr><td>' + esc(m.from) + '</td><td>' + esc(m.to) + '</td><td>' + esc(m.type) + '</td><td>' + esc(m.summary) +
+    '</td><td class="muted">' + esc((m.artifactRefs || []).map((r) => String(r).split(':')[1] || r).join(', ')) + '</td></tr>'
+  ).join('');
+  return html + '</table></section>';
 }
 
 function selectBenchmark(report, el) {
