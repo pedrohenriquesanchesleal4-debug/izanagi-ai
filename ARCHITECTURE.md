@@ -49,69 +49,101 @@
 
 ---
 
-## Target Module Structure
+## Module Structure (estado real do repositório)
 
 ```
-src/runtime/
-├── core/
-│   ├── types.ts                 # Single source of truth (EXISTS)
-│   └── runtime.ts               # Unified facade (NEW)
-├── orchestration/
-│   ├── graph.ts                 # ExecutionGraph + Builder (EXISTS)
-│   ├── planner.ts               # Planner + templates (EXISTS)
-│   └── scheduler.ts             # Async execution, cancellation, priority (NEW)
-├── routing/
-│   ├── resolver.ts              # SkillResolver (EXISTS)
-│   ├── scorer.ts                # CandidateScorer + semanticRelevance (EXISTS)
-│   ├── history.ts               # Routing history → learning feedback (NEW)
-│   └── registry.ts              # AgentRegistry + SkillRegistry (NEW)
-├── evaluation/
-│   ├── engine.ts                # EvaluationEngine (EXISTS)
-│   ├── graders.ts               # Per-metric graders (NEW)
-│   └── regression.ts            # Automated regression detection (NEW)
-├── artifacts/
-│   ├── store.ts                 # ArtifactStore with versioning, lineage (NEW)
-│   ├── registry.ts              # ArtifactTypeRegistry (NEW)
-│   └── validator.ts             # validateArtifact + makeArtifact (EXISTS)
-├── contracts/
-│   └── artifacts.ts             # Schemas (EXISTS)
-├── memory/
-│   ├── store.ts                 # MemoryStore (EXISTS)
-│   ├── failures.ts              # FailurePatternStore (EXISTS)
-│   ├── decisions.ts             # DecisionJournal (ADR-lite) (NEW)
-│   └── learnings.ts             # Consolidated learnings (NEW)
-├── recovery/
-│   ├── healing.ts               # Healer (EXISTS)
-│   ├── checkpoint.ts            # Checkpoint + Resume (NEW)
-│   └── state.ts                 # ExecutionState for resume (NEW)
-├── observability/
-│   ├── tracer.ts                # Tracer + TraceStore (EXISTS)
-│   ├── metrics.ts               # Aggregated metrics (NEW)
-│   └── events.ts                # Event bus for hooks (NEW)
-├── model/
-│   └── router.ts                # ModelRouter (EXISTS)
-├── providers/
-│   ├── llm-client.ts            # LLMClient + adapters (EXISTS)
-│   └── config.ts                # ProviderConfig loader (NEW)
-├── tools/
-│   └── registry.ts              # ToolRegistry (EXISTS, MCP-ready)
-├── security/
-│   ├── skill-scanner.ts         # SkillScanner (EXISTS)
-│   └── policy.ts                # PolicyEngine (NEW)
-├── evolution/
-│   ├── learning.ts              # LearningEngine (EXISTS)
-│   ├── skill-lifecycle.ts       # SkillLifecycleManager (NEW)
-│   ├── agent-lifecycle.ts       # AgentLifecycleManager (NEW)
-│   └── promotion.ts             # A/B promotion logic (NEW)
-├── research/
-│   └── evidence.ts              # EvidenceRegistry (EXISTS)
-├── factories/
-│   ├── agent-factory.ts         # AgentFactory (EXISTS)
-│   └── skill-factory.ts         # SkillFactory (EXISTS)
-└── benchmarks/
-    ├── registry.ts              # BenchmarkRegistry (EXISTS)
-    ├── runner.ts                # BenchmarkRunner (EXISTS)
-    └── definitions.ts           # Builtin cases (EXISTS)
+src/
+├── sdk.ts                           # izanagi.run() / izanagi.plan() (SDK programático)
+└── runtime/
+    ├── types.ts                     # Fonte única de tipos do runtime
+    ├── orchestrator.ts              # Executor do grafo: papéis, verificação, healing, trace
+    ├── execute.ts                   # Wiring compartilhado CLI ↔ SDK (plano, roteamento, producer)
+    ├── contracts/
+    │   ├── artifacts.ts             # Schemas de artefato + validateArtifact
+    │   └── task-contract.ts         # Task Contract, modos de execução, papéis, critérios de aceite
+    ├── orchestration/
+    │   ├── commander.ts             # LEVEL 0: classifica, escolhe o modo, gera contratos, estima custo
+    │   ├── domains.ts               # Detecção bilíngue de domínio (fonte única)
+    │   ├── planner.ts               # Templates de workflow por categoria
+    │   ├── graph.ts                 # ExecutionGraph + Kahn + batches paralelos
+    │   ├── context-resolver.ts      # Contexto mínimo por tarefa (insumos resumidos + referência)
+    │   └── safe-eval.ts             # Avaliação de condição sem executar código arbitrário
+    ├── registry/
+    │   └── capabilities.ts          # Agent Capability Registry (quem sabe fazer isso?)
+    ├── protocol/
+    │   └── messages.ts              # AgentMessage + crítica estruturada + correção mínima
+    ├── verification/
+    │   └── engine.ts                # Verification Engine 2.0: determinística, evidência, semântica
+    ├── token/
+    │   ├── budget.ts                # PhaseTokenBudget (tokens por fase)
+    │   └── execution-budget.ts      # Budget Controller: custo, tetos, escada de degradação
+    ├── cache/
+    │   └── response-cache.ts        # Cache local determinístico de respostas (opt-in)
+    ├── model/
+    │   └── router.ts                # Catálogo, routeForRole por tier, escalada, custo em USD
+    ├── llm/
+    │   ├── client.ts                # 7 adapters (OpenAI-compatible, Anthropic, Google, locais)
+    │   ├── prompt-cache.ts          # CAPC: prefixo estático cacheável
+    │   └── session-diet.ts          # AgentDiet: observation masking determinístico
+    ├── routing/                     # SkillResolver + CandidateScorer
+    ├── evaluation/engine.ts         # EvaluationEngine (verdict ponderado)
+    ├── artifacts/registry.ts        # Índice de artefatos: proveniência, versão, lineage, regressão
+    ├── memory/                      # MemoryStore + DecisionJournal
+    ├── recovery/                    # Healer + CheckpointStore + ApprovalStore
+    ├── observability/               # Tracer + TraceStore + EventBus
+    ├── security/                    # SkillScanner + PolicyEngine
+    ├── tools/registry.ts            # ToolRegistry (least privilege, MCP-ready)
+    ├── evolution/learning.ts        # LearningEngine
+    ├── research/evidence.ts         # EvidenceRegistry
+    ├── factories/                   # AgentFactory + SkillFactory
+    └── benchmarks/
+        ├── registry.ts · runner.ts · definitions.ts   # Suíte de casos
+        └── token-benchmark.ts       # Legado vs Commander: chamadas, tokens, custo
+```
+
+### Fluxo de um run
+
+```
+                              USER
+                                │
+                                ▼
+                      ┌───────────────────┐
+                      │     COMMANDER     │  classifica (complexidade + domínios)
+                      │  direct/assisted/ │  escolhe o modo
+                      │ orchestrated/auto │  gera Task Contracts + critérios de aceite
+                      └─────────┬─────────┘  estima custo e degrada se estourar o teto
+                                │
+                                ▼
+                      ┌───────────────────┐
+                      │   MODEL ROUTER    │  tier por PAPEL (commander/specialist/worker)
+                      └─────────┬─────────┘
+                                │
+                                ▼
+                      ┌───────────────────┐
+                      │    TASK GRAPH     │  Kahn + batches paralelos
+                      └─────────┬─────────┘
+                 ┌──────────────┼──────────────┐
+                 ▼              ▼              ▼
+             Specialist     Specialist       Worker
+                 │              │              │
+                 └──────────────┼──────────────┘
+                                ▼
+                   CONTEXT RESOLVER (insumos resumidos, por referência)
+                                ▼
+                        ARTIFACT REGISTRY
+                                ▼
+                   VERIFICATION ENGINE 2.0
+                     │           │          │
+                 VERIFIED    UNVERIFIED   FAILED
+                     │           │          │
+                     ▼           ▼          ▼
+                   DONE      reporta    DIAGNOSE → HEAL → REPLAN ──┐
+              (early stop     como                                 │
+               em opcionais) inconclusivo                          │
+                                                                   └──► TASK GRAPH
+
+Ao redor: Budget Controller (custo/tempo/chamadas + degradação) · Response Cache ·
+Memory · Decision Journal · Policy Engine · Tracer/EventBus · Telemetria de economia
 ```
 
 ---
@@ -142,7 +174,7 @@ Derived artifacts are generated, never hand-edited: skills catalog v2 in `.skill
 - Conditional branches, retries, timeouts, failure propagation
 - Replan capability after failures
 
-### 2. Adaptive Router (EXISTS → ENHANCE)
+### 2. Adaptive Router (DONE: routeForRole por papel + escalada + custo em USD)
 - Candidate scoring: relevance + historicalSuccess + compatibility + risk + cost + latency
 - Routing history persisted → influences future decisions
 - Model routing: provider-agnostic, cost/latency/reasoning aware
@@ -158,11 +190,11 @@ Derived artifacts are generated, never hand-edited: skills catalog v2 in `.skill
 - Source hierarchy: official-docs > source-code > tests > package-metadata > reliable-tech > community
 - Confidence scoring, verification tracking
 
-### 5. Artifact System (PARTIAL → COMPLETE)
+### 5. Artifact System (DONE: registry com proveniência, versão, lineage e regressão)
 - Trackable objects: id, type, version, producer, timestamp, content, hash, dependencies, validation status, evaluation
 - Lineage: who created, modified, consumed, which decision generated, which evaluation validated
 
-### 6. Decision Journal (NEW)
+### 6. Decision Journal (DONE)
 - Structured decisions: decision, alternatives, chosen, reason, evidence, confidence, agent, timestamp, related artifacts
 - Enables "Why did Izanagi choose this?" queries
 
@@ -172,16 +204,16 @@ Derived artifacts are generated, never hand-edited: skills catalog v2 in `.skill
 - Hard limits: maxAttempts, maxTokens, maxTime, recovery budget
 - Failure memory integration
 
-### 8. Checkpoint + Resume (NEW)
+### 8. Checkpoint + Resume (DONE)
 - Persistent execution state at each node
 - CLI: `izanagi resume <run-id>`
 - Survives crashes, interruptions
 
-### 9. Policy Engine (NEW)
+### 9. Policy Engine (DONE)
 - Granular permissions: tool access, fs, network, destructive ops, dependency install, production actions, agent/skill permissions
 - Answers "is this allowed in this context?"
 
-### 10. Human-in-the-Loop (NEW)
+### 10. Human-in-the-Loop (DONE)
 - Approval gates for: production deploy, destructive fs, schema migration, security exceptions, large arch changes
 - CLI: `izanagi approve <run-id>`, `izanagi reject <run-id>`
 
@@ -209,6 +241,38 @@ Derived artifacts are generated, never hand-edited: skills catalog v2 in `.skill
 
 ---
 
+### 16. Commander (DONE)
+
+`runtime/orchestration/commander.ts`. Classifica complexidade (1 a 5) e domínios, escolhe o modo de execução, gera um Task Contract por tarefa com critérios de aceite derivados do schema real do artefato, estima o custo do plano e degrada o modo quando o teto de `--max-cost` seria estourado. Determinístico: nenhuma chamada de modelo para planejar. Uma decomposição externa (LLM ou plugin) pode ser injetada, mas passa por validação estrutural e cai no template quando não conforma.
+
+### 17. Task Contract (DONE)
+
+`runtime/contracts/task-contract.ts`. Objetivo, papel, insumos por referência, restrições, saída esperada, dependências, prioridade, orçamento (tokens/tempo/tool calls/custo), política de verificação e critérios de aceite. Anexado ao nó em `metadata.contract`: grafos sem contrato seguem pelo caminho legado.
+
+### 18. Context Resolver (DONE)
+
+`runtime/orchestration/context-resolver.ts`. Cada tarefa recebe objetivo, restrições e SOMENTE os artefatos dos quais depende, resumidos com preservação de começo e fim e referenciados por id. Corrigiu uma lacuna real: antes, nós dependentes nunca recebiam a saída dos predecessores, então o grafo tinha dependência topológica sem transferência de informação.
+
+### 19. Agent Capability Registry (DONE)
+
+`runtime/registry/capabilities.ts`. Descoberta em disco (`agents/*.json`, `.agents/agents/`, `agents/generated/`) com capacidades, skills, chains, classe de custo, papel e domínios. Substitui a lista fixa de agentes que vivia dentro do orchestrator. O matching é bilíngue: domínio detectado no objetivo cruza com domínio detectado na descrição do agente.
+
+### 20. Agent-to-Agent Protocol (DONE)
+
+`runtime/protocol/messages.ts`. Mensagens tipadas com referência de artefato em vez de cópia de texto, e crítica estruturada com parsing tolerante. Saída de crítico não parseável vira `needs_revision`, nunca aprovação silenciosa. `formatCorrection` devolve só os problemas bloqueantes, sem reenviar histórico.
+
+### 21. Budget Controller (DONE)
+
+`runtime/token/execution-budget.ts`. Compõe o `PhaseTokenBudget` e acrescenta custo em USD, tetos de tool call, agente e retry, tempo de parede e a escada de degradação (reduzir contexto → reduzir saída → baixar modelo → reduzir paralelismo → cortar tarefas opcionais → pedir aprovação humana). Gasto que estouraria um teto é recusado sem ser contabilizado.
+
+### 22. Verification Engine 2.0 (DONE)
+
+`runtime/verification/engine.ts`. Três camadas: determinística (schema, tamanho, presença/ausência, regex, campo JSON, existência de arquivo dentro da raiz), evidência (artefato declarado existe e é válido) e semântica (juiz injetável). Sem juiz, o critério semântico fica `UNVERIFIED` e o run NUNCA declara conclusão: ausência de verificação não é aprovação.
+
+### 23. Response Cache (DONE)
+
+`runtime/cache/response-cache.ts`. Cache local por hash de (provider, modelo, system, mensagens, teto, temperatura), com TTL, eviction e versão de esquema na chave. Opt-in por `--cache` ou `IZANAGI_CACHE=1`: cachear resposta de modelo é decisão do usuário, não default silencioso.
+
 ## Data Flow
 
 ```
@@ -235,27 +299,26 @@ Evaluate → Verdict + Score + Recommendations
 
 ---
 
-## CLI Commands (Target)
+## CLI Commands
 
-| Command | Purpose |
-|---------|---------|
-| `izanagi init` | Create project with skill packs |
-| `izanagi run` | Execute task via adaptive runtime |
-| `izanagi agent create/list/inspect` | Agent Factory + Genome |
-| `izanagi skill create/list/search/inspect` | Skill Factory + Manifest |
-| `izanagi workflow list/inspect` | Execution Graph templates |
-| `izanagi trace` | Observability |
-| `izanagi eval` | Evaluation Engine |
-| `izanagi benchmark` | Benchmarks + regression |
-| `izanagi memory` | Memory inspection |
-| `izanagi doctor` | Integrity audit |
-| `izanagi polyglot status` | Polyglot component health audit (`--strict` exits 1 on missing pieces) |
-| `izanagi diagnose` | Deep runtime diagnosis |
-| `izanagi explain` | Explain routing decisions |
-| `izanagi resume` | Resume from checkpoint |
-| `izanagi approve/reject` | Human-in-the-loop |
-| `izanagi export` | Multi-CLI adapters |
-| `izanagi compile` | Compile agent prompt |
+```bash
+izanagi run "<objetivo>"                      # Commander decide o modo
+izanagi run "<objetivo>" --mode autonomous    # força o modo
+izanagi run "<objetivo>" --budget 10000       # teto de tokens
+izanagi run "<objetivo>" --max-cost 0.50      # teto de custo (degrada o plano se estourar)
+izanagi run "<objetivo>" --model <id>         # fixa o modelo em todos os papéis
+izanagi run "<objetivo>" --local              # só providers locais
+izanagi run "<objetivo>" --cache              # cache local de respostas
+izanagi run "<objetivo>" --no-commander       # planejamento legado por categoria
+
+izanagi models [--json]                       # catálogo + roteamento por papel + custo
+izanagi budget [run-id] [--json]              # para onde foi o orçamento daquele run
+izanagi trace [run-id]                        # spans, healing, graph, avaliação
+izanagi explain <run-id>                      # decisões, healing, veredito
+izanagi benchmark tokens [--json]             # legado vs Commander (chamadas, tokens, custo)
+izanagi agents · izanagi skills · izanagi doctor --deep
+izanagi resume|approve|reject <run-id>        # checkpoint e human-in-the-loop
+```
 
 ---
 

@@ -4,6 +4,41 @@
 
 ---
 
+## [3.13.0]: 2026-09-01
+
+Rearquitetura do runtime: de "framework de agentes" para runtime de execução de trabalho. O modo de execução passa a ser proporcional ao problema, cada tarefa paga o preço do papel que exerce, e nenhuma tarefa termina sem evidência.
+
+### Added
+- **Commander** (`runtime/orchestration/commander.ts`): LEVEL 0 da hierarquia. Classifica complexidade (1 a 5) e domínios, escolhe o modo de execução (`direct` / `assisted` / `orchestrated` / `autonomous`), gera um Task Contract por tarefa com critérios de aceite derivados do schema REAL do artefato, estima o custo do plano e **degrada o modo** quando a estimativa estoura `--max-cost`. Determinístico: planejar não consome token. Uma decomposição externa (LLM ou plugin) pode ser injetada, mas passa por validação estrutural e cai no template quando não conforma.
+- **Task Contract** (`runtime/contracts/task-contract.ts`): contrato formal por tarefa com objetivo, papel, insumos por referência, restrições, saída esperada, dependências, orçamento (tokens/tempo/tool calls/custo), política de verificação e critérios de aceite.
+- **Roteamento por papel** (`runtime/model/router.ts`): `routeForRole` escolhe o tier pelo papel (commander→premium, specialist→balanced, worker→fast), com queda explícita de tier quando o catálogo disponível não tem aquele nível. Pin por papel via `.izanagi/izanagi.config.json` → `roles` ou `IZANAGI_MODEL_{COMMANDER,SPECIALIST,WORKER}` (env vence config). `escalateRole` sobe worker→specialist→commander; a retentativa de um nó ESCALA o papel em vez de repetir o modelo que já falhou. `costUsd`/`estimateCostForRole` dão custo real de catálogo.
+- **Context Resolver** (`runtime/orchestration/context-resolver.ts`): contexto mínimo por tarefa. Cada nó recebe objetivo, restrições e SOMENTE os artefatos dos quais depende, resumidos com preservação de começo e fim, referenciados por id.
+- **Agent Capability Registry** (`runtime/registry/capabilities.ts`): descoberta de agentes em disco com capacidades, skills, chains, classe de custo, papel e domínios; matching bilíngue por domínio.
+- **Agent-to-Agent Protocol** (`runtime/protocol/messages.ts`): mensagens tipadas com referência de artefato em vez de cópia de texto; crítica estruturada com parsing tolerante e correção mínima só dos problemas bloqueantes.
+- **Verification Engine 2.0** (`runtime/verification/engine.ts`): verificação em três camadas (determinística, evidência, semântica) contra os critérios de aceite do contrato. Critério semântico **sem juiz configurado fica `UNVERIFIED` e nunca conta como aprovação**.
+- **Budget Controller** (`runtime/token/execution-budget.ts`): custo em USD, tetos de tool call/agente/retry, tempo de parede e escada de degradação (contexto → saída → modelo → paralelismo → tarefas opcionais → aprovação humana). Gasto que estouraria um teto é recusado sem ser contabilizado.
+- **Response Cache** (`runtime/cache/response-cache.ts`): cache local determinístico por hash de (provider, modelo, system, mensagens, teto, temperatura), com TTL, eviction e versão de esquema na chave. Opt-in (`--cache` / `IZANAGI_CACHE=1`).
+- **Early stopping**: tarefa opcional (crítica adversarial, revisão redundante) é pulada quando todas as suas dependências terminaram `VERIFIED`.
+- **Telemetria de economia** persistida no trace: tokens de entrada/saída, custo estimado, cache local e do provider, chars de contexto poupados, tarefas paralelas, escaladas de modelo, retries e degradações aplicadas.
+- **SDK programático** (`src/sdk.ts`): `izanagi.run({ objective })` executa a mesma engine da CLI sem saída no terminal e devolve artefatos por id, telemetria, verificação e trace; `izanagi.plan({ objective })` estima modo, contratos e custo SEM executar nem gastar token. O handle é uma Promise que também assina eventos do run (`task:start`, `run:complete`, `healing:start`).
+- **CLI**: `izanagi run` ganha `--mode`, `--budget`, `--max-cost`, `--model`, `--local`, `--cache` e `--no-commander`. Comandos novos: `izanagi models` (catálogo + roteamento por papel + custo por 10k tokens) e `izanagi budget [run-id]` (para onde foi o orçamento, por fase, com verificação por tarefa).
+- **Token Benchmark** (`izanagi benchmark tokens`): compara o plano do caminho legado com o do Commander em três dimensões separadas (chamadas de modelo, teto de tokens, custo em USD), de forma determinística. O relatório declara explicitamente o que NÃO mede.
+
+### Fixed
+- **Nós dependentes não recebiam a saída dos predecessores**: o grafo tinha dependência topológica sem transferência de informação (o nó `implementation` dependia de `architecture` mas o prompt só continha a tarefa original do run). Corrigido pelo Context Resolver.
+- **Lista de agentes fixa dentro do orchestrator**: `agentIds()` era um array literal que ignorava agentes do projeto do usuário e de `agents/generated/`. Substituído pelo Agent Capability Registry lido do disco.
+- **Categoria escolhida por ordem de detecção, não por intenção**: "auditar a segurança da API" caía no template de backend porque `api` aparecia antes de `segurança` na tabela de sinais. Agora existe uma ordem de intenção explícita.
+- **Custo saturado no score do Model Router**: a contribuição de custo era `min(0.2, ...)`, então qualquer modelo abaixo de $0.016/1k empatava no teto e um modelo self-hosted de custo zero perdia para um pago por 100ms de latência. Agora é proporcional. Encontrado pelo próprio Token Benchmark.
+- **Portão duplicado de validação**: com contrato presente, a reprovação acontecia duas vezes (schema e verificação) e escondia o relatório de verificação justamente no caso em que ele é mais útil. Agora a Verification Engine é o portão único quando há contrato.
+
+### Compatibility
+- Sem plano do Commander, o `Orchestrator` segue **exatamente** o caminho legado (Planner por categoria, um modelo para o run inteiro). Todos os testes anteriores passam sem alteração.
+- `ModelRouter.route()`, `PhaseTokenBudget`, `validateArtifact`, `ArtifactRegistry`, `Healer`, `CheckpointStore`, `ApprovalStore` e `DecisionJournal` mantêm assinatura.
+- Nenhum comando da CLI foi removido. `--runtime` continua aceito como no-op.
+- Campos novos em `RunTrace` (`mode`, `telemetry`, `verification`) são opcionais: traces antigos continuam legíveis, e `izanagi budget` diz explicitamente quando um run é anterior ao Token Economy Engine.
+
+---
+
 ## [3.10.1]: 2026-08-23
 
 ### Changed

@@ -74,7 +74,16 @@ User Input / Comando CLI
 
 | Module | Responsibility |
 |--------|---------------|
-| **Orchestrator** (`orchestrator.ts`) | Executa grafos por categoria (implementation, debugging, testing, database_design, etc.), batches, retry e healing. |
+| **Commander** (`orchestration/commander.ts`) | LEVEL 0. Classifica complexidade (1 a 5) e domínios, escolhe o modo (direct/assisted/orchestrated/autonomous), gera um Task Contract por tarefa com critérios de aceite derivados do schema real do artefato, estima custo e degrada o modo quando o teto de custo seria estourado. Determinístico: planejar não gasta token. |
+| **Task Contract** (`contracts/task-contract.ts`) | Objetivo, papel (commander/specialist/worker), insumos por referência, restrições, saída esperada, dependências, orçamento (tokens/tempo/tool calls/custo), política de verificação e critérios de aceite. Anexado em `node.metadata.contract`. |
+| **Orchestrator** (`orchestrator.ts`) | Executa o plano do Commander (ou o grafo legado por categoria), roteia cada nó pelo PAPEL, escala o papel na retentativa, verifica contra o contrato, aplica early stopping em tarefas opcionais e persiste telemetria de economia no trace. |
+| **Context Resolver** (`orchestration/context-resolver.ts`) | Contexto mínimo por tarefa: objetivo, restrições e SÓ os artefatos dos quais ela depende, resumidos (começo + fim preservados) e referenciados por id. |
+| **Agent Capability Registry** (`registry/capabilities.ts`) | Descoberta de agentes em disco com capacidades, skills, chains, classe de custo, papel e domínios. Matching bilíngue por domínio, no lugar da lista fixa de agentes. |
+| **Agent-to-Agent Protocol** (`protocol/messages.ts`) | Mensagens tipadas com referência de artefato em vez de cópia de texto; crítica estruturada com parsing tolerante (saída não parseável vira `needs_revision`, nunca aprovação) e correção mínima só dos bloqueantes. |
+| **Verification Engine 2.0** (`verification/engine.ts`) | Três camadas: determinística, evidência e semântica. Critério semântico sem juiz fica `UNVERIFIED` e NUNCA conta como aprovação. Só `VERIFIED` encerra uma tarefa. |
+| **Budget Controller** (`token/execution-budget.ts`) | Custo em USD, tetos de tool call/agente/retry, tempo de parede e escada de degradação (contexto → saída → modelo → paralelismo → tarefas opcionais → aprovação humana). Gasto que estouraria um teto é recusado sem ser contabilizado. |
+| **Response Cache** (`cache/response-cache.ts`) | Cache local por hash de (provider, modelo, system, mensagens, teto, temperatura), com TTL, eviction e versão de esquema. Opt-in (`--cache` / `IZANAGI_CACHE=1`). |
+| **SDK** (`src/sdk.ts`) | `izanagi.run({ objective })` e `izanagi.plan({ objective })`: mesma engine da CLI, sem saída no terminal, com eventos do run em tempo real. |
 | **Evaluation Engine** (`evaluation/`) | Métricas ponderadas (correctness, completeness, security, etc.), veredito derivado, relatório com regressões e recomendações. |
 | **Artifact Contracts** (`contracts/artifacts.ts`) | 10+ schemas de artefato (requirements, architecture, database-schema, test-plan...) com validação por campos obrigatórios + tamanho mínimo, em PT-BR. |
 | **Skill Resolver** (`routing/resolver.ts`) | Alias → target (258), parse de frontmatter, scoring por relevância + histórico; `loadAgent` cobre `agents/` + `agents/generated/`. |
@@ -83,12 +92,12 @@ User Input / Comando CLI
 | **Agent Factory** (`factories/agent-factory.ts`) | Gera novos agentes com genome a partir de requisito: detecção de lacuna vs. 22 core, ID slug, skills requeridas/opcionais, validação e escrita em `agents/generated/`. |
 | **Skill Factory** (`factories/skill-factory.ts`) | Cria skills novas com frontmatter, security scan pré-escrita, recusa de lacuna já coberta e escrita em `skills/generated/<name>/SKILL.md`. |
 | **Tool Registry** (`tools/registry.ts`) | Tools builtin (fs.read, fs.write, fs.ls) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → validate → execute. |
-| **Model Router** (`model/router.ts`) | Seleção de modelo (claude/gpt/opus...) por custo/latência/contexto com fallback e override por env. |
+| **Model Router** (`model/router.ts`) | Catálogo por provider + `routeForRole` (tier por papel: commander→premium, specialist→balanced, worker→fast), pin por papel via config/env, escalada worker→specialist→commander e custo real em USD. `route()` legado preservado. |
 | **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
 | **Failure Memory** (`memory/store.ts`) | `recordFailure` + `findRelevantFailures` por categoria: erros reais registrados são injetados como evidência em runs futuros (anti-repetição). |
 | **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
 | **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSON (um arquivo por run em `.izanagi/state/traces/`) com spans, load/close e retry de escrita. |
-| **Benchmarks** (`benchmarks/`) | 10 casos builtin (parse, scoring, scanner, genome, composer...) executáveis via `izanagi benchmark` + `compare` entre builds. |
+| **Benchmarks** (`benchmarks/`) | 10 casos builtin executáveis via `izanagi benchmark` + `compare` entre builds, mais o Token Benchmark (`benchmark tokens`): legado vs Commander em chamadas, tokens e custo, de forma determinística. |
 | **LLM Executor** (`llm/`) | Adapters reais OpenAI/Anthropic/Google com env key, timeout e propagação de erro HTTP. |
 | **Evidence System** (`research/evidence.ts`) | Claims FACT/ASSUMPTION/INFERENCE/UNKNOWN com fonte, confiança e hierarquia de sourceType (official docs > source code > tests > package metadata > reliable tech > community); relatório de claims críticas. ⚠️ Implementado e testado, mas **nenhum caller em produção** hoje: nem `Orchestrator` nem `planner.ts` o invocam; só o próprio teste do módulo o exercita. Roadmap: ligar à execução do agente `researcher`. |
 | **Token Budget 2.0** (`token/budget.ts`) | Orçamento por fase (planning/execution/evaluation/recovery) com tetos, pesos por complexidade e abort de fase: retry consome a fase recovery, nunca o execution. |
@@ -112,6 +121,27 @@ database_design→ [requirements, schema, optimize, review, evaluation]
 
 Categorias sem template específico usam o fluxo genérico (analisar → planejar → executar → avaliar). A cadeia completa de skills de cada domínio é definida pelas `compositions` do resolver.
 
+## Modos de Execução
+
+O modo é proporcional ao problema, decidido pelo Commander (override com `--mode`):
+
+| Modo | Gatilho | Forma | Tentativas |
+|---|---|---|---|
+| `direct` | complexidade 1, no máximo 1 domínio | 1 tarefa, sem grafo, sem crítica, sem avaliador | 1 |
+| `assisted` | complexidade 2 | 1 especialista + gate determinístico | 1 |
+| `orchestrated` | complexidade 3 a 4 | template do domínio, sem a cauda opcional (crítica) | 2 |
+| `autonomous` | complexidade 5 ou 3+ domínios | template completo + healing + replan + verificação final | 3 |
+
+Um teto `--max-cost` faz o plano DEGRADAR de modo (autonomous → orchestrated → assisted → direct) em vez de estourar o orçamento em silêncio, e a degradação fica registrada nas decisões do run. Modo forçado pelo usuário nunca degrada sozinho.
+
+### Inteligência assimétrica
+
+`commander` (tier premium) planeja e coordena; `specialist` (balanced) executa; `worker` (fast) faz extração, formatação e validação. Cada nó é roteado pelo seu papel, não pelo run. Uma retentativa ESCALA o papel em vez de repetir o mesmo modelo que já falhou. Pin por papel em `.izanagi/izanagi.config.json` → `roles`, ou por env `IZANAGI_MODEL_{COMMANDER,SPECIALIST,WORKER}`.
+
+### Early stopping
+
+Uma tarefa marcada como opcional (crítica adversarial, revisão redundante) é pulada quando TODAS as suas dependências terminaram `VERIFIED`. A decisão é local: um nó obrigatório ainda pendente adiante no grafo não é motivo para rodar uma crítica sobre algo já comprovado.
+
 ## Token Economy
 
 Não há "compression engine" mágico: a economia de tokens é uma **skill operacional** (`skills/economia-tokens`) aplicada a toda sessão:
@@ -120,6 +150,21 @@ Não há "compression engine" mágico: a economia de tokens é uma **skill opera
 - prompt caching (conteúdo estático primeiro, dinâmico por último);
 - coordenação entre agentes por **artefatos em disco**, nunca payloads gigantes em contexto;
 - zero releituras. Economia vale para contexto inútil: nunca para o entregável.
+
+Além da skill, o runtime aplica mecanismos determinísticos e mensuráveis:
+
+| Mecanismo | Onde | Efeito |
+|---|---|---|
+| Modo proporcional | `orchestration/commander.ts` | tarefa trivial deixa de virar grafo de 3 a 9 nós |
+| Roteamento por papel | `model/router.ts` | worker não paga preço de commander |
+| Contexto mínimo | `orchestration/context-resolver.ts` | insumos resumidos e por referência, nunca o run inteiro |
+| Early stopping | `orchestrator.ts` | tarefa opcional não roda quando o objetivo já está VERIFIED |
+| Cache local | `cache/response-cache.ts` | execução idêntica não repaga a chamada (opt-in) |
+| Prompt caching (CAPC) | `llm/prompt-cache.ts` | prefixo estático byte-idêntico entre nós do run |
+| Observation masking | `llm/session-diet.ts` | observações antigas viram resumo de 1 linha |
+| Escada de degradação | `token/execution-budget.ts` | sob pressão de orçamento, degrada em ordem em vez de estourar |
+
+A telemetria de cada run (`izanagi budget <run-id>`) reporta tokens de entrada/saída, custo estimado, hits de cache local e do provider, chars de contexto poupados, tarefas paralelas, escaladas de modelo, retries e passos de degradação aplicados.
 
 ## Quality Gates: Every Output
 
@@ -167,12 +212,15 @@ Melhoria contínua acontece por: healing registrado (retry/replacement/abort), s
 
 ## Execution Pipeline (Runtime Adaptativo)
 
-O ciclo completo de execução: `Task → Understanding → Planning → Execution Graph → Evaluation → Self-Healing → Reflection → Memory → Evolution`: é suportado por módulos reais:
+O ciclo completo de execução: `Objetivo → Classificação → Modo → Task Contracts → Roteamento por papel → Execution Graph → Contexto mínimo → Verificação → Self-Healing → Reflection → Memory → Evolution`: é suportado por módulos reais:
+
+0. **Commander**: classifica complexidade e domínios, escolhe o modo, gera um contrato por tarefa com critérios de aceite verificáveis e estima o custo do plano ANTES de qualquer chamada de modelo. Sem plano do Commander (`--no-commander`, ou uso direto do Orchestrator), tudo abaixo segue exatamente o caminho legado.
+
 
 1. **Understanding & Planning**: `requirements` decomposição de requisitos (artefatos em `contracts/artifacts.ts`), classificação da tarefa em categoria; Product Reasoner rotula claims de produto (FACT/ASSUMPTION/UNKNOWN) com confiança via Evidence System.
 2. **Execution Graph**: o Orchestrator monta um grafo por categoria (11 templates: implementation, testing, debugging, database_design...) com `parallelBatches` (nós independentes em paralelo, nós dependentes em sequência) e hooks de execução (`produce`: agêntico / LLM / comando).
 3. **Adaptive Routing**: o resolver pontua skills por relevância + histórico de uso por categoria (scorer com decaimento temporal), nunca lista estática; agents são resolvidos pelo mesmo scoring.
-4. **Evaluation**: métricas ponderadas (correctness, completeness, security, performance, requirementCoverage) com thresholds e veredito derivado; sem métricas mensuradas → **UNKNOWN** com recomendação explícita de evidência.
+4. **Verification & Evaluation**: cada artefato é verificado contra os critérios de aceite do contrato (determinística → evidência → semântica) e só `VERIFIED` encerra a tarefa; `UNVERIFIED` é reportado como inconclusivo, nunca como sucesso. A avaliação final agrega métricas ponderadas com thresholds e veredito derivado; sem métricas mensuradas → **UNKNOWN** com recomendação explícita de evidência.
 5. **Self-Healing & Classification**: healing classificado (retry para transitório, `skill_replacement` para artefato inválido, fallback de modelo, abort por limite); cada healing é registrado com stats por agente.
 6. **Memory & Evolution**: `recordFailure` + `findRelevantFailures` (memória de falhas por categoria), learnings e traces; a memória curada `.agents/memoria/` é atualizada ao fim do ciclo.
 
@@ -213,7 +261,12 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 
 ## Model Router
 
-`src/runtime/model/router.ts` seleciona o modelo por custo/latência/contexto (claude/gpt/opus...), com fallback em cadeia e override por env (`IZANAGI_MODEL`). O token budget de cada agente é declarado no genome e respeitado pelo runtime.
+`src/runtime/model/router.ts` mantém um catálogo por provider (OpenAI, Anthropic, Google, OpenRouter, Ollama, LM Studio, custom) extensível via `.izanagi/izanagi.config.json` → `models`. Duas rotas coexistem:
+
+- `route(ctx)`: rota legada, um modelo para o run inteiro, por complexidade/custo/latência/histórico. Preservada sem mudança de assinatura.
+- `routeForRole(role, ctx)`: rota por PAPEL. Tier preferido por papel (commander→premium, specialist→balanced, worker→fast), com queda explícita para o tier adjacente quando o catálogo disponível não tem aquele tier. Pin por papel via `roles` na config ou `IZANAGI_MODEL_{COMMANDER,SPECIALIST,WORKER}` (env vence config). `escalateRole` sobe worker→specialist→commander e para no topo. `costUsd` e `estimateCostForRole` dão o custo real de catálogo (modelos self-hosted declaram 0, o que é fato, não estimativa).
+
+`izanagi models` mostra o catálogo, quais providers estão realmente configurados e qual modelo cada papel receberia agora, com custo por 10k tokens.
 
 ## Tool Registry (Tools/MCP-ready)
 

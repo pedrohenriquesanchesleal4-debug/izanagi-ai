@@ -101,6 +101,34 @@ Cada item veio de um bug real encontrado por dogfooding, não de suposição. De
 
 ---
 
+## Fase 8: Runtime de Execução de Trabalho (v3.13.0) ✅
+
+De "framework de agentes" para runtime que transforma objetivo em plano executável, delega ao modelo certo, verifica o resultado e controla o custo.
+
+- [x] **Commander (LEVEL 0)**: classificação de complexidade e domínios, escolha do modo, geração de Task Contracts com critérios de aceite derivados do schema real do artefato, estimativa de custo e degradação de modo sob teto. Determinístico: planejar não gasta token.
+- [x] **Execution Modes**: `direct` / `assisted` / `orchestrated` / `autonomous`. Antes, "converta 10 dólares para reais" montava um grafo de 3 a 9 nós com avaliação e crítica.
+- [x] **Task Contract**: objetivo, papel, insumos por referência, restrições, saída esperada, dependências, orçamento e política de verificação por tarefa.
+- [x] **Model Router por papel**: tier por papel (commander/specialist/worker), pin por config/env, escalada worker→specialist→commander na retentativa, custo real em USD.
+- [x] **Context Resolver**: contexto mínimo por tarefa. Corrigiu a lacuna de nós dependentes que nunca recebiam a saída dos predecessores.
+- [x] **Agent Capability Registry**: "quem sabe fazer isso?" lido do disco, no lugar da lista fixa dentro do orchestrator.
+- [x] **Agent-to-Agent Protocol**: mensagens tipadas por referência de artefato + crítica estruturada + correção mínima.
+- [x] **Verification Engine 2.0**: determinística, evidência e semântica. Critério semântico sem juiz fica UNVERIFIED e nunca vira aprovação.
+- [x] **Budget Controller**: custo em USD, tetos de tool/agente/retry, tempo, escada de degradação.
+- [x] **Early stopping**: tarefa opcional não roda quando as dependências já estão VERIFIED.
+- [x] **Response Cache** opt-in e **telemetria de economia** persistida no trace.
+- [x] **SDK programático**: `izanagi.run()` / `izanagi.plan()` com eventos do run.
+- [x] **CLI**: `--mode`, `--budget`, `--max-cost`, `--model`, `--local`, `--cache`, `--no-commander`; `izanagi models`; `izanagi budget`.
+- [x] **Token Benchmark**: legado vs Commander em chamadas, tokens e custo, determinístico e com ressalva explícita do que não mede.
+
+### Limitações reais desta fase (não resolvidas)
+
+- **Juiz semântico não vem ligado**: a camada semântica da verificação existe e é testada, mas nenhum juiz é configurado por default. Critérios semânticos ficam `UNVERIFIED` até alguém injetar um. Isso é intencional (melhor inconclusivo que falso positivo), mas significa que a verificação hoje é essencialmente determinística.
+- **Decomposição por LLM é opcional e sem caller em produção**: `Commander.plan({ decompose })` valida e aceita decomposições externas, mas a CLI não injeta nenhuma. O planejamento em produção é 100% template + heurística.
+- **Sub-orquestradores hierárquicos não existem**: o grafo é plano. Um nó não abre um subgrafo próprio com profundidade máxima.
+- **Policy Engine continua fora do caminho de `izanagi run`**: `produce()` chama o LLM diretamente, sem passar por `ToolRegistry`, então as garantias de trust-tier/least-privilege ainda não se aplicam à execução real (limitação herdada, documentada desde a v3.x).
+- **Token Benchmark mede plano, não execução**: os números são tetos declarados contra preço de catálogo. Consumo real por run só aparece em `izanagi budget <run-id>`.
+- **Peer review entre agentes não é automático**: o protocolo de crítica existe e é testado, mas nenhum nó do template dispara revisão cruzada por conta própria.
+
 ## Critérios de aceite das próximas fases
 
 Toda mudança no framework deve provar impacto em pelo menos uma dimensão:

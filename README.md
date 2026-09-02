@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.10.0** · Framework **meta** para engenharia de software autônoma orientada a agentes: routing → orquestração → avaliação → healing → memória, com 22 agentes especializados, catálogo de skills v2, Adaptive Runtime com execution graph e self-healing, CLI publicada no npm (`izanagi-ai`) e **topologia poliglota** (Rust · Go · Python · TypeScript) orquestrada ao lado do runtime legado.
+> **v3.13.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel → grafo → verificação por evidência → healing → memória. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
 **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -27,16 +27,62 @@ izanagi --version
 izanagi init my-project
 #    ou sem interação: izanagi init my-project --packs core,agents,coding,database
 
-# 2. Executa uma tarefa via Adaptive Runtime
-izanagi run "Criar uma landing page de um SaaS de analytics"
+# 2. Executa uma tarefa. O modo é decidido pelo Commander, não fixo.
+izanagi run "Converta 10 dólares para reais"                  # modo direct: 1 chamada, sem grafo
+izanagi run "Criar uma landing page de um SaaS de analytics"  # modo composto, com verificação
+izanagi run "..." --mode autonomous --max-cost 0.50           # teto de custo respeitado no plano
 
-# 3. Observabilidade e auditoria
+# 3. Observabilidade, custo e auditoria
 izanagi trace            # spans, healing, graph, avaliação
+izanagi budget <run-id>  # para onde foi o orçamento: tokens por fase, custo, cache, degradação
+izanagi models           # qual modelo cada papel receberia agora, e por quanto
 izanagi explain <run-id> # por que o Izanagi decidiu o que decidiu
 izanagi doctor           # integridade da instalação (--deep inclui security scan das skills)
 ```
 
-O caminho único de execução é o Adaptive Runtime: graph + adaptive routing + evaluation engine + self-healing + memory. Com `--prompt-only`, apenas compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. Nós de aprovação (`human-in-the-loop`) pausam a execução até `izanagi approve <run-id>`.
+### Execução proporcional ao problema
+
+O Commander classifica o objetivo (complexidade 1 a 5 + domínios) e escolhe um dos quatro modos. Antes, toda tarefa virava um grafo de 3 a 9 nós, inclusive "converta 10 dólares para reais".
+
+| Modo | Quando | Forma |
+|---|---|---|
+| `direct` | tarefa trivial de um domínio | 1 chamada, sem grafo, sem crítica |
+| `assisted` | tarefa simples | 1 especialista + verificação determinística |
+| `orchestrated` | problema composto | grafo com verificação, sem cauda opcional |
+| `autonomous` | problema amplo (5/5 ou 3+ domínios) | grafo + healing + replan + verificação final |
+
+`--mode` força o modo. Sem override, um teto `--max-cost` faz o plano **degradar** de modo em vez de estourar o orçamento em silêncio.
+
+### Inteligência assimétrica
+
+Cada tarefa recebe o modelo do seu papel, não o modelo do run: `commander` (tier premium) planeja e coordena, `specialist` (balanced) executa, `worker` (fast) faz extração, formatação e validação. Uma retentativa **escala** o papel em vez de repetir o modelo que já falhou. Fixe modelos por papel em `.izanagi/izanagi.config.json`:
+
+```json
+{ "roles": { "commander": { "model": "claude-opus-4-1" },
+             "specialist": { "model": "claude-sonnet-4-5" },
+             "worker": { "model": "gemini-2.0-flash" } } }
+```
+
+### Verificação por evidência
+
+Nenhuma tarefa termina porque o agente disse que terminou. Cada contrato carrega critérios de aceite derivados do schema real do artefato, e a Verification Engine devolve `VERIFIED`, `FAILED` ou `UNVERIFIED`. Critério semântico **sem juiz configurado nunca vira aprovação**: fica `UNVERIFIED`, e o run reporta isso.
+
+Com `--prompt-only`, apenas compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. Nós de aprovação (`human-in-the-loop`) pausam a execução até `izanagi approve <run-id>`.
+
+### SDK
+
+```ts
+import { izanagi } from 'izanagi-ai';
+
+// Estimar antes de gastar: nenhum token é consumido aqui.
+const plan = izanagi.plan({ objective: 'auditar a API de login' });
+console.log(plan?.mode, plan?.estimate.maxCostUsd);
+
+const run = izanagi.run({ objective: 'auditar a API de login', budget: { maxCost: 0.5 } });
+run.on('task:start', (e) => console.log(e.data));
+const result = await run;
+console.log(result.status, result.telemetry?.estimatedCostUsd, result.verification);
+```
 
 ---
 
@@ -94,7 +140,9 @@ CLI legado (`izanagi`, publicada no npm):
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Analisa a tarefa, seleciona o agente ideal e executa via Adaptive Runtime (graph + adaptive routing + evaluation + trace + self-healing + memory): caminho único, sem modo estático paralelo. `--prompt-only` só compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. |
+| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local`, `--cache`, `--no-commander` (planejamento legado por categoria), `--prompt-only`. |
+| `izanagi models [--json]` | Catálogo de modelos, providers configurados e qual modelo cada papel (commander/specialist/worker) receberia agora, com custo por 10k tokens. |
+| `izanagi budget [run-id] [--json]` | Para onde foi o orçamento daquele run: tokens por fase, custo estimado, cache local e do provider, contexto poupado, escaladas, degradação e verificação por tarefa. |
 | `izanagi chat` | REPL interativo da CLI. |
 | `izanagi dashboard [--port N]` | Dashboard local (Run Explorer, Arena, Memory). |
 | `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 22 core). |
@@ -105,7 +153,7 @@ CLI legado (`izanagi`, publicada no npm):
 | `izanagi compile <agente> [arquivo]` | Compila um System Prompt completo do agente + fundação do sistema. |
 | `izanagi workflow list \| inspect <template>` | Templates de grafo de execução por categoria (11). |
 | `izanagi eval <file.json> \| --metrics ... \| --report <run-id>` | Evaluation Engine: métricas ponderadas + veredito (PASS/.../UNKNOWN). |
-| `izanagi benchmark [compare]` | 10 benchmarks builtin + comparação de regressões entre builds. Alias histórico: `arena`. |
+| `izanagi benchmark [run\|tokens\|compare]` | 10 benchmarks builtin + comparação de regressões entre builds. `tokens` compara o plano do runtime legado com o do Commander (chamadas, tokens e custo, de forma determinística). Alias histórico: `arena`. |
 | `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
 | `izanagi memory inspect \| search <q>` | Estado da memória de execução e busca em `.agents/memoria/`. |
 | `izanagi polyglot status [--json\|--strict]` | Saúde dos núcleos poliglotas (Rust, Go, Python, packages TS): checagens de existência + probes baratos; `--strict` sai com código 1 se algo estiver ausente. |
