@@ -261,6 +261,7 @@ O webhook leva **metadado**: status, score, tokens, custo, verificação por tar
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
 | [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
+| [`docs/HANDOFF.md`](docs/HANDOFF.md) | Passagem completa da rearquitetura v3.13.0 → v3.17.0: o que mudou, onde cada coisa vive, decisões e por quê, bugs encontrados, números medidos e por onde continuar. **Comece por aqui** se pegou o repositório sem contexto. |
 | [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | Nenhum item aberto: a tabela do que foi fechado, em qual commit e como, mais as limitações que são escolha com motivo registrado. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Visão arquitetural do framework e da topologia poliglota. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Guia de contribuição: convenções, fluxo de PR e padrões do repo. |

@@ -2,6 +2,8 @@
 
 > Estado em **v3.17.0** (2026-09-02). Handoff vivo da rearquitetura do runtime. Nesta versão ele deixa de ter itens abertos: o que resta são escolhas com motivo registrado, não dívida.
 >
+> Passagem completa da rearquitetura (o que mudou, decisões, números medidos, por onde continuar): [`HANDOFF.md`](HANDOFF.md).
+>
 > Regra deste arquivo: só entra o que é gap **verificado no código**. Nada aqui é aspiracional sem lastro. Ao fechar um item, remover daqui **e** atualizar `ROADMAP.md` na mesma mudança.
 
 ---
