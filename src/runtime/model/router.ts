@@ -180,9 +180,12 @@ export class ModelRouter {
     if (model.contextWindow >= ctx.tokenBudget) score += 0.2;
     else score += 0.05;
 
-    // Custo: barato pontua mais (economia por default)
-    const costScore = 1 - (model.costPer1kInput + model.costPer1kOutput) / 0.02;
-    score += Math.max(0, Math.min(0.2, costScore)) * (ctx.risk > 0.6 ? 0.4 : 1);
+    // Custo: barato pontua mais (economia por default). A contribuição é
+    // PROPORCIONAL, não saturada: com o teto antigo (`min(0.2, ...)`), qualquer
+    // modelo abaixo de $0.016/1k empatava no máximo e um modelo self-hosted de
+    // custo zero perdia para um pago por causa de 100ms de latência.
+    const relativeCost = Math.min(1, (model.costPer1kInput + model.costPer1kOutput) / 0.02);
+    score += (1 - relativeCost) * 0.2 * (ctx.risk > 0.6 ? 0.4 : 1);
 
     // Latência
     score += Math.max(0, 1 - model.avgLatencyMs / 3000) * 0.1;

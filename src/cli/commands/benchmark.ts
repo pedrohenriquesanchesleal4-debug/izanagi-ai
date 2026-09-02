@@ -7,6 +7,7 @@ import path from 'path';
 import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
 import { BenchmarkRunner } from '../../runtime/benchmarks/runner.js';
 import type { BenchmarkReport } from '../../runtime/types.js';
+import { runTokenBenchmark, formatTokenBenchmark } from '../../runtime/benchmarks/token-benchmark.js';
 
 export async function benchmarkCommand(baseDir: string, args: string[]): Promise<void> {
   const sub = args[0]?.toLowerCase() ?? 'list';
@@ -29,6 +30,10 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
     benchmarkCompare(baseDir, prev, curr);
     return;
   }
+  if (sub === 'tokens' || sub === 'economy') {
+    benchmarkTokens(args.includes('--json'));
+    return;
+  }
   if (sub === 'report') {
     const id = args[1];
     if (!id) {
@@ -39,7 +44,7 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi benchmark <list|run|compare|report> [args]\n');
+  console.error('Usage: izanagi benchmark <list|run|tokens|compare|report> [args]\n');
   process.exit(1);
 }
 
@@ -156,6 +161,29 @@ function benchmarkCompare(baseDir: string, prevId: string, currId: string): void
     }
   } else {
     console.log('\n  \x1b[32mNenhuma regressão detectada.\x1b[0m');
+  }
+  console.log('');
+}
+
+
+/**
+ * `izanagi benchmark tokens`: economia de PLANEJAMENTO do runtime novo contra
+ * o legado. Números determinísticos (tetos declarados x preço de catálogo),
+ * não medição de execução real: para essa, use `izanagi budget <run-id>`.
+ */
+function benchmarkTokens(asJson: boolean): void {
+  const report = runTokenBenchmark();
+  if (asJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+  console.log('\n\x1b[35m=== Token Benchmark: runtime legado vs Commander ===\x1b[0m\n');
+  console.log('\x1b[90mMede o PLANO (tetos declarados x preço de catálogo), de forma determinística.');
+  console.log('Não mede qualidade de saída nem consumo real de execução: para isso, izanagi budget <run-id>.\x1b[0m\n');
+  console.log(formatTokenBenchmark(report));
+  console.log('');
+  for (const row of report.rows) {
+    console.log(`\x1b[90m• ${row.id}: ${row.hypothesis}\x1b[0m`);
   }
   console.log('');
 }
