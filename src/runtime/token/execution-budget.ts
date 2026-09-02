@@ -99,9 +99,16 @@ export class ExecutionBudget {
   private readonly agents = new Set<string>();
   private readonly applied: DegradationStep[] = [];
 
-  constructor(limits: ExecutionBudgetLimits, complexity = 3, startedAt = Date.now()) {
+  /**
+   * `phases` permite COMPARTILHAR um `PhaseTokenBudget` já existente em vez de
+   * criar outro. Sem isso, o runtime passa a ter duas contas de token para o
+   * mesmo run (a do orçamento por fase e a do controlador), e elas divergem em
+   * silêncio: exatamente o tipo de número mentiroso que este módulo existe
+   * para impedir.
+   */
+  constructor(limits: ExecutionBudgetLimits, complexity = 3, startedAt = Date.now(), phases?: PhaseTokenBudget) {
     this.limits = limits;
-    this.phases = new PhaseTokenBudget(limits.maxTokens, defaultWeights(complexity));
+    this.phases = phases ?? new PhaseTokenBudget(limits.maxTokens, defaultWeights(complexity));
     this.startedAt = startedAt;
   }
 

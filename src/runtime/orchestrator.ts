@@ -330,9 +330,8 @@ export class Orchestrator {
     // Execution com self-healing
     const phaseBudget = new PhaseTokenBudget(graph.budget.maxTokens, defaultWeights(complexity));
     if (resumed) phaseBudget.restore(resumed.budgetSpent);
-    // Budget Controller: custo/tempo/chamadas por cima do orçamento por fase.
-    // Compartilha o MESMO PhaseTokenBudget para não existirem duas contas de
-    // token divergentes no mesmo run.
+    // Budget Controller: custo/tempo/chamadas por cima do orçamento por fase,
+    // compartilhando a MESMA instância de PhaseTokenBudget (uma conta só).
     const execBudget = new ExecutionBudget(
       {
         maxTokens: graph.budget.maxTokens,
@@ -344,8 +343,19 @@ export class Orchestrator {
       },
       complexity,
       startedAt,
+      // MESMA instância de PhaseTokenBudget que `ctx.budget`: uma conta só de
+      // token por run, senão o resumo por fase do trace divergiria da
+      // telemetria de economia.
+      phaseBudget,
     );
-    if (resumed) execBudget.restore({ phaseSpent: resumed.budgetSpent });
+    if (resumed) {
+      execBudget.restore({
+        // `phaseBudget.restore` já foi aplicado acima na MESMA instância:
+        // repetir aqui contaria o gasto retomado duas vezes.
+        inputTokens: Math.round((resumed.tokensUsed ?? 0) * 0.7),
+        outputTokens: (resumed.tokensUsed ?? 0) - Math.round((resumed.tokensUsed ?? 0) * 0.7),
+      });
+    }
     this.verifier = new VerificationEngine();
     this.contextResolver = new ContextResolver();
     const ctx: ExecuteCtx = {

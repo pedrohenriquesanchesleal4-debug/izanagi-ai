@@ -4,6 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { ExecutionBudget, DEGRADATION_LADDER } from '../token/execution-budget.js';
+import { PhaseTokenBudget, defaultWeights } from '../token/budget.js';
 import { ResponseCache, cacheKey } from '../cache/response-cache.js';
 
 function tmp(prefix: string): string {
@@ -161,4 +162,19 @@ test('cache: eviction mantém o cache dentro do teto de entradas', () => {
   const files = fs.readdirSync(path.join(dir, '.izanagi', 'state', 'cache', 'responses'));
   assert.ok(files.length <= 3, `esperava no máximo 3 entradas, veio ${files.length}`);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('budget: PhaseTokenBudget compartilhado mantém UMA conta de token por run', () => {
+  const shared = new PhaseTokenBudget(10_000, defaultWeights(3));
+  const budget = new ExecutionBudget({ maxTokens: 10_000 }, 3, Date.now(), shared);
+  budget.spend({ phase: 'execution', tokens: 900 });
+  assert.equal(shared.spentIn('execution'), 900, 'o gasto precisa aparecer na instância compartilhada');
+  assert.equal(budget.telemetry().totalTokens, 900, 'e na telemetria, com o mesmo número');
+  assert.equal(shared.totalSpent(), budget.telemetry().totalTokens);
+});
+
+test('budget: sem instância compartilhada, o controlador cria a própria (compatibilidade)', () => {
+  const budget = new ExecutionBudget({ maxTokens: 1000 }, 3);
+  budget.spend({ phase: 'execution', tokens: 100 });
+  assert.equal(budget.phases.spentIn('execution'), 100);
 });
