@@ -784,6 +784,11 @@ export class Commander {
       },
       acceptance,
       ...(optional ? { optional: true } : {}),
+      // Decomposição em execução é privilégio de tarefa de raciocínio amplo em
+      // modo autônomo: é onde o planejamento tem mais chance de subestimar o
+      // escopo, e onde o orçamento comporta a divisão. Nos outros modos, o
+      // Commander já decidiu o tamanho da tarefa e essa decisão vale.
+      ...(mode === 'autonomous' && role === 'commander' ? { decomposable: true } : {}),
     };
   }
 

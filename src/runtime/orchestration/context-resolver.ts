@@ -52,11 +52,15 @@ export interface ResolvedContext {
    * entrega anterior, não os insumos do grafo outra vez.
    */
   correction?: string;
+  /** A tarefa pode pedir decomposição em vez de entregar (ver `subgraph.ts`). */
+  decomposable?: boolean;
 }
 
 export interface ResolveContextOptions {
   /** Correção estruturada (saída de `formatCorrection`) a aplicar nesta rodada. */
   correction?: string;
+  /** Habilita o protocolo de decomposição no prompt desta tarefa. */
+  decomposable?: boolean;
 }
 
 export interface ResolveOptions {
@@ -156,6 +160,7 @@ export class ContextResolver {
       upstreamChars: used,
       upstreamCharsFull: full,
       ...(opts.correction ? { correction: opts.correction } : {}),
+      ...(opts.decomposable ? { decomposable: true } : {}),
     };
   }
 
@@ -171,6 +176,9 @@ export class ContextResolver {
     }
     if (ctx.expectedOutput.kind === 'critique') {
       out += CRITIQUE_OUTPUT_CONTRACT;
+    }
+    if (ctx.decomposable) {
+      out += DECOMPOSITION_PROTOCOL;
     }
     if (ctx.upstream.length > 0) {
       const heading = ctx.correction ? 'SUA ENTREGA ANTERIOR (a corrigir)' : 'INSUMOS (saídas das tarefas anteriores)';
@@ -211,4 +219,29 @@ Regras: marque "high"/"critical" apenas o que de fato bloqueia a entrega (essas
 severidades reprovam o artefato e disparam uma retentativa dirigida). Problema
 sem "description" acionável é ruído. Nada encontrado: "status": "approved" com
 "issues": [].
+`;
+
+/**
+ * Protocolo de decomposição em execução. Só entra no prompt quando o contrato
+ * marca a tarefa como decomponível, e a instrução é deliberadamente contrária
+ * ao instinto do modelo: entregar é o caminho normal, decompor é a exceção que
+ * precisa de justificativa. Sem isso, todo agente pediria decomposição, que é
+ * mais fácil do que fazer o trabalho.
+ */
+const DECOMPOSITION_PROTOCOL = `
+## SE A TAREFA NÃO COUBER NUMA ENTREGA SÓ
+Entregue o artefato pedido. Essa é a resposta esperada.
+
+Só quando o objetivo exigir frentes independentes que este contexto não permite
+resolver de uma vez, responda APENAS com este objeto JSON, sem texto em volta:
+{
+  "reason": "por que não cabe numa entrega só",
+  "decompose": [
+    { "id": "identificador-curto", "objective": "o que esta sub-tarefa entrega",
+      "outputKind": "tipo do artefato", "dependencies": ["id-de-outra-subtarefa"] }
+  ]
+}
+Limites: no máximo 5 sub-tarefas, o orçamento de tokens desta tarefa é DIVIDIDO
+entre elas (decompor não libera orçamento novo), e sub-tarefa não pode se
+decompor de novo. Se a divisão não deixar cada parte viável, entregue.
 `;

@@ -44,6 +44,12 @@ import { runWithConcurrency, DEFAULT_MAX_CONCURRENCY } from './orchestration/con
 import type { DegradationStep } from './token/execution-budget.js';
 import { ConversationLog, type ConversationEntry } from './protocol/conversation.js';
 import { ToolRegistry, type ToolContext } from './tools/registry.js';
+import {
+  aggregateSubgraph,
+  buildSubgraph,
+  parseDecomposition,
+  DEFAULT_MAX_ORCHESTRATION_DEPTH,
+} from './orchestration/subgraph.js';
 import type { PolicyEnvironment, TrustTier } from './security/policy.js';
 import { formatCorrection, isBlocking, parseCritique, worstSeverity, type Critique } from './protocol/messages.js';
 
@@ -101,6 +107,13 @@ export interface OrchestratorOptions {
    */
   trustTierOf?: (agentId: string) => TrustTier | undefined;
   /**
+   * Profundidade máxima de sub-orquestração (default 2). Uma tarefa que
+   * descobre, executando, ser maior do que o plano previu pode abrir um
+   * subgrafo próprio — mas o teto é do runtime, não do agente: recursão
+   * decidida por quem está dentro dela não tem fim.
+   */
+  maxOrchestrationDepth?: number;
+  /**
    * Roteador por papel: devolve modelo/provider do papel de cada nó. Quando
    * ausente, todos os nós usam o modelo roteado uma vez para o run inteiro
    * (comportamento anterior).
@@ -150,6 +163,11 @@ export interface ExecuteCtx {
   conversation: ConversationLog;
   /** Críticas já interpretadas, por nó crítico (saída de `parseCritique`). */
   critiques: Map<string, Critique>;
+  /**
+   * Profundidade de sub-orquestração da tarefa em execução. 0 é o grafo do run;
+   * uma sub-tarefa aberta por decomposição roda em 1.
+   */
+  depth: number;
 }
 
 export interface OrchestrationResult {
@@ -457,6 +475,7 @@ export class Orchestrator {
       execBudget,
       conversation,
       critiques: new Map(),
+      depth: 0,
     };
 
     let finalEvaluation: EvaluationReport | undefined;
@@ -967,8 +986,16 @@ export class Orchestrator {
       // desta rodada é dirigido (entrega anterior + lista de correções), não os
       // insumos do grafo de novo.
       const correction = typeof node.metadata?.correction === 'string' ? node.metadata.correction : undefined;
+      // Decomposição em execução só é oferecida quando o contrato permite E
+      // ainda há profundidade: prometer no prompt o que o runtime vai recusar
+      // gasta a chamada para nada.
+      const maxDepth = this.opts.maxOrchestrationDepth ?? DEFAULT_MAX_ORCHESTRATION_DEPTH;
+      const canDecompose = contract?.decomposable === true && ctx.depth < maxDepth;
       ctx.nodeContext = contract && this.contextResolver
-        ? this.contextResolver.resolve(contract, this.availableArtifacts(ctx), correction ? { correction } : {})
+        ? this.contextResolver.resolve(contract, this.availableArtifacts(ctx), {
+            ...(correction ? { correction } : {}),
+            ...(canDecompose ? { decomposable: true } : {}),
+          })
         : undefined;
       // Degradação `reduce-output`: aperta o teto de saída dos nós que ainda
       // vão rodar. É o efeito real do degrau, não só o registro dele.
@@ -1032,7 +1059,7 @@ export class Orchestrator {
       // permissão declarada no contrato, política e sandbox antes de executar.
       // Tudo a jusante (validação, registro, verificação, A2A) é o mesmo
       // caminho de um nó de agente — o que muda é quem produziu.
-      const result = isToolNode(node, contract)
+      let result = isToolNode(node, contract)
         ? await this.executeTool(node, contract, ctx)
         : await this.opts.produce(node, ctx);
       if (result.tokens) {
@@ -1060,6 +1087,21 @@ export class Orchestrator {
         }
       }
       if (result.model) ctx.trace.markTool(`model:${result.model}`);
+
+      // Sub-orquestração: o nó devolveu um PEDIDO de decomposição em vez de um
+      // artefato. O subgrafo roda aqui, com o orçamento dividido do próprio nó,
+      // e o artefato do pai passa a ser a agregação do que os filhos
+      // entregaram. Só é considerado quando o contrato permite: fora disso, um
+      // JSON com "decompose" é conteúdo comum e segue para validação.
+      if (canDecompose) {
+        const request = parseDecomposition(result.content);
+        if (request) {
+          const sub = await this.runSubgraph(node, request, ctx, maxDepth);
+          if (sub) {
+            result = { ...result, content: sub.content, kind: node.outputs?.[0] ?? 'raw' };
+          }
+        }
+      }
 
       // Validação de artefato
       const validation = validateArtifact(result.kind as never, result.content);
@@ -1177,6 +1219,87 @@ export class Orchestrator {
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
     }
+  }
+
+  /**
+   * Executa o subgrafo pedido por um nó que descobriu, executando, ser maior
+   * do que o plano previu.
+   *
+   * O que faz isto ser sub-orquestração e não uma colmeia:
+   *  - o pedido é validado estruturalmente antes de virar grafo;
+   *  - o orçamento de tokens é o DO PAI, dividido — decompor não libera gasto;
+   *  - a profundidade tem teto do runtime, não do agente;
+   *  - sub-tarefa não decompõe de novo (o contrato filho nasce com
+   *    `decomposable: false`);
+   *  - falha de sub-tarefa é falha do pai, e cai no mesmo healing.
+   *
+   * Devolve `null` quando o pedido é recusado — e nesse caso o conteúdo
+   * original do nó segue para validação, que provavelmente vai reprovar: um
+   * agente que respondeu com um plano em vez do artefato não entregou.
+   */
+  private async runSubgraph(
+    parent: GraphNode,
+    request: { reason: string; tasks: Array<{ id: string; objective: string }> },
+    ctx: ExecuteCtx,
+    maxDepth: number,
+  ): Promise<{ content: string } | null> {
+    const built = buildSubgraph(parent, request as never, { depth: ctx.depth, maxDepth });
+    if (built.issues.length > 0 || built.taskIds.length === 0) {
+      ctx.trace.span(`subgraph:rejected:${parent.id}`, 'decision', {
+        reason: built.issues[0] ?? 'decomposição vazia',
+        depth: ctx.depth,
+        maxDepth,
+      })(false, built.issues[0] ?? 'decomposição vazia');
+      return null;
+    }
+
+    ctx.trace.span(`subgraph:${parent.id}`, 'decision', {
+      reason: request.reason,
+      tasks: built.taskIds,
+      depth: ctx.depth + 1,
+      tokenShare: built.graph.nodes[0]?.tokenBudget,
+    })();
+    ctx.conversation.record({
+      from: parent.agent ?? parent.id,
+      to: 'commander',
+      type: 'request',
+      taskId: parent.id,
+      summary: `decomposição em ${built.taskIds.length} sub-tarefa(s): ${request.reason}`,
+    });
+
+    // As sub-tarefas rodam com o MESMO executor, um nível abaixo. Contrato,
+    // contexto mínimo, verificação e registro de artefato valem igual: uma
+    // sub-tarefa não é um caminho paralelo com regras próprias.
+    const childCtx: ExecuteCtx = { ...ctx, depth: ctx.depth + 1 };
+    const limit = this.degradation.concurrency
+      ?? this.opts.budgetLimits?.maxConcurrency
+      ?? DEFAULT_MAX_CONCURRENCY;
+
+    for (const batch of built.graph.parallelBatches) {
+      const settled = await runWithConcurrency(
+        batch.map((id) => () => this.executeNode(built.graph, id, childCtx)),
+        limit,
+      );
+      const failed = settled.find((r) => !r.ok || (r.ok && r.value?.status === 'error'));
+      if (failed) {
+        const message = failed.ok
+          ? (failed.value as { error?: string }).error ?? 'sub-tarefa falhou'
+          : failed.error instanceof Error
+            ? failed.error.message
+            : String(failed.error);
+        ctx.trace.span(`subgraph:failed:${parent.id}`, 'decision', { message })(false, message);
+        // Falha de filho é falha do pai: quem pediu a decomposição responde
+        // pelo resultado dela.
+        throw new Error(`sub-tarefa de "${parent.id}" falhou: ${message}`);
+      }
+    }
+
+    const aggregated = aggregateSubgraph(parent.id, built.taskIds, ctx.artifacts);
+    ctx.trace.span(`subgraph:done:${parent.id}`, 'decision', {
+      produced: aggregated.produced,
+      missing: aggregated.missing,
+    })(aggregated.missing.length === 0);
+    return { content: aggregated.content };
   }
 
   /**

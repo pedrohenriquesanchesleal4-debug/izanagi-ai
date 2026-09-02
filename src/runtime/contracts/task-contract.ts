@@ -142,6 +142,13 @@ export interface TaskContract {
    * sandbox antes de executar.
    */
   tool?: { id: string; input: unknown };
+  /**
+   * A tarefa pode pedir a própria decomposição DURANTE a execução, quando
+   * descobrir que não cabe numa entrega só. Falso por padrão: decompor à
+   * vontade é a colmeia que a arquitetura proíbe, com custo exponencial.
+   * O pedido é validado, tem teto de largura e divide o orçamento do pai.
+   */
+  decomposable?: boolean;
 }
 
 /** Erros estruturais de um contrato. Vazio = contrato utilizável. */
