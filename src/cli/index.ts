@@ -24,6 +24,8 @@ import { approveCommand } from './commands/approve.js';
 import { rejectCommand } from './commands/reject.js';
 import { explainCommand } from './commands/explain.js';
 import { polyglotCommand } from './commands/polyglot.js';
+import { modelsCommand } from './commands/models.js';
+import { budgetCommand } from './commands/budget.js';
 
 /**
  * `packageDir` é SEMPRE a instalação do próprio izanagi-ai (node_modules/izanagi-ai ou
@@ -102,6 +104,14 @@ export async function runCLI(args: string[]): Promise<void> {
 
     case 'memory':
       memoryCommand(baseDir, rest);
+      break;
+
+    case 'models':
+      modelsCommand(baseDir, rest);
+      break;
+
+    case 'budget':
+      budgetCommand(baseDir, rest);
       break;
 
     case 'diagnose':
@@ -188,7 +198,9 @@ function showHelp(): void {
   \x1b[1mCommands:\x1b[0m
   \x1b[32minit [dir] [--packs a,b,c]\x1b[0m      Creates a project with selectable skill packs (.agents).
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
-  \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: graph + adaptive routing + eval + trace + healing.
+  \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: Commander + graph + roteamento por papel + verificação + trace + healing.
+                          (--mode direct|assisted|orchestrated|autonomous força o modo de execução)
+                          (--budget N · --max-cost N · --model <id> · --local · --cache · --no-commander)
                           (--prompt-only só compila izanagi-prompt.md, sem executar)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
@@ -201,6 +213,8 @@ function showHelp(): void {
   \x1b[32meval [file|--metrics|--report]\x1b[0m Avalia artefatos/resultados (Evaluation Engine).
   \x1b[32mbenchmark list|run|compare\x1b[0m     Suíte de benchmarks + regression comparison.
   \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
+  \x1b[32mmodels [--json]\x1b[0m                Catálogo de modelos + roteamento por papel (commander/specialist/worker).
+  \x1b[32mbudget [run-id] [--json]\x1b[0m       Para onde foi o orçamento: tokens por fase, custo, cache, degradação.
   \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
   \x1b[32mpolyglot status [--json|--strict]\x1b[0m Saúde dos núcleos poliglotas (Rust, Go, Python, packages TS) — diagnóstico, exit 0; --strict sai 1 se algo ausente.
   \x1b[32mdashboard [--port N]\x1b[0m           Sobe o Dashboard local (Run Explorer, Arena, Memory) em http://localhost.
@@ -223,6 +237,11 @@ function showHelp(): void {
   izanagi init my-project --packs core,agents,coding,database
   izanagi run "Refactor user authentication to JWT"
   izanagi run "Create a login page" --prompt-only
+  izanagi run "Converta 10 dólares para reais"                  (modo direct: 1 chamada, sem grafo)
+  izanagi run "..." --mode autonomous --max-cost 0.50
+  izanagi run "..." --local --cache
+  izanagi models
+  izanagi budget
   izanagi run architect --task "Design a microservices architecture"
   izanagi run my-agent --task "Create a login page"
   izanagi agent inspect architect

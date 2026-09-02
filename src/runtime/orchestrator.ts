@@ -35,6 +35,11 @@ import { CheckpointStore, checkpointProgress, type CheckpointData } from './reco
 import { ArtifactRegistry } from './artifacts/registry.js';
 import { DecisionJournal } from './memory/decisions.js';
 import { ApprovalStore } from './recovery/approvals.js';
+import type { CommanderPlan } from './orchestration/commander.js';
+import { contractOf, type AgentRole, type ExecutionMode, type TaskContract } from './contracts/task-contract.js';
+import { ContextResolver, type AvailableArtifact, type ResolvedContext } from './orchestration/context-resolver.js';
+import { ExecutionBudget, type ExecutionBudgetLimits } from './token/execution-budget.js';
+import { VerificationEngine, type SemanticJudge, type VerificationResult } from './verification/engine.js';
 
 export interface OrchestratorOptions {
   baseDir: string;
@@ -59,6 +64,28 @@ export interface OrchestratorOptions {
   verbose?: boolean;
   /** Observador em tempo real do Event System (run.started, healing.*, quality_gate.*, ...) — ver observability/events.ts. */
   onEvent?: (event: IzanagiEvent) => void;
+  /**
+   * Plano do Commander (modo + grafo + contratos + estimativa). Quando
+   * presente, o Orchestrator executa ESTE grafo: nada de classificar e
+   * planejar de novo. Ausente = caminho legado (Planner por categoria),
+   * preservado byte-a-byte para quem já usa o Orchestrator direto.
+   */
+  plan?: CommanderPlan;
+  /** Tetos de execução (custo, tempo, tool calls, agentes, retries). */
+  budgetLimits?: Partial<ExecutionBudgetLimits>;
+  /** Juiz semântico opcional da Verification Engine. Sem juiz, critério semântico fica UNKNOWN. */
+  judge?: SemanticJudge;
+  /**
+   * Roteador por papel: devolve modelo/provider do papel de cada nó. Quando
+   * ausente, todos os nós usam o modelo roteado uma vez para o run inteiro
+   * (comportamento anterior).
+   */
+  routeRole?: (role: AgentRole, node: GraphNode) => { model: string; provider: string } | undefined;
+  /**
+   * Custo em USD de uma chamada. Sem esta função o runtime continua contando
+   * tokens, mas o custo fica em 0 (não inventa preço de modelo desconhecido).
+   */
+  costOf?: (modelId: string, inputTokens: number, outputTokens: number) => number;
 }
 
 export interface ExecuteCtx {
@@ -79,6 +106,17 @@ export interface ExecuteCtx {
   artifactRegistry: ArtifactRegistry;
   /** Human-in-the-loop: nós `kind: 'approval'` consultam este store. */
   approvals: ApprovalStore;
+  /**
+   * Contrato do nó em execução (Commander). Ausente no caminho legado.
+   * O producer usa para saber objetivo, restrições e critérios de aceite.
+   */
+  contract?: TaskContract;
+  /** Contexto mínimo já resolvido para o nó: objetivo + insumos resumidos. */
+  nodeContext?: ResolvedContext;
+  /** Papel do nó em execução (commander/specialist/worker). */
+  nodeRole?: AgentRole;
+  /** Budget Controller com custo, cache e escada de degradação. */
+  execBudget?: ExecutionBudget;
 }
 
 export interface OrchestrationResult {
@@ -95,6 +133,12 @@ export interface OrchestrationResult {
    * continua de onde parou assim que aprovado/rejeitado (via resumeRunId).
    */
   pendingApproval?: { nodeId: string; context?: string };
+  /** Modo executado (presente quando veio de um plano do Commander). */
+  mode?: ExecutionMode;
+  /** Telemetria do Token Economy Engine. */
+  telemetry?: ReturnType<ExecutionBudget['telemetry']>;
+  /** Verificação por nó (Verification Engine 2.0). */
+  verification?: Array<{ nodeId: string; result: VerificationResult }>;
 }
 
 export class Orchestrator {
@@ -108,6 +152,12 @@ export class Orchestrator {
   private decisionJournal?: DecisionJournal;
   private approvalStore?: ApprovalStore;
   private tokensUsed = 0;
+  private verifier?: VerificationEngine;
+  private contextResolver?: ContextResolver;
+  /** Verificação por nó (Verification Engine 2.0), preenchida durante a execução. */
+  private readonly verifications = new Map<string, VerificationResult>();
+  /** Nós pulados por early stopping (objetivo já comprovado). */
+  private readonly earlyStopped: string[] = [];
 
   setStore(store: TraceStore): void {
     this.store = store;
@@ -214,6 +264,22 @@ export class Orchestrator {
       if (this.opts.verbose) {
         console.log(`  \x1b[36m↻\x1b[0m Retomando run ${resumed.runId}: ${progress.done}/${progress.total} nós concluídos, pendentes: ${progress.pendingNodeIds.join(', ') || 'nenhum'}`);
       }
+    } else if (this.opts.plan) {
+      // Commander já decidiu modo, grafo e contratos. Replanejar aqui seria
+      // desfazer a decisão e pagar de novo pelo planejamento.
+      graph = this.opts.plan.graph;
+      trace.span(`commander:${this.opts.plan.mode}`, 'decision', {
+        mode: this.opts.plan.mode,
+        reason: this.opts.plan.modeReason,
+        nodes: graph.nodes.length,
+        estimate: this.opts.plan.estimate,
+      })();
+      for (const decision of this.opts.plan.decisions) {
+        decisions.record({ kind: 'planning', chosen: this.opts.plan.mode, alternatives: [], reason: decision, runId: trace.runId });
+      }
+      if (this.opts.verbose) {
+        console.log(`  \x1b[35m▸\x1b[0m Commander: modo ${this.opts.plan.mode} (${this.opts.plan.modeReason}) — ${graph.nodes.length} tarefa(s)`);
+      }
     } else {
       const closePlan = trace.span('planner', 'decision', { category: this.opts.category, complexity });
       try {
@@ -264,6 +330,24 @@ export class Orchestrator {
     // Execution com self-healing
     const phaseBudget = new PhaseTokenBudget(graph.budget.maxTokens, defaultWeights(complexity));
     if (resumed) phaseBudget.restore(resumed.budgetSpent);
+    // Budget Controller: custo/tempo/chamadas por cima do orçamento por fase.
+    // Compartilha o MESMO PhaseTokenBudget para não existirem duas contas de
+    // token divergentes no mesmo run.
+    const execBudget = new ExecutionBudget(
+      {
+        maxTokens: graph.budget.maxTokens,
+        maxTimeMs: this.opts.budgetLimits?.maxTimeMs ?? graph.budget.maxTimeMs,
+        ...(this.opts.budgetLimits?.maxCostUsd !== undefined ? { maxCostUsd: this.opts.budgetLimits.maxCostUsd } : {}),
+        ...(this.opts.budgetLimits?.maxAgents !== undefined ? { maxAgents: this.opts.budgetLimits.maxAgents } : {}),
+        ...(this.opts.budgetLimits?.maxRetries !== undefined ? { maxRetries: this.opts.budgetLimits.maxRetries } : {}),
+        ...(this.opts.budgetLimits?.maxToolCalls !== undefined ? { maxToolCalls: this.opts.budgetLimits.maxToolCalls } : {}),
+      },
+      complexity,
+      startedAt,
+    );
+    if (resumed) execBudget.restore({ phaseSpent: resumed.budgetSpent });
+    this.verifier = new VerificationEngine();
+    this.contextResolver = new ContextResolver();
     const ctx: ExecuteCtx = {
       runId: trace.runId,
       task: this.opts.task,
@@ -280,6 +364,7 @@ export class Orchestrator {
       budget: phaseBudget,
       artifactRegistry,
       approvals,
+      execBudget,
     };
 
     let finalEvaluation: EvaluationReport | undefined;
@@ -418,6 +503,15 @@ export class Orchestrator {
     const testsFailed = testResults ? (testResults.content as { failed?: number }).failed ?? 0 : 0;
     const scoredArtifacts = Array.from(ctx.artifacts.values()).filter((a) => a.valid);
 
+    // Quando há Verification Engine em jogo, a correctness deixa de ser um
+    // proxy do validador de schema e passa a refletir a fração de critérios de
+    // aceite realmente comprovados.
+    const verifiedScores = Array.from(this.verifications.values());
+    const verifiedCorrectness = verifiedScores.length > 0
+      ? verifiedScores.reduce((acc, v) => acc + v.score, 0) / verifiedScores.length
+      : undefined;
+    const unverified = verifiedScores.filter((v) => v.status !== 'VERIFIED');
+
     finalEvaluation = evaluator.buildReport({
       taskId: trace.runId,
       task: this.opts.task,
@@ -425,14 +519,17 @@ export class Orchestrator {
       metrics: {
         // correctness derivada do melhor artefato validado (score do validador),
         // não de métrica inventada
-        correctness: scoredArtifacts.length > 0
+        correctness: verifiedCorrectness ?? (scoredArtifacts.length > 0
           ? Math.max(...scoredArtifacts.map((a) => a.score))
-          : ctx.artifacts.has('implementation') ? 0.5 : 0.3,
+          : ctx.artifacts.has('implementation') ? 0.5 : 0.3),
         artifactValidity: artifacts.length > 0 ? artifacts.filter((a) => a.valid).length / artifacts.length : 0.3,
         security: this.opts.category === 'security_audit' ? 0.9 : undefined,
       },
       tests: { passed: testsFailed > 0 ? 0 : 1, failed: testsFailed },
-      regressions: testsFailed > 0 ? [`${testsFailed} teste(s) falhando (test-results)`] : [],
+      regressions: [
+        ...(testsFailed > 0 ? [`${testsFailed} teste(s) falhando (test-results)`] : []),
+        ...unverified.map((v) => `verificação não conclusiva: ${v.reason}`),
+      ],
       recommendations: ctx.artifacts.has('critique') ? ['crítica adversarial consumida; revisar achados no artefato critique'] : [],
     });
     closeEval();
@@ -464,7 +561,15 @@ export class Orchestrator {
     // Run chegou a um veredito terminal (PASS/FAIL/...) — não há mais o que retomar.
     checkpoints.delete(trace.runId);
 
-    // Trace persistido
+    // Trace persistido (com telemetria de economia e verificação por nó)
+    const telemetry = execBudget.telemetry();
+    const verificationSummary = Array.from(this.verifications.entries()).map(([nodeId, r]) => ({
+      nodeId,
+      status: r.status,
+      score: r.score,
+      reason: r.reason,
+      unmet: r.unmet,
+    }));
     const { trace: finalTrace, file } = trace.finishAndSave({
       graph: workingGraph,
       evaluation: finalEvaluation,
@@ -472,12 +577,19 @@ export class Orchestrator {
       artifacts: artifacts.map((a) => ({ ...a, name: a.name })),
       model: modelId,
       budget: phaseBudget.summary(),
+      ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
+      telemetry: telemetry as unknown as Record<string, unknown>,
+      ...(verificationSummary.length > 0 ? { verification: verificationSummary } : {}),
     });
 
     if (this.opts.verbose) {
       console.log(`\n  \x1b[90mTrace salvo:\x1b[0m ${path.relative(this.opts.baseDir, file)}`);
       const usage = phaseBudget.usage();
       console.log(`  \x1b[90mToken budget por fase:\x1b[0m ${usage.map((u: { phase: string; spent: number; allocated: number; exhausted: boolean }) => `${u.phase}=${u.spent}/${u.allocated}${u.exhausted ? ' (max)' : ''}`).join('  ')}`);
+      console.log(`  \x1b[90mToken economy:\x1b[0m ${ExecutionBudget.formatTelemetry(telemetry)}`);
+      if (this.earlyStopped.length > 0) {
+        console.log(`  \x1b[90mEarly stopping:\x1b[0m ${this.earlyStopped.length} tarefa(s) opcional(is) dispensada(s): ${this.earlyStopped.join(', ')}`);
+      }
       if (finalEvaluation) {
         console.log(`  \x1b[90mAvaliação:\x1b[0m ${finalEvaluation.verdict} (score ${finalEvaluation.score.toFixed(2)})`);
       }
@@ -491,6 +603,11 @@ export class Orchestrator {
       healing,
       status: finalEvaluation.verdict,
       score: finalEvaluation.score,
+      ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
+      telemetry,
+      ...(this.verifications.size > 0
+        ? { verification: Array.from(this.verifications.entries()).map(([nodeId, result]) => ({ nodeId, result })) }
+        : {}),
     };
   }
 
@@ -525,11 +642,30 @@ export class Orchestrator {
     ctx: ExecuteCtx,
   ): Promise<{ nodeId: string; agent?: string; skill?: string; error: string; blockedApproval?: boolean; context?: string } | null> {
     for (const batch of graph.parallelBatches) {
-      batch.forEach((nodeId) => ctx.trace.events.emit('node.started', { nodeId }));
+      // Early stopping: um nó opcional (crítica extra, revisão redundante) não
+      // roda quando tudo que era obrigatório até aqui já está VERIFIED. Rodar
+      // "porque o agente está disponível" é exatamente o desperdício que a
+      // arquitetura proíbe.
+      const runnable = batch.filter((nodeId) => {
+        if (!this.shouldSkipOptional(graph, nodeId)) return true;
+        const node = graph.nodes.find((n) => n.id === nodeId);
+        if (node) {
+          node.status = 'skipped';
+          node.endedAt = new Date().toISOString();
+          node.metadata = { ...node.metadata, skippedReason: 'early-stopping: objetivo já verificado' };
+        }
+        this.earlyStopped.push(nodeId);
+        ctx.trace.span(`early-stop:${nodeId}`, 'decision', { reason: 'objetivo já verificado, tarefa opcional dispensada' })();
+        return false;
+      });
+      if (runnable.length === 0) continue;
+      ctx.execBudget?.recordParallelBatch(runnable.length);
+      const batchNodes = runnable;
+      batchNodes.forEach((nodeId) => ctx.trace.events.emit('node.started', { nodeId }));
       const results = await Promise.all(
-        batch.map((nodeId) => this.executeNode(graph, nodeId, ctx)),
+        batchNodes.map((nodeId) => this.executeNode(graph, nodeId, ctx)),
       );
-      results.forEach((r, i) => ctx.trace.events.emit('node.completed', { nodeId: batch[i], status: r?.status ?? 'ok' }));
+      results.forEach((r, i) => ctx.trace.events.emit('node.completed', { nodeId: batchNodes[i], status: r?.status ?? 'ok' }));
       const blocked = results.find((r) => r && r.status === 'blocked_approval') as
         | { nodeId: string; error?: string; status: string; context?: string }
         | undefined;
@@ -617,17 +753,67 @@ export class Orchestrator {
         return { status: 'error', nodeId: node.id, error: node.error, skill: node.validator };
       }
 
+      // Contrato + contexto mínimo + papel: tudo que o producer precisa saber
+      // sobre ESTA tarefa, sem receber o run inteiro.
+      const contract = contractOf(node);
+      const role: AgentRole = contract?.role ?? 'specialist';
+      ctx.contract = contract;
+      ctx.nodeRole = role;
+      ctx.nodeContext = contract && this.contextResolver
+        ? this.contextResolver.resolve(contract, this.availableArtifacts(ctx))
+        : undefined;
+      if (ctx.nodeContext) {
+        ctx.execBudget?.recordContextSaving(Math.max(0, ctx.nodeContext.upstreamCharsFull - ctx.nodeContext.upstreamChars));
+      }
+
+      // Roteamento por papel: worker não paga preço de commander. Numa
+      // retentativa, o papel ESCALA (worker vira specialist, specialist vira
+      // commander) em vez de repetir o mesmo modelo que já falhou.
+      if (this.opts.routeRole) {
+        let effectiveRole = role;
+        const attempts = node.attempts ?? 1;
+        for (let i = 1; i < attempts; i++) {
+          const next = ModelRouter.escalateRole(effectiveRole);
+          if (!next) break;
+          effectiveRole = next;
+        }
+        if (effectiveRole !== role) {
+          ctx.execBudget?.recordEscalation();
+          ctx.trace.span(`escalation:${node.id}`, 'decision', { from: role, to: effectiveRole, attempt: node.attempts })();
+        }
+        const routed = this.opts.routeRole(effectiveRole, node);
+        if (routed) {
+          ctx.model = routed.model;
+          ctx.provider = routed.provider;
+          ctx.nodeRole = effectiveRole;
+          node.model = routed.model;
+        }
+      }
+      if (node.agent) ctx.execBudget?.recordAgent(node.agent);
+
       const result = await this.opts.produce(node, ctx);
       if (result.tokens) {
         ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
         this.tokensUsed += result.tokens;
         // Retry consome a fase recovery, não execution
         const phase = node.attempts && node.attempts > 1 ? 'recovery' : 'execution';
-        if (!ctx.budget.spend(phase, result.tokens)) {
+        // Budget Controller é a fonte única: ele gasta no MESMO PhaseTokenBudget
+        // e ainda aplica os tetos de custo e tempo.
+        const modelId = result.model ?? ctx.model;
+        const inputTokens = Math.round(result.tokens * 0.7);
+        const costUsd = this.opts.costOf ? this.opts.costOf(modelId, inputTokens, result.tokens - inputTokens) : 0;
+        const spend = ctx.execBudget
+          ? ctx.execBudget.spend({ phase, tokens: result.tokens, costUsd, model: modelId })
+          : { ok: ctx.budget.spend(phase, result.tokens), reason: `orçamento de tokens da fase ${phase} excedido` };
+        if (!spend.ok) {
           node.status = 'failed';
-          node.error = `orçamento de tokens da fase ${phase} excedido`;
+          node.error = spend.reason ?? `orçamento de tokens da fase ${phase} excedido`;
           closeSpan(false, node.error);
           return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+        }
+        const degradation = ctx.execBudget?.nextDegradation();
+        if (degradation) {
+          ctx.trace.span(`budget:degradation:${degradation}`, 'decision', { pressure: ctx.execBudget?.pressure() })();
         }
       }
       if (result.model) ctx.trace.markTool(`model:${result.model}`);
@@ -650,11 +836,40 @@ export class Orchestrator {
         dependencies: (node.dependencies ?? []).map((depId) => `${ctx.runId}:${depId}`),
       });
 
-      if (!validation.valid) {
+      // Sem contrato (caminho legado), a validação de schema é o portão. Com
+      // contrato, quem decide é a Verification Engine logo abaixo, que já
+      // executa `artifact-valid` como um dos critérios: manter os dois portões
+      // faria a mesma reprovação acontecer duas vezes e esconderia o relatório
+      // de verificação justamente no caso em que ele é mais útil.
+      if (!validation.valid && !contract) {
         node.status = 'failed';
         node.error = `validação falhou: ${validation.issues.slice(0, 3).join('; ')}`;
         closeSpan(false, node.error);
         return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+      }
+
+      // Verification Engine 2.0: "o agente entregou" não basta. Só existe
+      // conclusão quando os critérios de aceite do contrato são comprovados.
+      if (contract && this.verifier) {
+        const verification = this.verifier.verify({
+          contract,
+          content: result.content,
+          artifacts: new Map(Array.from(ctx.artifacts.entries()).map(([id, a]) => [id, { kind: a.kind, content: a.content, valid: a.valid }])),
+          baseDir: this.opts.baseDir,
+          ...(this.opts.judge ? { judge: this.opts.judge } : {}),
+        });
+        this.verifications.set(node.id, verification);
+        ctx.trace.span(`verification:${node.id}`, 'evaluation', {
+          status: verification.status,
+          score: verification.score,
+          reason: verification.reason,
+        })(verification.status !== 'FAILED', verification.status === 'FAILED' ? verification.reason : undefined);
+        if (verification.status === 'FAILED') {
+          node.status = 'failed';
+          node.error = `verificação falhou: ${verification.unmet.slice(0, 3).join('; ')}`;
+          closeSpan(false, node.error);
+          return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+        }
       }
 
       // Regression Protection: uma correção de healing não pode piorar o artifact
@@ -678,6 +893,40 @@ export class Orchestrator {
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
     }
+  }
+
+  /** Artefatos disponíveis para o Context Resolver, já com a referência do registry. */
+  private availableArtifacts(ctx: ExecuteCtx): Map<string, AvailableArtifact> {
+    const out = new Map<string, AvailableArtifact>();
+    for (const [nodeId, a] of ctx.artifacts.entries()) {
+      out.set(nodeId, { nodeId, kind: a.kind, content: a.content, valid: a.valid, ref: `${ctx.runId}:${nodeId}` });
+    }
+    return out;
+  }
+
+  /**
+   * Early stopping: pula um nó OPCIONAL quando aquilo que ele revisaria já
+   * está comprovado. A decisão é LOCAL (olha as dependências do próprio nó),
+   * não global: um nó obrigatório mais adiante no grafo, ainda pendente, não
+   * é motivo para rodar uma crítica sobre algo que já passou na verificação.
+   *
+   * Nó sem contrato nunca é opcional, então o caminho legado executa tudo.
+   */
+  private shouldSkipOptional(graph: ExecutionGraph, nodeId: string): boolean {
+    const node = graph.nodes.find((n) => n.id === nodeId);
+    if (!node) return false;
+    const contract = contractOf(node);
+    if (!contract?.optional) return false;
+
+    const deps = (node.dependencies ?? [])
+      .map((id) => graph.nodes.find((n) => n.id === id))
+      .filter((n): n is GraphNode => Boolean(n));
+    if (deps.length === 0) return false;
+    // Alguma dependência falhou ou não rodou: a revisão ainda pode ser útil.
+    if (!deps.every((d) => d.status === 'succeeded' || d.status === 'skipped')) return false;
+    const succeeded = deps.filter((d) => d.status === 'succeeded');
+    if (succeeded.length === 0) return false;
+    return succeeded.every((d) => this.verifications.get(d.id)?.status === 'VERIFIED');
   }
 }
 

@@ -9,6 +9,11 @@ import { DYNAMIC_MARKER, estimateStaticTokens, MIN_CACHEABLE_TOKENS } from '../.
 import type { GraphNode } from '../../runtime/types.js';
 import { layeredSkillSummary, findV2Counterpart } from '../../runtime/text/frontmatter.js';
 import { printTrace } from './trace.js';
+import { ContextResolver } from '../../runtime/orchestration/context-resolver.js';
+import { ResponseCache } from '../../runtime/cache/response-cache.js';
+import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
+import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, LOCAL_PROVIDERS } from '../../runtime/execute.js';
+import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
 interface RunArgs {
   agentId?: string;
@@ -18,6 +23,20 @@ interface RunArgs {
   verbose: boolean;
   /** Desliga a fundação estática (RULES.md) e o marker CAPC — prompt idêntico ao pré-wave. */
   noCacheFoundation: boolean;
+  /** Força o modo de execução (`--mode direct|assisted|orchestrated|autonomous`). */
+  mode?: ExecutionMode;
+  /** Teto global de tokens do run (`--budget N`). */
+  budget?: number;
+  /** Teto global de custo em USD (`--max-cost N`). */
+  maxCost?: number;
+  /** Fixa o modelo de todos os papéis (`--model <id>`). */
+  model?: string;
+  /** Restringe a execução a providers locais (`--local`). */
+  local: boolean;
+  /** Liga o cache local de respostas (`--cache`). */
+  cache: boolean;
+  /** Desliga o Commander e volta ao planejamento por categoria (`--no-commander`). */
+  noCommander: boolean;
 }
 
 export function parseRunArgs(args: string[]): RunArgs {
@@ -26,7 +45,21 @@ export function parseRunArgs(args: string[]): RunArgs {
   let promptOnly = false;
   let verbose = false;
   let noCacheFoundation = false;
+  let mode: ExecutionMode | undefined;
+  let budget: number | undefined;
+  let maxCost: number | undefined;
+  let model: string | undefined;
+  let local = false;
+  let cache = false;
+  let noCommander = false;
   const positionals: string[] = [];
+
+  /** Aceita tanto `--flag valor` quanto `--flag=valor`. */
+  const readValue = (arg: string, prefix: string, next: string | undefined): { value?: string; consumed: boolean } => {
+    if (arg === prefix) return { value: next, consumed: true };
+    if (arg.startsWith(`${prefix}=`)) return { value: arg.slice(prefix.length + 1), consumed: false };
+    return { consumed: false };
+  };
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -45,6 +78,32 @@ export function parseRunArgs(args: string[]): RunArgs {
       // unificação dos caminhos de 'run' — a flag é aceita e ignorada (no-op).
     } else if (arg === '--verbose' || arg === '-v') {
       verbose = true;
+    } else if (arg === '--mode' || arg.startsWith('--mode=')) {
+      const read = readValue(arg, '--mode', args[i + 1]);
+      if (read.consumed) i++;
+      const value = (read.value ?? '').toLowerCase();
+      if (isExecutionMode(value)) mode = value;
+      else if (value) console.error(`\x1b[33mAviso:\x1b[0m modo desconhecido "${value}" — ignorado (use direct|assisted|orchestrated|autonomous).`);
+    } else if (arg === '--budget' || arg.startsWith('--budget=')) {
+      const read = readValue(arg, '--budget', args[i + 1]);
+      if (read.consumed) i++;
+      const n = Number(read.value);
+      if (Number.isFinite(n) && n > 0) budget = Math.floor(n);
+    } else if (arg === '--max-cost' || arg.startsWith('--max-cost=')) {
+      const read = readValue(arg, '--max-cost', args[i + 1]);
+      if (read.consumed) i++;
+      const n = Number(read.value);
+      if (Number.isFinite(n) && n >= 0) maxCost = n;
+    } else if (arg === '--model' || arg.startsWith('--model=')) {
+      const read = readValue(arg, '--model', args[i + 1]);
+      if (read.consumed) i++;
+      if (read.value) model = read.value;
+    } else if (arg === '--local') {
+      local = true;
+    } else if (arg === '--cache') {
+      cache = true;
+    } else if (arg === '--no-commander') {
+      noCommander = true;
     } else if (!arg.startsWith('-')) {
       positionals.push(arg);
     }
@@ -61,7 +120,20 @@ export function parseRunArgs(args: string[]): RunArgs {
     agentId = positionals[0];
   }
 
-  return { agentId, task, promptOnly, verbose, noCacheFoundation };
+  return {
+    agentId,
+    task,
+    promptOnly,
+    verbose,
+    noCacheFoundation,
+    ...(mode ? { mode } : {}),
+    ...(budget !== undefined ? { budget } : {}),
+    ...(maxCost !== undefined ? { maxCost } : {}),
+    ...(model ? { model } : {}),
+    local,
+    cache,
+    noCommander,
+  };
 }
 
 interface TaskClassification {
@@ -162,7 +234,8 @@ function agentLabel(agent: any): string {
 }
 
 export async function runCommand(baseDir: string, args: string[]): Promise<void> {
-  const { agentId, task, promptOnly, verbose, noCacheFoundation } = parseRunArgs(args);
+  const parsed = parseRunArgs(args);
+  const { agentId, task, promptOnly, verbose, noCacheFoundation } = parsed;
 
   if (!task) {
     console.error('\x1b[31mError:\x1b[0m Please provide a task description.');
@@ -342,6 +415,14 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     agent,
     verbose,
     noCacheFoundation,
+    ...(parsed.mode ? { mode: parsed.mode } : {}),
+    ...(parsed.budget !== undefined ? { budget: parsed.budget } : {}),
+    ...(parsed.maxCost !== undefined ? { maxCost: parsed.maxCost } : {}),
+    ...(parsed.model ? { model: parsed.model } : {}),
+    local: parsed.local,
+    cache: parsed.cache,
+    noCommander: parsed.noCommander,
+    explicitAgent: Boolean(agentId),
   });
 }
 
@@ -377,12 +458,33 @@ export async function runRuntime(
     noCacheFoundation?: boolean;
     /** Client LLM injetável (testes). Default: LLMClient real lido do ambiente. */
     client?: RuntimeLLMClient;
+    /** Modo forçado (`--mode`). Ausente = Commander decide pela complexidade. */
+    mode?: ExecutionMode;
+    /** Teto global de tokens (`--budget`). */
+    budget?: number;
+    /** Teto global de custo em USD (`--max-cost`). */
+    maxCost?: number;
+    /** Modelo fixo para todos os papéis (`--model`). */
+    model?: string;
+    /** Só providers locais (`--local`). */
+    local?: boolean;
+    /** Cache local de respostas (`--cache`). */
+    cache?: boolean;
+    /** Volta ao planejamento por categoria (`--no-commander`). */
+    noCommander?: boolean;
+    /** O usuário nomeou o agente explicitamente (`izanagi run architect ...`). */
+    explicitAgent?: boolean;
   },
 ): Promise<void> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
 
   const client: RuntimeLLMClient = opts.client ?? new LLMClient();
-  const llmProviders = client.configuredProviders();
+  const allProviders = client.configuredProviders();
+  const llmProviders = opts.local ? allProviders.filter((p) => LOCAL_PROVIDERS.includes(p)) : allProviders;
+  if (opts.local && allProviders.length > 0 && llmProviders.length === 0) {
+    console.log('  \x1b[33m⚠ --local:\x1b[0m nenhum provider local configurado (IZANAGI_OLLAMA_ENABLED=1 / IZANAGI_LMSTUDIO_ENABLED=1 / IZANAGI_CUSTOM_BASE_URL).');
+    console.log('    Providers remotos configurados foram ignorados de propósito — execução seguirá em modo headless.\n');
+  }
   if (llmProviders.length === 0) {
     console.log('  \x1b[33m⚠ Modo headless:\x1b[0m nenhuma API key encontrada (IZANAGI_OPENAI_API_KEY /');
     console.log('    IZANAGI_ANTHROPIC_API_KEY / IZANAGI_GOOGLE_API_KEY / IZANAGI_OPENROUTER_API_KEY).');
@@ -395,6 +497,62 @@ export async function runRuntime(
   // Telemetria de tokens/cache (só faz sentido com provider real — headless não
   // consome tokens de verdade e nunca imprime esta linha).
   const tokenStats = { input: 0, cached: 0, nodes: 0 };
+
+  /* ---------- Commander + roteamento por papel (wiring compartilhado com o SDK) ---------- */
+
+  const planning = buildExecutionPlan(baseDir, {
+    objective: opts.task,
+    ...(opts.mode ? { mode: opts.mode } : {}),
+    ...(opts.agentId ? { agent: opts.agentId } : {}),
+    ...(opts.explicitAgent ? { explicitAgent: true } : {}),
+    skillChain: opts.skillChain,
+    ...(opts.budget !== undefined ? { maxTokens: opts.budget } : {}),
+    ...(opts.maxCost !== undefined ? { maxCostUsd: opts.maxCost } : {}),
+    ...(opts.model ? { model: opts.model } : {}),
+    availableProviders: llmProviders,
+    // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
+    noCommander: Boolean(opts.noCommander || opts.resumeRunId),
+  });
+  const plan = planning.plan;
+
+  if (plan) {
+    const estimate = plan.estimate;
+    console.log(`  \x1b[35m▸ Commander:\x1b[0m modo \x1b[1m${plan.mode}\x1b[0m — ${plan.modeReason}`);
+    console.log(`    \x1b[90mcomplexidade ${plan.classification.complexity}/5 · domínios: ${plan.classification.domains.join(', ') || 'nenhum'} · ${estimate.nodes} tarefa(s)\x1b[0m`);
+    console.log(`    \x1b[90mteto: ${estimate.maxTokens} tokens${estimate.maxCostUsd !== undefined ? ` · $${estimate.maxCostUsd.toFixed(4)}` : ''} (commander ${estimate.byRole.commander.tasks} · specialist ${estimate.byRole.specialist.tasks} · worker ${estimate.byRole.worker.tasks})\x1b[0m`);
+    if (plan.issues.length > 0) {
+      console.log(`    \x1b[33m⚠ contratos com pendência:\x1b[0m ${plan.issues.slice(0, 3).join('; ')}`);
+    }
+    console.log('');
+  }
+
+  const cache = new ResponseCache({ baseDir, enabled: Boolean(opts.cache) || ResponseCache.enabledFromEnv() });
+  const contextResolver = new ContextResolver();
+
+  const llmProducer = createLLMProducer({
+    objective: opts.task,
+    client: client as unknown as Parameters<typeof createLLMProducer>[0]['client'],
+    cache,
+    contextResolver,
+    buildSystemPrompt: (node, _ctx, minimalContext) =>
+      buildNodePrompt(node, { task: opts.task, agent: opts.agent, skillChain: opts.skillChain }, baseDir, {
+        noCacheFoundation: opts.noCacheFoundation,
+        ...(minimalContext ? { context: minimalContext } : {}),
+      }),
+    onNode: (info) => {
+      if (info.fromCache) {
+        if (opts.verbose) console.log(`  \x1b[90m[cache]\x1b[0m nó "${info.nodeId}": resposta reaproveitada (0 token gasto)`);
+        return;
+      }
+      tokenStats.input += info.tokens;
+      tokenStats.cached += info.cachedTokens;
+      tokenStats.nodes++;
+      if (opts.verbose) {
+        console.log(`  \x1b[90m[tokens]\x1b[0m nó "${info.nodeId}" (${info.role ?? 'specialist'}/${info.model}): entrada ${info.tokens} · cache-hit ${info.cachedTokens}`);
+      }
+    },
+  });
+  const headlessProducer = createHeadlessProducer(opts.task);
 
   const orchestrator = new Orchestrator({
     baseDir,
@@ -409,48 +567,15 @@ export async function runRuntime(
     // duplicado aqui (antes: run.ts roteava de novo e aplicava fallback manual).
     availableProviders: llmProviders,
     resumeRunId: opts.resumeRunId,
-    produce: async (node: GraphNode, ctx: ExecuteCtx) => {
-      if (llmProviders.length === 0) {
-        // Producer headless: simula artefato (sem LLM configurado)
-        const label = node.agent ?? node.skills?.join('+') ?? node.id;
-        return {
-          content: {
-            node: node.id,
-            label,
-            task: opts.task,
-            producedAt: new Date().toISOString(),
-            summary: `Artefato produzido pelo nó "${node.id}" (${label}).`,
-          },
-          kind: node.outputs?.[0] ?? 'raw',
-          tokens: 300,
-          model: 'cli-headless',
-        };
-      }
-
-      // Execução real: compila o prompt do nó e chama o LLM com o modelo/provider
-      // já roteados pelo Orchestrator (mesma fonte de verdade, sem recomputar aqui).
-      const system = buildNodePrompt(node, { task: opts.task, agent: opts.agent, skillChain: opts.skillChain }, baseDir, {
-        noCacheFoundation: opts.noCacheFoundation,
-      });
-      const result = await client.complete(ctx.provider, {
-        model: ctx.model,
-        system,
-        messages: [{ role: 'user', content: opts.task }],
-        maxTokens: node.tokenBudget ?? 4000,
-      });
-      tokenStats.input += result.tokens;
-      tokenStats.cached += result.cachedTokens ?? 0;
-      tokenStats.nodes++;
-      if (opts.verbose) {
-        console.log(`  \x1b[90m[tokens]\x1b[0m nó "${node.id}": entrada ${result.tokens} · cache-hit ${result.cachedTokens ?? 0}`);
-      }
-      return {
-        content: result.text,
-        kind: node.outputs?.[0] ?? 'raw',
-        tokens: result.tokens,
-        model: result.model,
-      };
+    ...(plan ? { plan } : {}),
+    budgetLimits: {
+      ...(opts.maxCost !== undefined ? { maxCostUsd: opts.maxCost } : {}),
     },
+    // Inteligência assimétrica: cada tarefa paga o preço do seu papel.
+    routeRole: planning.routeRole,
+    costOf: planning.costOf,
+    produce: (node: GraphNode, ctx: ExecuteCtx) =>
+      (llmProviders.length === 0 ? headlessProducer : llmProducer)(node, ctx),
     consume: (node: GraphNode, artifact: { kind: string; valid: boolean }) => {
       if (!artifact.valid) {
         console.log(`  \x1b[33m⚠\x1b[0m Nó "${node.id}": artefato inválido (${artifact.kind})`);
@@ -463,6 +588,9 @@ export async function runRuntime(
   if (llmProviders.length > 0 && tokenStats.nodes > 0) {
     const pct = tokenStats.input > 0 ? Math.round((tokenStats.cached / tokenStats.input) * 100) : 0;
     console.log(`[tokens] entrada ${tokenStats.input} · cache-hit ${tokenStats.cached} (${pct}% do input)`);
+  }
+  if (result.telemetry) {
+    console.log(`\x1b[90m[economia]\x1b[0m ${ExecutionBudget.formatTelemetry(result.telemetry)}`);
   }
 
   if (result.pendingApproval) {
@@ -479,6 +607,15 @@ export async function runRuntime(
   console.log(`\n\x1b[1mRuntime result:\x1b[0m ${color}${result.status}\x1b[0m (score ${verdict?.score ?? '—'})`);
   console.log(`  \x1b[90mGraph:\x1b[0m ${result.graph.nodes.length} nós, ${result.graph.parallelBatches.length} etapas (${result.graph.parallelBatches.map((b) => `[${b.join(', ')}]`).join(' → ')})`);
   console.log(`  \x1b[90mHealing:\x1b[0m ${result.healing.length === 0 ? 'nenhuma ação necessária' : result.healing.map((h) => h.kind).join(', ')}`);
+  if (result.verification && result.verification.length > 0) {
+    const verified = result.verification.filter((v) => v.result.status === 'VERIFIED').length;
+    const failed = result.verification.filter((v) => v.result.status === 'FAILED');
+    const unverified = result.verification.filter((v) => v.result.status === 'UNVERIFIED');
+    console.log(`  \x1b[90mVerificação:\x1b[0m ${verified}/${result.verification.length} VERIFIED${failed.length > 0 ? `, ${failed.length} FAILED` : ''}${unverified.length > 0 ? `, ${unverified.length} sem evidência conclusiva` : ''}`);
+    for (const v of [...failed, ...unverified].slice(0, 3)) {
+      console.log(`    \x1b[33m•\x1b[0m ${v.nodeId}: ${v.result.reason}${v.result.unmet.length > 0 ? ` (${v.result.unmet.slice(0, 2).join('; ')})` : ''}`);
+    }
+  }
   console.log(`  \x1b[90mDuration:\x1b[0m ${result.trace.durationMs}ms | tokens ${result.trace.tokens?.total ?? 0}`);
 
   // Imprime o trace detalhado
@@ -567,7 +704,7 @@ export function buildNodePrompt(
   node: GraphNode,
   opts: { task: string; agent: any; skillChain: string[] },
   baseDir: string,
-  flags?: { noCacheFoundation?: boolean },
+  flags?: { noCacheFoundation?: boolean; context?: string },
 ): string {
   const agent = node.agent ? findAgentJson(node.agent, baseDir) : undefined;
   const identity = agent?.identity || agent?.role || opts.agent.identity || opts.agent.role || `Agente especialista (${node.agent ?? node.id})`;
@@ -578,7 +715,10 @@ export function buildNodePrompt(
   let body = `## IDENTIDADE & PAPEL\n${identity}\n\n`;
   if (agent?.always?.length) body += `## REGRAS OBRIGATÓRIAS\n- ${agent.always.join('\n- ')}\n\n`;
   if (agent?.never?.length) body += `## PROIBIDO\n- ${agent.never.join('\n- ')}\n\n`;
-  body += `## TAREFA\n${opts.task}\n`;
+  // Contexto mínimo do Context Resolver (objetivo do nó, critérios de aceite e
+  // insumos resumidos). Sem ele, o nó recebia só a tarefa original do run e
+  // nunca via a saída dos predecessores.
+  body += flags?.context ? `${flags.context}\n` : `## TAREFA\n${opts.task}\n`;
   if (skills.length > 0) {
     body += `\n## SKILLS APLICÁVEIS\n`;
     for (const skill of skills) {

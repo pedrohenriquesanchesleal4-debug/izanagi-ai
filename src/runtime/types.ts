@@ -362,6 +362,15 @@ export interface RunTrace {
   graph?: ExecutionGraph;
   /** Token Budget 2.0 — gasto por fase (planning/execution/evaluation/recovery). */
   budget?: Record<string, { spent: number; remaining: number }>;
+  /**
+   * Modo de execução escolhido pelo Commander (direct/assisted/orchestrated/
+   * autonomous). Ausente em runs planejados pelo caminho legado.
+   */
+  mode?: string;
+  /** Token Economy Engine: tokens, custo, cache, paralelismo, escaladas, degradação. */
+  telemetry?: Record<string, unknown>;
+  /** Verificação por nó (Verification Engine 2.0): VERIFIED / UNVERIFIED / FAILED. */
+  verification?: Array<{ nodeId: string; status: string; score: number; reason: string; unmet: string[] }>;
 }
 
 /* ============================ SELF-HEALING ============================ */

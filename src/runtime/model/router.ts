@@ -10,7 +10,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import type { ModelProvider, ModelSpec, RoutingContext } from '../types.js';
+import type { ModelProvider, ModelSpec, ModelTier, RoutingContext } from '../types.js';
+import type { AgentRole } from '../contracts/task-contract.js';
 
 export const DEFAULT_PROVIDERS: ModelProvider[] = [
   {
@@ -204,4 +205,171 @@ export class ModelRouter {
     }
     return 'unknown';
   }
+
+  /* ==================== ROTEAMENTO POR PAPEL (inteligência assimétrica) ==================== */
+
+  /**
+   * Roteia por PAPEL, não por run. O princípio da arquitetura é "o modelo mais
+   * forte pensa e coordena, modelos menores executam": antes desta rota, um
+   * único modelo era escolhido no início do run e usado em TODOS os nós,
+   * inclusive numa extração trivial. Agora cada tarefa paga o preço do seu
+   * papel.
+   *
+   * Precedência: pin explícito (config `roles` / env) vence; senão escolhe o
+   * melhor modelo dentro do tier do papel; tier vazio no catálogo disponível
+   * cai para o tier adjacente (nunca falha por catálogo restrito).
+   */
+  routeForRole(role: AgentRole, ctx: RoutingContext): RoutedModel {
+    const pinned = this.pinnedFor(role);
+    if (pinned) {
+      return {
+        model: pinned,
+        provider: this.providerOf(pinned.id),
+        role,
+        tier: pinned.tier,
+        reasons: [`modelo fixado para o papel "${role}" (config roles ou IZANAGI_MODEL_${role.toUpperCase()})`],
+        candidates: [{ option: pinned.id, score: 1 }],
+      };
+    }
+
+    const preferred = TIER_FOR_ROLE[role];
+    const reasons = [`papel "${role}" prefere tier "${preferred}"`];
+    for (const tier of tierFallbackOrder(preferred)) {
+      const inTier = this.catalog().filter((m) => m.tier === tier);
+      if (inTier.length === 0) continue;
+      if (tier !== preferred) reasons.push(`tier "${preferred}" indisponível no catálogo: caindo para "${tier}"`);
+      const scored = inTier
+        .map((m) => ({ model: m, perf: this.scoreModel(m, { ...ctx, taskComplexity: complexityForRole(role, ctx) }) }))
+        .sort((a, b) => b.perf - a.perf || a.model.id.localeCompare(b.model.id));
+      const best = scored[0];
+      return {
+        model: best.model,
+        provider: this.providerOf(best.model.id),
+        role,
+        tier,
+        reasons,
+        candidates: scored.slice(0, 5).map((c) => ({ option: c.model.id, score: Math.round(c.perf * 1000) / 1000 })),
+      };
+    }
+    throw new Error('ModelRouter: nenhum modelo disponível no catálogo');
+  }
+
+  /**
+   * Escalada por falha repetida: worker sobe para specialist, specialist para
+   * commander. Commander é o topo (não existe escalada acima dele). Devolve
+   * null quando não há para onde subir, e quem chama decide abortar.
+   */
+  static escalateRole(role: AgentRole): AgentRole | null {
+    if (role === 'worker') return 'specialist';
+    if (role === 'specialist') return 'commander';
+    return null;
+  }
+
+  /** Modelo pinado para um papel via env ou `.izanagi/izanagi.config.json` → `roles`. */
+  private pinnedFor(role: AgentRole): ModelSpec | undefined {
+    const envId = process.env[`IZANAGI_MODEL_${role.toUpperCase()}`];
+    const configured = this.rolePolicy?.[role]?.model;
+    for (const id of [envId, configured]) {
+      if (!id) continue;
+      const found = this.catalog().find((m) => m.id === id);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  /** Política de papéis injetada por `loadRolePolicy` (config do projeto). */
+  private rolePolicy?: RolePolicy;
+
+  withRolePolicy(policy: RolePolicy | undefined): this {
+    this.rolePolicy = policy;
+    return this;
+  }
+
+  /**
+   * Custo em USD de uma chamada. Modelos locais (Ollama/LM Studio) têm custo 0
+   * declarado no catálogo, então self-hosted aparece corretamente como grátis.
+   */
+  static costUsd(model: ModelSpec, inputTokens: number, outputTokens: number): number {
+    return (inputTokens / 1000) * model.costPer1kInput + (outputTokens / 1000) * model.costPer1kOutput;
+  }
+
+  /**
+   * Custo estimado de gastar `tokens` no papel `role`, assumindo a divisão
+   * típica de 70% entrada / 30% saída. Usado pelo Commander no cost-aware
+   * planning (estimativa de TETO, não previsão).
+   */
+  estimateCostForRole(role: AgentRole, tokens: number): number {
+    // Usa exatamente o mesmo caminho de decisão da execução (`routeForRole`),
+    // não o modelo mais barato do tier: a estimativa tem que corresponder ao
+    // modelo que de fato vai rodar, senão o teto de custo mente.
+    let model: ModelSpec;
+    try {
+      model = this.routeForRole(role, {
+        task: '',
+        taskComplexity: 3,
+        reasoningRequirement: role === 'commander' ? 'high' : role === 'worker' ? 'low' : 'medium',
+        risk: 0.2,
+        tokenBudget: Math.max(1, tokens),
+        requiresTools: false,
+      }).model;
+    } catch {
+      return 0;
+    }
+    return ModelRouter.costUsd(model, tokens * 0.7, tokens * 0.3);
+  }
+
+  /** Lê `.izanagi/izanagi.config.json` → `roles`. Ausente/inválido = sem pin. */
+  static loadRolePolicy(baseDir: string): RolePolicy | undefined {
+    const configFile = path.join(baseDir, '.izanagi', 'izanagi.config.json');
+    if (!fs.existsSync(configFile)) return undefined;
+    try {
+      const raw = JSON.parse(fs.readFileSync(configFile, 'utf-8')) as { roles?: RolePolicy };
+      if (!raw.roles || typeof raw.roles !== 'object') return undefined;
+      const policy: RolePolicy = {};
+      for (const role of ['commander', 'specialist', 'worker'] as AgentRole[]) {
+        const entry = raw.roles[role];
+        if (entry && typeof entry === 'object' && typeof entry.model === 'string') {
+          policy[role] = { model: entry.model, ...(entry.provider ? { provider: entry.provider } : {}) };
+        }
+      }
+      return Object.keys(policy).length > 0 ? policy : undefined;
+    } catch {
+      return undefined;
+    }
+  }
 }
+
+export interface RoutedModel {
+  model: ModelSpec;
+  provider: string;
+  role: AgentRole;
+  tier: ModelTier;
+  reasons: string[];
+  candidates: Array<{ option: string; score: number }>;
+}
+
+export type RolePolicy = Partial<Record<AgentRole, { model: string; provider?: string }>>;
+
+/** Tier preferido por papel: o coração da inteligência assimétrica. */
+export const TIER_FOR_ROLE: Record<AgentRole, ModelTier> = {
+  commander: 'premium',
+  specialist: 'balanced',
+  worker: 'fast',
+};
+
+/** Ordem de fallback quando o tier preferido não existe no catálogo disponível. */
+function tierFallbackOrder(preferred: ModelTier): ModelTier[] {
+  switch (preferred) {
+    case 'premium': return ['premium', 'balanced', 'fast'];
+    case 'balanced': return ['balanced', 'premium', 'fast'];
+    default: return ['fast', 'balanced', 'premium'];
+  }
+}
+
+/** Complexidade efetiva vista pelo scorer: o papel já carrega a exigência. */
+function complexityForRole(role: AgentRole, ctx: RoutingContext): RoutingContext['taskComplexity'] {
+  if (role === 'commander') return 5;
+  if (role === 'worker') return 1;
+  return ctx.taskComplexity;
+}
+
