@@ -172,6 +172,9 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(judge ? { judge } : {}),
     routeRole: planning.routeRole,
     costOf: planning.costOf,
+    // Replanejamento passa pelo Commander: falha reincidente produz um grafo
+    // diferente, nao o mesmo grafo com um no reaberto.
+    replan: planning.replan,
     produce: producer,
     consume: (node, artifact) => {
       artifacts[node.id] = { kind: artifact.kind, content: artifact.content, valid: artifact.valid };

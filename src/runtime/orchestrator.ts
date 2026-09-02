@@ -35,7 +35,7 @@ import { CheckpointStore, checkpointProgress, type CheckpointData } from './reco
 import { ArtifactRegistry } from './artifacts/registry.js';
 import { DecisionJournal } from './memory/decisions.js';
 import { ApprovalStore } from './recovery/approvals.js';
-import type { CommanderPlan } from './orchestration/commander.js';
+import type { CommanderPlan, ReplanFailure, ReplanResult } from './orchestration/commander.js';
 import { contractOf, type AgentRole, type ExecutionMode, type TaskContract } from './contracts/task-contract.js';
 import { ContextResolver, type AvailableArtifact, type ResolvedContext } from './orchestration/context-resolver.js';
 import { ExecutionBudget, type ExecutionBudgetLimits } from './token/execution-budget.js';
@@ -79,6 +79,12 @@ export interface OrchestratorOptions {
   budgetLimits?: Partial<ExecutionBudgetLimits>;
   /** Juiz semântico opcional da Verification Engine. Sem juiz, critério semântico fica UNKNOWN. */
   judge?: SemanticJudge;
+  /**
+   * Replanejamento pelo Commander: recebe o grafo atual e o DELTA da falha, e
+   * devolve um Plano B (agente trocado, papel acima, tarefa quebrada). Ausente
+   * = `Planner.replan` legado, que reabre o nó sem mudar nada da estratégia.
+   */
+  replan?: (input: { graph: ExecutionGraph; failure: ReplanFailure }) => ReplanResult | null;
   /**
    * Roteador por papel: devolve modelo/provider do papel de cada nó. Quando
    * ausente, todos os nós usam o modelo roteado uma vez para o run inteiro
@@ -545,9 +551,49 @@ export class Orchestrator {
         }
       }
 
-      // replan: reconstrói grafo
+      // replan: reconstrói o grafo. Com o Commander no circuito, o que volta é
+      // um Plano B (agente trocado / papel acima / tarefa quebrada) e não o
+      // Plano A com um nó reaberto.
       if (decision.action.kind === 'replan') {
-        workingGraph = planner.replan(workingGraph, failure.nodeId);
+        const failedNode = workingGraph.nodes.find((n) => n.id === failure.nodeId);
+        const verification = this.verifications.get(failure.nodeId);
+        const replanned = this.opts.replan
+          ? this.opts.replan({
+              graph: workingGraph,
+              failure: {
+                nodeId: failure.nodeId,
+                error: failure.error,
+                attempt: failedNode?.attempts ?? attempts,
+                ...(verification && verification.unmet.length > 0 ? { unmet: verification.unmet } : {}),
+                ...(ctx.artifacts.has(failure.nodeId) ? { artifactRef: `${ctx.runId}:${failure.nodeId}` } : {}),
+                ...(failure.agent ? { agent: failure.agent } : {}),
+              },
+            })
+          : null;
+        if (replanned) {
+          workingGraph = replanned.graph;
+          for (const note of replanned.decisions) {
+            decisions.record({ kind: 'planning', chosen: `replan:${failure.nodeId}`, alternatives: [], reason: note, runId: trace.runId });
+          }
+          conversation.record({
+            from: 'commander',
+            to: 'scheduler',
+            type: 'task',
+            taskId: failure.nodeId,
+            summary: replanned.changes.length > 0
+              ? `Plano B: ${replanned.changes.join(' | ')}`
+              : 'replanejamento sem alternativa estrutural: nó reaberto como estava',
+          });
+          trace.span(`replan:${failure.nodeId}`, 'decision', {
+            changes: replanned.changes,
+            nodes: workingGraph.nodes.length,
+          })(replanned.changes.length > 0, replanned.changes.length === 0 ? 'nenhuma alternativa estrutural disponível' : undefined);
+          if (this.opts.verbose) {
+            console.log(`  Replanejamento (${failure.nodeId}): ${replanned.changes.join(' | ') || 'sem alternativa estrutural'}`);
+          }
+        } else {
+          workingGraph = planner.replan(workingGraph, failure.nodeId);
+        }
         closeHeal();
         continue;
       }

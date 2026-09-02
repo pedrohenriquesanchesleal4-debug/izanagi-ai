@@ -27,6 +27,7 @@ import {
   AGENT_ROLES,
   attachContract,
   contractFromNode,
+  contractOf,
   defaultRoleForNode,
   validateContract,
   type AcceptanceCriterion,
@@ -36,6 +37,7 @@ import {
   type TaskContract,
 } from '../contracts/task-contract.js';
 import type { AgentCapabilityRegistry } from '../registry/capabilities.js';
+import { ModelRouter } from '../model/router.js';
 import { detectDomains, type Domain } from './domains.js';
 
 export type { Domain } from './domains.js';
@@ -298,6 +300,37 @@ export interface CommanderPlan {
 
 const MODE_LADDER: ExecutionMode[] = ['direct', 'assisted', 'orchestrated', 'autonomous'];
 
+/* ============================ REPLANEJAMENTO ============================ */
+
+/** O que o Commander precisa saber sobre a falha — e nada além disso. */
+export interface ReplanFailure {
+  nodeId: string;
+  error: string;
+  /** Tentativa em que a falha aconteceu (1 = primeira). */
+  attempt: number;
+  /** Critérios de aceite não comprovados pela Verification Engine. */
+  unmet?: string[];
+  /** Referência do artefato reprovado (`runId:nodeId`), não o conteúdo dele. */
+  artifactRef?: string;
+  /** Agente que produziu a falha: sai da disputa na nova escolha. */
+  agent?: string;
+}
+
+export interface ReplanResult {
+  graph: ExecutionGraph;
+  contracts: TaskContract[];
+  decisions: string[];
+  /**
+   * O que mudou entre o Plano A e o Plano B. Vazio significa que o
+   * replanejamento não encontrou nada para mudar — e isso precisa aparecer,
+   * senão "replanejou" vira sinônimo de "tentou de novo".
+   */
+  changes: string[];
+}
+
+/** Teto de caracteres da causa da falha levada ao replanejamento. */
+const MAX_FAILURE_CHARS = 300;
+
 export class Commander {
   constructor(
     private readonly planner = new Planner(),
@@ -366,6 +399,177 @@ export class Commander {
       decisions,
       issues,
     };
+  }
+
+  /**
+   * Replanejamento: produz um Plano B, não o Plano A com um nó reaberto.
+   *
+   * O `Planner.replan` legado marcava concluídos como `skipped`, reabria o nó
+   * falho e devolvia o MESMO grafo: mesmo agente, mesmo papel, mesma
+   * decomposição. Repetir a tentativa que já falhou é a definição de gastar
+   * orçamento sem aprender nada.
+   *
+   * Escada determinística, nesta ordem: trocar o agente (o que falhou sai da
+   * disputa) -> subir o papel (mais capacidade para a mesma tarefa) -> quebrar
+   * a tarefa em duas (rascunho + fechamento dirigido aos critérios não
+   * comprovados). Da segunda tentativa em diante, trocar agente E subir papel
+   * ao mesmo tempo. Nada mudou = `changes` vazio, e quem chamou decide o que
+   * fazer com isso: "replanejou" não pode virar sinônimo de "tentou de novo".
+   *
+   * O Commander recebe só o DELTA da falha (nó, causa, critérios não
+   * comprovados, referência do artefato, tentativa). Nunca a execução inteira.
+   */
+  replan(
+    previous: { graph: ExecutionGraph; contracts?: TaskContract[] },
+    failure: ReplanFailure,
+    input: CommanderInput,
+  ): ReplanResult {
+    const changes: string[] = [];
+    const decisions: string[] = [
+      `replanejamento do nó "${failure.nodeId}" após a tentativa ${failure.attempt}: ${clip(failure.error, MAX_FAILURE_CHARS)}`,
+    ];
+    if (failure.unmet && failure.unmet.length > 0) {
+      decisions.push(`critérios não comprovados: ${failure.unmet.slice(0, 3).join('; ')}`);
+    }
+    if (failure.artifactRef) decisions.push(`artefato reprovado: ${failure.artifactRef}`);
+
+    const failed = previous.graph.nodes.find((n) => n.id === failure.nodeId);
+    if (!failed) {
+      decisions.push('nó da falha não existe no grafo: replanejamento sem alvo');
+      return { graph: previous.graph, contracts: previous.contracts ?? [], decisions, changes };
+    }
+
+    const contract = previous.contracts?.find((c) => c.id === failure.nodeId) ?? contractOf(failed);
+    const objective = contract?.objective ?? objectiveForNode(failed, input.objective);
+    const aggressive = failure.attempt >= 2;
+
+    // Agentes já queimados NESTE nó: o que falhou agora e os das tentativas
+    // anteriores. O histórico viaja no metadata do nó, não num estado global.
+    const previouslyTried = Array.isArray(failed.metadata?.triedAgents) ? (failed.metadata!.triedAgents as string[]) : [];
+    const tried = Array.from(new Set([...previouslyTried, failure.agent, failed.agent].filter((a): a is string => Boolean(a))));
+
+    // 1. Trocar o agente por outro capaz do mesmo objetivo.
+    let nextAgent: string | undefined;
+    if (input.capabilities) {
+      const candidate =
+        input.capabilities.bestFor(objective, { ...(contract?.role ? { role: contract.role } : {}), exclude: tried }) ??
+        input.capabilities.bestFor(objective, { exclude: tried });
+      if (candidate && !tried.includes(candidate.id)) {
+        nextAgent = candidate.id;
+        changes.push(`agente de "${failure.nodeId}": ${failed.agent ?? 'nenhum'} -> ${nextAgent} (o anterior falhou neste objetivo)`);
+      }
+    }
+
+    // 2. Subir o papel: sozinho quando não houve troca de agente, junto com a
+    //    troca quando o nó já falhou mais de uma vez.
+    let nextRole = contract?.role;
+    if (contract && (!nextAgent || aggressive)) {
+      const up = ModelRouter.escalateRole(contract.role);
+      if (up && up !== contract.role) {
+        nextRole = up;
+        changes.push(`papel de "${failure.nodeId}": ${contract.role} -> ${up} (mais capacidade para a mesma tarefa)`);
+      }
+    }
+
+    // 3. Quebrar em duas: último recurso. Só quando não há agente novo nem
+    //    papel acima, existe critério não comprovado, e o nó ainda não foi
+    //    quebrado antes (quebrar o quebrado produziria uma cascata).
+    const alreadySplit =
+      failed.metadata?.splitFrom !== undefined || previous.graph.nodes.some((n) => n.metadata?.splitFrom === failure.nodeId);
+    const shouldSplit = changes.length === 0 && (failure.unmet?.length ?? 0) > 0 && !alreadySplit;
+    const draftId = `${failure.nodeId}-draft`;
+
+    const nodes: GraphNode[] = [];
+    for (const node of previous.graph.nodes) {
+      if (node.id !== failure.nodeId) {
+        // Concluído vira `skipped` (não se paga duas vezes pelo mesmo artefato);
+        // nó falho de outro ramo volta para a fila junto com o replanejamento.
+        nodes.push({
+          ...node,
+          status: (node.status === 'succeeded' ? 'skipped' : node.status === 'failed' ? 'pending' : node.status) as GraphNode['status'],
+        });
+        continue;
+      }
+      const reopened: GraphNode = {
+        ...node,
+        status: 'pending',
+        attempts: 0,
+        error: undefined,
+        ...(nextAgent ? { agent: nextAgent } : {}),
+        metadata: {
+          ...node.metadata,
+          triedAgents: tried,
+          replanned: true,
+          ...(nextRole ? { role: nextRole } : {}),
+        },
+      };
+      if (!shouldSplit) {
+        nodes.push(reopened);
+        continue;
+      }
+      // O rascunho assume as dependências originais. O nó original MANTÉM o id
+      // (as dependências a jusante continuam válidas) e passa a consumir o
+      // rascunho, com objetivo restrito ao que não foi comprovado.
+      nodes.push({
+        ...reopened,
+        id: draftId,
+        dependencies: node.dependencies ?? [],
+        metadata: { ...reopened.metadata, splitFrom: failure.nodeId, splitRole: 'draft' },
+      });
+      nodes.push({
+        ...reopened,
+        dependencies: [draftId],
+        metadata: { ...reopened.metadata, splitFrom: failure.nodeId, splitRole: 'finish' },
+      });
+      changes.push(
+        `tarefa "${failure.nodeId}" quebrada em "${draftId}" (rascunho) + "${failure.nodeId}" (fechamento dirigido aos critérios não comprovados)`,
+      );
+    }
+
+    // Contratos refeitos só para os nós tocados: replanejar não é motivo para
+    // regerar contrato de tarefa que passou.
+    const touched = new Set([failure.nodeId, ...(shouldSplit ? [draftId] : [])]);
+    const classification = classify(input.objective);
+    const rebuilt = nodes.map((node) => {
+      if (!touched.has(node.id)) return node;
+      const fresh = this.contractFor(node, input, classification, 'orchestrated');
+      const withFailure: TaskContract = {
+        ...fresh,
+        ...(nextRole ? { role: nextRole } : {}),
+        ...(node.agent ? { agent: node.agent } : {}),
+        objective:
+          node.metadata?.splitRole === 'draft'
+            ? `${objective} (rascunho: produzir a primeira versão completa)`
+            : node.metadata?.splitRole === 'finish'
+              ? `${objective} (fechamento: partir do rascunho e cobrir o que não foi comprovado)`
+              : objective,
+        constraints: [
+          ...fresh.constraints,
+          // O delta da falha vira RESTRIÇÃO da nova tentativa: é a forma de a
+          // causa chegar ao executor sem reenviar a execução inteira.
+          `a tentativa anterior falhou por: ${clip(failure.error, MAX_FAILURE_CHARS)}`,
+          ...(failure.unmet && failure.unmet.length > 0
+            ? [`a nova entrega precisa cobrir explicitamente: ${failure.unmet.slice(0, 5).join('; ')}`]
+            : []),
+        ],
+      };
+      return attachContract(node, withFailure);
+    });
+
+    const graph = this.builder.build({
+      id: `${previous.graph.id}-replan-${failure.attempt}`,
+      task: previous.graph.task,
+      nodes: rebuilt,
+      budget: previous.graph.budget,
+    });
+
+    if (changes.length === 0) {
+      decisions.push('nenhuma alternativa estrutural disponível: o grafo volta com o nó reaberto, sem mudança de agente, papel ou decomposição');
+    }
+    decisions.push(...changes);
+
+    const contracts = graph.nodes.map((n) => contractOf(n)).filter((c): c is TaskContract => Boolean(c));
+    return { graph, contracts, decisions, changes };
   }
 
   /** Constrói grafo + contratos para um modo específico. */
@@ -679,4 +883,10 @@ export function validateDecomposition(tasks: DecomposedTask[]): string[] {
     }
   }
   return issues;
+}
+
+/** Corta a causa da falha para caber no contrato sem virar um segundo prompt. */
+function clip(text: string, max: number): string {
+  const flat = String(text ?? '').replace(/\s+/g, ' ').trim();
+  return flat.length <= max ? flat : `${flat.slice(0, max - 1)}...`;
 }

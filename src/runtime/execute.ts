@@ -11,7 +11,7 @@
  * uma função. Assim este módulo continua sendo runtime puro.
  */
 
-import { Commander, type CommanderPlan } from './orchestration/commander.js';
+import { Commander, type CommanderPlan, type ReplanFailure, type ReplanResult } from './orchestration/commander.js';
 import { AgentCapabilityRegistry } from './registry/capabilities.js';
 import { MemoryStore } from './memory/store.js';
 import { SkillResolver } from './routing/resolver.js';
@@ -22,7 +22,7 @@ import { createModelJudge } from './verification/judge.js';
 import type { SemanticJudge } from './verification/engine.js';
 import type { AgentRole, ExecutionMode } from './contracts/task-contract.js';
 import type { ExecuteCtx } from './orchestrator.js';
-import type { GraphNode, ModelSpec, RoutingContext } from './types.js';
+import type { ExecutionGraph, GraphNode, ModelSpec, RoutingContext } from './types.js';
 
 /** Providers que rodam na própria máquina (usados por `--local`). */
 export const LOCAL_PROVIDERS = ['ollama', 'lmstudio', 'custom'];
@@ -58,6 +58,12 @@ export interface PlanningOutput {
   capabilities: AgentCapabilityRegistry;
   routeRole: (role: AgentRole, node: GraphNode) => { model: string; provider: string } | undefined;
   costOf: (modelId: string, inputTokens: number, outputTokens: number) => number;
+  /**
+   * Replanejamento pelo Commander, pronto para o Orchestrator. Fecha sobre o
+   * mesmo registro de capacidades usado no planejamento, então o Plano B
+   * escolhe agente pelo mesmo critério do Plano A.
+   */
+  replan: (input: { graph: ExecutionGraph; failure: ReplanFailure }) => ReplanResult | null;
 }
 
 /**
@@ -94,9 +100,20 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
   const memory = input.noCommander || input.noMemory ? undefined : new MemoryStore({ baseDir });
   const skillResolver = memory ? new SkillResolver({ baseDir, memory }) : undefined;
 
+  const commander = new Commander();
+  const commanderInput = {
+    objective: input.objective,
+    ...(input.explicitAgent && input.agent ? { agent: input.agent } : {}),
+    ...(input.skillChain ? { skillChain: input.skillChain } : {}),
+    ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
+    ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
+    capabilities,
+    ...(memory ? { memory } : {}),
+  };
+
   const plan = input.noCommander
     ? undefined
-    : new Commander().plan({
+    : commander.plan({
         objective: input.objective,
         ...(input.mode ? { mode: input.mode } : {}),
         ...(input.explicitAgent && input.agent ? { agent: input.agent } : {}),
@@ -113,6 +130,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
 
   return {
     ...(plan ? { plan } : {}),
+    replan: ({ graph, failure }) => commander.replan({ graph }, failure, commanderInput),
     router,
     routingContext,
     specById,

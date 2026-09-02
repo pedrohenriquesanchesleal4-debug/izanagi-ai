@@ -597,6 +597,9 @@ export async function runRuntime(
     // Inteligência assimétrica: cada tarefa paga o preço do seu papel.
     routeRole: planning.routeRole,
     costOf: planning.costOf,
+    // Replanejamento passa pelo Commander: falha reincidente produz um grafo
+    // diferente, nao o mesmo grafo com um no reaberto.
+    replan: planning.replan,
     produce: (node: GraphNode, ctx: ExecuteCtx) =>
       (llmProviders.length === 0 ? headlessProducer : llmProducer)(node, ctx),
     consume: (node: GraphNode, artifact: { kind: string; valid: boolean }) => {
