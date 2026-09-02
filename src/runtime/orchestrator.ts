@@ -28,6 +28,7 @@ import { Healer } from './recovery/healing.js';
 import { LearningEngine } from './evolution/learning.js';
 import { AgentFactory } from './factories/agent-factory.js';
 import { SkillFactory } from './factories/skill-factory.js';
+import { describeTrajectory, skillNameFor, type TrajectoryStep } from './evolution/trajectories.js';
 import { ModelRouter } from './model/router.js';
 import { validateArtifact, hashContent } from './contracts/artifacts.js';
 import { PhaseTokenBudget, defaultWeights, type PhaseId } from './token/budget.js';
@@ -113,6 +114,13 @@ export interface OrchestratorOptions {
    * decidida por quem está dentro dela não tem fim.
    */
   maxOrchestrationDepth?: number;
+  /**
+   * Onde gravar skill sintetizada de trajetória recorrente. Default:
+   * `<cwd>/skills/generated` — o projeto do usuário, que é onde a skill
+   * precisa viver para ser encontrada depois. Explícito porque um run de teste
+   * não pode escrever no repositório de quem roda o teste.
+   */
+  generatedSkillsDir?: string;
   /**
    * Roteador por papel: devolve modelo/provider do papel de cada nó. Quando
    * ausente, todos os nós usam o modelo roteado uma vez para o run inteiro
@@ -723,6 +731,11 @@ export class Orchestrator {
       ...(this.opts.plan ? { domains: this.opts.plan.classification.domains } : {}),
     });
     closeLearn();
+
+    // Trajetória: o caminho que ESTE run percorreu. O simétrico de converter
+    // falha em padrão — sucesso também é conhecimento, e até aqui se perdia.
+    this.recordTrajectory(memory, workingGraph, finalEvaluation, resolver);
+
     memory.save();
 
     // Run chegou a um veredito terminal (PASS/FAIL/...) — não há mais o que retomar.
@@ -1218,6 +1231,78 @@ export class Orchestrator {
       node.error = err instanceof Error ? err.message : String(err);
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+    }
+  }
+
+  /**
+   * Registra a trajetória do run e, quando ela já se repetiu o bastante,
+   * sintetiza a skill procedural correspondente.
+   *
+   * A barra é RECORRÊNCIA, não sucesso. Sintetizar a cada run bem-sucedido
+   * produziria uma biblioteca de skills genéricas que ninguém usa e que
+   * competem com as boas no ranking — que é exatamente o motivo de esta ideia
+   * ter ficado parada até existir um gatilho defensável.
+   *
+   * Nunca lança: aprender é efeito colateral do run, e falha aqui não pode
+   * derrubar um resultado que já foi produzido e verificado.
+   */
+  private recordTrajectory(
+    memory: MemoryStore,
+    graph: ExecutionGraph,
+    evaluation: EvaluationReport,
+    resolver: SkillResolver,
+  ): void {
+    try {
+      const steps: TrajectoryStep[] = graph.nodes
+        .filter((n) => n.status === 'succeeded')
+        .map((n) => ({
+          nodeId: n.id,
+          ...(n.agent ? { agent: n.agent } : {}),
+          kind: n.outputs?.[0] ?? 'raw',
+          verified: this.verifications.get(n.id)?.status === 'VERIFIED',
+        }));
+
+      const success = evaluation.verdict === 'PASS' || evaluation.verdict === 'PASS_WITH_WARNINGS';
+      const trajectory = memory.recordTrajectory({
+        steps,
+        objective: this.opts.task,
+        ...(this.opts.plan ? { domains: this.opts.plan.classification.domains } : {}),
+        success,
+      });
+      if (!trajectory) return;
+
+      const recurrent = memory.recurrentTrajectories().find((t) => t.signature === trajectory.signature);
+      if (!recurrent) return;
+
+      const name = skillNameFor(recurrent);
+      const generated = new SkillFactory(resolver).generate({
+        gap: `procedimento recorrente: ${recurrent.steps.join(' | ')}`,
+        name,
+        targetDir: this.opts.generatedSkillsDir ?? path.join(process.cwd(), 'skills', 'generated'),
+        body: describeTrajectory(recurrent),
+        description: `Procedimento observado em ${recurrent.occurrences} execuções verificadas: ${recurrent.steps.join(' -> ')}`,
+        // Sem `force`: se a lacuna já é coberta por skill existente, a
+        // trajetória não vira skill nova. Duplicar conhecimento é pior que não
+        // registrá-lo.
+      });
+      if (!generated.registered) return;
+
+      memory.markTrajectorySynthesized(recurrent.signature, name);
+      memory.addLearning(
+        `trajetória recorrente (${recurrent.occurrences} execuções) sintetizada na skill "${name}": ${recurrent.steps.join(' -> ')}`,
+        'trajectory-synthesis',
+        0.7,
+      );
+      this.opts.onEvent?.({
+        name: 'skill.synthesized' as never,
+        at: new Date().toISOString(),
+        data: { skill: name, signature: recurrent.signature, occurrences: recurrent.occurrences },
+      } as never);
+      if (this.opts.verbose) {
+        console.log(`  Skill sintetizada de trajetória recorrente: ${name} (${recurrent.occurrences} execuções)`);
+      }
+    } catch {
+      // Aprender é efeito colateral: o run já entregou e foi verificado.
     }
   }
 

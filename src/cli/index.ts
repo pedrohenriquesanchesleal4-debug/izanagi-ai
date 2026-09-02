@@ -211,7 +211,7 @@ function showHelp(): void {
   \x1b[32mworkflow list|inspect <name>\x1b[0m   Execution Graph templates e composições.
   \x1b[32mtrace [run-id]\x1b[0m                 Observabilidade: lista/mostra execuções.
   \x1b[32meval [file|--metrics|--report]\x1b[0m Avalia artefatos/resultados (Evaluation Engine).
-  \x1b[32mbenchmark list|run|compare\x1b[0m     Suíte de benchmarks + regression comparison (run --execute roda pelo runtime real e mede verificação/recuperação).
+  \x1b[32mbenchmark list|run|memory\x1b[0m      Suíte de benchmarks (run --execute mede execução real) + benchmark memory (busca e compressão).
   \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
   \x1b[32mmodels [--json]\x1b[0m                Catálogo de modelos + roteamento por papel (commander/specialist/worker).
   \x1b[32mbudget [run-id] [--json]\x1b[0m       Para onde foi o orçamento: tokens por fase, custo, cache, degradação.
@@ -251,6 +251,7 @@ function showHelp(): void {
   izanagi eval --report <run-id>
   izanagi benchmark run security
   izanagi benchmark run architecture --execute
+  izanagi benchmark memory
   izanagi agent create "migração de PHP legado para Laravel"    (Agent Factory: validado, use este)
   izanagi create agent my-agent                                  (scaffold cru, sem validação)
   izanagi compile architect system_prompt.md

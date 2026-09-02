@@ -23,6 +23,14 @@ export interface SkillFactoryInput {
   /** Se true, registra mesmo se a skill já existir similar (força). */
   force?: boolean;
   targetDir?: string;
+  /**
+   * Corpo já redigido da skill. Usado pela síntese a partir de trajetórias,
+   * onde o conteúdo descreve um caminho REALMENTE observado — o template
+   * genérico inventaria seções que a evidência não sustenta.
+   */
+  body?: string;
+  /** Descrição do manifesto (default: derivada do gap). */
+  description?: string;
 }
 
 export interface GeneratedSkill {
@@ -62,7 +70,8 @@ export class SkillFactory {
     }
 
     const name = input.name ?? deriveSkillName(input.gap);
-    const description = `Skill de ${input.gap.trim()}: workflow, exemplos e validação. Gere sob demanda quando a tarefa envolver ${input.gap.trim()}.`;
+    const description = input.description
+      ?? `Skill de ${input.gap.trim()}: workflow, exemplos e validação. Gere sob demanda quando a tarefa envolver ${input.gap.trim()}.`;
     const triggers = [input.gap, ...input.gap.split(' ').filter((w) => w.length > 3).slice(0, 4)];
     const capabilities = input.gap.split(' ').filter((w) => w.length > 3);
 
@@ -86,7 +95,10 @@ export class SkillFactory {
       changelog: [{ version: '1.0.0', change: 'criação via Skill Factory' }],
     };
 
-    const body = buildSkillBody(manifest);
+    // Corpo pronto vence o template: a síntese por trajetória descreve um
+    // caminho REALMENTE observado, e o template genérico acrescentaria seções
+    // que a evidência não sustenta.
+    const body = input.body ?? buildSkillBody(manifest);
     const fullContent = `---\nname: ${manifest.name}\ndescription: "${manifest.description}"\nversion: ${manifest.version}\nlifecycle: ${manifest.lifecycle}\ntriggers:\n${manifest.triggers.map((t) => `  - ${t}`).join('\n')}\ncapabilities:\n${manifest.capabilities.map((c) => `  - ${c}`).join('\n')}\ntoken_budget: ${manifest.tokenBudget}\ncompatibility: "${manifest.compatibility}"\n---\n\n${body}`;
 
     // Security Scan — skills novas são não-confiáveis por default

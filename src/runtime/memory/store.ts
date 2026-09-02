@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type { FailurePattern, MemoryCategory, MemoryEntry, RuntimeState } from '../types.js';
+import { isRecurrent, signatureOf, type Trajectory, type TrajectoryStep } from '../evolution/trajectories.js';
 
 export const STATE_FILE_REL = path.join('.izanagi', 'state', 'runtime-state.json');
 
@@ -50,8 +51,10 @@ export class MemoryStore {
       if (fs.existsSync(this.stateFile)) {
         const raw = JSON.parse(fs.readFileSync(this.stateFile, 'utf-8')) as RuntimeState;
         if (raw && typeof raw === 'object' && raw.schemaVersion >= 1) {
-          // Migração leve: estado persistido antes da introdução de `models` não tem o campo.
+          // Migração leve: estado persistido antes da introdução de `models`/
+          // `trajectories` não tem o campo.
           raw.models ??= {};
+          raw.trajectories ??= {};
           return raw;
         }
       }
@@ -63,6 +66,7 @@ export class MemoryStore {
       agents: {},
       skills: {},
       models: {},
+      trajectories: {},
       failures: {},
       learnings: [],
       updatedAt: nowIso(),
@@ -168,6 +172,79 @@ export class MemoryStore {
       if (stats.runs > 0) out[modelId] = stats.successes / stats.runs;
     }
     return out;
+  }
+
+  /* ==================== TRAJETÓRIAS ==================== */
+
+  /**
+   * Registra o caminho percorrido por um run. O simétrico de `recordFailure`:
+   * o `LearningEngine` já convertia falha em padrão reutilizável, e sucesso não
+   * virava nada além de estatística agregada.
+   *
+   * Devolve a trajetória consolidada, ou `null` quando a execução é curta
+   * demais para ser procedimento (menos de 2 tarefas verificadas).
+   */
+  recordTrajectory(input: {
+    steps: TrajectoryStep[];
+    objective: string;
+    domains?: string[];
+    success: boolean;
+  }): Trajectory | null {
+    const signed = signatureOf(input.steps);
+    if (!signed) return null;
+    const now = nowIso();
+    const store = (this.state.trajectories ??= {});
+    const existing = store[signed.signature];
+
+    if (existing) {
+      existing.occurrences++;
+      if (input.success) existing.successes++;
+      existing.lastSeen = now;
+      existing.domains = Array.from(new Set([...existing.domains, ...(input.domains ?? [])]));
+      // Amostra de objetivos, não histórico: o valor está na variedade dos
+      // exemplos, e guardar todos faria o estado crescer sem limite.
+      if (!existing.examples.includes(input.objective) && existing.examples.length < 5) {
+        existing.examples.push(input.objective);
+      }
+      this.save();
+      return existing;
+    }
+
+    const entry: Trajectory = {
+      signature: signed.signature,
+      steps: signed.steps,
+      domains: input.domains ?? [],
+      occurrences: 1,
+      successes: input.success ? 1 : 0,
+      firstSeen: now,
+      lastSeen: now,
+      examples: [input.objective],
+    };
+    store[signed.signature] = entry;
+    this.save();
+    return entry;
+  }
+
+  /** Trajetórias que já se repetiram o bastante e ainda não viraram skill. */
+  recurrentTrajectories(): Trajectory[] {
+    return Object.values(this.state.trajectories ?? {})
+      .filter(isRecurrent)
+      .sort((a, b) => b.occurrences - a.occurrences);
+  }
+
+  listTrajectories(limit = 20): Trajectory[] {
+    return Object.values(this.state.trajectories ?? {})
+      .sort((a, b) => b.occurrences - a.occurrences)
+      .slice(0, limit);
+  }
+
+  /** Marca a trajetória como já sintetizada, para não gerar a skill duas vezes. */
+  markTrajectorySynthesized(signature: string, skill: string): boolean {
+    const entry = this.state.trajectories?.[signature];
+    if (!entry) return false;
+    entry.synthesizedSkill = skill;
+    this.save();
+    return true;
   }
 
   /* ==================== FAILURE PATTERNS ==================== */
@@ -276,8 +353,15 @@ export class MemoryStore {
     return map[category];
   }
 
-  /** Lista entradas de memória markdown existentes. */
-  listEntries(): MemoryEntry[] {
+  /**
+   * Lista entradas de memória markdown existentes.
+   *
+   * Por padrão o conteúdo vem CORTADO em 4000 chars, porque uma entrada inteira
+   * indo para o contexto de um prompt é justamente o que a arquitetura proíbe.
+   * `full: true` devolve o arquivo completo, e existe porque BUSCAR sobre o
+   * conteúdo cortado significava não encontrar nada além do começo do arquivo.
+   */
+  listEntries(opts: { full?: boolean } = {}): MemoryEntry[] {
     if (!fs.existsSync(this.memoryDir)) return [];
     const categories: MemoryCategory[] = ['episodic', 'semantic', 'procedural', 'decision', 'failure', 'skill', 'project'];
     const entries: MemoryEntry[] = [];
@@ -290,7 +374,7 @@ export class MemoryStore {
         id: `${cat}-file`,
         category: cat,
         title: this.entryFile(cat),
-        content: content.slice(0, 4000),
+        content: opts.full ? content : content.slice(0, MEMORY_PREVIEW_CHARS),
         tags: [cat],
         createdAt: stat.birthtime.toISOString(),
         updatedAt: stat.mtime.toISOString(),
@@ -300,20 +384,39 @@ export class MemoryStore {
     return entries;
   }
 
-  /** Busca simples por termo nas entradas markdown. */
+  /**
+   * Busca por termo nas entradas markdown.
+   *
+   * Duas correções sobre a versão anterior, e as duas mudam o RESULTADO, não a
+   * velocidade:
+   *
+   *  - varre o arquivo INTEIRO. Antes buscava sobre o conteúdo já cortado em
+   *    4000 chars, então tudo que o projeto aprendeu depois das primeiras
+   *    páginas de cada arquivo era invisível para a busca — recall truncado em
+   *    silêncio, que é a pior forma de estar errado;
+   *  - devolve a JANELA em volta da ocorrência, não o começo do arquivo. Quem
+   *    busca "erro de timeout" quer o trecho sobre timeout, não a primeira
+   *    entrada do arquivo de erros.
+   */
   search(query: string, limit = 10): Array<MemoryEntry & { score: number }> {
     const q = query.toLowerCase();
+    const terms = q.split(/\s+/).filter((t) => t.length > 2);
     const scored: Array<MemoryEntry & { score: number }> = [];
-    for (const e of this.listEntries()) {
-      let score = 0;
+
+    for (const e of this.listEntries({ full: true })) {
       const body = e.content.toLowerCase();
-      const terms = q.split(/\s+/).filter((t) => t.length > 2);
+      let score = 0;
+      let firstHit = -1;
       for (const t of terms) {
-        if (body.includes(t)) score += 1;
+        const at = body.indexOf(t);
+        if (at === -1) continue;
+        score += 1;
+        if (firstHit === -1 || at < firstHit) firstHit = at;
       }
       if (e.title.toLowerCase().includes(q)) score += 2;
       if (e.tags.some((t) => t.includes(q))) score += 1;
-      if (score > 0) scored.push({ ...e, score });
+      if (score === 0) continue;
+      scored.push({ ...e, content: excerpt(e.content, firstHit), score });
     }
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);
   }
@@ -335,4 +438,20 @@ export class MemoryStore {
   listLearnings(limit = 20) {
     return this.state.learnings.slice(0, limit);
   }
+}
+
+/** Chars de uma entrada de memória expostos por padrão (preview, não busca). */
+const MEMORY_PREVIEW_CHARS = 4000;
+/** Janela devolvida em volta da ocorrência encontrada pela busca. */
+const MEMORY_EXCERPT_CHARS = 800;
+
+/**
+ * Trecho em volta da ocorrência. Sem ocorrência posicional (casou por título ou
+ * tag), devolve o começo — que continua sendo a melhor aposta nesse caso.
+ */
+function excerpt(content: string, at: number): string {
+  if (at < 0) return content.slice(0, MEMORY_EXCERPT_CHARS);
+  const start = Math.max(0, at - Math.floor(MEMORY_EXCERPT_CHARS / 3));
+  const slice = content.slice(start, start + MEMORY_EXCERPT_CHARS);
+  return start > 0 ? `[...] ${slice}` : slice;
 }

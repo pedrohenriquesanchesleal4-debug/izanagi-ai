@@ -9,6 +9,14 @@ import { BenchmarkRunner } from '../../runtime/benchmarks/runner.js';
 import type { BenchmarkReport } from '../../runtime/types.js';
 import { runTokenBenchmark, formatTokenBenchmark } from '../../runtime/benchmarks/token-benchmark.js';
 import { evidenceFromRun, formatExecutionSummary } from '../../runtime/benchmarks/arena.js';
+import {
+  measureContextCompression,
+  measureMemorySearch,
+  syntheticArtifacts,
+  writeSyntheticMemory,
+} from '../../runtime/benchmarks/memory-benchmark.js';
+import { MemoryStore } from '../../runtime/memory/store.js';
+import os from 'os';
 import { run as runObjective } from '../../sdk.js';
 
 export async function benchmarkCommand(baseDir: string, args: string[]): Promise<void> {
@@ -33,6 +41,10 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
     benchmarkCompare(baseDir, prev, curr);
     return;
   }
+  if (sub === 'memory' || sub === 'context') {
+    benchmarkMemory(baseDir, args.includes('--json'));
+    return;
+  }
   if (sub === 'tokens' || sub === 'economy') {
     benchmarkTokens(args.includes('--json'));
     return;
@@ -47,7 +59,7 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi benchmark <list|run|tokens|compare|report> [args]\n');
+  console.error('Usage: izanagi benchmark <list|run|tokens|memory|compare|report> [args]\n');
   process.exit(1);
 }
 
@@ -223,4 +235,67 @@ function benchmarkTokens(asJson: boolean): void {
     console.log(`\x1b[90m• ${row.id}: ${row.hypothesis}\x1b[0m`);
   }
   console.log('');
+}
+
+/**
+ * `izanagi benchmark memory` — os números que faltavam para decidir duas coisas
+ * que estavam paradas por falta de medição: trocar a busca de memória por um
+ * índice FTS5, e trocar a compressão determinística de contexto por um
+ * compressor neural.
+ *
+ * O comando não decide: ele mede, aplica o limiar declarado no módulo e diz o
+ * que o número sustenta. Se a resposta mudar quando o projeto crescer, o
+ * comando vai dizer isso sozinho.
+ */
+function benchmarkMemory(baseDir: string, asJson: boolean): void {
+  // Medir sobre memória vazia produz um número sem valor. Sem corpus real, a
+  // medição roda sobre um corpus sintético em diretório temporário, e o
+  // relatório diz que foi isso que mediu.
+  let alvo = baseDir;
+  let corpus = 'memória real do projeto';
+  if (new MemoryStore({ baseDir }).listEntries().length === 0) {
+    alvo = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-membench-'));
+    const entradas = writeSyntheticMemory(alvo, { entriesPerFile: 60, charsPerEntry: 1200 });
+    corpus = `corpus sintético (${entradas} entradas): o projeto ainda não acumulou memória`;
+  }
+  const memory = new MemoryStore({ baseDir: alvo });
+  // Consultas de acerto E de erro: medir só acerto esconde o custo do caminho
+  // em que a varredura vai até o fim sem achar nada, que é o caso comum.
+  const queries = [
+    'arquitetura', 'decisao', 'erro corrigido', 'skill', 'contexto',
+    'termo-que-nao-existe-no-corpus', 'outro-termo-inexistente', 'zzzz',
+  ];
+  const search = measureMemorySearch(memory, queries);
+
+  const contract = {
+    id: 'bench', objective: 'medir compressao', role: 'specialist' as const,
+    inputs: [], constraints: [], expectedOutput: { kind: 'raw' }, dependencies: [],
+    priority: 'normal' as const, budget: { maxTokens: 4000 },
+    verification: { deterministic: [] }, acceptance: [],
+  };
+  const compression = measureContextCompression(contract, syntheticArtifacts(6, 8000));
+
+  if (alvo !== baseDir) fs.rmSync(alvo, { recursive: true, force: true });
+
+  if (asJson) {
+    console.log(JSON.stringify({ corpus, search, compression }, null, 2));
+    return;
+  }
+
+  console.log('\n\x1b[35m=== Izanagi: memória e compressão de contexto ===\x1b[0m\n');
+  console.log('\x1b[1mBusca na memória\x1b[0m');
+  console.log(`  corpus: ${corpus}`);
+  console.log(`  entradas varridas por consulta: ${search.entriesScanned} (${search.charsScanned} chars)`);
+  console.log(`  latência: p50 ${search.p50Ms}ms · p95 ${search.p95Ms}ms · max ${search.maxMs}ms`);
+  console.log(`  ${search.hits}/${search.queries} consultas com resultado`);
+  console.log(`  \x1b[90m${search.verdict}\x1b[0m\n`);
+
+  console.log('\x1b[1mCompressão de contexto (determinística)\x1b[0m');
+  console.log(`  ${compression.artifacts} artefatos · ${compression.fullChars} chars completos -> ${compression.sentChars} enviados`);
+  console.log(`  razão ${(compression.ratio * 100).toFixed(1)}% · ${compression.intact} artefato(s) couberam inteiros`);
+  console.log(`  \x1b[90m${compression.verdict}\x1b[0m\n`);
+
+  console.log('\x1b[90mO que isto NÃO mede: se o que sobrou na compressão é o que importava.');
+  console.log('Isso é qualidade de recuperação, exige gabarito anotado, e é justamente');
+  console.log('por isso que a decisão sobre compressão neural continua em aberto.\x1b[0m\n');
 }

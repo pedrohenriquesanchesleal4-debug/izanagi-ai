@@ -594,6 +594,11 @@ export interface RuntimeState {
   schemaVersion: number;
   agents: Record<string, AgentStats>;
   skills: Record<string, SkillStats>;
+  /**
+   * Trajetórias observadas: caminhos de execução que se repetiram. Ausente em
+   * estado gravado antes desta versão.
+   */
+  trajectories?: Record<string, import('./evolution/trajectories.js').Trajectory>;
   /** Histórico de performance por modelo (ex.: "claude-sonnet-4-5") — alimenta RoutingContext.historicalPerformance. */
   models: Record<string, ModelStats>;
   failures: Record<string, FailurePattern>;
