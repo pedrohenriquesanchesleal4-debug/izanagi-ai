@@ -4,6 +4,43 @@
 
 ---
 
+## [3.14.0]: 2026-09-02
+
+Fechamento do runtime: as peças que existiam e eram testadas passam a estar **ligadas** e a mudar a execução. As onze limitações registradas na v3.13.0 foram resolvidas; o que sobrou está em [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md).
+
+### Added
+- **Critique loop** (`runtime/orchestrator.ts`): a saída de um nó crítico passa por `parseCritique` e vira decisão de runtime. Crítica bloqueante (`high`/`critical`) reprova o nó CRITICADO — não o crítico — com `formatCorrection` como correção mínima. O alvo sai de `issue.artifact` quando o nome bate com um nó do grafo, senão da dependência do crítico. O crítico volta para a fila com `attempts` zerado: quem apontou o problema é quem verifica o conserto. Teto de UMA rodada de correção por nó, para crítico e executor não entrarem em ping-pong.
+- **Retentativa dirigida** (`runtime/orchestration/context-resolver.ts`): `resolve()` aceita `correction`. Com ela, o contexto deixa de ser os insumos do grafo e passa a ser a entrega anterior do próprio nó + a lista de correções.
+- **`critique` como ArtifactKind** (`runtime/contracts/artifacts.ts`): schema com `status` e `issues` obrigatórios, e contrato de saída JSON injetado no prompt do nó crítico. Crítica em prosa reprova na verificação e a retentativa cobra o formato.
+- **Conversation Log** (`runtime/protocol/conversation.ts`): registro do protocolo agente-a-agente do run (`task`/`result`/`critique`/`correction`). Toda mensagem carrega REFERÊNCIA de artefato (`runId:nodeId`) e resumo de até 240 chars, nunca o conteúdo produzido. Persistido em `RunTrace.conversation`.
+- **Juiz semântico default** (`runtime/verification/judge.ts`): `createModelJudge` roda no papel `worker`, recebe o artefato resumido e um critério por vez, com saída `{"pass": bool, "reason": string}`. Ligado por default na CLI e no SDK via `createSemanticJudge`; `--no-judge` / `noJudge: true` desligam. Saída ilegível, `pass` não booleano, erro de rede ou timeout viram `inconclusive` (a engine trata como `unknown`), nunca reprovação.
+- **`Commander.replan`** (`runtime/orchestration/commander.ts`): replanejamento produz Plano B, não Plano A com um nó reaberto. Escada determinística: troca o agente (os já queimados no nó saem da disputa via `metadata.triedAgents`) → sobe o papel → quebra a tarefa em `<id>-draft` + `<id>`, preservando o id original para as dependências a jusante continuarem válidas. Da segunda tentativa em diante, troca agente E sobe papel. Recebe só o delta da falha (nó, causa, critérios não comprovados, referência do artefato, tentativa) e declara `changes: []` quando não há alternativa estrutural.
+- **Memória no planejamento**: `CommanderInput.memory` (interface estreita `PlanningMemory`). Padrão de falha conhecido para o objetivo sobe o modo UM degrau; agente com taxa de sucesso abaixo de 40% em pelo menos 3 runs sai da disputa, com salvaguarda contra excluir todos; a consulta entra nas decisões do plano e no Decision Journal.
+- **Skills por tarefa**: `CommanderInput.resolveSkills` popula `node.skills` com o ranking do objetivo de CADA tarefa (teto de 3), no lugar da chain do run replicada em todos os nós. Nó determinístico (gate/evaluator/validator) não carrega skill.
+- **CLI**: `izanagi run --no-judge`; `izanagi explain <run-id> --conversation` mostra o log A2A inteiro (crítica e correção aparecem por default).
+
+### Changed
+- **`VerificationEngine.verify()` agora é `async`** (o juiz é uma chamada de rede). `SemanticJudge` continua aceitando implementação síncrona: o tipo admite valor ou Promise. `VerificationResult` ganhou `judgeTokens`/`judgeModel`, cobrados da fase `evaluation` — verificar não é produzir, e misturar as duas esconderia o preço da verificação semântica na telemetria.
+- **`SkillResolver.loadSkill` memoiza manifesto por alias** (`clearCache()` invalida). Sem isso, ranquear skills por tarefa em vez de por run multiplicaria ~170 leituras de disco pelo número de nós do grafo.
+- **Producer headless devolve crítica estruturada** para nós de kind `critique`, declarando ser simulação. Os demais kinds tipados continuam não satisfazendo o schema (limitação registrada no handoff).
+
+### Fixed
+- **`minSize: 60` no schema de `critique` reprovava a crítica que APROVA**: `{"status":"approved","issues":[]}` tem 33 chars. Baixado para 20 — quem garante qualidade aqui são os campos obrigatórios, não o tamanho.
+- **Reprovação da Verification Engine não casava com a taxonomia de falha**: `classifyFailure` não reconhecia "verificação"/"verification", então um critério de aceite não comprovado caía no ramo genérico e abortava o nó na primeira tentativa em vez de entrar no caminho de cura de validação (skill corretiva + retentativa).
+- **Recomendação de crítica na avaliação final nunca aparecia**: o código testava `ctx.artifacts.has('critique')`, mas `critique` é o KIND do artefato e a chave do mapa é o id do nó (`critic`). Agora sai das críticas realmente interpretadas, com severidade e se houve correção.
+
+### Compatibility
+- `OrchestratorOptions.replan` e `judge` são opcionais: sem eles, o Orchestrator segue o caminho anterior (`Planner.replan` legado, critério semântico `UNVERIFIED`).
+- `CommanderInput.memory` e `resolveSkills` são opcionais: sem eles, o Commander decide como antes e a chain do run continua valendo byte-a-byte.
+- `RunTrace.conversation` é opcional; traces antigos continuam legíveis.
+- Nenhum comando ou flag da CLI foi removido.
+- Único breaking interno: `VerificationEngine.verify()` virou `async`. O único caller de produção é o Orchestrator.
+
+### Tests
+488 testes passando. O único vermelho na suíte é `polyglot: bin Rust presente com --version barato`, que exige executar um binário com shebang bash — não roda no Windows, e é anterior a estas mudanças.
+
+---
+
 ## [3.13.0]: 2026-09-01
 
 Rearquitetura do runtime: de "framework de agentes" para runtime de execução de trabalho. O modo de execução passa a ser proporcional ao problema, cada tarefa paga o preço do papel que exerce, e nenhuma tarefa termina sem evidência.

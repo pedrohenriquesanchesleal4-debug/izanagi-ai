@@ -120,21 +120,37 @@ De "framework de agentes" para runtime que transforma objetivo em plano executá
 - [x] **CLI**: `--mode`, `--budget`, `--max-cost`, `--model`, `--local`, `--cache`, `--no-commander`; `izanagi models`; `izanagi budget`.
 - [x] **Token Benchmark**: legado vs Commander em chamadas, tokens e custo, determinístico e com ressalva explícita do que não mede.
 
+### Limitações desta fase: todas fechadas na Fase 9
+
+As onze limitações registradas aqui na v3.13.0 foram resolvidas nas versões
+3.13.x/3.14.0. O detalhamento de cada fechamento está na tabela *Fechados* de
+[`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md).
+
+## Fase 9: Fechamento do runtime (v3.14.0) ✅
+
+De "as peças existem e são testadas" para "as peças estão ligadas e mudam a execução".
+
+- [x] **Degradação de orçamento aplicada de fato**: cada degrau muda a execução (contexto pela metade, teto de saída a 60%, papel rebaixado, concorrência dividida, opcionais cortadas, pausa por aprovação humana), com limiar próprio por degrau e pressão calculada pela maior razão **por fase**.
+- [x] **Content store de artefato**: conteúdo persistido em `.izanagi/state/artifacts/<runId>/` com `contentRef`, teto de 512KB e truncamento declarado. `izanagi explain --artifacts` mostra o que foi produzido depois que o processo morreu.
+- [x] **Teto de concorrência**: pool com ordem preservada e falha isolada por índice (`orchestration/concurrency.ts`), default 3, configurável e reduzido pela degradação.
+- [x] **Critique loop ligado**: crítica bloqueante reprova o nó CRITICADO e devolve correção mínima; a retentativa recebe a própria entrega anterior + a lista de correções, não o histórico. Teto de uma rodada por nó. `critique` virou ArtifactKind com formato obrigatório.
+- [x] **Protocolo A2A com caller**: `ConversationLog` registra task/result/critique/correction do run, sempre por referência de artefato. Persiste no trace; `izanagi explain [--conversation]` mostra quem falou com quem.
+- [x] **Juiz semântico ligado por default**: papel `worker`, artefato resumido, um critério por vez. Saída ilegível/erro de rede vira `inconclusive`, nunca reprovação. Tokens do julgamento cobrados da fase `evaluation`. `--no-judge` desliga.
+- [x] **Replanejamento pelo Commander**: `Commander.replan` troca o agente, sobe o papel ou quebra a tarefa em rascunho + fechamento. Recebe só o delta da falha e declara quando não há alternativa estrutural.
+- [x] **Memória no planejamento**: padrão de falha conhecido sobe o modo um degrau; agente com histórico ruim sai da disputa (com salvaguarda contra excluir todo mundo); a consulta entra no Decision Journal.
+- [x] **Skills por tarefa**: cada nó carrega as skills do próprio objetivo (teto de 3) em vez da chain do run, com memoização de manifesto para o ranking por tarefa não multiplicar I/O.
+
 ### Limitações reais desta fase (não resolvidas)
 
 > Versão completa e acionável, com arquivo, motivo e definição de pronto por item: [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md). Ao fechar um item lá, atualizar esta lista na mesma mudança.
 
-- **Juiz semântico não vem ligado**: a camada semântica da verificação existe e é testada, mas nenhum juiz é configurado por default. Critérios semânticos ficam `UNVERIFIED` até alguém injetar um. Isso é intencional (melhor inconclusivo que falso positivo), mas significa que a verificação hoje é essencialmente determinística.
-- **Decomposição por LLM é opcional e sem caller em produção**: `Commander.plan({ decompose })` valida e aceita decomposições externas, mas a CLI não injeta nenhuma. O planejamento em produção é 100% template + heurística.
-- **Sub-orquestradores hierárquicos não existem**: o grafo é plano. Um nó não abre um subgrafo próprio com profundidade máxima.
+- **Sub-orquestradores hierárquicos não existem**: o grafo é plano. A quebra de tarefa do replanejamento cobre o caso comum, mas um nó não abre um subgrafo próprio com profundidade máxima.
 - **Policy Engine continua fora do caminho de `izanagi run`**: `produce()` chama o LLM diretamente, sem passar por `ToolRegistry`, então as garantias de trust-tier/least-privilege ainda não se aplicam à execução real (limitação herdada, documentada desde a v3.x).
 - **Token Benchmark mede plano, não execução**: os números são tetos declarados contra preço de catálogo. Consumo real por run só aparece em `izanagi budget <run-id>`.
-- **Peer review entre agentes não é automático**: o protocolo de crítica existe e é testado, mas nenhum nó do template dispara revisão cruzada por conta própria.
-- **A escada de degradação de orçamento é registrada, não aplicada**: `nextDegradation()` devolve o passo e a telemetria o registra, mas nada reduz contexto, troca modelo ou corta paralelismo de fato. O teto final ainda protege (o gasto é recusado), mas a degradação em si é decorativa hoje.
-- **Artefato não tem content store**: o `ArtifactRegistry` persiste metadado (produtor, hash, versão, lineage); o conteúdo vive só em memória durante o run. Sem isso não há reuso de artefato entre runs.
-- **Paralelismo sem teto de concorrência**: `executeBatches` dispara o batch inteiro em `Promise.all`, sem limite. Provider com rate limit apertado transforma paralelismo em 429 e o healing gasta mais do que a execução serial gastaria.
-- **Memória não informa o planejamento**: o Commander classifica e escolhe agente sem consultar padrões de falha nem histórico por domínio.
-- **Skills continuam resolvidas por run, não por tarefa**: `rankSkills()` existe mas o Commander não popula `contract.skills` por objetivo.
+- **Decomposição por LLM é opcional e sem caller em produção**: `Commander.plan({ decompose })` valida e aceita decomposições externas, mas nem a CLI nem o SDK injetam uma. O planejamento em produção é 100% template + heurística.
+- **Producer headless não satisfaz o schema dos artefatos tipados**: sem API key, o run termina `FAIL` por um motivo que não tem relação com o runtime. Só o caminho de `critique` foi corrigido.
+- **Estatística de agente é global, não por domínio**: um agente que vai mal em frontend e bem em backend é despriorizado nos dois.
+- **Cache só cobre resposta de modelo e manifesto de skill**: resultado de tool, validação determinística e pesquisa continuam recalculados.
 
 ## Critérios de aceite das próximas fases
 

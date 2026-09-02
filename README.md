@@ -65,7 +65,7 @@ Cada tarefa recebe o modelo do seu papel, não o modelo do run: `commander` (tie
 
 ### Verificação por evidência
 
-Nenhuma tarefa termina porque o agente disse que terminou. Cada contrato carrega critérios de aceite derivados do schema real do artefato, e a Verification Engine devolve `VERIFIED`, `FAILED` ou `UNVERIFIED`. Critério semântico **sem juiz configurado nunca vira aprovação**: fica `UNVERIFIED`, e o run reporta isso.
+Nenhuma tarefa termina porque o agente disse que terminou. Cada contrato carrega critérios de aceite derivados do schema real do artefato, e a Verification Engine devolve `VERIFIED`, `FAILED` ou `UNVERIFIED`. Critério semântico é julgado por um modelo barato (papel `worker`, artefato resumido); com `--no-judge`, ou sem provider, ele **nunca vira aprovação**: fica `UNVERIFIED`, e o run reporta isso. Juiz que não conseguiu decidir também não reprova.
 
 Com `--prompt-only`, apenas compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. Nós de aprovação (`human-in-the-loop`) pausam a execução até `izanagi approve <run-id>`.
 
@@ -140,7 +140,7 @@ CLI legado (`izanagi`, publicada no npm):
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local`, `--cache`, `--no-commander` (planejamento legado por categoria), `--prompt-only`. |
+| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local`, `--cache`, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
 | `izanagi models [--json]` | Catálogo de modelos, providers configurados e qual modelo cada papel (commander/specialist/worker) receberia agora, com custo por 10k tokens. |
 | `izanagi budget [run-id] [--json]` | Para onde foi o orçamento daquele run: tokens por fase, custo estimado, cache local e do provider, contexto poupado, escaladas, degradação e verificação por tarefa. |
 | `izanagi chat` | REPL interativo da CLI. |
@@ -162,7 +162,7 @@ CLI legado (`izanagi`, publicada no npm):
 | `izanagi resume <run-id>` | Retoma execução interrompida (crash) ou pausada a partir do checkpoint: sem replanejar nem reexecutar nós concluídos. |
 | `izanagi approve <run-id> [node-id]` | Aprova uma ação de alto risco pausada (nó `kind: 'approval'`) e retoma. |
 | `izanagi reject <run-id> [node-id] [--reason]` | Rejeita a ação pausada (o nó falha com o motivo) e retoma: self-healing/abort seguem normalmente. |
-| `izanagi explain <run-id>` | Por que o Izanagi decidiu isso: decisões (Decision Journal) + self-healing + veredito, sem chain-of-thought. |
+| `izanagi explain <run-id>` | Por que o Izanagi decidiu isso: decisões (Decision Journal) + conversa entre agentes + self-healing + veredito, sem chain-of-thought. `--artifacts` mostra o conteúdo produzido, `--conversation` o log A2A inteiro. |
 | `izanagi export --cli <cli>` | Regenera adapters multi-CLI (opencode, claude, codex, cursor, copilot, kimi, all). Idempotente. |
 | `izanagi --version` | Exibe a versão da CLI. |
 
@@ -245,7 +245,7 @@ CI (`.github/workflows/polyglot.yml`): 7 jobs paralelos em push/PR para `main` �
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
 | [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
-| [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | O que ficou faltando no runtime, verificado no código: 15 itens com arquivo, motivo e definição de pronto. Ponto de partida da próxima sessão. |
+| [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | O que ainda falta no runtime, verificado no código: arquivo, motivo e definição de pronto por item, mais a tabela do que já foi fechado. Ponto de partida da próxima sessão. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Visão arquitetural do framework e da topologia poliglota. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Guia de contribuição: convenções, fluxo de PR e padrões do repo. |
 | [`ROADMAP.md`](ROADMAP.md) | Planejamento de evolução por waves e marcos. |
