@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { PolicyEngine, type PolicyEnvironment, type TrustTier } from '../security/policy.js';
 import { sanitizeText } from '../text/unicode-hygiene.js';
+import { runInSandbox, sandboxAvailability, DEFAULT_TIMEOUT_MS } from './code-sandbox.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
 
@@ -34,7 +35,12 @@ export interface ToolDefinition {
   compatibility?: string;
   /** Valida o payload antes da execução. */
   validateInput(input: unknown): string[];
-  execute(input: unknown, ctx: ToolContext): unknown;
+  /**
+   * Executa. Pode ser assíncrona: `code.execute` roda um processo isolado, e
+   * fazer isso de forma síncrona travaria o event loop — o que na prática
+   * mataria o paralelismo dos outros nós do mesmo batch.
+   */
+  execute(input: unknown, ctx: ToolContext): unknown | Promise<unknown>;
 }
 
 export interface ToolResult {
@@ -101,6 +107,43 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
       return { written: abs };
     },
   },
+  'code.execute': {
+    id: 'code.execute',
+    description: 'Executa um script Node ESM em processo isolado (Permission Model), colapsando uma sequência de tool calls em uma só',
+    // `shell` de propósito: a PolicyEngine já nega essa permissão a trust tier
+    // `generated` e `community`, então código gerado por Factory ou vindo de
+    // terceiro não executa por default. É a mitigação do limite de rede.
+    requiredPermission: 'shell',
+    validateInput: (input) => {
+      const i = input as { code?: unknown; timeoutMs?: unknown };
+      const issues: string[] = [];
+      if (typeof i?.code !== 'string' || i.code.trim().length === 0) issues.push('campo "code" (string não vazia) obrigatório');
+      if (i?.timeoutMs !== undefined && (typeof i.timeoutMs !== 'number' || i.timeoutMs <= 0)) {
+        issues.push('campo "timeoutMs" deve ser um número positivo');
+      }
+      const availability = sandboxAvailability();
+      if (!availability.available) issues.push(`sandbox indisponível: ${availability.reason}`);
+      return issues;
+    },
+    execute: async (input, ctx) => {
+      const i = input as { code: string; timeoutMs?: number; allowProjectRead?: boolean };
+      const result = await runInSandbox({
+        code: i.code,
+        baseDir: ctx.baseDir,
+        timeoutMs: Math.min(i.timeoutMs ?? DEFAULT_TIMEOUT_MS, 60_000),
+        // Leitura do projeto é opt-in e nunca vem de graça junto com escrita.
+        ...(i.allowProjectRead ? { allowProjectRead: true } : {}),
+      });
+      if (!result.ok) {
+        throw new Error(
+          result.timedOut
+            ? `code.execute: ${result.error}`
+            : `code.execute falhou (exit ${result.exitCode}): ${result.stderr.slice(0, 500) || result.error || 'sem saída de erro'}`,
+        );
+      }
+      return { stdout: result.stdout, stderr: result.stderr, durationMs: result.durationMs, truncated: result.truncated };
+    },
+  },
   'fs.ls': {
     id: 'fs.ls',
     description: 'Lista diretório dentro da zona permitida',
@@ -146,7 +189,7 @@ export class ToolRegistry {
   }
 
   /** Seleciona + verifica permissão + executa + valida resultado. */
-  execute(toolId: string, input: unknown, ctx: ToolContext): ToolResult {
+  async execute(toolId: string, input: unknown, ctx: ToolContext): Promise<ToolResult> {
     const start = Date.now();
     try {
       const tool = this.tools.get(toolId);
@@ -175,7 +218,7 @@ export class ToolRegistry {
       if (inputIssues.length > 0) {
         return { ok: false, error: `input inválido: ${inputIssues.join('; ')}`, durationMs: Date.now() - start };
       }
-      const result = tool.execute(input, ctx);
+      const result = await tool.execute(input, ctx);
       return { ok: true, result, durationMs: Date.now() - start };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e), durationMs: Date.now() - start };

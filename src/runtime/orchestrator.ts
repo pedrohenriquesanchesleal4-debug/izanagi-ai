@@ -1347,7 +1347,7 @@ export class Orchestrator {
       trustTier,
     };
 
-    const outcome = registry.execute(spec.id, spec.input, toolCtx);
+    const outcome = await registry.execute(spec.id, spec.input, toolCtx);
     ctx.trace.markTool(`tool:${spec.id}`);
     ctx.trace.span(`tool:${spec.id}`, 'tool', {
       node: node.id,
