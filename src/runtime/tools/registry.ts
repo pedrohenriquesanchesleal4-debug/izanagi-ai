@@ -45,7 +45,11 @@ export interface ToolResult {
 }
 
 function ensureInside(baseDir: string, target: string, allowedDirs?: string[]): string {
-  const abs = path.resolve(target);
+  // Caminho relativo resolve contra a SANDBOX, não contra o cwd do processo.
+  // `path.resolve(target)` sozinho fazia "saida.txt" virar um arquivo no
+  // diretório de onde o izanagi foi invocado — fora da zona declarada, e sem
+  // que a checagem abaixo tivesse como perceber que a intenção era outra.
+  const abs = path.isAbsolute(target) ? path.resolve(target) : path.resolve(baseDir, target);
   const safeZones = [path.resolve(baseDir), ...(allowedDirs ?? []).map((d) => path.resolve(d))];
   for (const zone of safeZones) {
     if (abs === zone || abs.startsWith(zone + path.sep)) return abs;

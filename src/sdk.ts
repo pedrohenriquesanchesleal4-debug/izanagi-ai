@@ -175,6 +175,9 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     // Replanejamento passa pelo Commander: falha reincidente produz um grafo
     // diferente, nao o mesmo grafo com um no reaberto.
     replan: planning.replan,
+    // No de tool passa por ToolRegistry + PolicyEngine: o trust tier vem da
+    // origem do arquivo do agente, nunca do que ele declara sobre si.
+    trustTierOf: planning.trustTierOf,
     produce: producer,
     consume: (node, artifact) => {
       artifacts[node.id] = { kind: artifact.kind, content: artifact.content, valid: artifact.valid };

@@ -21,6 +21,7 @@ import { ResponseCache } from './cache/response-cache.js';
 import { simulatedArtifact } from './contracts/artifacts.js';
 import { createModelJudge } from './verification/judge.js';
 import type { SemanticJudge } from './verification/engine.js';
+import type { TrustTier } from './security/policy.js';
 import type { AgentRole, ExecutionMode } from './contracts/task-contract.js';
 import type { ExecuteCtx } from './orchestrator.js';
 import type { ExecutionGraph, GraphNode, ModelSpec, RoutingContext } from './types.js';
@@ -65,6 +66,8 @@ export interface PlanningOutput {
    * escolhe agente pelo mesmo critério do Plano A.
    */
   replan: (input: { graph: ExecutionGraph; failure: ReplanFailure }) => ReplanResult | null;
+  /** Trust tier por agente, derivado da origem do arquivo no disco. */
+  trustTierOf: (agentId: string) => TrustTier | undefined;
 }
 
 /**
@@ -132,6 +135,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
   return {
     ...(plan ? { plan } : {}),
     replan: ({ graph, failure }) => commander.replan({ graph }, failure, commanderInput),
+    trustTierOf: (agentId: string) => capabilities.get(agentId)?.trustTier,
     router,
     routingContext,
     specById,

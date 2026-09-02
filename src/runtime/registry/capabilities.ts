@@ -14,6 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { AgentRole } from '../contracts/task-contract.js';
+import type { TrustTier } from '../security/policy.js';
 import { semanticRelevance } from '../routing/scorer.js';
 import { detectDomains, domainOverlap, type Domain } from '../orchestration/domains.js';
 
@@ -39,6 +40,13 @@ export interface AgentCapability {
    * escrito em português ("arquitetura limpa").
    */
   domains: Domain[];
+  /**
+   * Confiança de origem, derivada do diretório de onde o agente foi lido.
+   * É o que a `PolicyEngine` usa para negar permissão destrutiva a agente que
+   * não veio do framework. Derivar do caminho é deliberado: um agente não pode
+   * declarar o próprio trust tier no JSON dele.
+   */
+  trustTier: TrustTier;
   file: string;
 }
 
@@ -57,6 +65,19 @@ function roleFor(id: string): AgentRole {
   if (COMMANDER_AGENTS.has(id)) return 'commander';
   if (WORKER_AGENTS.has(id)) return 'worker';
   return 'specialist';
+}
+
+/**
+ * Trust tier pela ORIGEM do arquivo, nunca pelo que o arquivo declara:
+ *   - `agents/generated/` : produzido pela Agent Factory desta instalação;
+ *   - `.agents/`          : trazido pelo projeto do usuário (terceiro);
+ *   - resto               : o catálogo do próprio framework.
+ */
+function trustTierFor(file: string): TrustTier {
+  const normalized = file.replace(/\\/g, '/');
+  if (/\/agents\/generated\//.test(normalized)) return 'generated';
+  if (/\/\.agents\//.test(normalized)) return 'community';
+  return 'builtin';
 }
 
 function costClassFor(tokenBudget: number): AgentCapability['costClass'] {
@@ -127,6 +148,7 @@ export class AgentCapabilityRegistry {
       role: roleFor(id),
       outputs: Array.isArray(raw.outputs) ? (raw.outputs as string[]) : [],
       domains: detectDomains([raw.role, raw.description, raw.name, ...capabilities, ...skills, ...Object.keys(chains)].filter(Boolean).join(' ')),
+      trustTier: trustTierFor(file),
       file,
     };
   }

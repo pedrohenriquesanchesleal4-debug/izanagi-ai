@@ -36,6 +36,11 @@ export interface HealingDecision {
 }
 
 const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
+  // Antes de tudo: negativa de permissão ou de política não se cura tentando de
+  // novo, e tentar de novo é pior que falhar — vira ruído de segurança no log e
+  // gasta orçamento numa porta que continuará fechada. Só muda com decisão
+  // humana (elevar trust tier, conceder permissão no contrato).
+  { regex: /permissão negada|permissao negada|policy negou|permission denied/i, kind: 'non-recoverable' },
   { regex: /timeout|timed out|etimedout|timeout/i, kind: 'recoverable' },
   { regex: /429|rate.?limit|too many requests/i, kind: 'recoverable' },
   { regex: /5\d\d|internal server|unavailable/i, kind: 'recoverable' },

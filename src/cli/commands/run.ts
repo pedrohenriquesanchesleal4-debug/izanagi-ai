@@ -600,6 +600,9 @@ export async function runRuntime(
     // Replanejamento passa pelo Commander: falha reincidente produz um grafo
     // diferente, nao o mesmo grafo com um no reaberto.
     replan: planning.replan,
+    // No de tool passa por ToolRegistry + PolicyEngine: o trust tier vem da
+    // origem do arquivo do agente, nunca do que ele declara sobre si.
+    trustTierOf: planning.trustTierOf,
     produce: (node: GraphNode, ctx: ExecuteCtx) =>
       (llmProviders.length === 0 ? headlessProducer : llmProducer)(node, ctx),
     consume: (node: GraphNode, artifact: { kind: string; valid: boolean }) => {

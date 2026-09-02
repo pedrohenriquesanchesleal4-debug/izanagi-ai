@@ -116,11 +116,17 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
   },
 };
 
-/** Normaliza conteúdo em string para validação. */
+/**
+ * Normaliza conteúdo em string para validação.
+ *
+ * `JSON.stringify(undefined)` devolve `undefined`, não uma string: sem o
+ * fallback, validar o retorno de uma tool que não devolve nada estourava com
+ * "Cannot read properties of undefined" em vez de reprovar o artefato.
+ */
 function toText(content: unknown): string {
   if (typeof content === 'string') return content;
   try {
-    return JSON.stringify(content, null, 2);
+    return JSON.stringify(content, null, 2) ?? String(content);
   } catch {
     return String(content);
   }

@@ -18,6 +18,7 @@
  */
 
 import type { ArtifactKind, GraphNode } from '../types.js';
+import type { ToolPermission } from '../tools/registry.js';
 
 /* ============================ MODOS E PAPÉIS ============================ */
 
@@ -128,6 +129,19 @@ export interface TaskContract {
    * Crítico adversarial e revisões extras nascem opcionais.
    */
   optional?: boolean;
+  /**
+   * Permissões concedidas a ESTA tarefa. Menor privilégio por construção: uma
+   * tarefa sem `permissions` não executa tool nenhuma, e o que não está
+   * declarado aqui é negado pela `ToolRegistry` antes de a `PolicyEngine`
+   * sequer opinar. Não confundir com o trust tier, que é de quem PEDE.
+   */
+  permissions?: ToolPermission[];
+  /**
+   * Tool que esta tarefa executa (`kind: 'tool'`). Quando presente, o nó NÃO
+   * chama modelo: roteia por `ToolRegistry`, que aplica permissão, política e
+   * sandbox antes de executar.
+   */
+  tool?: { id: string; input: unknown };
 }
 
 /** Erros estruturais de um contrato. Vazio = contrato utilizável. */

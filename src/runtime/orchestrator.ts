@@ -43,6 +43,8 @@ import { VerificationEngine, type SemanticJudge, type VerificationResult } from 
 import { runWithConcurrency, DEFAULT_MAX_CONCURRENCY } from './orchestration/concurrency.js';
 import type { DegradationStep } from './token/execution-budget.js';
 import { ConversationLog, type ConversationEntry } from './protocol/conversation.js';
+import { ToolRegistry, type ToolContext } from './tools/registry.js';
+import type { PolicyEnvironment, TrustTier } from './security/policy.js';
 import { formatCorrection, isBlocking, parseCritique, worstSeverity, type Critique } from './protocol/messages.js';
 
 export interface OrchestratorOptions {
@@ -85,6 +87,19 @@ export interface OrchestratorOptions {
    * = `Planner.replan` legado, que reabre o nó sem mudar nada da estratégia.
    */
   replan?: (input: { graph: ExecutionGraph; failure: ReplanFailure }) => ReplanResult | null;
+  /**
+   * Ambiente para a Policy Engine avaliar nós `kind: 'tool'`. Default
+   * `development`: o mais permissivo, porque é onde o framework roda por
+   * padrão. Quem executa em CI ou produção precisa declarar.
+   */
+  environment?: PolicyEnvironment;
+  /**
+   * Trust tier de um agente, pela ORIGEM do arquivo dele (o
+   * `AgentCapabilityRegistry` deriva do diretório). Sem esta função, um nó de
+   * tool com agente declarado é tratado como `community` — o tier mais
+   * restritivo —, porque presumir confiança não verificada é o erro caro aqui.
+   */
+  trustTierOf?: (agentId: string) => TrustTier | undefined;
   /**
    * Roteador por papel: devolve modelo/provider do papel de cada nó. Quando
    * ausente, todos os nós usam o modelo roteado uma vez para o run inteiro
@@ -174,6 +189,7 @@ export class Orchestrator {
   private tokensUsed = 0;
   private verifier?: VerificationEngine;
   private contextResolver?: ContextResolver;
+  private toolRegistry?: ToolRegistry;
   /** Verificação por nó (Verification Engine 2.0), preenchida durante a execução. */
   private readonly verifications = new Map<string, VerificationResult>();
   /** Nós pulados por early stopping (objetivo já comprovado). */
@@ -229,6 +245,11 @@ export class Orchestrator {
 
   setApprovalStore(store: ApprovalStore): void {
     this.approvalStore = store;
+  }
+
+  /** Injeta uma ToolRegistry (com PolicyEngine próprio, se for o caso). */
+  setToolRegistry(registry: ToolRegistry): void {
+    this.toolRegistry = registry;
   }
 
   /** Executa o ciclo completo e retorna trace + avaliação. */
@@ -1007,7 +1028,13 @@ export class Orchestrator {
         artifactRefs: (ctx.nodeContext?.upstream ?? []).map((u) => u.ref).filter((r): r is string => Boolean(r)),
       });
 
-      const result = await this.opts.produce(node, ctx);
+      // Nó de tool NÃO chama modelo: roteia por `ToolRegistry`, que aplica
+      // permissão declarada no contrato, política e sandbox antes de executar.
+      // Tudo a jusante (validação, registro, verificação, A2A) é o mesmo
+      // caminho de um nó de agente — o que muda é quem produziu.
+      const result = isToolNode(node, contract)
+        ? await this.executeTool(node, contract, ctx)
+        : await this.opts.produce(node, ctx);
       if (result.tokens) {
         ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
         this.tokensUsed += result.tokens;
@@ -1150,6 +1177,80 @@ export class Orchestrator {
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
     }
+  }
+
+  /**
+   * Executa um nó de tool com a política aplicada ANTES da execução.
+   *
+   * Este é o caminho que faltava: até aqui `Orchestrator.executeNode` sempre
+   * chamava `opts.produce()` — uma chamada de LLM ou a simulação headless — e
+   * NUNCA a `ToolRegistry`. As garantias de menor privilégio, trust tier e
+   * sandbox existiam, eram testadas, e não se aplicavam a nada que o
+   * `izanagi run` realmente executasse.
+   *
+   * Menor privilégio por construção: o `ToolContext` sai do CONTRATO da tarefa.
+   * Contrato sem `permissions` executa tool nenhuma, e a `ToolRegistry` recusa
+   * antes de a `PolicyEngine` opinar. O trust tier vem da origem do agente, não
+   * do que ele declara sobre si.
+   */
+  private async executeTool(
+    node: GraphNode,
+    contract: TaskContract | undefined,
+    ctx: ExecuteCtx,
+  ): Promise<{ content: unknown; kind: string; tokens?: number; model?: string }> {
+    const spec = contract?.tool ?? (node.metadata?.tool as { id: string; input: unknown } | undefined);
+    if (!spec?.id) {
+      throw new Error(`nó "${node.id}" é de tool mas não declara qual tool executar (contract.tool.id)`);
+    }
+    const registry = (this.toolRegistry ??= new ToolRegistry());
+
+    // Teto de tool calls do Budget Controller, ANTES de executar: estourar o
+    // teto e só descobrir depois seria contabilizar um efeito colateral já
+    // aplicado no disco.
+    if (ctx.execBudget && !ctx.execBudget.recordToolCall()) {
+      throw new Error(`teto de tool calls do run excedido antes de executar "${spec.id}"`);
+    }
+
+    const trustTier: TrustTier = node.agent
+      ? this.opts.trustTierOf?.(node.agent) ?? 'community'
+      : // Nó de tool sem agente foi declarado no plano por quem chamou o
+        // runtime (SDK/decomposição), que já é o dono do processo.
+        'builtin';
+
+    const toolCtx: ToolContext = {
+      permissions: contract?.permissions ?? [],
+      baseDir: this.opts.baseDir,
+      environment: this.opts.environment ?? 'development',
+      trustTier,
+    };
+
+    const outcome = registry.execute(spec.id, spec.input, toolCtx);
+    ctx.trace.markTool(`tool:${spec.id}`);
+    ctx.trace.span(`tool:${spec.id}`, 'tool', {
+      node: node.id,
+      permissions: toolCtx.permissions,
+      trustTier,
+      environment: toolCtx.environment,
+      ok: outcome.ok,
+    })(outcome.ok, outcome.ok ? undefined : outcome.error);
+
+    ctx.conversation.record({
+      from: node.agent ?? node.id,
+      to: 'tool-registry',
+      type: 'request',
+      taskId: node.id,
+      summary: `${spec.id} (${trustTier}, permissões: ${toolCtx.permissions.join(', ') || 'nenhuma'}): ${outcome.ok ? 'executada' : outcome.error ?? 'falhou'}`,
+    });
+
+    if (!outcome.ok) {
+      throw new Error(`tool "${spec.id}" recusada ou falhou: ${outcome.error ?? 'motivo não informado'}`);
+    }
+    return {
+      content: outcome.result,
+      kind: node.outputs?.[0] ?? 'raw',
+      tokens: 0,
+      model: `tool:${spec.id}`,
+    };
   }
 
   /**
@@ -1399,4 +1500,15 @@ function agentIds(): string[] {
     'qa', 'adversarial-critic', 'bug-hunter', 'automation-engineer', 'animation',
     'researcher', 'devops', 'techlead', 'docs', 'professor', 'agent-architect', 'skill-architect',
   ];
+}
+
+/**
+ * Um nó é de tool quando o kind diz isso E existe tool declarada. Kind sozinho
+ * não basta: grafos antigos usavam `kind: 'tool'` como rótulo descritivo e
+ * seguiam pelo producer normal — quebrar isso seria mudar o comportamento de
+ * plano que já roda.
+ */
+function isToolNode(node: GraphNode, contract?: TaskContract): boolean {
+  const spec = contract?.tool ?? (node.metadata?.tool as { id?: string } | undefined);
+  return Boolean(spec?.id);
 }
