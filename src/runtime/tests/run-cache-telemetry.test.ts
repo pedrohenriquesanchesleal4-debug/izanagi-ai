@@ -194,7 +194,9 @@ test('telemetria: client mockado com cachedTokens → linha final somada + verbo
       };
 
       // Run silencioso: só a linha final agregada.
-      const out = await capture(() => runRuntime(baseDir, { ...opts }));
+      const out = await capture(async () => {
+        await runRuntime(baseDir, { ...opts });
+      });
       const all = out.logs.join('\n');
       assert.ok(calls >= 1, 'client mockado deve ter sido chamado');
       const m = all.match(/\[tokens\] entrada (\d+) · cache-hit (\d+) \((\d+)% do input\)/);
@@ -206,7 +208,9 @@ test('telemetria: client mockado com cachedTokens → linha final somada + verbo
 
       // Run verbose: uma linha por chamada.
       calls = 0;
-      const outV = await capture(() => runRuntime(baseDir, { ...opts, verbose: true }));
+      const outV = await capture(async () => {
+        await runRuntime(baseDir, { ...opts, verbose: true });
+      });
       const perNode = outV.logs.filter((l) => l.includes('[tokens]') && l.includes(': entrada 500'));
       assert.equal(perNode.length, calls, 'verbose deve imprimir exatamente uma linha por nó produzido');
       assert.match(outV.logs.join('\n'), /\[tokens\] entrada \d+ · cache-hit \d+ \(\d+% do input\)/);
@@ -228,8 +232,8 @@ test('telemetria headless: nenhuma linha [tokens] no output (nem agregada, nem p
           return { text: MOCK_ARTIFACT, tokens: 500, latencyMs: 1, model: 'x', provider: 'openai' };
         },
       };
-      const out = await capture(() =>
-        runRuntime(baseDir, {
+      const out = await capture(async () => {
+        await runRuntime(baseDir, {
           task: 'escrever testes unitarios qa',
           category: 'testing',
           agentId: 'qa',
@@ -237,8 +241,8 @@ test('telemetria headless: nenhuma linha [tokens] no output (nem agregada, nem p
           agent: { name: 'qa' } as any,
           verbose: true,
           client: headlessClient,
-        }),
-      );
+        });
+      });
       assert.equal(called, false, 'headless nunca deve chamar o LLM');
       assert.equal(out.logs.some((l) => l.includes('[tokens]')), false, '[tokens] é proibido em modo headless');
       assert.match(out.logs.join('\n'), /Modo headless/);

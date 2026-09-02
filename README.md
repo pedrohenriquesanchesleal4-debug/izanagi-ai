@@ -239,13 +239,29 @@ CI (`.github/workflows/polyglot.yml`): 7 jobs paralelos em push/PR para `main` �
 
 ---
 
+## Trabalho agendado (sem servidor)
+
+O Izanagi é local-first por decisão: não existe daemon, porta escutando nem credencial em repouso. Quem agenda é o cron ou o Task Scheduler do sistema.
+
+```bash
+izanagi run "auditar dependências e abrir relatório" --json --notify-webhook=https://exemplo/hook
+```
+
+| | |
+|---|---|
+| `--json` | Um único objeto JSON no stdout. A saída humana é silenciada; `console.error` continua vivo, porque erro real precisa chegar ao stderr do agendador. |
+| código de saída | `0` concluiu · `1` falhou · `2` aguarda decisão humana. Aguardar aprovação não é falha e não deve alertar como falha. |
+| `--notify-webhook=<url>` | POST de fim de run, uma retentativa. `4xx` não é repetido (configuração errada não melhora repetindo), `5xx` é. Falha de notificação nunca derruba o run. |
+
+O webhook leva **metadado**: status, score, tokens, custo, verificação por tarefa e nomes de artefato. **Nunca o conteúdo produzido** — um endpoint de notificação costuma ser um canal de equipe ou um serviço que ninguém auditou. Para o conteúdo, `izanagi explain <run-id> --artifacts`, na máquina onde o run aconteceu.
+
 ## Documentação
 
 | Documento | Conteúdo |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
 | [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
-| [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | O que ainda falta no runtime, verificado no código, mais a tabela do que já foi fechado e em qual commit. Resta **um** item, e ele é uma decisão de produto (local-first ou serviço), não um gap técnico. |
+| [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | Nenhum item aberto: a tabela do que foi fechado, em qual commit e como, mais as limitações que são escolha com motivo registrado. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Visão arquitetural do framework e da topologia poliglota. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Guia de contribuição: convenções, fluxo de PR e padrões do repo. |
 | [`ROADMAP.md`](ROADMAP.md) | Planejamento de evolução por waves e marcos. |

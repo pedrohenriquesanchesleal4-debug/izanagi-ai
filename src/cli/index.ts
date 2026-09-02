@@ -200,7 +200,7 @@ function showHelp(): void {
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
   \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: Commander + graph + roteamento por papel + verificação + trace + healing.
                           (--mode direct|assisted|orchestrated|autonomous força o modo de execução)
-                          (--budget N · --max-cost N · --model <id> · --local · --cache · --no-commander · --no-judge)
+                          (--budget N · --max-cost N · --model <id> · --local · --cache · --no-commander · --no-judge · --json · --notify-webhook=<url>)
                           (--prompt-only só compila izanagi-prompt.md, sem executar)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
@@ -252,6 +252,7 @@ function showHelp(): void {
   izanagi benchmark run security
   izanagi benchmark run architecture --execute
   izanagi benchmark memory
+  izanagi run "..." --json --notify-webhook=https://exemplo/hook   (para cron / Task Scheduler)
   izanagi agent create "migração de PHP legado para Laravel"    (Agent Factory: validado, use este)
   izanagi create agent my-agent                                  (scaffold cru, sem validação)
   izanagi compile architect system_prompt.md

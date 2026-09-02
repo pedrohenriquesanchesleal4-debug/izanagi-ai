@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
 import { buildBlueprintCtx } from '../blueprint.js';
-import { Orchestrator, type ExecuteCtx } from '../../runtime/orchestrator.js';
+import { Orchestrator, type ExecuteCtx, type OrchestrationResult } from '../../runtime/orchestrator.js';
 import { LLMClient } from '../../runtime/llm/client.js';
 import type { CompletionOptions, CompletionResult } from '../../runtime/llm/client.js';
 import { DYNAMIC_MARKER, estimateStaticTokens, MIN_CACHEABLE_TOKENS } from '../../runtime/llm/prompt-cache.js';
@@ -13,6 +13,7 @@ import { ContextResolver } from '../../runtime/orchestration/context-resolver.js
 import { ResponseCache } from '../../runtime/cache/response-cache.js';
 import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
 import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
+import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } from '../../runtime/notify/webhook.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
 interface RunArgs {
@@ -39,6 +40,10 @@ interface RunArgs {
   noCommander: boolean;
   /** Desliga o juiz semântico (`--no-judge`): critério semântico volta a ficar UNVERIFIED. */
   noJudge: boolean;
+  /** Saída única em JSON no stdout, para o agendador do SO consumir (`--json`). */
+  json: boolean;
+  /** Endpoint POST avisado no fim do run (`--notify-webhook=<url>`). */
+  notifyWebhook?: string;
 }
 
 export function parseRunArgs(args: string[]): RunArgs {
@@ -55,6 +60,8 @@ export function parseRunArgs(args: string[]): RunArgs {
   let cache = false;
   let noCommander = false;
   let noJudge = false;
+  let json = false;
+  let notifyWebhook: string | undefined;
   const positionals: string[] = [];
 
   /** Aceita tanto `--flag valor` quanto `--flag=valor`. */
@@ -109,6 +116,12 @@ export function parseRunArgs(args: string[]): RunArgs {
       noCommander = true;
     } else if (arg === '--no-judge') {
       noJudge = true;
+    } else if (arg === '--json') {
+      json = true;
+    } else if (arg === '--notify-webhook' || arg.startsWith('--notify-webhook=')) {
+      const read = readValue(arg, '--notify-webhook', args[i + 1]);
+      if (read.consumed) i++;
+      if (read.value) notifyWebhook = read.value;
     } else if (!arg.startsWith('-')) {
       positionals.push(arg);
     }
@@ -139,6 +152,8 @@ export function parseRunArgs(args: string[]): RunArgs {
     cache,
     noCommander,
     noJudge,
+    json,
+    ...(notifyWebhook ? { notifyWebhook } : {}),
   };
 }
 
@@ -252,6 +267,24 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     console.error('  izanagi run "..." --prompt-only   (só compila izanagi-prompt.md, sem executar)');
     console.error('  izanagi run "..." --no-cache-foundation   (desliga fundação RULES.md estática/marker de prompt caching)');
     process.exit(1);
+  }
+
+  // `--json` significa que quem lê o stdout é um programa. A saída humana é
+  // silenciada ANTES de qualquer impressão, e `console.error` continua vivo:
+  // erro real precisa chegar ao stderr do agendador.
+  if (parsed.json) {
+    const original = console.log;
+    console.log = () => {};
+    restoreConsole = () => {
+      console.log = original;
+    };
+  }
+  if (parsed.notifyWebhook) {
+    const check = validateWebhookUrl(parsed.notifyWebhook);
+    if (!check.ok) {
+      console.error(`\x1b[31mError:\x1b[0m --notify-webhook: ${check.reason}`);
+      process.exit(1);
+    }
   }
 
   const cwd = process.cwd();
@@ -413,7 +446,7 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
 
   // Adaptive Runtime — único caminho de execução real: planner + graph + adaptive
   // routing + evaluation + tracing + self-healing + memory. Sem modo estático paralelo.
-  await runRuntime(baseDir, {
+  const resultado = await runRuntime(baseDir, {
     task,
     category,
     agentId: agentId ?? classifyTask(task).agent,
@@ -429,9 +462,50 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     cache: parsed.cache,
     noCommander: parsed.noCommander,
     noJudge: parsed.noJudge,
+    json: parsed.json,
     explicitAgent: Boolean(agentId),
   });
+
+  await finishForScheduler(resultado, parsed);
 }
+
+/**
+ * Fecho do run para quem NÃO está lendo o terminal.
+ *
+ * O Izanagi continua local-first: nenhum processo fica de pé, nenhuma porta
+ * escuta, nenhuma credencial fica em repouso. Quem agenda é o cron ou o Task
+ * Scheduler do sistema; o que faltava era o Izanagi ser consumível por eles —
+ * uma saída estruturada e um código de saída que signifique alguma coisa.
+ */
+async function finishForScheduler(result: OrchestrationResult | undefined, parsed: RunArgs): Promise<void> {
+  if (!result) return;
+
+  const payload = buildNotification(result);
+
+  if (parsed.notifyWebhook) {
+    const outcome = await notifyWebhook(parsed.notifyWebhook, payload);
+    // Falha de notificação não muda o veredito: o trabalho já foi feito e
+    // verificado. Vai para stderr, que é onde o agendador procura problema
+    // sem contaminar o stdout que ele parseia.
+    if (!outcome.ok) {
+      console.error(`izanagi: webhook não notificado (${outcome.attempts} tentativa(s)): ${outcome.error}`);
+    }
+  }
+
+  if (parsed.json) {
+    // Restaura a saída para emitir o ÚNICO objeto que o agendador lê.
+    restoreConsole();
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+  }
+
+  // Código de saída é a interface mais barata com um agendador: 0 concluiu,
+  // 1 falhou, 2 aguarda decisão humana. Sem isso, o cron não sabe alertar.
+  const code = exitCodeFor(result);
+  if (code !== 0) process.exitCode = code;
+}
+
+/** Restaurador do console silenciado por `--json` (no-op quando não houve). */
+let restoreConsole: () => void = () => {};
 
 /**
  * Superfície mínima do LLMClient consumida pelo run — permite injetar um
@@ -481,10 +555,12 @@ export async function runRuntime(
     noCommander?: boolean;
     /** Desliga o juiz semântico (`--no-judge`). Sem juiz, critério semântico fica UNVERIFIED. */
     noJudge?: boolean;
+    /** Silencia a saída humana: quem consome é um agendador, não uma pessoa. */
+    json?: boolean;
     /** O usuário nomeou o agente explicitamente (`izanagi run architect ...`). */
     explicitAgent?: boolean;
   },
-): Promise<void> {
+): Promise<OrchestrationResult | undefined> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
 
   const client: RuntimeLLMClient = opts.client ?? new LLMClient();
@@ -627,7 +703,7 @@ export async function runRuntime(
     console.log(`  \x1b[90mNó:\x1b[0m ${result.pendingApproval.nodeId}${result.pendingApproval.context ? ` — ${result.pendingApproval.context}` : ''}`);
     console.log(`  \x1b[36mizanagi approve ${result.trace.runId}\x1b[90m — aprova e retoma a execução.`);
     console.log(`  \x1b[36mizanagi reject ${result.trace.runId} --reason="..."\x1b[90m — rejeita (execução prossegue para falha/self-healing).\x1b[0m\n`);
-    return;
+    return result;
   }
 
   // Relatório final
@@ -661,6 +737,7 @@ export async function runRuntime(
   console.log(`\n\x1b[90mVer o trace completo:\x1b[0m \x1b[36mizanagi trace ${result.trace.runId}\x1b[0m`);
   console.log(`\x1b[90mAvaliação isolada:\x1b[0m \x1b[36mizanagi eval --report ${result.trace.runId}\x1b[0m`);
   console.log(`\x1b[90mExplicação da execução:\x1b[0m \x1b[36mizanagi explain ${result.trace.runId}\x1b[0m\n`);
+  return result;
 }
 
 /* ==================== CAPC — fundação estática do prompt de nó ==================== */

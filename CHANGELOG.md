@@ -4,6 +4,32 @@
 
 ---
 
+## [3.17.0]: 2026-09-02
+
+Decisão de produto que estava pendente desde a Fase 4, tomada: **o Izanagi é local-first**. Não fica de pé, não escuta porta, não guarda credencial em repouso. Quem agenda é o cron ou o Task Scheduler do sistema, e esta versão entrega o que faltava para eles conseguirem consumi-lo.
+
+### Added
+- **`izanagi run --json`**: um único objeto JSON no stdout com runId, status, score, modo, duração, tokens, custo, verificação por tarefa, healing e artefatos. A saída humana é silenciada ANTES de qualquer impressão; `console.error` continua vivo, porque erro real precisa chegar ao stderr do agendador sem contaminar o stdout que ele parseia.
+- **Código de saída com significado**: `0` concluiu (PASS / PASS_WITH_WARNINGS), `1` falhou, `2` aguarda decisão humana. É a interface mais barata com um agendador — sem isso o cron não sabe quando alertar. Aguardar aprovação sai como `2` e não como falha de propósito: alguém precisa aprovar, não consertar.
+- **`izanagi run --notify-webhook=<url>`** (`runtime/notify/webhook.ts`): POST de fim de run com uma retentativa. `4xx` não é repetido (configuração errada não melhora repetindo), `5xx` é. Só `http`/`https` — um `file:` ou `data:` vindo de configuração é caminho de leitura de arquivo, não de notificação. Falha de notificação nunca derruba o run: o trabalho já foi feito e verificado quando a função é chamada.
+
+### A regra do payload
+O webhook leva **metadado, nunca conteúdo de artefato**: status, score, tokens, custo, verificação por tarefa e nome/tipo/validade dos artefatos. Um endpoint de notificação costuma ser um canal de equipe, um túnel de terceiro ou um serviço que ninguém auditou; mandar para lá o que os agentes produziram é exfiltração acidental com aparência de conveniência. Quem quer o conteúdo usa `izanagi explain <run-id> --artifacts`, na máquina onde o run aconteceu. Artefato sem validade avaliada vira `valid: false`, não `true` por conveniência de tipo.
+
+### O que esta decisão explicitamente NÃO entrega
+Receber comando de fora (daemon, bot de Slack respondendo, API pública). Isso exigiria autenticação, isolamento entre execuções e credenciais em repouso — e as decisões de segurança tomadas até aqui (sandbox, trust tier, Policy Engine) precisariam ser revisitadas, não estendidas.
+
+### Changed
+- `runRuntime()` passa a devolver o `OrchestrationResult` em vez de `void`, para o fecho do agendador poder montar o payload. Retrocompatível para quem ignorava o retorno.
+
+### Compatibility
+- Sem `--json` e sem `--notify-webhook`, o comportamento do `izanagi run` é byte-a-byte o de antes, inclusive o código de saída.
+
+### Tests
+572 testes passando (10 novos). O único vermelho continua sendo o `polyglot`, que exige executar um binário com shebang bash — não roda no Windows.
+
+---
+
 ## [3.16.0]: 2026-09-02
 
 Os três itens que restavam eram os de maior risco da lista: cada um destrava autonomia, e cada um erra caro se destravar demais. O que resta depois desta versão é uma decisão de produto, não um gap técnico.

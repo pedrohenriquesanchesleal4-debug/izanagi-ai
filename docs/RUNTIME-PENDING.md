@@ -1,6 +1,6 @@
 # Runtime: trabalho pendente
 
-> Estado em **v3.16.0** (2026-09-02). Handoff vivo da rearquitetura do runtime: o que **ainda falta**, por que falta, e o que exatamente precisa ser feito para fechar.
+> Estado em **v3.17.0** (2026-09-02). Handoff vivo da rearquitetura do runtime. Nesta versão ele deixa de ter itens abertos: o que resta são escolhas com motivo registrado, não dívida.
 >
 > Regra deste arquivo: só entra o que é gap **verificado no código**. Nada aqui é aspiracional sem lastro. Ao fechar um item, remover daqui **e** atualizar `ROADMAP.md` na mesma mudança.
 
@@ -8,23 +8,25 @@
 
 ## Estado
 
-Os dezoito itens da lista original foram fechados (tabela no fim). **Resta um**, e ele não é técnico: é uma decisão de produto que muda a natureza do Izanagi.
+**Nenhum item aberto.** Os dezenove da lista original foram fechados (tabela no fim), e a última decisão pendente foi tomada.
 
----
+### A decisão que estava aberta: local-first
 
-## ⏸ 1. Local-first ou serviço hospedado (decisão pendente)
+O Izanagi **não fica de pé**. Modo daemon, porta escutando e credencial em repouso estão fora de escopo por decisão, não por falta de implementação.
 
-**O que está em jogo:** modo daemon, execução por cron, e integração com canais (Slack, Telegram, webhooks). Todos os três dependem da mesma escolha: o Izanagi continua sendo uma **CLI local-first** que roda quando alguém invoca, ou vira um **serviço** que fica de pé recebendo trabalho?
+Quem agenda é o **cron ou o Task Scheduler do sistema**. O que faltava era o Izanagi ser consumível por eles, e isso foi entregue na v3.17.0:
 
-**Por que não é uma decisão técnica:** cada caminho é implementável, e cada um custa coisas diferentes.
+```bash
+izanagi run "..." --json --notify-webhook=https://exemplo/hook
+```
 
-*Local-first* mantém a propriedade que sustenta o resto da arquitetura: o runtime roda na máquina de quem o usa, com as chaves de quem o usa, sem estado compartilhado. Sandbox, trust tier e Policy Engine foram desenhados nesse pressuposto. Custo: nada acontece sem alguém invocar.
+- `--json`: um único objeto no stdout, saída humana silenciada, `console.error` preservado (erro real precisa chegar ao stderr do agendador).
+- **código de saída com significado**: `0` concluiu, `1` falhou, `2` aguarda decisão humana. Aguardar aprovação não é falha e não deve alertar como falha.
+- `--notify-webhook`: POST de fim de run, com uma retentativa. 4xx não é repetido (configuração errada não melhora repetindo), 5xx é.
 
-*Serviço* destrava trabalho agendado, notificação, e uso por quem não abre um terminal. Custo: passa a existir um processo de longa duração com credenciais em repouso, autenticação, isolamento entre usuários, e uma superfície de ataque que hoje não existe. As decisões de segurança tomadas até aqui teriam que ser revisitadas, não estendidas.
+O que isso NÃO dá: receber comando de fora. Para isso seria preciso autenticação, isolamento entre execuções e credenciais em repouso — e essas decisões de segurança precisariam ser revisitadas, não estendidas.
 
-**Decisão já registrada como pendente** na Fase 4 do `ROADMAP.md` (histórico multi-dispositivo). É a mesma escolha, e ela precisa ser feita **uma vez**, explicitamente, antes de qualquer linha de código nessa direção.
-
-**O que destravaria:** uma resposta a "o Izanagi deve ficar de pé sozinho?". Se sim, o primeiro passo não é o daemon: é o modelo de autenticação e de isolamento entre execuções.
+**A regra do payload:** o webhook leva metadado (status, score, tokens, custo, verificação por tarefa, nomes de artefato), **nunca conteúdo de artefato**. Um endpoint de notificação costuma ser um canal de equipe ou um serviço que ninguém auditou; mandar para lá o que os agentes produziram é exfiltração com aparência de conveniência. Quem quer o conteúdo usa `izanagi explain <run-id> --artifacts`, na máquina onde o run aconteceu.
 
 ---
 
@@ -64,4 +66,5 @@ Coisas que alguém pode confundir com dívida ao ler o código. São escolhas, e
 | 🔵 15. Sub-orquestradores hierárquicos | `5ae9b57` | `orchestration/subgraph.ts`: decomposição em execução com orçamento do pai DIVIDIDO, profundidade com teto do runtime, largura máxima 5, sub-tarefa não decompõe, pedido malformado recusado inteiro. |
 | 🔵 16. `execute_code` | `1387bb0` | `tools/code-sandbox.ts`: processo isolado com Permission Model. FS restrito ao diretório de trabalho, subprocessos/workers/addons bloqueados, ambiente montado do zero, timeout com kill. Rede continua não isolada, e isso está testado como limite. |
 | 🔵 17. Síntese de skills por trajetória | `4490dbf` | `evolution/trajectories.ts`: barra de recorrência (3 execuções verificadas), assinatura por caminho e não por objetivo, skill que declara o próprio limite. |
+| ⏸ 19. Local-first ou serviço hospedado | `v3.17.0` | Decisão tomada: local-first. `--json`, código de saída com significado (0/1/2) e `--notify-webhook` fecham o caminho pelo agendador do SO, sem processo de longa duração. Payload leva metadado, nunca conteúdo. |
 | 🔵 18. FTS5 e compressão neural | `4490dbf` | `izanagi benchmark memory` mede e aplica limiar declarado: busca p95 2.0ms sobre 296KB (FTS5 não se paga), compressão a 8.3% do original (neural não se justifica pelo tamanho). Bug encontrado pela medição: a busca tinha recall truncado em 4000 chars por arquivo. |

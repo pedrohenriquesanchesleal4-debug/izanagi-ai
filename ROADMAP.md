@@ -173,13 +173,43 @@ autonomia, e cada um erra caro se destravar demais.
 
 Dois bugs reais corrigidos: a busca de memória tinha **recall truncado em silêncio** (buscava só nos primeiros 4000 chars de cada arquivo, então tudo que o projeto aprendeu depois era invisível), e a sandbox concedia leitura de `os.tmpdir()` inteiro, onde o próprio diretório de trabalho vive.
 
-### O que resta: uma decisão, não um gap
+### A decisão que faltava, tomada na Fase 12.
 
-> [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) tem o detalhe.
+## Fase 12: Local-first, decidido (v3.17.0) ✅
 
-**Local-first ou serviço hospedado.** Modo daemon, cron e integração com canais dependem todos da mesma escolha, e ela não é técnica. Local-first é o pressuposto sobre o qual sandbox, trust tier e Policy Engine foram desenhados; virar serviço significa um processo de longa duração com credenciais em repouso, autenticação e isolamento entre usuários — as decisões de segurança tomadas até aqui teriam que ser revisitadas, não estendidas. A mesma decisão já está registrada como pendente na Fase 4.
+A escolha entre CLI local-first e serviço hospedado estava pendente desde a
+Fase 4, e destravava três coisas ao mesmo tempo (daemon, cron, canais).
+**Decisão: local-first.** O Izanagi não fica de pé — sem daemon, sem porta
+escutando, sem credencial em repouso. É o pressuposto sobre o qual sandbox,
+trust tier e Policy Engine foram desenhados, e mantê-lo evita revisitar todas
+essas decisões de segurança.
 
-Fora isso, o que existe são escolhas com motivo registrado (rede não isolada na sandbox, templates sem nós de tool, Token Benchmark medindo plano), não dívida.
+Quem agenda passa a ser o cron ou o Task Scheduler do sistema, e o que faltava
+era o Izanagi ser consumível por eles:
+
+- [x] **`--json`**: um único objeto no stdout, saída humana silenciada,
+      `console.error` preservado — erro real precisa chegar ao stderr do
+      agendador sem contaminar o stdout que ele parseia.
+- [x] **Código de saída com significado**: `0` concluiu · `1` falhou ·
+      `2` aguarda decisão humana. Aguardar aprovação não é falha e não deve
+      alertar como falha: alguém precisa aprovar, não consertar.
+- [x] **`--notify-webhook=<url>`**: POST de fim de run com uma retentativa.
+      `4xx` não é repetido (configuração errada não melhora repetindo), `5xx` é.
+      Falha de notificação nunca derruba o run.
+
+**A regra do payload**: o webhook leva metadado (status, score, tokens, custo,
+verificação por tarefa, nomes de artefato), nunca o conteúdo produzido. Um
+endpoint de notificação costuma ser um canal de equipe ou um serviço que
+ninguém auditou; mandar o artefato para lá é exfiltração com aparência de
+conveniência.
+
+**O que isto explicitamente NÃO dá**: receber comando de fora. Para isso seria
+preciso autenticação, isolamento entre execuções e credenciais em repouso.
+
+Com isso o handoff [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) fica
+sem itens abertos: o que resta são oito escolhas com motivo registrado (rede
+não isolada na sandbox, templates sem nós de tool, Token Benchmark medindo
+plano, entre outras), não dívida.
 
 ## Critérios de aceite das próximas fases
 
