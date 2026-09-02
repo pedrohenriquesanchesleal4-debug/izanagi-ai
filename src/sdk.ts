@@ -21,6 +21,7 @@ import {
   buildExecutionPlan,
   createHeadlessProducer,
   createLLMProducer,
+  createSemanticJudge,
   LOCAL_PROVIDERS,
   type ProducerLLMClient,
 } from './runtime/execute.js';
@@ -50,6 +51,11 @@ export interface IzanagiRunOptions {
   skillChain?: string[];
   /** Planejamento legado por categoria, sem Commander. */
   noCommander?: boolean;
+  /**
+   * Desliga o juiz semântico (default: ligado quando há provider). Sem juiz,
+   * critério de aceite semântico fica UNVERIFIED em vez de aprovado.
+   */
+  noJudge?: boolean;
   /** Client LLM alternativo (testes, proxy, gateway próprio). */
   client?: ProducerLLMClient & { configuredProviders(): string[] };
 }
@@ -139,6 +145,11 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
           }),
       });
 
+  // Mesmo juiz semântico da CLI: as duas superfícies verificam igual.
+  const judge = options.noJudge || providers.length === 0
+    ? undefined
+    : createSemanticJudge({ client, routeRole: planning.routeRole });
+
   const handlers: Array<{ name: string; handler: (event: IzanagiEvent) => void }> = [];
   const artifacts: Record<string, { kind: string; content: unknown; valid: boolean }> = {};
 
@@ -158,6 +169,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
       ...(options.budget?.maxAgents !== undefined ? { maxAgents: options.budget.maxAgents } : {}),
       ...(options.budget?.maxRetries !== undefined ? { maxRetries: options.budget.maxRetries } : {}),
     },
+    ...(judge ? { judge } : {}),
     routeRole: planning.routeRole,
     costOf: planning.costOf,
     produce: producer,

@@ -16,6 +16,8 @@ import { AgentCapabilityRegistry } from './registry/capabilities.js';
 import { ModelRouter } from './model/router.js';
 import { ContextResolver } from './orchestration/context-resolver.js';
 import { ResponseCache } from './cache/response-cache.js';
+import { createModelJudge } from './verification/judge.js';
+import type { SemanticJudge } from './verification/engine.js';
 import type { AgentRole, ExecutionMode } from './contracts/task-contract.js';
 import type { ExecuteCtx } from './orchestrator.js';
 import type { GraphNode, ModelSpec, RoutingContext } from './types.js';
@@ -204,4 +206,42 @@ export function createHeadlessProducer(objective: string): NodeProducer {
       model: 'cli-headless',
     };
   };
+}
+
+/* ============================ JUIZ SEMÂNTICO ============================ */
+
+export interface SemanticJudgeWiring {
+  client: ProducerLLMClient;
+  /** Roteamento do papel `worker`: julgar é a tarefa barata por definição. */
+  routeRole: (role: AgentRole, node: GraphNode) => { model: string; provider: string } | undefined;
+  /** Teto de saída do juiz (default do `createModelJudge`). */
+  maxTokens?: number;
+}
+
+/**
+ * Juiz semântico default, compartilhado pela CLI e pelo SDK.
+ *
+ * Devolve `undefined` quando não há modelo utilizável — e isso é a resposta
+ * honesta, não um erro: sem juiz, o critério semântico fica UNVERIFIED, que já
+ * é o comportamento conservador correto da Verification Engine. O que não pode
+ * acontecer é o critério passar a valer como aprovado.
+ */
+export function createSemanticJudge(wiring: SemanticJudgeWiring): SemanticJudge | undefined {
+  // Nó sintético: `routeRole` recebe o nó só para políticas por nó; o juiz não
+  // pertence a nenhum nó do grafo, e o papel é o que decide o modelo.
+  const judgeNode = { id: 'semantic-judge', kind: 'validator', status: 'pending' } as GraphNode;
+  const routed = wiring.routeRole('worker', judgeNode);
+  if (!routed) return undefined;
+  return createModelJudge({
+    complete: async ({ system, user, maxTokens }) => {
+      const result = await wiring.client.complete(routed.provider, {
+        model: routed.model,
+        system,
+        messages: [{ role: 'user', content: user }],
+        maxTokens,
+      });
+      return { text: result.text, tokens: result.tokens, model: result.model };
+    },
+    ...(wiring.maxTokens !== undefined ? { maxTokens: wiring.maxTokens } : {}),
+  });
 }

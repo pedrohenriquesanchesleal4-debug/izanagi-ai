@@ -48,10 +48,32 @@ export interface VerificationResult {
   /** Descrições dos critérios obrigatórios NÃO aprovados. */
   unmet: string[];
   reason: string;
+  /** Tokens gastos pelo juiz semântico nesta verificação (0 sem juiz). */
+  judgeTokens: number;
+  /** Modelo que julgou, quando houve julgamento. */
+  judgeModel?: string;
 }
 
-/** Juiz semântico injetável: recebe o critério e o conteúdo, devolve veredito. */
-export type SemanticJudge = (input: { criterion: AcceptanceCriterion; content: string; objective: string }) => { pass: boolean; message?: string };
+/** Veredito de um juiz semântico sobre UM critério. */
+export interface JudgeVerdict {
+  pass: boolean;
+  message?: string;
+  /**
+   * O juiz não conseguiu decidir (saída ilegível, erro de rede, timeout). Vira
+   * `unknown`, nunca `fail`: um juiz que não respondeu não reprova ninguém, e
+   * também não aprova. É a mesma regra da ausência de juiz.
+   */
+  inconclusive?: boolean;
+  /** Custo do julgamento, para o Budget Controller cobrar a fase de avaliação. */
+  tokens?: number;
+  model?: string;
+}
+
+/**
+ * Juiz semântico injetável: recebe o critério e o conteúdo, devolve veredito.
+ * Pode ser síncrono (heurística, humano em memória) ou assíncrono (modelo).
+ */
+export type SemanticJudge = (input: { criterion: AcceptanceCriterion; content: string; objective: string }) => JudgeVerdict | Promise<JudgeVerdict>;
 
 export interface VerifyInput {
   contract: TaskContract;
@@ -150,12 +172,14 @@ export class VerificationEngine {
    * Verifica um artefato contra o contrato. Determinístico exceto pela camada
    * semântica, que só roda com juiz injetado.
    */
-  verify(input: VerifyInput): VerificationResult {
+  async verify(input: VerifyInput): Promise<VerificationResult> {
     const { contract } = input;
     const text = toText(input.content);
     const kind = contract.expectedOutput.kind;
     const checks: CheckResult[] = [];
     const evidence: EvidenceItem[] = [];
+    let judgeTokens = 0;
+    let judgeModel: string | undefined;
 
     for (const criterion of contract.acceptance) {
       const optional = criterion.optional === true;
@@ -195,8 +219,17 @@ export class VerificationEngine {
         checks.push({ criterionId: criterion.id, description: criterion.description, layer: 'semantic', outcome: 'unknown', message: 'sem juiz semântico configurado', optional });
         continue;
       }
-      const verdict = input.judge({ criterion, content: text, objective: contract.objective });
-      checks.push({ criterionId: criterion.id, description: criterion.description, layer: 'semantic', outcome: verdict.pass ? 'pass' : 'fail', ...(verdict.message ? { message: verdict.message } : {}), optional });
+      const verdict = await input.judge({ criterion, content: text, objective: contract.objective });
+      judgeTokens += verdict.tokens ?? 0;
+      if (verdict.model) judgeModel = verdict.model;
+      checks.push({
+        criterionId: criterion.id,
+        description: criterion.description,
+        layer: 'semantic',
+        outcome: verdict.inconclusive ? 'unknown' : verdict.pass ? 'pass' : 'fail',
+        ...(verdict.message ? { message: verdict.message } : {}),
+        optional,
+      });
     }
 
     // Evidência adicional do próprio artefato produzido.
@@ -233,6 +266,8 @@ export class VerificationEngine {
       evidence,
       unmet: [...failed, ...unknown].map((c) => c.description),
       reason,
+      judgeTokens,
+      ...(judgeModel ? { judgeModel } : {}),
     };
   }
 

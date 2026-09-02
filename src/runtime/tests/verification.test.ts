@@ -25,8 +25,8 @@ function contract(acceptance: AcceptanceCriterion[], overrides: Partial<TaskCont
   };
 }
 
-test('verificação: artefato que cumpre todos os critérios vira VERIFIED', () => {
-  const result = engine.verify({
+test('verificação: artefato que cumpre todos os critérios vira VERIFIED', async () => {
+  const result = await engine.verify({
     contract: contract([
       { id: 'c1', description: 'tem pelo menos 20 bytes', kind: 'deterministic', check: { kind: 'min-size', bytes: 20 } },
       { id: 'c2', description: 'menciona login', kind: 'deterministic', check: { kind: 'contains', text: 'login' } },
@@ -38,8 +38,8 @@ test('verificação: artefato que cumpre todos os critérios vira VERIFIED', () 
   assert.deepEqual(result.unmet, []);
 });
 
-test('verificação: critério reprovado vira FAILED com o motivo concreto', () => {
-  const result = engine.verify({
+test('verificação: critério reprovado vira FAILED com o motivo concreto', async () => {
+  const result = await engine.verify({
     contract: contract([
       { id: 'c1', description: 'sem TODO', kind: 'deterministic', check: { kind: 'not-contains', text: 'TODO' } },
     ]),
@@ -50,8 +50,8 @@ test('verificação: critério reprovado vira FAILED com o motivo concreto', () 
   assert.ok(result.checks[0].message?.includes('TODO'));
 });
 
-test('verificação: critério semântico SEM juiz nunca vira VERIFIED', () => {
-  const result = engine.verify({
+test('verificação: critério semântico SEM juiz nunca vira VERIFIED', async () => {
+  const result = await engine.verify({
     contract: contract([
       { id: 'det', description: 'tem tamanho', kind: 'deterministic', check: { kind: 'min-size', bytes: 5 } },
       { id: 'sem', description: 'a solução é idiomática', kind: 'semantic' },
@@ -63,8 +63,8 @@ test('verificação: critério semântico SEM juiz nunca vira VERIFIED', () => {
   assert.equal(VerificationEngine.isDone(result), false);
 });
 
-test('verificação: com juiz semântico o mesmo caso fecha em VERIFIED', () => {
-  const result = engine.verify({
+test('verificação: com juiz semântico o mesmo caso fecha em VERIFIED', async () => {
+  const result = await engine.verify({
     contract: contract([
       { id: 'sem', description: 'a solução é idiomática', kind: 'semantic' },
     ]),
@@ -75,11 +75,11 @@ test('verificação: com juiz semântico o mesmo caso fecha em VERIFIED', () => 
   assert.equal(VerificationEngine.isDone(result), true);
 });
 
-test('verificação: critério de evidência exige que o artefato exista e seja válido', () => {
+test('verificação: critério de evidência exige que o artefato exista e seja válido', async () => {
   const artifacts = new Map([
     ['tests', { kind: 'test-plan', content: 'plano', valid: false }],
   ]);
-  const missing = engine.verify({
+  const missing = await engine.verify({
     contract: contract([{ id: 'ev', description: 'existe relatório de testes', kind: 'evidence', evidenceOf: 'nao-existe' }]),
     content: 'x',
     artifacts,
@@ -87,7 +87,7 @@ test('verificação: critério de evidência exige que o artefato exista e seja 
   assert.equal(missing.status, 'FAILED');
   assert.ok(missing.checks[0].message?.includes('não foi produzido'));
 
-  const invalid = engine.verify({
+  const invalid = await engine.verify({
     contract: contract([{ id: 'ev', description: 'existe relatório de testes', kind: 'evidence', evidenceOf: 'tests' }]),
     content: 'x',
     artifacts,
@@ -96,8 +96,8 @@ test('verificação: critério de evidência exige que o artefato exista e seja 
   assert.ok(invalid.evidence.some((e) => e.ref === 'tests' && !e.valid));
 });
 
-test('verificação: critério opcional reprovado não derruba o veredito por padrão', () => {
-  const result = engine.verify({
+test('verificação: critério opcional reprovado não derruba o veredito por padrão', async () => {
+  const result = await engine.verify({
     contract: contract([
       { id: 'req', description: 'tamanho mínimo', kind: 'deterministic', check: { kind: 'min-size', bytes: 5 } },
       { id: 'opt', description: 'menciona benchmark', kind: 'deterministic', check: { kind: 'contains', text: 'benchmark' }, optional: true },
@@ -107,8 +107,8 @@ test('verificação: critério opcional reprovado não derruba o veredito por pa
   assert.equal(result.status, 'VERIFIED');
 });
 
-test('verificação: requireAllCriteria transforma opcional reprovado em FAILED', () => {
-  const result = engine.verify({
+test('verificação: requireAllCriteria transforma opcional reprovado em FAILED', async () => {
+  const result = await engine.verify({
     contract: contract(
       [
         { id: 'req', description: 'tamanho mínimo', kind: 'deterministic', check: { kind: 'min-size', bytes: 5 } },
@@ -151,8 +151,8 @@ test('check: regex inválida vira UNKNOWN em vez de derrubar a verificação', (
   assert.equal(r.outcome, 'unknown');
 });
 
-test('verificação: score reflete a fração de critérios obrigatórios aprovados', () => {
-  const result = engine.verify({
+test('verificação: score reflete a fração de critérios obrigatórios aprovados', async () => {
+  const result = await engine.verify({
     contract: contract([
       { id: 'c1', description: 'a', kind: 'deterministic', check: { kind: 'contains', text: 'alpha' } },
       { id: 'c2', description: 'b', kind: 'deterministic', check: { kind: 'contains', text: 'beta' } },

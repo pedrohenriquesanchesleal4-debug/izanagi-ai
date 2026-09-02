@@ -1021,7 +1021,7 @@ export class Orchestrator {
       // conclusão quando os critérios de aceite do contrato são comprovados.
       let verification: VerificationResult | undefined;
       if (contract && this.verifier) {
-        verification = this.verifier.verify({
+        verification = await this.verifier.verify({
           contract,
           content: result.content,
           artifacts: new Map(Array.from(ctx.artifacts.entries()).map(([id, a]) => [id, { kind: a.kind, content: a.content, valid: a.valid }])),
@@ -1029,6 +1029,21 @@ export class Orchestrator {
           ...(this.opts.judge ? { judge: this.opts.judge } : {}),
         });
         this.verifications.set(node.id, verification);
+        // Julgar custa token. A conta entra na fase `evaluation`, não na
+        // `execution`: verificar não é produzir, e misturar as duas esconderia
+        // o preço real da verificação semântica na telemetria.
+        if (verification.judgeTokens > 0) {
+          const judgeModel = verification.judgeModel ?? ctx.model;
+          const judgeInput = Math.round(verification.judgeTokens * 0.85);
+          ctx.execBudget?.spend({
+            phase: 'evaluation',
+            tokens: verification.judgeTokens,
+            costUsd: this.opts.costOf ? this.opts.costOf(judgeModel, judgeInput, verification.judgeTokens - judgeInput) : 0,
+            model: judgeModel,
+          });
+          ctx.trace.addTokens(judgeInput, verification.judgeTokens - judgeInput);
+          this.tokensUsed += verification.judgeTokens;
+        }
         ctx.trace.span(`verification:${node.id}`, 'evaluation', {
           status: verification.status,
           score: verification.score,

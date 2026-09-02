@@ -200,7 +200,7 @@ function showHelp(): void {
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
   \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: Commander + graph + roteamento por papel + verificação + trace + healing.
                           (--mode direct|assisted|orchestrated|autonomous força o modo de execução)
-                          (--budget N · --max-cost N · --model <id> · --local · --cache · --no-commander)
+                          (--budget N · --max-cost N · --model <id> · --local · --cache · --no-commander · --no-judge)
                           (--prompt-only só compila izanagi-prompt.md, sem executar)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).

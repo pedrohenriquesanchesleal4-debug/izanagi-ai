@@ -12,7 +12,7 @@ import { printTrace } from './trace.js';
 import { ContextResolver } from '../../runtime/orchestration/context-resolver.js';
 import { ResponseCache } from '../../runtime/cache/response-cache.js';
 import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
-import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, LOCAL_PROVIDERS } from '../../runtime/execute.js';
+import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
 interface RunArgs {
@@ -37,6 +37,8 @@ interface RunArgs {
   cache: boolean;
   /** Desliga o Commander e volta ao planejamento por categoria (`--no-commander`). */
   noCommander: boolean;
+  /** Desliga o juiz semântico (`--no-judge`): critério semântico volta a ficar UNVERIFIED. */
+  noJudge: boolean;
 }
 
 export function parseRunArgs(args: string[]): RunArgs {
@@ -52,6 +54,7 @@ export function parseRunArgs(args: string[]): RunArgs {
   let local = false;
   let cache = false;
   let noCommander = false;
+  let noJudge = false;
   const positionals: string[] = [];
 
   /** Aceita tanto `--flag valor` quanto `--flag=valor`. */
@@ -104,6 +107,8 @@ export function parseRunArgs(args: string[]): RunArgs {
       cache = true;
     } else if (arg === '--no-commander') {
       noCommander = true;
+    } else if (arg === '--no-judge') {
+      noJudge = true;
     } else if (!arg.startsWith('-')) {
       positionals.push(arg);
     }
@@ -133,6 +138,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     local,
     cache,
     noCommander,
+    noJudge,
   };
 }
 
@@ -422,6 +428,7 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     local: parsed.local,
     cache: parsed.cache,
     noCommander: parsed.noCommander,
+    noJudge: parsed.noJudge,
     explicitAgent: Boolean(agentId),
   });
 }
@@ -472,6 +479,8 @@ export async function runRuntime(
     cache?: boolean;
     /** Volta ao planejamento por categoria (`--no-commander`). */
     noCommander?: boolean;
+    /** Desliga o juiz semântico (`--no-judge`). Sem juiz, critério semântico fica UNVERIFIED. */
+    noJudge?: boolean;
     /** O usuário nomeou o agente explicitamente (`izanagi run architect ...`). */
     explicitAgent?: boolean;
   },
@@ -554,6 +563,19 @@ export async function runRuntime(
   });
   const headlessProducer = createHeadlessProducer(opts.task);
 
+  // Juiz semântico: sem provider (headless) ou com --no-judge, fica de fora e a
+  // Verification Engine devolve UNVERIFIED nos critérios semânticos, que é o
+  // conservador correto — nunca aprovação por omissão.
+  const judge = opts.noJudge || llmProviders.length === 0
+    ? undefined
+    : createSemanticJudge({
+        client: client as unknown as Parameters<typeof createSemanticJudge>[0]['client'],
+        routeRole: planning.routeRole,
+      });
+  if (opts.verbose && !judge) {
+    console.log(`  Juiz semântico: desligado (${opts.noJudge ? '--no-judge' : 'sem provider configurado'}) — critérios semânticos ficarão sem evidência conclusiva.`);
+  }
+
   const orchestrator = new Orchestrator({
     baseDir,
     command: 'run',
@@ -571,6 +593,7 @@ export async function runRuntime(
     budgetLimits: {
       ...(opts.maxCost !== undefined ? { maxCostUsd: opts.maxCost } : {}),
     },
+    ...(judge ? { judge } : {}),
     // Inteligência assimétrica: cada tarefa paga o preço do seu papel.
     routeRole: planning.routeRole,
     costOf: planning.costOf,
