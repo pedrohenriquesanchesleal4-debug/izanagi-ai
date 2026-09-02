@@ -4,6 +4,13 @@
 
 ---
 
+## [3.17.1]: 2026-09-02
+
+### Fixed
+- **`docs/` ficava fora do pacote npm.** O README publicado apontava para `docs/HANDOFF.md`, `docs/RUNTIME-PENDING.md` e `docs/POLYGLOT.md`, e quem instalava do registry encontrava links quebrados: a lista `files` do `package.json` nunca incluiu o diretório. Encontrado inspecionando o tarball publicado da 3.17.0.
+
+---
+
 ## [3.17.0]: 2026-09-02
 
 Decisão de produto que estava pendente desde a Fase 4, tomada: **o Izanagi é local-first**. Não fica de pé, não escuta porta, não guarda credencial em repouso. Quem agenda é o cron ou o Task Scheduler do sistema, e esta versão entrega o que faltava para eles conseguirem consumi-lo.
