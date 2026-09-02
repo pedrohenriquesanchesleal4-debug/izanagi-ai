@@ -122,12 +122,19 @@ De "framework de agentes" para runtime que transforma objetivo em plano executá
 
 ### Limitações reais desta fase (não resolvidas)
 
+> Versão completa e acionável, com arquivo, motivo e definição de pronto por item: [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md). Ao fechar um item lá, atualizar esta lista na mesma mudança.
+
 - **Juiz semântico não vem ligado**: a camada semântica da verificação existe e é testada, mas nenhum juiz é configurado por default. Critérios semânticos ficam `UNVERIFIED` até alguém injetar um. Isso é intencional (melhor inconclusivo que falso positivo), mas significa que a verificação hoje é essencialmente determinística.
 - **Decomposição por LLM é opcional e sem caller em produção**: `Commander.plan({ decompose })` valida e aceita decomposições externas, mas a CLI não injeta nenhuma. O planejamento em produção é 100% template + heurística.
 - **Sub-orquestradores hierárquicos não existem**: o grafo é plano. Um nó não abre um subgrafo próprio com profundidade máxima.
 - **Policy Engine continua fora do caminho de `izanagi run`**: `produce()` chama o LLM diretamente, sem passar por `ToolRegistry`, então as garantias de trust-tier/least-privilege ainda não se aplicam à execução real (limitação herdada, documentada desde a v3.x).
 - **Token Benchmark mede plano, não execução**: os números são tetos declarados contra preço de catálogo. Consumo real por run só aparece em `izanagi budget <run-id>`.
 - **Peer review entre agentes não é automático**: o protocolo de crítica existe e é testado, mas nenhum nó do template dispara revisão cruzada por conta própria.
+- **A escada de degradação de orçamento é registrada, não aplicada**: `nextDegradation()` devolve o passo e a telemetria o registra, mas nada reduz contexto, troca modelo ou corta paralelismo de fato. O teto final ainda protege (o gasto é recusado), mas a degradação em si é decorativa hoje.
+- **Artefato não tem content store**: o `ArtifactRegistry` persiste metadado (produtor, hash, versão, lineage); o conteúdo vive só em memória durante o run. Sem isso não há reuso de artefato entre runs.
+- **Paralelismo sem teto de concorrência**: `executeBatches` dispara o batch inteiro em `Promise.all`, sem limite. Provider com rate limit apertado transforma paralelismo em 429 e o healing gasta mais do que a execução serial gastaria.
+- **Memória não informa o planejamento**: o Commander classifica e escolhe agente sem consultar padrões de falha nem histórico por domínio.
+- **Skills continuam resolvidas por run, não por tarefa**: `rankSkills()` existe mas o Commander não popula `contract.skills` por objetivo.
 
 ## Critérios de aceite das próximas fases
 
