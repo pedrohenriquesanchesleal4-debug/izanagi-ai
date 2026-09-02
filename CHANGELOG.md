@@ -4,6 +4,40 @@
 
 ---
 
+## [3.15.0]: 2026-09-02
+
+O que sobrava depois da 3.14.0 era, quase tudo, "existe mas não está no caminho". Esta versão coloca as peças no caminho e passa a medir execução real. As sete limitações registradas na 3.14.0 foram fechadas; restam três, e nas três falta uma decisão ou um caso de uso, não código.
+
+### Added
+- **Policy Engine no caminho de `izanagi run`** (`orchestrator.ts`, `contracts/task-contract.ts`, `registry/capabilities.ts`): nó `kind: 'tool'` (contrato com `tool: { id, input }`) roteia por `ToolRegistry`, que aplica permissão, política e sandbox ANTES de executar — e não pelo `opts.produce()`, que é chamada de modelo. Tudo a jusante é o mesmo caminho de um nó de agente: validação, registro com lineage, Verification Engine, detecção de regressão, log A2A. `TaskContract.permissions` é menor privilégio por construção (contrato sem permissões executa tool nenhuma), e o trust tier vem da ORIGEM do arquivo do agente (`agents/generated/` → generated, `.agents/` → community, resto → builtin), nunca do que ele declara sobre si; agente desconhecido é `community`, o tier mais restritivo. O teto de tool calls é consumido antes da execução: descobrir o estouro depois seria contabilizar efeito colateral já aplicado no disco.
+- **Simulação headless derivada do schema real** (`contracts/artifacts.ts`, `runtime/execute.ts`): `simulatedArtifact(kind, ctx)` deriva o conteúdo de `required` + `minSize` + `simulationHint`, e mora ao lado do schema. Um teste valida a simulação de TODO kind registrado contra o validador de verdade, então schema e simulação não divergem em silêncio. `SIMULATION_BANNER` vai no próprio conteúdo e o model continua `cli-headless`: simulação não se apresenta como execução.
+- **Estatística de agente por domínio** (`memory/store.ts`, `orchestration/commander.ts`): `AgentStats.byDomain`. O run conta em todos os domínios que tocou; `agentStats(agent, domain)` devolve `undefined` sem histórico ali (ausência de sinal, não sinal ruim). O Commander usa o recorte quando a amostra do domínio é suficiente e cai no agregado quando não é.
+- **Cache da validação determinística** (`contracts/artifacts.ts`): `validateArtifact` memoizado por `(kind, hash)`, teto de 512, eviction FIFO, `clearValidationCache()`. Ressalva no código e no relatório: economiza CPU, não token — nenhuma chamada de modelo é evitada, e por isso não entra na telemetria de economia.
+- **Dashboard com os campos do runtime novo** (`dashboard/page.ts`): modo, verificação por tarefa (com o que ficou sem evidência conclusiva), economia e conversa A2A no Run Explorer. Teste novo trava o contrato entre `/api/runs/:id` e a página.
+- **Izanagi Arena** (`benchmarks/arena.ts`, `izanagi benchmark run --execute`): a suíte roda cada caso pelo runtime real e o relatório traz, por caso e agregado, taxa de verificação, taxa de recuperação, retries, ações de healing, tokens e custo. Recuperação conta o CONSERTO (nó que falhou e terminou `succeeded`), não a ação de healing. O agregado soma totais, não faz média de médias. Métrica ausente aparece como ausente: relatório sem execução não exibe "verificação 0%", e o resumo diz explicitamente o que aquele relatório não mede.
+
+### Fixed
+- **`toText` podia devolver `undefined`**: `JSON.stringify(undefined)` não é string, então validar o retorno de uma tool que não devolve nada estourava com "Cannot read properties of undefined" em vez de reprovar o artefato.
+- **Caminho relativo de tool escapava da sandbox**: `ensureInside` usava `path.resolve(target)`, que resolve contra o **cwd do processo**. `fs.write` com `"saida.txt"` gravava no diretório de onde o izanagi foi invocado, fora da zona declarada, e a checagem de contenção não tinha como perceber. Agora relativo resolve contra `baseDir`.
+- **Tabela de economia do dashboard referenciava campos inexistentes**: `costUsd`, `degradations` e `retries` — os campos reais de `TokenTelemetry` são `estimatedCostUsd` e `degradationsApplied`. Metade da tabela sairia vazia.
+- **Negativa de permissão entrava no caminho de cura errado**: `classifyFailure` não reconhecia "permissão negada"/"policy negou" e a falha caía no ramo genérico, gerando retentativa. Retry não abre porta fechada — só produz ruído de segurança no log e gasta orçamento. Agora é `non-recoverable`.
+
+### Changed
+- `izanagi run` sem API key deixou de terminar `FAIL` por um motivo alheio ao runtime. Medido no repo: o mesmo `--mode autonomous` que terminava `FAIL` com 3 tentativas e abort agora fecha `PASS` com 4/4 VERIFIED.
+- `BenchmarkResult` e `BenchmarkReport` ganharam `execution?` (opcional): relatórios antigos continuam legíveis, e relatório sem execução continua sem métrica de execução.
+
+### Compatibility
+- `TaskContract.permissions` e `TaskContract.tool` são opcionais: contrato sem eles executa exatamente como antes.
+- `OrchestratorOptions.environment` e `trustTierOf` são opcionais. Sem `trustTierOf`, um nó de tool com agente declarado é tratado como `community`.
+- `AgentStats.byDomain` é opcional: estado gravado antes desta versão continua legível, e o agregado global continua valendo.
+- `MemoryStore.agentStats(agent)` mantém a assinatura; o segundo parâmetro é opcional.
+- Nenhum comando ou flag da CLI foi removido.
+
+### Tests
+516 testes passando. O único vermelho é `polyglot: bin Rust presente com --version barato`, que exige executar um binário com shebang bash — não roda no Windows, e é anterior a estas mudanças.
+
+---
+
 ## [3.14.0]: 2026-09-02
 
 Fechamento do runtime: as peças que existiam e eram testadas passam a estar **ligadas** e a mudar a execução. As onze limitações registradas na v3.13.0 foram resolvidas; o que sobrou está em [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md).

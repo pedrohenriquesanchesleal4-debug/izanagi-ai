@@ -140,17 +140,36 @@ De "as peças existem e são testadas" para "as peças estão ligadas e mudam a 
 - [x] **Memória no planejamento**: padrão de falha conhecido sobe o modo um degrau; agente com histórico ruim sai da disputa (com salvaguarda contra excluir todo mundo); a consulta entra no Decision Journal.
 - [x] **Skills por tarefa**: cada nó carrega as skills do próprio objetivo (teto de 3) em vez da chain do run, com memoização de manifesto para o ranking por tarefa não multiplicar I/O.
 
+### Limitações desta fase: todas fechadas na Fase 10
+
+As sete limitações registradas aqui na v3.14.0 foram resolvidas na v3.15.0. O
+detalhamento está na tabela *Fechados* de
+[`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md).
+
+## Fase 10: Segurança no caminho de execução e medição real (v3.15.0) ✅
+
+O que sobrava depois da Fase 9 era, quase tudo, "existe mas não está no caminho".
+
+- [x] **Policy Engine no caminho de `izanagi run`**: nó `kind: 'tool'` roteado por `ToolRegistry` + `PolicyEngine`. `TaskContract.permissions` declara o que a tarefa pode fazer (menor privilégio: contrato sem permissões executa tool nenhuma); trust tier vem da ORIGEM do arquivo do agente, não do que ele declara. Negativa de permissão é `non-recoverable`: retry não abre porta fechada.
+- [x] **Simulação headless derivada do schema real**: `izanagi run` sem API key deixou de terminar `FAIL` por um motivo alheio ao runtime. Um teste valida a simulação de TODO kind registrado contra o validador de verdade, então schema e simulação não divergem em silêncio.
+- [x] **Estatística de agente por domínio**: `AgentStats.byDomain`. Um agente bom em backend não é mais descartado de um trabalho de backend por ir mal em frontend. Ausência de histórico no domínio é tratada como ausência de sinal, não como sinal ruim.
+- [x] **Cache de validação determinística**: `validateArtifact` memoizado por `(kind, hash)`. Economiza CPU, não token — e isso está dito no código e no relatório.
+- [x] **Dashboard mostra o runtime novo**: modo, verificação por tarefa, economia e conversa A2A no Run Explorer.
+- [x] **Izanagi Arena**: `izanagi benchmark run --execute` roda cada caso pelo runtime real e mede verificação, recuperação, retries, healing, tokens e custo. Métrica ausente aparece como ausente.
+
+Três bugs reais corrigidos no caminho: `toText` podia devolver `undefined` (validar retorno vazio de tool estourava em vez de reprovar); caminho relativo de tool escapava da sandbox resolvendo contra o cwd do processo; e a tabela de economia do dashboard referenciava campos que não existem em `TokenTelemetry`.
+
 ### Limitações reais desta fase (não resolvidas)
 
-> Versão completa e acionável, com arquivo, motivo e definição de pronto por item: [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md). Ao fechar um item lá, atualizar esta lista na mesma mudança.
+> Versão completa e acionável: [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md). Ao fechar um item lá, atualizar esta lista na mesma mudança.
 
-- **Sub-orquestradores hierárquicos não existem**: o grafo é plano. A quebra de tarefa do replanejamento cobre o caso comum, mas um nó não abre um subgrafo próprio com profundidade máxima.
-- **Policy Engine continua fora do caminho de `izanagi run`**: `produce()` chama o LLM diretamente, sem passar por `ToolRegistry`, então as garantias de trust-tier/least-privilege ainda não se aplicam à execução real (limitação herdada, documentada desde a v3.x).
-- **Token Benchmark mede plano, não execução**: os números são tetos declarados contra preço de catálogo. Consumo real por run só aparece em `izanagi budget <run-id>`.
-- **Decomposição por LLM é opcional e sem caller em produção**: `Commander.plan({ decompose })` valida e aceita decomposições externas, mas nem a CLI nem o SDK injetam uma. O planejamento em produção é 100% template + heurística.
-- **Producer headless não satisfaz o schema dos artefatos tipados**: sem API key, o run termina `FAIL` por um motivo que não tem relação com o runtime. Só o caminho de `critique` foi corrigido.
-- **Estatística de agente é global, não por domínio**: um agente que vai mal em frontend e bem em backend é despriorizado nos dois.
-- **Cache só cobre resposta de modelo e manifesto de skill**: resultado de tool, validação determinística e pesquisa continuam recalculados.
+Restam três, e nas três falta a **decisão ou o caso de uso**, não o código:
+
+- **Sub-orquestradores hierárquicos**: o grafo é plano. A quebra de tarefa do replanejamento cobre o caso comum; sub-orquestração só se justifica quando existir tarefa que precise se decompor DURANTE a execução, e nenhuma apareceu.
+- **`execute_code`**: exige isolamento de processo (CPU, memória, rede, syscall), que o framework não tem. As camadas atuais cobrem permissão, trust tier e sandbox de filesystem — não isolamento. Fingir que cobrem seria pior que não ter a feature.
+- **Ideias do Hermes (FTS5, síntese de skills, daemon, compressão neural)**: cada uma precisa de uma medição ou de uma decisão de produto antes de virar código.
+
+E três coisas que parecem dívida mas são escolha, com o motivo registrado: templates não geram nós de tool (depende do projeto do usuário), decomposição por LLM não tem caller (planejar é determinístico de propósito), e o Token Benchmark mede plano e não execução (os dois números nunca dividem o mesmo campo).
 
 ## Critérios de aceite das próximas fases
 
