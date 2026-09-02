@@ -21,6 +21,13 @@ export interface ExecutionBudgetLimits {
   maxAgents?: number;
   maxRetries?: number;
   maxToolCalls?: number;
+  /**
+   * Tarefas em voo simultâneas. Sem teto, um batch grande dispara todas as
+   * chamadas de uma vez e um provider com rate limit apertado transforma
+   * paralelismo em 429: o healing gasta mais do que a execução serial teria
+   * gasto.
+   */
+  maxConcurrency?: number;
 }
 
 /** Passos da escada, do mais barato de aplicar ao mais invasivo. */
@@ -40,6 +47,24 @@ export const DEGRADATION_LADDER: DegradationStep[] = [
   'drop-optional-tasks',
   'require-human-approval',
 ];
+
+/** Pressão a partir da qual a escada começa. */
+export const DEGRADATION_FLOOR = 0.6;
+
+/**
+ * Cada degrau tem o SEU limiar, distribuído entre `DEGRADATION_FLOOR` e 1.
+ * Sem isso, um único limiar faria a escada inteira ser consumida em sequência
+ * assim que a pressão passasse dele: um run com 6 tarefas chegaria a "pedir
+ * aprovação humana" só por ter 6 chamadas, não por estar realmente no limite.
+ * Pedir intervenção humana é o último recurso e exige 93% de consumo.
+ */
+export const DEGRADATION_THRESHOLDS: Record<DegradationStep, number> = DEGRADATION_LADDER.reduce(
+  (acc, step, i) => {
+    acc[step] = DEGRADATION_FLOOR + ((1 - DEGRADATION_FLOOR) * i) / DEGRADATION_LADDER.length;
+    return acc;
+  },
+  {} as Record<DegradationStep, number>,
+);
 
 export interface SpendRecord {
   phase: PhaseId;
@@ -204,11 +229,22 @@ export class ExecutionBudget {
   }
 
   /**
-   * Pressão orçamentária em [0,1]: o maior consumo relativo entre tokens,
-   * custo e tempo. 1 = teto atingido em pelo menos uma dimensão.
+   * Pressão orçamentária em [0,1]: o maior consumo relativo entre tokens
+   * totais, uso de QUALQUER fase, custo e tempo. 1 = teto atingido em pelo
+   * menos uma dimensão.
+   *
+   * A fase entra na conta porque o gasto real é limitado por fase, não pelo
+   * total: `execution` recebe 65% do total, então gastar tudo o que a execução
+   * pode gastar deixaria a pressão em 0.65 se olhássemos só o total. A escada
+   * de degradação nunca passaria do primeiro degrau, mesmo com a fase que
+   * importa esgotada. O sinal correto é "estou perto de ficar sem o orçamento
+   * que estou de fato usando".
    */
   pressure(): number {
     const ratios = [this.totalTokens / Math.max(1, this.limits.maxTokens)];
+    for (const usage of this.phases.usage()) {
+      if (usage.allocated > 0) ratios.push(usage.ratio);
+    }
     if (this.limits.maxCostUsd !== undefined && this.limits.maxCostUsd > 0) {
       ratios.push(this.costUsd / this.limits.maxCostUsd);
     }
@@ -223,12 +259,31 @@ export class ExecutionBudget {
    * abaixo de 0.6) ou a escada já foi toda aplicada. Cada chamada que devolve
    * um passo o marca como aplicado: a escada nunca repete o mesmo degrau.
    */
-  nextDegradation(threshold = 0.6): DegradationStep | null {
-    if (this.pressure() < threshold) return null;
-    const next = DEGRADATION_LADDER.find((step) => !this.applied.includes(step));
+  nextDegradation(floor = DEGRADATION_FLOOR): DegradationStep | null {
+    const pressure = this.pressure();
+    if (pressure < floor) return null;
+    const next = DEGRADATION_LADDER.find(
+      (step) => !this.applied.includes(step) && pressure >= Math.max(floor, DEGRADATION_THRESHOLDS[step]),
+    );
     if (!next) return null;
     this.applied.push(next);
     return next;
+  }
+
+  /**
+   * Todos os degraus que a pressão atual justifica e que ainda não foram
+   * aplicados, na ordem da escada. Quem executa aplica todos de uma vez: sob
+   * pressão de 90%, não faz sentido aplicar um degrau por chamada e só chegar
+   * ao corte de tarefas opcionais cinco chamadas depois.
+   */
+  pendingDegradations(floor = DEGRADATION_FLOOR): DegradationStep[] {
+    const steps: DegradationStep[] = [];
+    for (;;) {
+      const step = this.nextDegradation(floor);
+      if (!step) break;
+      steps.push(step);
+    }
+    return steps;
   }
 
   /** Passos já aplicados, na ordem. */

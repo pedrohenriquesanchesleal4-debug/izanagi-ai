@@ -221,7 +221,7 @@ function showHelp(): void {
   \x1b[32mresume <run-id>\x1b[0m                Retoma execução interrompida/pausada a partir do checkpoint.
   \x1b[32mapprove <run-id> [node-id]\x1b[0m     Aprova ação de alto risco pausada (human-in-the-loop) e retoma.
   \x1b[32mreject <run-id> [node-id] [--reason]\x1b[0m Rejeita ação pausada e retoma (nó falha com o motivo).
-  \x1b[32mexplain <run-id>\x1b[0m               Por que o Izanagi decidiu isso: decisões, healing, veredito.
+  \x1b[32mexplain <run-id> [--artifacts]\x1b[0m  Por que o Izanagi decidiu isso: decisões, healing, veredito e artefatos (com --artifacts mostra o conteúdo).
   \x1b[32mexport --cli <target>\x1b[0m         Exports framework adapters for other AI CLIs
                           (claude, codex, cursor, copilot, kimi, all).
   \x1b[32mversion\x1b[0m                       Displays Izanagi AI version.

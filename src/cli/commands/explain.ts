@@ -11,9 +11,14 @@
 import { TraceStore } from '../../runtime/observability/tracer.js';
 import { DecisionJournal } from '../../runtime/memory/decisions.js';
 import { ApprovalStore } from '../../runtime/recovery/approvals.js';
+import { ArtifactRegistry } from '../../runtime/artifacts/registry.js';
+
+/** Linhas de conteúdo mostradas por artefato com `--artifacts`. */
+const ARTIFACT_PREVIEW_LINES = 30;
 
 export function explainCommand(baseDir: string, args: string[]): void {
-  const runId = args[0];
+  const runId = args.find((a) => !a.startsWith('-'));
+  const showArtifacts = args.includes('--artifacts') || args.includes('-a');
   if (!runId) {
     console.error('\x1b[31mError:\x1b[0m informe o run-id.');
     console.error('Usage: \x1b[1mizanagi explain <run-id>\x1b[0m');
@@ -21,6 +26,7 @@ export function explainCommand(baseDir: string, args: string[]): void {
   }
 
   const trace = new TraceStore({ baseDir }).load(runId);
+  const artifacts = new ArtifactRegistry({ baseDir }).forRun(runId);
   const decisions = new DecisionJournal({ baseDir }).forRun(runId);
   const approvals = new ApprovalStore({ baseDir }).pendingFor(runId);
 
@@ -77,7 +83,38 @@ export function explainCommand(baseDir: string, args: string[]): void {
     console.log(`    \x1b[36mizanagi approve ${runId}\x1b[90m ou \x1b[36mizanagi reject ${runId} --reason="..."\x1b[0m`);
   }
 
-  if (decisions.length === 0 && (!trace?.healing || trace.healing.length === 0) && approvals.length === 0) {
+  if (artifacts.length > 0) {
+    const registry = new ArtifactRegistry({ baseDir });
+    console.log(`\n  \x1b[1mArtefatos produzidos (${artifacts.length}):\x1b[0m`);
+    for (const a of artifacts) {
+      const status = a.valid ? '\x1b[32m✔\x1b[0m' : '\x1b[31m✖\x1b[0m';
+      const who = [a.producer.agent, a.producer.skill].filter(Boolean).join('/') || a.producer.nodeId;
+      const version = a.version > 1 ? ` \x1b[90mv${a.version}\x1b[0m` : '';
+      const stored = a.contentRef ? '' : ' \x1b[90m(conteúdo não persistido)\x1b[0m';
+      console.log(`    ${status} \x1b[1m${a.name}\x1b[0m${version} \x1b[90m${a.kind}, ${a.size} bytes, por ${who}\x1b[0m${stored}`);
+      if (a.dependencies.length > 0) {
+        console.log(`        \x1b[90mconsumiu:\x1b[0m ${a.dependencies.map((d) => d.split(':')[1] ?? d).join(', ')}`);
+      }
+      if (showArtifacts) {
+        const content = registry.readContent(a.id, a.version);
+        if (content === null) {
+          console.log(`        \x1b[90m(sem conteúdo em disco para esta versão)\x1b[0m`);
+          continue;
+        }
+        const lines = content.split('\n');
+        const preview = lines.slice(0, ARTIFACT_PREVIEW_LINES);
+        console.log(preview.map((l) => `        \x1b[90m│\x1b[0m ${l}`).join('\n'));
+        if (lines.length > preview.length) {
+          console.log(`        \x1b[90m│ ... +${lines.length - preview.length} linha(s)${a.truncated ? ` (artefato truncado no store: ${a.originalSize} bytes originais)` : ''}\x1b[0m`);
+        }
+      }
+    }
+    if (!showArtifacts) {
+      console.log(`    \x1b[90mVer o conteúdo:\x1b[0m \x1b[36mizanagi explain ${runId} --artifacts\x1b[0m`);
+    }
+  }
+
+  if (artifacts.length === 0 && decisions.length === 0 && (!trace?.healing || trace.healing.length === 0) && approvals.length === 0) {
     console.log(`\n  \x1b[90mNenhuma decisão de roteamento, healing ou aprovação registrada para este run — provavelmente uma execução simples e direta.\x1b[0m`);
   }
 

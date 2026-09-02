@@ -268,6 +268,18 @@ export class ModelRouter {
     return null;
   }
 
+  /**
+   * Rebaixamento por pressão de orçamento: o inverso de `escalateRole`.
+   * Commander vira specialist, specialist vira worker. Worker é o piso (não
+   * existe nada mais barato para onde descer), e quem chama decide se corta a
+   * tarefa ou pede aprovação humana.
+   */
+  static demoteRole(role: AgentRole): AgentRole | null {
+    if (role === 'commander') return 'specialist';
+    if (role === 'specialist') return 'worker';
+    return null;
+  }
+
   /** Modelo pinado para um papel via env ou `.izanagi/izanagi.config.json` → `roles`. */
   private pinnedFor(role: AgentRole): ModelSpec | undefined {
     const envId = process.env[`IZANAGI_MODEL_${role.toUpperCase()}`];

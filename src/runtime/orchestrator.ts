@@ -40,6 +40,8 @@ import { contractOf, type AgentRole, type ExecutionMode, type TaskContract } fro
 import { ContextResolver, type AvailableArtifact, type ResolvedContext } from './orchestration/context-resolver.js';
 import { ExecutionBudget, type ExecutionBudgetLimits } from './token/execution-budget.js';
 import { VerificationEngine, type SemanticJudge, type VerificationResult } from './verification/engine.js';
+import { runWithConcurrency, DEFAULT_MAX_CONCURRENCY } from './orchestration/concurrency.js';
+import type { DegradationStep } from './token/execution-budget.js';
 
 export interface OrchestratorOptions {
   baseDir: string;
@@ -158,6 +160,27 @@ export class Orchestrator {
   private readonly verifications = new Map<string, VerificationResult>();
   /** Nós pulados por early stopping (objetivo já comprovado). */
   private readonly earlyStopped: string[] = [];
+  /** Nós pulados por pressão de orçamento (degradação drop-optional-tasks). */
+  private readonly budgetDropped: string[] = [];
+  /**
+   * Efeito ACUMULADO da escada de degradação. Cada passo aplicado muda um
+   * destes campos, e o resto do executor consulta este estado. Sem isto, a
+   * escada apenas registraria o passo sem mudar nada de fato na execução.
+   */
+  private readonly degradation = {
+    /** Multiplicador do orçamento de contexto do Context Resolver. */
+    contextScale: 1,
+    /** Multiplicador do teto de saída (`node.tokenBudget`) dos nós pendentes. */
+    outputScale: 1,
+    /** Rebaixa o papel de cada nó um degrau ao rotear. */
+    demoteModel: false,
+    /** Teto de concorrência efetivo (undefined = o limite configurado). */
+    concurrency: undefined as number | undefined,
+    /** Corta tarefas opcionais ainda não executadas. */
+    dropOptional: false,
+    /** Exige aprovação humana antes do próximo batch. */
+    requireApproval: false,
+  };
 
   setStore(store: TraceStore): void {
     this.store = store;
@@ -395,12 +418,15 @@ export class Orchestrator {
         if (this.opts.verbose) {
           console.log(`  \x1b[33m⏸\x1b[0m Pausado aguardando aprovação humana no nó "${failure.nodeId}" — use "izanagi approve ${trace.runId}" ou "izanagi reject ${trace.runId}".`);
         }
+        const partialTelemetry = execBudget.telemetry();
         const { trace: partialTrace, file } = trace.finishAndSave({
           graph: workingGraph,
           healing,
           artifacts: Array.from(ctx.artifacts.entries()).map(([id, a]) => ({ name: id, kind: a.kind as never, valid: a.valid })),
           model: modelId,
           budget: phaseBudget.summary(),
+          ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
+          telemetry: partialTelemetry as unknown as Record<string, unknown>,
         });
         return {
           trace: partialTrace,
@@ -410,6 +436,13 @@ export class Orchestrator {
           status: 'BLOCKED',
           score: 0,
           pendingApproval: { nodeId: failure.nodeId, context: failure.context },
+          ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
+          // Um run pausado é o momento em que saber quanto já foi gasto mais
+          // importa: sem isso, quem aprova decide no escuro.
+          telemetry: partialTelemetry,
+          ...(this.verifications.size > 0
+            ? { verification: Array.from(this.verifications.entries()).map(([nodeId, result]) => ({ nodeId, result })) }
+            : {}),
         };
       }
 
@@ -600,6 +633,9 @@ export class Orchestrator {
       if (this.earlyStopped.length > 0) {
         console.log(`  \x1b[90mEarly stopping:\x1b[0m ${this.earlyStopped.length} tarefa(s) opcional(is) dispensada(s): ${this.earlyStopped.join(', ')}`);
       }
+      if (this.budgetDropped.length > 0) {
+        console.log(`  \x1b[90mCortadas por orçamento:\x1b[0m ${this.budgetDropped.join(', ')}`);
+      }
       if (finalEvaluation) {
         console.log(`  \x1b[90mAvaliação:\x1b[0m ${finalEvaluation.verdict} (score ${finalEvaluation.score.toFixed(2)})`);
       }
@@ -668,13 +704,60 @@ export class Orchestrator {
         ctx.trace.span(`early-stop:${nodeId}`, 'decision', { reason: 'objetivo já verificado, tarefa opcional dispensada' })();
         return false;
       });
-      if (runnable.length === 0) continue;
-      ctx.execBudget?.recordParallelBatch(runnable.length);
-      const batchNodes = runnable;
+      // Degradação `drop-optional-tasks`: corta o que é reforço quando o
+      // orçamento aperta, ANTES de gastar a chamada.
+      const batchNodes = this.degradation.dropOptional
+        ? runnable.filter((nodeId) => {
+            const node = graph.nodes.find((n) => n.id === nodeId);
+            if (!contractOf(node ?? ({} as GraphNode))?.optional) return true;
+            if (node) {
+              node.status = 'skipped';
+              node.endedAt = new Date().toISOString();
+              node.metadata = { ...node.metadata, skippedReason: 'degradação: tarefa opcional cortada por orçamento' };
+            }
+            this.budgetDropped.push(nodeId);
+            ctx.trace.span(`budget:drop:${nodeId}`, 'decision', { reason: 'tarefa opcional cortada por pressão de orçamento' })();
+            return false;
+          })
+        : runnable;
+      if (batchNodes.length === 0) continue;
+
+      // Degradação `require-human-approval`: pausa antes de continuar gastando.
+      if (this.degradation.requireApproval) {
+        this.degradation.requireApproval = false;
+        const gateId = `budget-approval:${batchNodes[0]}`;
+        const record = ctx.approvals.get(ctx.runId, gateId) ?? ctx.approvals.request(ctx.runId, gateId, 'orçamento próximo do teto: confirme para continuar gastando');
+        if (record.decision === 'pending') {
+          return { nodeId: gateId, error: 'orçamento próximo do teto: aguardando aprovação humana', blockedApproval: true, context: 'orçamento próximo do teto: confirme para continuar gastando' };
+        }
+        if (record.decision === 'rejected') {
+          return { nodeId: gateId, error: `execução interrompida por decisão humana sob pressão de orçamento: ${record.reason ?? 'sem motivo informado'}` };
+        }
+      }
+
+      ctx.execBudget?.recordParallelBatch(batchNodes.length);
       batchNodes.forEach((nodeId) => ctx.trace.events.emit('node.started', { nodeId }));
-      const results = await Promise.all(
-        batchNodes.map((nodeId) => this.executeNode(graph, nodeId, ctx)),
+      const limit = this.degradation.concurrency
+        ?? this.opts.budgetLimits?.maxConcurrency
+        ?? DEFAULT_MAX_CONCURRENCY;
+      const settled = await runWithConcurrency(
+        batchNodes.map((nodeId) => () => this.executeNode(graph, nodeId, ctx)),
+        limit,
       );
+      // O pool nunca rejeita: uma tarefa que lançou vira `{ ok: false }` e é
+      // convertida aqui no mesmo formato de erro que `executeNode` produz, para
+      // que o caminho de healing a jusante não mude.
+      const results = settled.map((r, i) => {
+        if (r.ok) return r.value;
+        const nodeId = batchNodes[i];
+        const node = graph.nodes.find((n) => n.id === nodeId);
+        const message = r.error instanceof Error ? r.error.message : String(r.error);
+        if (node) {
+          node.status = 'failed';
+          node.error = message;
+        }
+        return { status: 'error' as const, nodeId, ...(node?.agent ? { agent: node.agent } : {}), error: message };
+      });
       results.forEach((r, i) => ctx.trace.events.emit('node.completed', { nodeId: batchNodes[i], status: r?.status ?? 'ok' }));
       const blocked = results.find((r) => r && r.status === 'blocked_approval') as
         | { nodeId: string; error?: string; status: string; context?: string }
@@ -772,6 +855,11 @@ export class Orchestrator {
       ctx.nodeContext = contract && this.contextResolver
         ? this.contextResolver.resolve(contract, this.availableArtifacts(ctx))
         : undefined;
+      // Degradação `reduce-output`: aperta o teto de saída dos nós que ainda
+      // vão rodar. É o efeito real do degrau, não só o registro dele.
+      if (this.degradation.outputScale < 1 && node.tokenBudget) {
+        node.tokenBudget = Math.max(256, Math.floor(node.tokenBudget * this.degradation.outputScale));
+      }
       if (ctx.nodeContext) {
         ctx.execBudget?.recordContextSaving(Math.max(0, ctx.nodeContext.upstreamCharsFull - ctx.nodeContext.upstreamChars));
       }
@@ -790,6 +878,16 @@ export class Orchestrator {
         if (effectiveRole !== role) {
           ctx.execBudget?.recordEscalation();
           ctx.trace.span(`escalation:${node.id}`, 'decision', { from: role, to: effectiveRole, attempt: node.attempts })();
+        }
+        // Degradação `downgrade-model`: rebaixa um degrau. Aplicada DEPOIS da
+        // escalada de propósito: sob pressão de orçamento, uma retentativa que
+        // escalaria volta ao papel original em vez de subir.
+        if (this.degradation.demoteModel) {
+          const demoted = ModelRouter.demoteRole(effectiveRole);
+          if (demoted) {
+            ctx.trace.span(`degradation:demote:${node.id}`, 'decision', { from: effectiveRole, to: demoted })();
+            effectiveRole = demoted;
+          }
         }
         const routed = this.opts.routeRole(effectiveRole, node);
         if (routed) {
@@ -821,9 +919,9 @@ export class Orchestrator {
           closeSpan(false, node.error);
           return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
         }
-        const degradation = ctx.execBudget?.nextDegradation();
-        if (degradation) {
-          ctx.trace.span(`budget:degradation:${degradation}`, 'decision', { pressure: ctx.execBudget?.pressure() })();
+        // Aplica TODOS os degraus que a pressão atual justifica, de uma vez.
+        for (const step of ctx.execBudget?.pendingDegradations() ?? []) {
+          this.applyDegradation(step, graph, ctx);
         }
       }
       if (result.model) ctx.trace.markTool(`model:${result.model}`);
@@ -844,6 +942,9 @@ export class Orchestrator {
         valid: validation.valid,
         score: validation.score,
         dependencies: (node.dependencies ?? []).map((depId) => `${ctx.runId}:${depId}`),
+        // Conteúdo vai para o content store: sem isso o artefato morre com o
+        // processo e `izanagi explain` só consegue mostrar metadado.
+        content: result.content,
       });
 
       // Sem contrato (caminho legado), a validação de schema é o portão. Com
@@ -902,6 +1003,69 @@ export class Orchestrator {
       node.error = err instanceof Error ? err.message : String(err);
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+    }
+  }
+
+  /**
+   * Aplica UM degrau da escada de degradação. Cada passo muda o estado que o
+   * executor consulta daqui para frente: contexto menor, saída menor, modelo
+   * mais barato, menos paralelismo, tarefas opcionais cortadas, ou pausa para
+   * decisão humana. O passo já veio marcado como consumido pelo Budget
+   * Controller, então a escada nunca repete um degrau.
+   */
+  private applyDegradation(step: DegradationStep, graph: ExecutionGraph, ctx: ExecuteCtx): void {
+    const pressure = ctx.execBudget?.pressure() ?? 0;
+    let effect = '';
+
+    switch (step) {
+      case 'reduce-context': {
+        this.degradation.contextScale = 0.5;
+        // Recria o resolver com metade do orçamento de contexto: os próximos
+        // nós recebem insumos mais curtos, não os mesmos insumos.
+        this.contextResolver = new ContextResolver({
+          maxCharsPerArtifact: Math.max(200, Math.floor(1200 * this.degradation.contextScale)),
+          maxTotalChars: Math.max(400, Math.floor(4000 * this.degradation.contextScale)),
+        });
+        effect = 'contexto por tarefa reduzido à metade';
+        break;
+      }
+      case 'reduce-output': {
+        this.degradation.outputScale = 0.6;
+        // Aplica já nos nós pendentes; `executeNode` reaplica nos que vierem.
+        for (const node of graph.nodes) {
+          if (node.status === 'pending' && node.tokenBudget) {
+            node.tokenBudget = Math.max(256, Math.floor(node.tokenBudget * this.degradation.outputScale));
+          }
+        }
+        effect = 'teto de saída dos nós pendentes reduzido a 60%';
+        break;
+      }
+      case 'downgrade-model': {
+        this.degradation.demoteModel = true;
+        effect = 'papel rebaixado um degrau no roteamento (modelo mais barato)';
+        break;
+      }
+      case 'reduce-parallelism': {
+        const current = this.degradation.concurrency ?? this.opts.budgetLimits?.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
+        this.degradation.concurrency = Math.max(1, Math.floor(current / 2));
+        effect = `concorrência reduzida para ${this.degradation.concurrency}`;
+        break;
+      }
+      case 'drop-optional-tasks': {
+        this.degradation.dropOptional = true;
+        effect = 'tarefas opcionais cortadas do restante do grafo';
+        break;
+      }
+      case 'require-human-approval': {
+        this.degradation.requireApproval = true;
+        effect = 'próximo batch exige aprovação humana';
+        break;
+      }
+    }
+
+    ctx.trace.span(`budget:degradation:${step}`, 'decision', { pressure, effect })();
+    if (this.opts.verbose) {
+      console.log(`  \x1b[33m▼\x1b[0m Degradação de orçamento (pressão ${(pressure * 100).toFixed(0)}%): ${step} — ${effect}`);
     }
   }
 
