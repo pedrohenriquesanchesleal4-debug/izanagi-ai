@@ -94,6 +94,20 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     required: ['runId', 'spans'],
     minSize: 50,
   },
+  /**
+   * Crítica adversarial. O schema exige o formato ESTRUTURADO porque a crítica
+   * não é um texto para humano ler: é a entrada de uma decisão de runtime
+   * (`parseCritique` -> `isBlocking` -> correção do nó criticado). Crítica em
+   * prosa livre reprova aqui de propósito, e a retentativa pede o formato.
+   */
+  critique: {
+    kind: 'critique',
+    required: ['status', 'issues'],
+    // Teto baixo de propósito: uma crítica que aprova é legitimamente curta
+    // (`{"status":"approved","issues":[]}`). Quem garante a qualidade aqui são
+    // os campos obrigatórios, não o tamanho.
+    minSize: 20,
+  },
   raw: {
     kind: 'raw',
     required: [],

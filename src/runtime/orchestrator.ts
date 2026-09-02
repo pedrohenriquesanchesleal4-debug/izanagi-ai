@@ -42,6 +42,8 @@ import { ExecutionBudget, type ExecutionBudgetLimits } from './token/execution-b
 import { VerificationEngine, type SemanticJudge, type VerificationResult } from './verification/engine.js';
 import { runWithConcurrency, DEFAULT_MAX_CONCURRENCY } from './orchestration/concurrency.js';
 import type { DegradationStep } from './token/execution-budget.js';
+import { ConversationLog, type ConversationEntry } from './protocol/conversation.js';
+import { formatCorrection, isBlocking, parseCritique, worstSeverity, type Critique } from './protocol/messages.js';
 
 export interface OrchestratorOptions {
   baseDir: string;
@@ -119,6 +121,14 @@ export interface ExecuteCtx {
   nodeRole?: AgentRole;
   /** Budget Controller com custo, cache e escada de degradação. */
   execBudget?: ExecutionBudget;
+  /**
+   * Canal agente-a-agente do run. Toda mensagem carrega REFERÊNCIA de artefato,
+   * nunca cópia de conteúdo: é o que separa uma equipe coordenada por contratos
+   * de uma sala de reunião trocando textos longos.
+   */
+  conversation: ConversationLog;
+  /** Críticas já interpretadas, por nó crítico (saída de `parseCritique`). */
+  critiques: Map<string, Critique>;
 }
 
 export interface OrchestrationResult {
@@ -141,6 +151,8 @@ export interface OrchestrationResult {
   telemetry?: ReturnType<ExecutionBudget['telemetry']>;
   /** Verificação por nó (Verification Engine 2.0). */
   verification?: Array<{ nodeId: string; result: VerificationResult }>;
+  /** Log do protocolo agente-a-agente (task/result/critique/correction). */
+  conversation?: ConversationEntry[];
 }
 
 export class Orchestrator {
@@ -162,6 +174,13 @@ export class Orchestrator {
   private readonly earlyStopped: string[] = [];
   /** Nós pulados por pressão de orçamento (degradação drop-optional-tasks). */
   private readonly budgetDropped: string[] = [];
+  /**
+   * Nós já reprovados UMA vez por crítica bloqueante. O crítico pode reprovar
+   * um artefato e exigir correção, mas não pode reabrir o mesmo nó
+   * indefinidamente: sem este teto, crítico e executor entram em ping-pong e o
+   * orçamento vira o único freio.
+   */
+  private readonly critiqueRounds = new Set<string>();
   /**
    * Efeito ACUMULADO da escada de degradação. Cada passo aplicado muda um
    * destes campos, e o resto do executor consulta este estado. Sem isto, a
@@ -216,6 +235,10 @@ export class Orchestrator {
     const approvals = this.approvalStore ?? new ApprovalStore({ baseDir: this.opts.baseDir });
     const healing: HealingAction[] = [];
     const startedAt = Date.now();
+    // Canal A2A do run. A primeira mensagem é o próprio pedido do usuário: o
+    // log tem que começar onde o trabalho começa, não no primeiro nó.
+    const conversation = new ConversationLog();
+    conversation.record({ from: 'user', to: 'commander', type: 'task', taskId: 'run', summary: this.opts.task });
 
     // Resume: carrega o checkpoint salvo e pula planning/routing — reusa exatamente
     // o grafo, artefatos e modelo/provider da execução original interrompida.
@@ -300,6 +323,13 @@ export class Orchestrator {
       for (const decision of this.opts.plan.decisions) {
         decisions.record({ kind: 'planning', chosen: this.opts.plan.mode, alternatives: [], reason: decision, runId: trace.runId });
       }
+      conversation.record({
+        from: 'commander',
+        to: 'scheduler',
+        type: 'task',
+        taskId: 'run',
+        summary: `plano em modo ${this.opts.plan.mode} (${this.opts.plan.modeReason}): ${graph.nodes.length} tarefa(s) em ${graph.parallelBatches.length} etapa(s)`,
+      });
       if (this.opts.verbose) {
         console.log(`  \x1b[35m▸\x1b[0m Commander: modo ${this.opts.plan.mode} (${this.opts.plan.modeReason}) — ${graph.nodes.length} tarefa(s)`);
       }
@@ -398,6 +428,8 @@ export class Orchestrator {
       artifactRegistry,
       approvals,
       execBudget,
+      conversation,
+      critiques: new Map(),
     };
 
     let finalEvaluation: EvaluationReport | undefined;
@@ -427,6 +459,7 @@ export class Orchestrator {
           budget: phaseBudget.summary(),
           ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
           telemetry: partialTelemetry as unknown as Record<string, unknown>,
+          ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
         });
         return {
           trace: partialTrace,
@@ -443,6 +476,7 @@ export class Orchestrator {
           ...(this.verifications.size > 0
             ? { verification: Array.from(this.verifications.entries()).map(([nodeId, result]) => ({ nodeId, result })) }
             : {}),
+          ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
         };
       }
 
@@ -573,7 +607,7 @@ export class Orchestrator {
         ...(testsFailed > 0 ? [`${testsFailed} teste(s) falhando (test-results)`] : []),
         ...unverified.map((v) => `verificação não conclusiva: ${v.reason}`),
       ],
-      recommendations: ctx.artifacts.has('critique') ? ['crítica adversarial consumida; revisar achados no artefato critique'] : [],
+      recommendations: this.critiqueRecommendations(ctx),
     });
     closeEval();
     trace.events.emit('evaluation.completed', { verdict: finalEvaluation.verdict, score: finalEvaluation.score });
@@ -623,6 +657,7 @@ export class Orchestrator {
       ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
       telemetry: telemetry as unknown as Record<string, unknown>,
       ...(verificationSummary.length > 0 ? { verification: verificationSummary } : {}),
+      ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
     });
 
     if (this.opts.verbose) {
@@ -635,6 +670,10 @@ export class Orchestrator {
       }
       if (this.budgetDropped.length > 0) {
         console.log(`  \x1b[90mCortadas por orçamento:\x1b[0m ${this.budgetDropped.join(', ')}`);
+      }
+      if (conversation.size > 0) {
+        const byType = conversation.countByType();
+        console.log(`  Protocolo A2A: ${conversation.size} mensagem(ns) (${Object.entries(byType).map(([k, v]) => `${k}=${v}`).join(', ')})`);
       }
       if (finalEvaluation) {
         console.log(`  \x1b[90mAvaliação:\x1b[0m ${finalEvaluation.verdict} (score ${finalEvaluation.score.toFixed(2)})`);
@@ -654,6 +693,7 @@ export class Orchestrator {
       ...(this.verifications.size > 0
         ? { verification: Array.from(this.verifications.entries()).map(([nodeId, result]) => ({ nodeId, result })) }
         : {}),
+      ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
     };
   }
 
@@ -852,8 +892,12 @@ export class Orchestrator {
       const role: AgentRole = contract?.role ?? 'specialist';
       ctx.contract = contract;
       ctx.nodeRole = role;
+      // Correção pendente de uma crítica bloqueante: quando existe, o contexto
+      // desta rodada é dirigido (entrega anterior + lista de correções), não os
+      // insumos do grafo de novo.
+      const correction = typeof node.metadata?.correction === 'string' ? node.metadata.correction : undefined;
       ctx.nodeContext = contract && this.contextResolver
-        ? this.contextResolver.resolve(contract, this.availableArtifacts(ctx))
+        ? this.contextResolver.resolve(contract, this.availableArtifacts(ctx), correction ? { correction } : {})
         : undefined;
       // Degradação `reduce-output`: aperta o teto de saída dos nós que ainda
       // vão rodar. É o efeito real do degrau, não só o registro dele.
@@ -898,6 +942,20 @@ export class Orchestrator {
         }
       }
       if (node.agent) ctx.execBudget?.recordAgent(node.agent);
+
+      // A2A: a tarefa é despachada como MENSAGEM tipada, com referência aos
+      // artefatos de entrada. O conteúdo dos insumos não entra aqui — já está
+      // no contexto mínimo, e duplicá-lo no log seria uma segunda cópia do run.
+      ctx.conversation.record({
+        from: 'commander',
+        to: node.agent ?? node.id,
+        type: 'task',
+        taskId: node.id,
+        summary: correction
+          ? `retentativa dirigida de "${node.id}" com correções da crítica`
+          : contract?.objective ?? `executar "${node.id}" (${node.kind})`,
+        artifactRefs: (ctx.nodeContext?.upstream ?? []).map((u) => u.ref).filter((r): r is string => Boolean(r)),
+      });
 
       const result = await this.opts.produce(node, ctx);
       if (result.tokens) {
@@ -961,8 +1019,9 @@ export class Orchestrator {
 
       // Verification Engine 2.0: "o agente entregou" não basta. Só existe
       // conclusão quando os critérios de aceite do contrato são comprovados.
+      let verification: VerificationResult | undefined;
       if (contract && this.verifier) {
-        const verification = this.verifier.verify({
+        verification = this.verifier.verify({
           contract,
           content: result.content,
           artifacts: new Map(Array.from(ctx.artifacts.entries()).map(([id, a]) => [id, { kind: a.kind, content: a.content, valid: a.valid }])),
@@ -996,7 +1055,29 @@ export class Orchestrator {
       node.status = 'succeeded';
       node.endedAt = new Date().toISOString();
       node.durationMs = Date.now() - Date.parse(node.startedAt!);
+      // A correção já foi aplicada nesta rodada: mantê-la faria a próxima
+      // execução do nó pedir de novo um conserto que já aconteceu.
+      if (correction && node.metadata) delete node.metadata.correction;
       closeSpan(true);
+
+      ctx.conversation.record({
+        from: node.agent ?? node.id,
+        to: 'commander',
+        type: 'result',
+        taskId: node.id,
+        summary: `${result.kind} produzido (${artifactText.length} chars, ${validation.valid ? 'válido' : 'inválido'}${verification ? `, ${verification.status}` : ''})`,
+        artifactRefs: [`${ctx.runId}:${node.id}`],
+        ...(verification ? { confidence: verification.score } : {}),
+      });
+
+      // Crítica estruturada: a saída do crítico não é um texto para arquivar,
+      // é a entrada de uma decisão de runtime. Interpretada aqui, ela reprova o
+      // nó criticado e devolve a correção mínima — em vez de virar um artefato
+      // que ninguém lê (que era o comportamento até aqui).
+      if (result.kind === 'critique') {
+        const redirected = this.interpretCritique(graph, node, result.content, ctx);
+        if (redirected) return redirected;
+      }
       return { status: 'ok', nodeId: node.id };
     } catch (err) {
       node.status = 'failed';
@@ -1004,6 +1085,149 @@ export class Orchestrator {
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
     }
+  }
+
+  /**
+   * Interpreta a saída de um nó crítico e transforma crítica em AÇÃO.
+   *
+   * Sem isto, o crítico produzia texto, o texto virava um artefato `critique`, e
+   * ninguém o lia: a crítica adversarial custava uma chamada de modelo e não
+   * mudava nada na execução. Aqui a crítica vira uma decisão determinística:
+   * bloqueante reprova o artefato criticado e devolve a correção MÍNIMA (só os
+   * problemas high/critical), sem reenviar histórico nenhum.
+   *
+   * Devolve a falha a propagar (do nó CRITICADO, não do crítico) ou null quando
+   * a crítica não bloqueia.
+   */
+  private interpretCritique(
+    graph: ExecutionGraph,
+    criticNode: GraphNode,
+    content: unknown,
+    ctx: ExecuteCtx,
+  ): { status: 'error'; nodeId: string; agent?: string; skill?: string; error: string } | null {
+    const text = typeof content === 'string' ? content : JSON.stringify(content ?? {});
+    const critique = parseCritique(text);
+    ctx.critiques.set(criticNode.id, critique);
+
+    const blocking = isBlocking(critique);
+    const worst = worstSeverity(critique);
+    const targetId = this.critiqueTarget(graph, criticNode, critique);
+
+    ctx.trace.span(`critique:${criticNode.id}`, 'evaluation', {
+      status: critique.status,
+      issues: critique.issues.length,
+      worstSeverity: worst ?? 'nenhuma',
+      blocking,
+      target: targetId ?? 'nenhum',
+    })(!blocking, blocking ? `${critique.issues.length} problema(s), pior severidade ${worst}` : undefined);
+
+    ctx.conversation.record({
+      from: criticNode.agent ?? criticNode.id,
+      to: targetId ?? 'commander',
+      type: 'critique',
+      taskId: targetId ?? criticNode.id,
+      summary: `${critique.status}: ${critique.issues.length} problema(s), pior severidade ${worst ?? 'nenhuma'}`,
+      artifactRefs: [`${ctx.runId}:${criticNode.id}`, ...(targetId ? [`${ctx.runId}:${targetId}`] : [])],
+      // Payload é a estrutura decisória (severidade + descrição), não o texto
+      // inteiro da crítica: o texto já está no artefato, referenciado acima.
+      payload: {
+        status: critique.status,
+        issues: critique.issues.map((i) => ({ severity: i.severity, description: i.description })),
+      },
+      ...(critique.confidence !== undefined ? { confidence: critique.confidence } : {}),
+    });
+
+    if (!blocking || !targetId) return null;
+
+    const target = graph.nodes.find((n) => n.id === targetId);
+    // Só faz sentido reabrir o que de fato foi entregue nesta execução.
+    if (!target || target.status !== 'succeeded') return null;
+
+    if (this.critiqueRounds.has(targetId)) {
+      // Segunda crítica bloqueante no mesmo nó: registra como evidência (entra
+      // nas recomendações da avaliação) e não reabre. Ping-pong entre crítico e
+      // executor gasta orçamento sem convergir.
+      ctx.trace.span(`critique:exhausted:${targetId}`, 'decision', {
+        reason: 'nó já reaberto uma vez por crítica bloqueante nesta execução',
+        issues: critique.issues.length,
+      })();
+      return null;
+    }
+
+    this.critiqueRounds.add(targetId);
+    const correction = formatCorrection(critique);
+    const blockingCount = critique.issues.filter((i) => i.severity === 'high' || i.severity === 'critical').length;
+    target.status = 'failed';
+    // A mensagem entra na taxonomia de falha como `validation` de propósito: uma
+    // crítica bloqueante É a reprovação de um artefato, e o caminho de cura para
+    // isso (skill corretiva + retry) já existe e é testado.
+    target.error = `validação por crítica adversarial (${criticNode.id}) reprovou o artefato: ${blockingCount || critique.issues.length} problema(s) bloqueante(s)`;
+    target.metadata = { ...target.metadata, correction, criticizedBy: criticNode.id };
+
+    // O crítico volta para a fila: quem apontou o problema é quem verifica o
+    // conserto. Sem isto, o run "corrige" e nunca reverifica. `attempts` volta a
+    // zero porque re-criticar não é uma retentativa de algo que falhou — o
+    // crítico entregou; escalar o modelo dele aqui seria pagar caro por nada.
+    criticNode.status = 'pending';
+    criticNode.attempts = 0;
+    criticNode.error = undefined;
+    ctx.artifacts.delete(criticNode.id);
+
+    ctx.conversation.record({
+      from: criticNode.agent ?? criticNode.id,
+      to: target.agent ?? targetId,
+      type: 'correction',
+      taskId: targetId,
+      summary: correction,
+      artifactRefs: [`${ctx.runId}:${targetId}`],
+    });
+
+    return {
+      status: 'error',
+      nodeId: targetId,
+      ...(target.agent ? { agent: target.agent } : {}),
+      ...(target.skills?.[0] ? { skill: target.skills[0] } : {}),
+      error: target.error,
+    };
+  }
+
+  /**
+   * Qual nó a crítica reprova. O crítico costuma nomear o artefato em
+   * `issue.artifact`; quando esse nome bate com um nó do grafo ele é mais
+   * preciso que a topologia. Sem nome utilizável, cai na dependência do
+   * crítico — que é exatamente o que ele foi posto no grafo para revisar.
+   */
+  private critiqueTarget(graph: ExecutionGraph, criticNode: GraphNode, critique: Critique): string | null {
+    const exists = (id: string | undefined): id is string =>
+      Boolean(id) && id !== criticNode.id && graph.nodes.some((n) => n.id === id);
+    const named = critique.issues.map((i) => i.artifact).find(exists);
+    if (named) return named;
+    const dep = (criticNode.dependencies ?? []).find(exists);
+    return dep ?? null;
+  }
+
+  /**
+   * Recomendações da avaliação final derivadas das críticas REALMENTE
+   * interpretadas. Antes disto a checagem era `ctx.artifacts.has('critique')`,
+   * que nunca era verdadeira: `critique` é o KIND do artefato, e a chave do mapa
+   * é o id do nó (`critic`). A recomendação simplesmente nunca aparecia.
+   */
+  private critiqueRecommendations(ctx: ExecuteCtx): string[] {
+    const out: string[] = [];
+    for (const [nodeId, critique] of ctx.critiques.entries()) {
+      if (critique.issues.length === 0) continue;
+      const worst = worstSeverity(critique);
+      const corrected = Array.from(this.critiqueRounds).length > 0;
+      out.push(
+        `crítica de "${nodeId}": ${critique.issues.length} problema(s), pior severidade ${worst}` +
+          (isBlocking(critique)
+            ? corrected
+              ? ' — bloqueante, correção dirigida aplicada'
+              : ' — bloqueante, sem alvo corrigível no grafo'
+            : ' — não bloqueante, tratado como recomendação'),
+      );
+    }
+    return out;
   }
 
   /**

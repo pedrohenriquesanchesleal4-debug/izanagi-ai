@@ -46,6 +46,17 @@ export interface ResolvedContext {
   upstreamChars: number;
   /** Chars que teriam sido gastos enviando os artefatos inteiros. */
   upstreamCharsFull: number;
+  /**
+   * Correções vindas de uma crítica bloqueante. Quando presente, este contexto
+   * é uma RETENTATIVA dirigida: o nó recebe o que precisa consertar e a própria
+   * entrega anterior, não os insumos do grafo outra vez.
+   */
+  correction?: string;
+}
+
+export interface ResolveContextOptions {
+  /** Correção estruturada (saída de `formatCorrection`) a aplicar nesta rodada. */
+  correction?: string;
 }
 
 export interface ResolveOptions {
@@ -89,11 +100,16 @@ export class ContextResolver {
    * Contexto de um contrato: só os artefatos declarados em `inputs`
    * (ou `dependencies`), nessa ordem, dentro do orçamento de chars.
    */
-  resolve(contract: TaskContract, available: Map<string, AvailableArtifact>): ResolvedContext {
+  resolve(contract: TaskContract, available: Map<string, AvailableArtifact>, opts: ResolveContextOptions = {}): ResolvedContext {
     const perArtifact = this.opts.maxCharsPerArtifact ?? DEFAULT_PER_ARTIFACT;
     const total = this.opts.maxTotalChars ?? DEFAULT_TOTAL;
 
-    const wanted = contract.inputs.length > 0 ? contract.inputs : contract.dependencies;
+    // Rodada de correção: os insumos do grafo JÁ foram enviados na primeira
+    // tentativa. Reenviar todos para pedir um ajuste é o oposto do protocolo:
+    // o nó precisa da própria entrega anterior e da lista de correções, só.
+    const wanted = opts.correction
+      ? (available.has(contract.id) ? [contract.id] : [])
+      : contract.inputs.length > 0 ? contract.inputs : contract.dependencies;
     const upstream: UpstreamContext[] = [];
     let used = 0;
     let full = 0;
@@ -139,6 +155,7 @@ export class ContextResolver {
       upstream,
       upstreamChars: used,
       upstreamCharsFull: full,
+      ...(opts.correction ? { correction: opts.correction } : {}),
     };
   }
 
@@ -152,13 +169,46 @@ export class ContextResolver {
     if (ctx.acceptance.length > 0) {
       out += `\n## CRITÉRIOS DE ACEITE (verificados automaticamente)\n- ${ctx.acceptance.join('\n- ')}\n`;
     }
+    if (ctx.expectedOutput.kind === 'critique') {
+      out += CRITIQUE_OUTPUT_CONTRACT;
+    }
     if (ctx.upstream.length > 0) {
-      out += `\n## INSUMOS (saídas das tarefas anteriores)\n`;
+      const heading = ctx.correction ? 'SUA ENTREGA ANTERIOR (a corrigir)' : 'INSUMOS (saídas das tarefas anteriores)';
+      out += `\n## ${heading}\n`;
       for (const up of ctx.upstream) {
         const flags = [up.valid ? 'válido' : 'INVÁLIDO', up.truncated ? 'resumido' : 'completo'].join(', ');
         out += `\n### ${up.nodeId} — ${up.kind}${up.ref ? ` (ref: ${up.ref})` : ''} [${flags}]\n${up.summary}\n`;
       }
     }
+    if (ctx.correction) {
+      out += `\n## CORREÇÕES OBRIGATÓRIAS (crítica bloqueante)\n${ctx.correction}\n`;
+    }
     return out;
   }
 }
+
+/**
+ * Contrato de saída do nó crítico. A crítica alimenta uma decisão de runtime
+ * (`parseCritique` -> `isBlocking` -> correção do nó criticado), então precisa
+ * ser um objeto e não um ensaio. O parser é tolerante (aceita JSON embrulhado
+ * em prosa ou em cerca de código), mas pedir o formato é o que faz a
+ * tolerância ser exceção em vez de regra.
+ */
+const CRITIQUE_OUTPUT_CONTRACT = `
+## FORMATO DE SAÍDA OBRIGATÓRIO
+Responda APENAS com um objeto JSON válido, sem texto antes ou depois:
+{
+  "status": "approved" | "needs_revision" | "rejected",
+  "issues": [
+    { "severity": "low" | "medium" | "high" | "critical",
+      "description": "o problema concreto e verificável",
+      "artifact": "id da tarefa criticada",
+      "suggestedFix": "a correção mínima que resolve" }
+  ],
+  "confidence": 0.0-1.0
+}
+Regras: marque "high"/"critical" apenas o que de fato bloqueia a entrega (essas
+severidades reprovam o artefato e disparam uma retentativa dirigida). Problema
+sem "description" acionável é ruído. Nada encontrado: "status": "approved" com
+"issues": [].
+`;

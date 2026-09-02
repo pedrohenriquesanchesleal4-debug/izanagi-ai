@@ -616,6 +616,14 @@ export async function runRuntime(
       console.log(`    \x1b[33m•\x1b[0m ${v.nodeId}: ${v.result.reason}${v.result.unmet.length > 0 ? ` (${v.result.unmet.slice(0, 2).join('; ')})` : ''}`);
     }
   }
+  if (result.conversation && result.conversation.length > 0) {
+    const critiques = result.conversation.filter((m) => m.type === 'critique');
+    const corrections = result.conversation.filter((m) => m.type === 'correction');
+    console.log(`  \x1b[90mProtocolo A2A:\x1b[0m ${result.conversation.length} mensagem(ns)${critiques.length > 0 ? `, ${critiques.length} crítica(s)` : ''}${corrections.length > 0 ? `, ${corrections.length} correção(ões) dirigida(s)` : ''}`);
+    for (const c of corrections.slice(0, 2)) {
+      console.log(`    \x1b[33m•\x1b[0m ${c.from} -> ${c.to}: ${c.summary}`);
+    }
+  }
   console.log(`  \x1b[90mDuration:\x1b[0m ${result.trace.durationMs}ms | tokens ${result.trace.tokens?.total ?? 0}`);
 
   // Imprime o trace detalhado

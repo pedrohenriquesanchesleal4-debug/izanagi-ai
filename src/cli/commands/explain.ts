@@ -19,6 +19,7 @@ const ARTIFACT_PREVIEW_LINES = 30;
 export function explainCommand(baseDir: string, args: string[]): void {
   const runId = args.find((a) => !a.startsWith('-'));
   const showArtifacts = args.includes('--artifacts') || args.includes('-a');
+  const showConversation = args.includes('--conversation') || args.includes('-c');
   if (!runId) {
     console.error('\x1b[31mError:\x1b[0m informe o run-id.');
     console.error('Usage: \x1b[1mizanagi explain <run-id>\x1b[0m');
@@ -83,6 +84,28 @@ export function explainCommand(baseDir: string, args: string[]): void {
     console.log(`    \x1b[36mizanagi approve ${runId}\x1b[90m ou \x1b[36mizanagi reject ${runId} --reason="..."\x1b[0m`);
   }
 
+  // Protocolo agente-a-agente: quem pediu o quê a quem, e sobre qual artefato.
+  // Resumido por padrão porque o log completo de um grafo grande é ruído; o
+  // detalhe fica atrás de --conversation.
+  const conversation = trace?.conversation ?? [];
+  if (conversation.length > 0) {
+    const byType = conversation.reduce<Record<string, number>>((acc, m) => {
+      acc[m.type] = (acc[m.type] ?? 0) + 1;
+      return acc;
+    }, {});
+    console.log(`
+  \x1b[1mConversa entre agentes (${conversation.length} mensagens):\x1b[0m \x1b[90m${Object.entries(byType).map(([k, v]) => `${k}=${v}`).join(', ')}\x1b[0m`);
+    const shown = showConversation ? conversation : conversation.filter((m) => m.type === 'critique' || m.type === 'correction');
+    for (const m of shown) {
+      const refs = (m.artifactRefs ?? []).map((r) => r.split(':')[1] ?? r).join(', ');
+      console.log(`    \x1b[36m${m.from}\x1b[0m -> \x1b[36m${m.to}\x1b[0m [\x1b[33m${m.type}\x1b[0m] ${m.summary}`);
+      if (refs) console.log(`        \x1b[90martefatos: ${refs}\x1b[0m`);
+    }
+    if (!showConversation && shown.length < conversation.length) {
+      console.log(`    \x1b[90mVer a conversa inteira:\x1b[0m \x1b[36mizanagi explain ${runId} --conversation\x1b[0m`);
+    }
+  }
+
   if (artifacts.length > 0) {
     const registry = new ArtifactRegistry({ baseDir });
     console.log(`\n  \x1b[1mArtefatos produzidos (${artifacts.length}):\x1b[0m`);
@@ -114,7 +137,7 @@ export function explainCommand(baseDir: string, args: string[]): void {
     }
   }
 
-  if (artifacts.length === 0 && decisions.length === 0 && (!trace?.healing || trace.healing.length === 0) && approvals.length === 0) {
+  if (artifacts.length === 0 && decisions.length === 0 && conversation.length === 0 && (!trace?.healing || trace.healing.length === 0) && approvals.length === 0) {
     console.log(`\n  \x1b[90mNenhuma decisão de roteamento, healing ou aprovação registrada para este run — provavelmente uma execução simples e direta.\x1b[0m`);
   }
 

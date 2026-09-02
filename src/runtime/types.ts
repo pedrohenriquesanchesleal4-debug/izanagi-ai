@@ -90,6 +90,7 @@ export type ArtifactKind =
   | 'benchmark-report'
   | 'research'
   | 'trace'
+  | 'critique'
   | 'raw';
 
 export interface ArtifactRef {
@@ -371,6 +372,22 @@ export interface RunTrace {
   telemetry?: Record<string, unknown>;
   /** Verificação por nó (Verification Engine 2.0): VERIFIED / UNVERIFIED / FAILED. */
   verification?: Array<{ nodeId: string; status: string; score: number; reason: string; unmet: string[] }>;
+  /**
+   * Protocolo agente-a-agente: quem falou com quem durante o run. Carrega
+   * referência de artefato e resumo de uma linha, nunca o conteúdo produzido
+   * (senão o trace viraria uma segunda cópia do run inteiro).
+   */
+  conversation?: Array<{
+    id: string;
+    from: string;
+    to: string;
+    type: string;
+    taskId: string;
+    artifactRefs?: string[];
+    summary: string;
+    confidence?: number;
+    timestamp: string;
+  }>;
 }
 
 /* ============================ SELF-HEALING ============================ */

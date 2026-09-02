@@ -39,7 +39,11 @@ const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
   { regex: /timeout|timed out|etimedout|timeout/i, kind: 'recoverable' },
   { regex: /429|rate.?limit|too many requests/i, kind: 'recoverable' },
   { regex: /5\d\d|internal server|unavailable/i, kind: 'recoverable' },
-  { regex: /validation|validação|schema|contract|invalid artifact|not valid/i, kind: 'validation' },
+  // Reprovação da Verification Engine entra aqui: um critério de aceite não
+  // comprovado É uma falha de validação, e o caminho de cura dela (skill
+  // corretiva + retentativa) já existe. Sem este termo, verificação reprovada
+  // caía no ramo genérico e abortava o nó na primeira tentativa.
+  { regex: /validation|validação|verification|verificação|schema|contract|invalid artifact|not valid/i, kind: 'validation' },
   { regex: /dependency|not found|missing module|cannot find|import/i, kind: 'dependency' },
   { regex: /plan|graph|cycle|topological/i, kind: 'planning' },
   { regex: /tool|mcp|exec|command failed|exit code/i, kind: 'tool' },

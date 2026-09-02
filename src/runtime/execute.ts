@@ -174,6 +174,23 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
 export function createHeadlessProducer(objective: string): NodeProducer {
   return async (node: GraphNode) => {
     const label = node.agent ?? node.skills?.join('+') ?? node.id;
+    const kind = node.outputs?.[0] ?? 'raw';
+    // Nó crítico tem contrato de saída estruturado: simular prosa aqui faria a
+    // simulação reprovar por formato, o que não diz nada sobre o runtime.
+    // Sem modelo não há crítica de verdade, então a simulação aprova e diz isso.
+    if (kind === 'critique') {
+      return {
+        content: {
+          status: 'approved',
+          issues: [],
+          confidence: 0,
+          note: `simulação headless do nó "${node.id}": sem provider configurado, nenhuma crítica real foi produzida.`,
+        },
+        kind,
+        tokens: 300,
+        model: 'cli-headless',
+      };
+    }
     return {
       content: {
         node: node.id,
@@ -182,7 +199,7 @@ export function createHeadlessProducer(objective: string): NodeProducer {
         producedAt: new Date().toISOString(),
         summary: `Artefato produzido pelo nó "${node.id}" (${label}).`,
       },
-      kind: node.outputs?.[0] ?? 'raw',
+      kind,
       tokens: 300,
       model: 'cli-headless',
     };
