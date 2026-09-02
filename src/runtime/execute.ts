@@ -13,6 +13,8 @@
 
 import { Commander, type CommanderPlan } from './orchestration/commander.js';
 import { AgentCapabilityRegistry } from './registry/capabilities.js';
+import { MemoryStore } from './memory/store.js';
+import { SkillResolver } from './routing/resolver.js';
 import { ModelRouter } from './model/router.js';
 import { ContextResolver } from './orchestration/context-resolver.js';
 import { ResponseCache } from './cache/response-cache.js';
@@ -39,6 +41,12 @@ export interface PlanningInput {
   availableProviders: string[];
   /** Pula o Commander e devolve `plan: undefined` (caminho legado por categoria). */
   noCommander?: boolean;
+  /**
+   * Desliga a consulta à memória e o ranking de skills por tarefa no
+   * planejamento (volta ao Commander puramente léxico). Serve para depurar uma
+   * decisão de plano sem o histórico interferindo.
+   */
+  noMemory?: boolean;
 }
 
 export interface PlanningOutput {
@@ -80,6 +88,12 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
   const specById = new Map(catalog.flatMap((p) => p.models).map((m) => [m.id, m]));
   const capabilities = new AgentCapabilityRegistry({ baseDir });
 
+  // Memória e skills entram no PLANEJAMENTO, não só na execução: o Commander
+  // passa a saber que padrão de falha existe para este objetivo e que skills
+  // cada tarefa realmente pede. Leitura apenas — quem escreve é o Orchestrator.
+  const memory = input.noCommander || input.noMemory ? undefined : new MemoryStore({ baseDir });
+  const skillResolver = memory ? new SkillResolver({ baseDir, memory }) : undefined;
+
   const plan = input.noCommander
     ? undefined
     : new Commander().plan({
@@ -90,6 +104,10 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
         ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
         capabilities,
+        ...(memory ? { memory } : {}),
+        ...(skillResolver
+          ? { resolveSkills: (objective: string, limit: number) => skillResolver.rankSkills(objective, limit).map((s) => s.alias) }
+          : {}),
         estimateCostUsd: (role, tokens) => router.estimateCostForRole(role, tokens),
       });
 

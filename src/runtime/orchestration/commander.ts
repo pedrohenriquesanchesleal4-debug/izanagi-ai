@@ -126,20 +126,39 @@ function categoryFor(domains: Domain[], text: string): string {
   }
 }
 
-/** Escolhe o modo proporcional ao problema. Override explícito sempre vence. */
-export function decideMode(classification: Classification, override?: ExecutionMode): { mode: ExecutionMode; reason: string } {
+/**
+ * Escolhe o modo proporcional ao problema. Override explícito sempre vence.
+ *
+ * `hints.knownFailures` é o sinal da memória: quando o runtime já falhou antes
+ * em algo parecido, o problema se mostrou mais difícil do que a classificação
+ * léxica sugere, e o modo sobe UM degrau. Um degrau só — memória é evidência
+ * de dificuldade, não licença para gastar o modo mais caro.
+ */
+export function decideMode(
+  classification: Classification,
+  override?: ExecutionMode,
+  hints: { knownFailures?: number } = {},
+): { mode: ExecutionMode; reason: string } {
   if (override) return { mode: override, reason: `modo forçado pelo chamador (--mode ${override})` };
   const { complexity, domains } = classification;
-  if (complexity <= 1 && domains.length <= 1) {
-    return { mode: 'direct', reason: 'tarefa trivial: uma chamada de modelo resolve, sem grafo' };
+  const base: { mode: ExecutionMode; reason: string } =
+    complexity <= 1 && domains.length <= 1
+      ? { mode: 'direct', reason: 'tarefa trivial: uma chamada de modelo resolve, sem grafo' }
+      : complexity === 2
+        ? { mode: 'assisted', reason: 'tarefa simples: um especialista + verificação determinística' }
+        : complexity >= 5 || domains.length >= 3
+          ? { mode: 'autonomous', reason: `problema amplo (complexidade ${complexity}, ${domains.length} domínios): grafo + healing + replan` }
+          : { mode: 'orchestrated', reason: `problema composto (complexidade ${complexity}): grafo com verificação` };
+
+  const known = hints.knownFailures ?? 0;
+  const next = MODE_LADDER[MODE_LADDER.indexOf(base.mode) + 1];
+  if (known > 0 && next) {
+    return {
+      mode: next,
+      reason: `${base.reason}; ${known} padrão(ões) de falha conhecido(s) na memória para este objetivo: sobe de ${base.mode} para ${next}`,
+    };
   }
-  if (complexity === 2) {
-    return { mode: 'assisted', reason: 'tarefa simples: um especialista + verificação determinística' };
-  }
-  if (complexity >= 5 || domains.length >= 3) {
-    return { mode: 'autonomous', reason: `problema amplo (complexidade ${complexity}, ${domains.length} domínios): grafo + healing + replan` };
-  }
-  return { mode: 'orchestrated', reason: `problema composto (complexidade ${complexity}): grafo com verificação` };
+  return base;
 }
 
 /* ============================ CRITÉRIOS DE ACEITE ============================ */
@@ -211,7 +230,36 @@ export interface CommanderInput {
   estimateCostUsd?: (role: AgentRole, tokens: number) => number;
   /** Decomposição assistida por modelo (opcional). Valida antes de aceitar. */
   decompose?: (objective: string, classification: Classification) => DecomposedTask[] | null;
+  /**
+   * Memória do runtime, consultada de forma SELETIVA: padrões de falha
+   * relevantes ao objetivo e taxa de sucesso por agente. Nunca a memória
+   * inteira injetada no contexto.
+   */
+  memory?: PlanningMemory;
+  /**
+   * Ranking de skills por objetivo (`SkillResolver.rankSkills`). Quando
+   * presente, CADA tarefa carrega as skills do próprio objetivo em vez da
+   * chain do agente para o run inteiro.
+   */
+  resolveSkills?: (objective: string, limit: number) => string[];
 }
+
+/**
+ * Fatia da memória que o planejamento consulta. Interface estreita de
+ * propósito: o Commander não precisa conhecer o `MemoryStore` inteiro, e um
+ * teste pode passar um objeto literal.
+ */
+export interface PlanningMemory {
+  findRelevantFailures(query: string): Array<{ pattern: string; occurrences: number; confidence: number }>;
+  agentStats(agent: string): { runs: number; successes: number; failures: number } | undefined;
+}
+
+/** Runs mínimos antes de confiar na taxa de sucesso de um agente. */
+const MIN_RUNS_FOR_TRUST = 3;
+/** Abaixo desta taxa, o agente sai da disputa (havendo alternativa). */
+const MIN_SUCCESS_RATE = 0.4;
+/** Skills carregadas por tarefa. O prompt já corta em 4; 3 dá folga. */
+const MAX_SKILLS_PER_TASK = 3;
 
 /** Tarefa proposta por uma decomposição externa (LLM ou plugin). */
 export interface DecomposedTask {
@@ -263,12 +311,23 @@ export class Commander {
    */
   plan(input: CommanderInput): CommanderPlan {
     const classification = classify(input.objective);
-    const decided = decideMode(classification, input.mode);
+    // Recuperação SELETIVA: só os padrões de falha que casam com este objetivo.
+    // Injetar a memória inteira no planejamento é o que a arquitetura proíbe.
+    const knownFailures = input.memory?.findRelevantFailures(input.objective) ?? [];
+    const unreliable = this.unreliableAgents(input);
+    const decided = decideMode(classification, input.mode, { knownFailures: knownFailures.length });
     const decisions: string[] = [
       `classificação: complexidade ${classification.complexity}/5, domínios [${classification.domains.join(', ') || 'nenhum'}], risco ${classification.risk}`,
       `modo ${decided.mode}: ${decided.reason}`,
       ...classification.reasons.map((r) => `sinal: ${r}`),
     ];
+    if (input.memory) {
+      decisions.push(
+        `memória consultada: ${knownFailures.length} padrão(ões) de falha relevante(s)` +
+          (knownFailures.length > 0 ? ` (${knownFailures.slice(0, 3).map((f) => f.pattern).join(', ')})` : '') +
+          (unreliable.length > 0 ? `; ${unreliable.length} agente(s) despriorizado(s) por histórico: ${unreliable.join(', ')}` : ''),
+      );
+    }
 
     let mode = decided.mode;
     let plan = this.buildForMode(mode, input, classification);
@@ -315,12 +374,16 @@ export class Commander {
     input: CommanderInput,
     classification: Classification,
   ): { graph: ExecutionGraph; contracts: TaskContract[] } {
-    const nodes = mode === 'direct'
+    const planned = mode === 'direct'
       ? this.directNodes(input, classification)
       : mode === 'assisted'
         ? this.assistedNodes(input, classification)
         : this.graphNodes(mode, input, classification);
 
+    // Skills POR TAREFA: cada nó carrega o que o próprio objetivo pede, não a
+    // chain do agente para o run inteiro. Sem o resolver injetado, o
+    // comportamento anterior (chain do run) permanece intacto.
+    const nodes = planned.map((node) => this.withTaskSkills(node, input));
     const contracts = nodes.map((node) => this.contractFor(node, input, classification, mode));
     const withContracts = nodes.map((node, i) => attachContract(node, contracts[i]));
     const graph = this.builder.build({
@@ -431,13 +494,61 @@ export class Commander {
     }));
   }
 
-  /** Seleciona agente por capacidade quando há registro; senão devolve null. */
+  /**
+   * Seleciona agente por capacidade quando há registro; senão devolve null.
+   *
+   * Agentes com histórico ruim saem da disputa — mas só quando sobra
+   * alternativa: excluir todo mundo transformaria memória em paralisia.
+   */
   private pickAgent(input: CommanderInput, classification: Classification, role: AgentRole): string | null {
     if (!input.capabilities) return null;
-    const byRole = input.capabilities.bestFor(input.objective, { role });
-    if (byRole) return byRole.id;
-    const any = input.capabilities.bestFor(input.objective);
-    return any?.id ?? null;
+    const exclude = this.unreliableAgents(input);
+    const pick = (opts: { role?: AgentRole; exclude?: string[] }) => input.capabilities!.bestFor(input.objective, opts)?.id ?? null;
+    const chosen =
+      pick({ role, ...(exclude.length > 0 ? { exclude } : {}) }) ??
+      pick(exclude.length > 0 ? { exclude } : {}) ??
+      // Nenhum agente confiável casou: melhor um agente com histórico ruim do
+      // que nenhum agente. O motivo já foi registrado nas decisões do plano.
+      pick({ role }) ??
+      pick({});
+    return chosen;
+  }
+
+  /**
+   * Agentes reprovados pelo histórico: taxa de sucesso abaixo do piso, com
+   * amostra suficiente para a taxa significar alguma coisa.
+   *
+   * Ressalva honesta: a estatística do `MemoryStore` é GLOBAL por agente, não
+   * por domínio. Um agente que vai mal em frontend e bem em backend é
+   * despriorizado nos dois. Refinar isso exige stats por (agente, domínio),
+   * que o store ainda não guarda.
+   */
+  private unreliableAgents(input: CommanderInput): string[] {
+    if (!input.memory || !input.capabilities) return [];
+    return input.capabilities.ids().filter((id) => {
+      const stats = input.memory!.agentStats(id);
+      return Boolean(stats && stats.runs >= MIN_RUNS_FOR_TRUST && stats.successes / stats.runs < MIN_SUCCESS_RATE);
+    });
+  }
+
+  /**
+   * Substitui a chain do run pelas skills relevantes ao objetivo DESTE nó.
+   * Nós determinísticos (gate, evaluator, validator) não carregam skill: não
+   * há prompt para elas ocuparem.
+   */
+  private withTaskSkills(node: GraphNode, input: CommanderInput): GraphNode {
+    if (!input.resolveSkills) return node;
+    if (node.kind === 'gate' || node.kind === 'evaluator' || node.kind === 'validator') return node;
+    const query = [node.id, node.agent ?? '', node.outputs?.[0] ?? '', input.objective].filter(Boolean).join(' ');
+    let ranked: string[] = [];
+    try {
+      ranked = input.resolveSkills(query, MAX_SKILLS_PER_TASK);
+    } catch {
+      // Resolver quebrado não derruba o planejamento: cai na chain do run.
+      return node;
+    }
+    if (ranked.length === 0) return node;
+    return { ...node, skills: ranked.slice(0, MAX_SKILLS_PER_TASK) };
   }
 
   /** Contrato completo de um nó, com critérios derivados do schema do artefato. */

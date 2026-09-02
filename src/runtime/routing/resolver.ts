@@ -60,6 +60,14 @@ export function stripFrontmatter(content: string): string {
 export class SkillResolver {
   private aliases: Map<string, string> = new Map();
   private readonly scorer: CandidateScorer;
+  /**
+   * Manifesto por alias, memoizado. `rankSkills` varre a biblioteca inteira a
+   * cada chamada; sem cache, ranquear skills por TAREFA (e não por run) faria
+   * a mesma centena de arquivos ser lida do disco uma vez por nó do grafo.
+   * `null` também é cacheado: alias que não resolve não precisa ser tentado de
+   * novo dentro do mesmo processo.
+   */
+  private readonly manifestCache = new Map<string, { manifest: SkillManifest; file: string } | null>();
 
   constructor(private readonly opts: ResolverOptions) {
     this.scorer = opts.scorer ?? new CandidateScorer();
@@ -109,6 +117,19 @@ export class SkillResolver {
 
   /** Lê e parseia uma skill em SkillManifest. */
   loadSkill(alias: string): { manifest: SkillManifest; file: string } | null {
+    const cached = this.manifestCache.get(alias);
+    if (cached !== undefined) return cached;
+    const loaded = this.readSkill(alias);
+    this.manifestCache.set(alias, loaded);
+    return loaded;
+  }
+
+  /** Invalida o cache de manifestos (ex.: depois da Skill Factory gerar uma skill). */
+  clearCache(): void {
+    this.manifestCache.clear();
+  }
+
+  private readSkill(alias: string): { manifest: SkillManifest; file: string } | null {
     const file = this.resolvePath(alias);
     if (!file) return null;
     const content = fs.readFileSync(file, 'utf-8');
