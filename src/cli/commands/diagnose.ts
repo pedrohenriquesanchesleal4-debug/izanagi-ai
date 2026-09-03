@@ -35,7 +35,7 @@ export function diagnoseCommand(baseDir: string, stateDir = baseDir): void {
   let warnings = 0;
 
   // 1. Runtime state
-  const stateFile = path.join(baseDir, '.izanagi', 'state', 'runtime-state.json');
+  const stateFile = path.join(stateDir, '.izanagi', 'state', 'runtime-state.json');
   checks.push({
     name: 'Runtime state',
     ok: true,
