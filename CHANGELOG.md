@@ -15,6 +15,8 @@ O caminho seguro de tool existia desde a 3.15.0, era testado, e nenhum `izanagi 
 - **Kinds de artefato `delivery` e `project-survey`**, com schema próprio. `delivery` exige `written` (o comprovante da escrita, não o conteúdo); `project-survey` exige `root`, `stack`, `tree` e `truncated`.
 - **`OrchestratorOptions.workspaceDir`**: raiz do projeto do usuário, separada da raiz do framework.
 
+- **Check determinístico `references-exist` (groundedness).** A Verification Engine perguntava se o artefato tem os campos do schema e o tamanho mínimo; não perguntava se o conteúdo corresponde a alguma realidade — e é por aí que a alucinação passava: um plano bem formatado, com todos os campos, citando `app/controllers/users_controller.rb` num projeto sem `app/`. O check extrai as referências de caminho e olha o disco. A pergunta NÃO é "todos os arquivos citados existem?" (um plano legítimo propõe arquivos novos, e reprovar isso viraria ruído contra o trabalho): é **"o LUGAR citado existe?"**. Cobrado só quando o run leu o projeto (`survey` ligado) — exigir um layout que nunca foi mostrado ao agente seria reprovar por informação que o runtime decidiu não dar. Artefato que não cita caminho nenhum fica `UNKNOWN`, nunca aprovado.
+
 ### Fixed
 - **Sandbox de tool e `file-exists` resolviam contra a raiz do FRAMEWORK.** `baseDir` é `<projeto>/.agents` num projeto inicializado, ou a própria instalação do pacote quando não há uma. Um nó `fs.read` lia dentro de `.agents/` em vez do projeto, e um check `file-exists` procurava o arquivo no lugar errado. Rodando de dentro do checkout do framework as duas coincidem, que é exatamente por que passava despercebido.
 - **Nó que terminava `failed` sem produzir artefato era invisível para a avaliação final.** `correctness` é a média das verificações registradas e `artifactValidity` a razão dos artefatos existentes: as duas ignoram quem não chegou a produzir nada. Na prática, um nó abortado por permissão negada deixava o run terminar `PASS` com score alto. Agora cada nó falho entra como regressão — nó `optional` fica de fora, porque reforço que falha não invalida evidência que passou.
@@ -26,7 +28,7 @@ O caminho seguro de tool existia desde a 3.15.0, era testado, e nenhum `izanagi 
 - **Mudança de veredito possível**: um run cujo nó falhava sem produzir artefato passava a `PASS` e agora sai `FAIL`. Isso é a correção, não a regressão: o run reportava sucesso com uma tarefa não executada.
 
 ### Tests
-- 613 testes, 613 passando (41 novos: 23 em `delivery.test.ts`, 18 em `grounding.test.ts`).
+- 629 testes, 629 passando (57 novos: 23 em `delivery.test.ts`, 18 em `grounding.test.ts`, 16 em `groundedness.test.ts`).
 
 ---
 

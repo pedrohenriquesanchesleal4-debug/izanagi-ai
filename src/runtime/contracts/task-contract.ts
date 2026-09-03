@@ -61,7 +61,14 @@ export type DeterministicCheck =
   | { kind: 'not-contains'; text: string; caseSensitive?: boolean; message?: string }
   | { kind: 'matches'; pattern: string; flags?: string; message?: string }
   | { kind: 'json-field'; field: string; message?: string }
-  | { kind: 'file-exists'; path: string; message?: string };
+  | { kind: 'file-exists'; path: string; message?: string }
+  /**
+   * Groundedness: a fração de caminhos citados cujo LUGAR existe no projeto.
+   * Pega quem inventou o layout sem reprovar quem propôs arquivo novo num
+   * diretório real. Sem referência nenhuma no texto o check fica UNKNOWN —
+   * ausência de sinal não é aprovação.
+   */
+  | { kind: 'references-exist'; minRatio?: number; message?: string };
 
 export interface AcceptanceCriterion {
   id: string;

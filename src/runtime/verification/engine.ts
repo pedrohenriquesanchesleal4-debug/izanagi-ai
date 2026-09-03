@@ -19,9 +19,19 @@
 import fs from 'fs';
 import path from 'path';
 import { validateArtifact } from '../contracts/artifacts.js';
+import { checkGroundedness } from './groundedness.js';
 import type { AcceptanceCriterion, DeterministicCheck, TaskContract } from '../contracts/task-contract.js';
 
 export type VerificationStatus = 'VERIFIED' | 'UNVERIFIED' | 'FAILED';
+
+/**
+ * Fração mínima de caminhos citados que precisam existir no projeto.
+ *
+ * Metade, e não mais: o artefato legítimo mistura o que existe com o que ele
+ * propõe criar, e um piso alto reprovaria o trabalho junto com a alucinação.
+ * Abaixo de metade não é mistura — é um layout que não é o deste projeto.
+ */
+export const DEFAULT_GROUNDEDNESS_RATIO = 0.5;
 
 export interface CheckResult {
   criterionId: string;
@@ -161,6 +171,25 @@ export function runCheck(
       return fs.existsSync(target)
         ? { outcome: 'pass' }
         : { outcome: 'fail', message: check.message ?? `arquivo não existe: ${check.path}` };
+    }
+    case 'references-exist': {
+      if (!ctx.baseDir) return { outcome: 'unknown', message: 'sem baseDir: referências do artefato não conferíveis' };
+      const report = checkGroundedness(ctx.text, ctx.baseDir);
+      if (report.ratio === null) {
+        // Artefato que não cita caminho nenhum (uma ADR, um relatório de
+        // pesquisa) não é mais nem menos fundamentado por isso. `unknown`
+        // mantém a regra: ausência de evidência não vira aprovação.
+        return { outcome: 'unknown', message: 'o artefato não cita caminho de arquivo: nada a conferir contra o projeto' };
+      }
+      const min = check.minRatio ?? DEFAULT_GROUNDEDNESS_RATIO;
+      if (report.ratio >= min) return { outcome: 'pass' };
+      return {
+        outcome: 'fail',
+        message:
+          check.message ??
+          `${report.ungrounded.length} de ${report.total} caminho(s) citado(s) não existem no projeto ` +
+            `(nem o arquivo, nem o diretório): ${report.ungrounded.slice(0, 4).join(', ')}`,
+      };
     }
     default:
       return { outcome: 'unknown', message: 'tipo de check desconhecido' };

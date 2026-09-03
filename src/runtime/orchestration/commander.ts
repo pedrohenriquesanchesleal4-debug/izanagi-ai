@@ -840,6 +840,23 @@ export class Commander {
     const kind = node.outputs?.[0] ?? 'raw';
     const base = contractFromNode(node, { objective: objectiveForNode(node, input.objective) });
     const acceptance = acceptanceForKind(node.id, kind);
+
+    // Groundedness só é cobrada quando o run LEU o projeto. Exigir que o
+    // artefato respeite um layout que nunca foi mostrado ao agente seria
+    // reprovar por uma informação que o runtime decidiu não dar. Com o survey
+    // ligado, a exigência é justa — e o check se cala sozinho (`unknown`)
+    // quando o artefato não cita caminho nenhum.
+    if (input.survey && mode !== 'direct') {
+      acceptance.push({
+        id: `${node.id}:grounded`,
+        description: 'os caminhos citados existem no projeto (ou o diretório deles existe)',
+        kind: 'deterministic',
+        check: {
+          kind: 'references-exist',
+          message: 'o artefato descreve um layout que não é o deste projeto',
+        },
+      });
+    }
     const role = roleForNode(node, input.capabilities);
     const optional = node.metadata?.optional === true;
     return {

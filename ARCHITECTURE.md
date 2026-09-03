@@ -79,7 +79,8 @@ src/
     │   └── conversation.ts          # ConversationLog A2A: referência de artefato, nunca cópia de conteúdo
     ├── verification/
     │   ├── engine.ts                # Verification Engine 2.0: determinística, evidência, semântica
-    │   └── judge.ts                 # Juiz semântico (papel worker); ilegível vira `inconclusive`, nunca reprovação
+    │   ├── judge.ts                 # Juiz semântico (papel worker); ilegível vira `inconclusive`, nunca reprovação
+    │   └── groundedness.ts          # `references-exist`: o artefato cita lugares que existem no projeto?
     ├── token/
     │   ├── budget.ts                # PhaseTokenBudget (tokens por fase)
     │   └── execution-budget.ts      # Budget Controller: custo, tetos, escada de degradação

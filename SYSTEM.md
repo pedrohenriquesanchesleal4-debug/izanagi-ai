@@ -288,6 +288,18 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 | `project.survey` | `fs:read` | Levanta stack, manifestos, árvore por extensão, entrypoints e começo do README. Conta e lista; **não abre arquivo de código**, e o script do `package.json` entra pelo NOME e nunca pelo comando |
 | `code.execute` | `shell` | Script Node ESM em processo isolado (Permission Model). Rede **não** é isolada, e a política nega `shell` a `generated`/`community` |
 
+### Groundedness (`verification/groundedness.ts`)
+
+O check determinístico `references-exist` responde uma pergunta que o schema não faz: **o artefato corresponde a alguma realidade?** Um plano bem formatado, com todos os campos obrigatórios e tamanho de sobra, citando `app/controllers/users_controller.rb` num projeto sem `app/`, passava em tudo.
+
+A fronteira que dá valor à checagem é o que ela NÃO pergunta. Não é "todos os arquivos citados existem?" — um plano legítimo propõe arquivos novos, e reprovar isso viraria ruído contra exatamente o trabalho que se quer. É **"o LUGAR citado existe?"**: `src/routes/pagination.ts` num projeto com `src/routes/` é proposta; `app/controllers/users.rb` num projeto sem `app/` é layout inventado.
+
+- **Extração conservadora**: exige separador de diretório E extensão conhecida. `GET /users` é rota e não entra; `package.json` sem diretório não entra. Precisão importa mais que cobertura — reprovar um caminho legítimo faz o usuário desconfiar da verificação inteira, e o estado anterior era não checar nada.
+- **Resolve contra a raiz E contra cada diretório de primeiro nível.** Gente e modelo escrevem caminho relativo à raiz de FONTE (`runtime/x.ts` para `src/runtime/x.ts`). Sem isso, o `docs/HANDOFF.md` deste próprio repositório saía com 0 de 17 caminhos fundamentados.
+- **Piso de 0.5**: o artefato legítimo mistura o que existe com o que propõe criar. Abaixo de metade não é mistura, é outro projeto.
+- **Sem referência nenhuma → `UNKNOWN`**, nunca aprovado. Mesma regra do juiz semântico ausente.
+- **Cobrado só quando o survey rodou.** Exigir um layout que nunca foi mostrado ao agente seria reprovar por informação que o runtime decidiu não dar.
+
 ### Marcadores de input (`tools/input-refs.ts`)
 
 Um nó de tool é declarado no PLANO, antes de existir o que ele precisa gravar. `{ $artifact: '<nó>' }` e `{ $deliverable: true }` são resolvidos deterministicamente na hora da chamada — substituição de valor, não interpretação, e nenhuma chamada de modelo.

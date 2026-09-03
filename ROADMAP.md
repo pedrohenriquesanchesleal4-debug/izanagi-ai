@@ -244,7 +244,14 @@ escrevia sobre um repositório que nunca tinha visto.
       `deliver` recebe `fs:write`, e nenhum nó de agente recebe permissão
       nenhuma. Há teste que percorre o plano inteiro conferindo isso.
 
-### Dois bugs que a implementação revelou
+- [x] **Check `references-exist` (groundedness)**: a verificação passou a
+      perguntar se o artefato corresponde a alguma realidade, e não só se ele
+      tem os campos do schema. A fronteira que dá valor à checagem: reprovar
+      quem inventou o layout, sem reprovar quem propôs arquivo novo num
+      diretório real — a pergunta é sobre o diretório-pai, não sobre o arquivo.
+      Cobrado só quando o survey rodou.
+
+### Três bugs que a implementação revelou
 
 - **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
   (`<projeto>/.agents`, ou a própria instalação do pacote). A sandbox de tool e
@@ -260,6 +267,17 @@ escrevia sobre um repositório que nunca tinha visto.
   passou. Dois testes existentes caíram com isso e estavam medindo a coisa
   errada: as fixtures não cobriam o schema de `critique`/`test-plan`, o nó
   falhava, e o run saía verde.
+- **Groundedness reprovava documento correto.** A primeira versão do check
+  resolvia referência só contra a raiz do repositório, e o `docs/HANDOFF.md`
+  deste projeto saiu com **0 de 17** caminhos fundamentados: ele cita
+  `runtime/protocol/conversation.ts`, que existe em `src/runtime/...`. Gente e
+  modelo escrevem caminho relativo à raiz de FONTE, não à do repositório, e
+  reprovar isso encheria a verificação de falso positivo contra exatamente o
+  trabalho legítimo. A correção resolve contra a raiz e contra cada diretório
+  de PRIMEIRO nível — só o primeiro, porque descer mais faria qualquer caminho
+  casar em algum lugar e a checagem pararia de medir alguma coisa. Depois:
+  17 de 17 no documento real, 0 de 4 no layout inventado. Encontrado rodando a
+  checagem contra um documento de verdade em vez de só contra fixture.
 
 ### Limitações desta fase
 
@@ -274,6 +292,10 @@ escrevia sobre um repositório que nunca tinha visto.
   honesta (mesmo objetivo, mesmo provider, com e sem survey) exige provider
   real e um gabarito de acerto. Está registrado como próximo passo, não como
   resultado.
+- **`references-exist` mede lugar, não semântica.** Ele confere que o diretório
+  citado existe; não confere que a função citada exista dentro do arquivo. Isso
+  exigiria análise sintática por linguagem — o `python-engine/ast_analyzer` já
+  faz parte disso, e ligá-lo à verificação é trabalho de outra fase.
 
 ## Critérios de aceite das próximas fases
 
