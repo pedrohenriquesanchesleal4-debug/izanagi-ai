@@ -98,6 +98,23 @@ export class PhaseTokenBudget {
     return Math.max(0, this.allocation[phase] - this.spent[phase]);
   }
 
+  /**
+   * Registra gasto que JÁ ACONTECEU, mesmo estourando a alocação da fase.
+   *
+   * Diferente de `spend()`, que decide SE pode gastar e recusa antes. Este
+   * método é para o outro caso: o modelo já respondeu, o provider já cobrou, e
+   * a única pergunta que resta é se a conta bate. Recusar-se a registrar aqui
+   * não desfaz a chamada — só faz a telemetria divergir da fatura, e uma
+   * telemetria que subestima o gasto é pior que nenhuma.
+   *
+   * Devolve `true` quando o gasto coube na alocação da fase.
+   */
+  record(phase: PhaseId, tokens: number): boolean {
+    if (tokens <= 0) return true;
+    this.spent[phase] += Math.floor(tokens);
+    return this.spent[phase] <= this.allocation[phase];
+  }
+
   exhausted(phase: PhaseId): boolean {
     return this.spent[phase] >= this.allocation[phase];
   }

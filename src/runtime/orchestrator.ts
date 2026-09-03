@@ -263,6 +263,14 @@ export class Orchestrator {
   private toolRegistry?: ToolRegistry;
   /** Verificação por nó (Verification Engine 2.0), preenchida durante a execução. */
   private readonly verifications = new Map<string, VerificationResult>();
+  /**
+   * Juiz semântico desligado no meio do run por orçamento de avaliação
+   * esgotado. A partir daí, critério semântico fica UNVERIFIED — o mesmo que
+   * acontece quando não há juiz configurado, e pelo mesmo motivo: ausência de
+   * julgamento não é aprovação.
+   */
+  private judgeDisabled = false;
+
   /** Nós pulados por early stopping (objetivo já comprovado). */
   private readonly earlyStopped: string[] = [];
   /** Nós pulados por pressão de orçamento (degradação drop-optional-tasks). */
@@ -486,7 +494,14 @@ export class Orchestrator {
     // compartilhando a MESMA instância de PhaseTokenBudget (uma conta só).
     const execBudget = new ExecutionBudget(
       {
-        maxTokens: graph.budget.maxTokens,
+        // O MENOR dos dois tetos, e não o do grafo sozinho: `budgetLimits`
+        // vinha sendo honrado em custo, tempo, agentes, retries e tool calls,
+        // mas `maxTokens` era descartado em silêncio. Quem passava um teto de
+        // tokens pelo `Orchestrator` não recebia erro nem aviso — recebia o
+        // teto do plano. Mínimo porque nenhum dos dois pode AFROUXAR o outro:
+        // o teto de quem chama não é ampliado pelo plano, e o do plano não é
+        // ampliado por um número maior de quem chama.
+        maxTokens: Math.min(graph.budget.maxTokens, this.opts.budgetLimits?.maxTokens ?? Number.POSITIVE_INFINITY),
         maxTimeMs: this.opts.budgetLimits?.maxTimeMs ?? graph.budget.maxTimeMs,
         ...(this.opts.budgetLimits?.maxCostUsd !== undefined ? { maxCostUsd: this.opts.budgetLimits.maxCostUsd } : {}),
         ...(this.opts.budgetLimits?.maxAgents !== undefined ? { maxAgents: this.opts.budgetLimits.maxAgents } : {}),
@@ -1218,7 +1233,7 @@ export class Orchestrator {
           content: result.content,
           artifacts: new Map(Array.from(ctx.artifacts.entries()).map(([id, a]) => [id, { kind: a.kind, content: a.content, valid: a.valid }])),
           baseDir: this.workspaceDir,
-          ...(this.opts.judge ? { judge: this.opts.judge } : {}),
+          ...(this.opts.judge && !this.judgeDisabled ? { judge: this.opts.judge } : {}),
         });
         this.verifications.set(node.id, verification);
         // Julgar custa token. A conta entra na fase `evaluation`, não na
@@ -1227,7 +1242,7 @@ export class Orchestrator {
         if (verification.judgeTokens > 0) {
           const judgeModel = verification.judgeModel ?? ctx.model;
           const judgeInput = Math.round(verification.judgeTokens * 0.85);
-          ctx.execBudget?.spend({
+          const judgeSpend = ctx.execBudget?.spend({
             phase: 'evaluation',
             tokens: verification.judgeTokens,
             costUsd: this.opts.costOf ? this.opts.costOf(judgeModel, judgeInput, verification.judgeTokens - judgeInput) : 0,
@@ -1235,6 +1250,22 @@ export class Orchestrator {
           });
           ctx.trace.addTokens(judgeInput, verification.judgeTokens - judgeInput);
           this.tokensUsed += verification.judgeTokens;
+          // O resultado do gasto do juiz era IGNORADO: com a fase `evaluation`
+          // esgotada, cada nó seguinte continuava chamando o juiz, e o
+          // orçamento de avaliação virava um teto sem efeito. Desligar o juiz
+          // aqui é o certo: critério semântico volta a ficar UNVERIFIED, que é
+          // o conservador correto — nunca aprovação por omissão. Reprovar o nó
+          // seria pior: o trabalho dele não tem culpa do orçamento de
+          // verificação ter acabado.
+          if (judgeSpend && !judgeSpend.ok && !this.judgeDisabled) {
+            this.judgeDisabled = true;
+            ctx.trace.span('budget:judge-off', 'decision', {
+              reason: judgeSpend.reason ?? 'orçamento de avaliação esgotado',
+            })(false, judgeSpend.reason);
+            if (this.opts.verbose) {
+              console.log(`  \x1b[33m⚠\x1b[0m Juiz semântico desligado: ${judgeSpend.reason}`);
+            }
+          }
         }
         ctx.trace.span(`verification:${node.id}`, 'evaluation', {
           status: verification.status,

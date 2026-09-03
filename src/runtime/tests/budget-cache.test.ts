@@ -6,6 +6,12 @@ import path from 'path';
 import { ExecutionBudget, DEGRADATION_LADDER } from '../token/execution-budget.js';
 import { PhaseTokenBudget, defaultWeights } from '../token/budget.js';
 import { ResponseCache, cacheKey } from '../cache/response-cache.js';
+import { Orchestrator } from '../orchestrator.js';
+import { Commander } from '../orchestration/commander.js';
+import { MemoryStore } from '../memory/store.js';
+import { TraceStore } from '../observability/tracer.js';
+import { createHeadlessProducer } from '../execute.js';
+import { attachContract, contractOf } from '../contracts/task-contract.js';
 
 function tmp(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -18,13 +24,28 @@ test('budget: gasto dentro do teto é aceito e contabilizado', () => {
   assert.equal(budget.spentUsd, 0.01);
 });
 
-test('budget: gasto que estouraria o teto de custo é RECUSADO, não contabilizado', () => {
+test('budget: gasto que estoura o teto de custo é CONTABILIZADO e para o run', () => {
   const budget = new ExecutionBudget({ maxTokens: 100_000, maxCostUsd: 0.05 });
   assert.equal(budget.spend({ phase: 'execution', tokens: 100, costUsd: 0.04 }).ok, true);
-  const denied = budget.spend({ phase: 'execution', tokens: 100, costUsd: 0.02 });
-  assert.equal(denied.ok, false);
-  assert.equal(denied.limit, 'cost');
-  assert.equal(budget.spentUsd, 0.04, 'gasto recusado não pode entrar na conta');
+  const excedeu = budget.spend({ phase: 'execution', tokens: 100, costUsd: 0.02 });
+
+  assert.equal(excedeu.ok, false, 'o run precisa parar');
+  assert.equal(excedeu.limit, 'cost');
+  // `spend` é chamado DEPOIS da resposta do modelo: os tokens já foram
+  // consumidos e o provider já cobrou. Não registrar não desfaz a chamada —
+  // só faz a telemetria divergir da fatura, e justamente na chamada que
+  // estourou. Antes desta correção, um run parado por teto de custo reportava
+  // $0.04 tendo gasto $0.06.
+  assert.equal(budget.spentUsd, 0.06, 'a chamada que estourou não pode sumir da conta por ter estourado');
+  assert.equal(budget.totalTokens, 200);
+});
+
+test('budget: o teto de tokens TOTAL também é reportado, não só o da fase', () => {
+  const budget = new ExecutionBudget({ maxTokens: 100 });
+  const excedeu = budget.spend({ phase: 'execution', tokens: 500 });
+  assert.equal(excedeu.ok, false);
+  assert.equal(excedeu.limit, 'total-tokens');
+  assert.equal(budget.totalTokens, 500);
 });
 
 test('budget: teto de tokens da fase bloqueia sem estourar em silêncio', () => {
@@ -34,6 +55,7 @@ test('budget: teto de tokens da fase bloqueia sem estourar em silêncio', () => 
   const denied = budget.spend({ phase: 'execution', tokens: 1 });
   assert.equal(denied.ok, false);
   assert.equal(denied.limit, 'phase-tokens');
+  assert.equal(budget.phases.summary().execution.spent, allocated + 1, 'o excedente aparece na fase onde aconteceu');
 });
 
 test('budget: tempo excedido recusa novo gasto', () => {
@@ -177,4 +199,71 @@ test('budget: sem instância compartilhada, o controlador cria a própria (compa
   const budget = new ExecutionBudget({ maxTokens: 1000 }, 3);
   budget.spend({ phase: 'execution', tokens: 100 });
   assert.equal(budget.phases.spentIn('execution'), 100);
+});
+
+test('budget: juiz semântico é desligado quando a fase de avaliação esgota', async () => {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-judge-budget-'));
+  const objective = 'auditar a seguranca da API de pagamentos';
+  let julgamentos = 0;
+
+  // O juiz só é chamado por critério SEMÂNTICO, e os templates geram só
+  // determinísticos. Sem injetar um, o teste ficaria verde sem nunca ter
+  // exercitado o caminho que ele diz medir.
+  // O teto TOTAL vem do plano (é ele que aloca as fases). Folgado de propósito:
+  // com o total também estourado, o run abortaria no batch seguinte e o teste
+  // ficaria verde pelo motivo errado — mediria "o run parou", não "o juiz parou".
+  const plan = new Commander().plan({ objective, mode: 'orchestrated', maxTokens: 4_000_000 });
+  plan.graph.nodes = plan.graph.nodes.map((node) => {
+    const contract = contractOf(node);
+    if (!contract) return node;
+    return attachContract(node, {
+      ...contract,
+      acceptance: [
+        ...contract.acceptance,
+        { id: `${contract.id}:semantico`, description: 'a entrega responde ao objetivo', kind: 'semantic' },
+      ],
+    });
+  });
+
+  const orchestrator = new Orchestrator({
+    baseDir,
+    command: 'test',
+    task: objective,
+    category: 'security_audit',
+    primaryAgent: 'security',
+    skillChain: [],
+    plan,
+    // Concorrência 1: sem isso, os nós do primeiro batch entram com a
+    // verificação em voo ao mesmo tempo, e um flag não retira chamada que já
+    // partiu. Serializado, o corte é exato e o teste mede o que diz medir.
+    budgetLimits: { maxConcurrency: 1 },
+    // Custo maior que a alocação da fase `evaluation` (5% do total) e menor
+    // que o total: o primeiro julgamento esgota a avaliação sem esgotar o run.
+    judge: () => {
+      julgamentos++;
+      return { pass: true, tokens: 300_000 };
+    },
+    produce: createHeadlessProducer(objective),
+  });
+  orchestrator.setMemory(new MemoryStore({ baseDir }));
+  orchestrator.setStore(new TraceStore({ baseDir }));
+  const result = await orchestrator.run();
+
+  assert.equal(julgamentos, 1, 'o juiz não pode ser chamado depois do gasto recusado — o teto viraria decorativo');
+  assert.ok(
+    (result.verification?.length ?? 0) > julgamentos,
+    'outros nós precisam ter sido verificados sem juiz, senão o teste não mostra que o corte aconteceu',
+  );
+  // Sem juiz, critério semântico volta a UNVERIFIED — nunca aprovação por
+  // omissão. Reprovar o nó seria pior: o trabalho dele não tem culpa do
+  // orçamento de verificação ter acabado.
+  assert.ok(
+    (result.verification ?? []).some((v) => v.result.status === 'UNVERIFIED'),
+    'critério semântico sem juiz precisa ficar sem evidência conclusiva',
+  );
+  assert.ok(
+    result.trace.spans.some((s) => s.name === 'budget:judge-off'),
+    'desligar o juiz em silêncio esconderia por que os critérios semânticos pararam de ser julgados',
+  );
+  fs.rmSync(baseDir, { recursive: true, force: true });
 });

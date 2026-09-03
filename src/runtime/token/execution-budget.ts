@@ -152,27 +152,44 @@ export class ExecutionBudget {
    * nunca passa do limite escondido.
    */
   spend(record: SpendRecord): SpendResult {
-    const now = Date.now();
-    if (this.limits.maxTimeMs !== undefined && now - this.startedAt > this.limits.maxTimeMs) {
-      return { ok: false, reason: `tempo máximo de execução (${Math.round(this.limits.maxTimeMs / 1000)}s) excedido`, limit: 'time' };
-    }
+    // REGISTRA PRIMEIRO, decide depois. Quem chama `spend` chama DEPOIS da
+    // resposta do modelo: os tokens já foram consumidos e o provider já cobrou.
+    // A versão anterior recusava sem registrar, e o efeito era a telemetria
+    // divergir da fatura — um run parado por teto de custo reportava o gasto
+    // ATÉ a última chamada permitida, não o gasto real. A chamada que estourou
+    // sumia da conta justamente por ter estourado.
+    //
+    // Parar continua sendo responsabilidade de quem chama, pelo `ok: false`.
+    // O que não pode é o número mentir para baixo.
     const cost = record.costUsd ?? 0;
-    if (this.limits.maxCostUsd !== undefined && this.costUsd + cost > this.limits.maxCostUsd) {
-      return {
-        ok: false,
-        reason: `custo estimado $${(this.costUsd + cost).toFixed(4)} ultrapassaria o teto $${this.limits.maxCostUsd.toFixed(4)}`,
-        limit: 'cost',
-      };
-    }
-    if (!this.phases.spend(record.phase, record.tokens)) {
-      return { ok: false, reason: `orçamento de tokens da fase ${record.phase} esgotado`, limit: 'phase-tokens' };
-    }
+    const withinPhase = this.phases.record(record.phase, record.tokens);
     // Divisão entrada/saída: usamos a mesma proporção 70/30 do estimador do
     // router quando o provider não separa os números.
     this.inputTokens += Math.round(record.tokens * 0.7);
     this.outputTokens += record.tokens - Math.round(record.tokens * 0.7);
     this.costUsd += cost;
     this.providerCached += record.cachedTokens ?? 0;
+
+    if (this.limits.maxTimeMs !== undefined && this.elapsedMs > this.limits.maxTimeMs) {
+      return { ok: false, reason: `tempo máximo de execução (${Math.round(this.limits.maxTimeMs / 1000)}s) excedido`, limit: 'time' };
+    }
+    if (this.limits.maxCostUsd !== undefined && this.costUsd > this.limits.maxCostUsd) {
+      return {
+        ok: false,
+        reason: `custo estimado $${this.costUsd.toFixed(4)} ultrapassou o teto $${this.limits.maxCostUsd.toFixed(4)}`,
+        limit: 'cost',
+      };
+    }
+    if (this.totalTokens > this.limits.maxTokens) {
+      return {
+        ok: false,
+        reason: `consumo de ${this.totalTokens} tokens ultrapassou o teto de ${this.limits.maxTokens}`,
+        limit: 'total-tokens',
+      };
+    }
+    if (!withinPhase) {
+      return { ok: false, reason: `orçamento de tokens da fase ${record.phase} esgotado`, limit: 'phase-tokens' };
+    }
     return { ok: true };
   }
 
