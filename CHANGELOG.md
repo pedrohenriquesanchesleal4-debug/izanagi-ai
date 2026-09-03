@@ -30,7 +30,8 @@ O caminho seguro de tool existia desde a 3.15.0, era testado, e nenhum `izanagi 
 - **Mudança de veredito possível**: um run cujo nó falhava sem produzir artefato passava a `PASS` e agora sai `FAIL`. Isso é a correção, não a regressão: o run reportava sucesso com uma tarefa não executada.
 
 ### Tests
-- 650 testes, 650 passando (78 novos: 23 em `delivery.test.ts`, 18 em `grounding.test.ts`, 17 em `groundedness.test.ts`, 20 em `materialize.test.ts`).
+- **Suíte de cenários ponta a ponta** (`e2e-scenarios.test.ts`): os dez cenários que a arquitetura precisa cobrir — trivial, médio, complexo, paralelo, falha, retentativa, escalada de papel, estouro de orçamento, parada antecipada e aprovação humana — cada um passando pelo Commander e pelo Orchestrator de verdade. Só o producer é injetado: substituir qualquer outra peça faria o teste medir a substituição em vez do runtime. Os outros arquivos testam peças; este testa comportamento observável de um run inteiro.
+- 660 testes, 660 passando (88 novos: 23 em `delivery.test.ts`, 18 em `grounding.test.ts`, 17 em `groundedness.test.ts`, 20 em `materialize.test.ts`, 10 em `e2e-scenarios.test.ts`).
 
 ---
 

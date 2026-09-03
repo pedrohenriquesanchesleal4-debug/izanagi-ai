@@ -264,6 +264,11 @@ escrevia sobre um repositório que nunca tinha visto.
       diretório real — a pergunta é sobre o diretório-pai, não sobre o arquivo.
       Cobrado só quando o survey rodou.
 
+- [x] **Suíte de cenários ponta a ponta**: os dez cenários exigidos —
+      trivial, médio, complexo, paralelo, falha, retentativa, escalada,
+      estouro de orçamento, parada antecipada e aprovação humana — cada um
+      pelo Commander e pelo Orchestrator reais, com só o producer injetado.
+
 ### Três bugs que a implementação revelou
 
 - **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
