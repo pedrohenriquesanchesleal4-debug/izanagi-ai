@@ -10,7 +10,10 @@ import { Orchestrator } from '../orchestrator.js';
 import { Commander } from '../orchestration/commander.js';
 import { MemoryStore } from '../memory/store.js';
 import { TraceStore } from '../observability/tracer.js';
-import { createHeadlessProducer } from '../execute.js';
+import { createHeadlessProducer, createLLMProducer } from '../execute.js';
+import { ContextResolver } from '../orchestration/context-resolver.js';
+import type { ExecuteCtx } from '../orchestrator.js';
+import type { GraphNode } from '../types.js';
 import { attachContract, contractOf } from '../contracts/task-contract.js';
 
 function tmp(prefix: string): string {
@@ -265,5 +268,50 @@ test('budget: juiz semântico é desligado quando a fase de avaliação esgota',
     result.trace.spans.some((s) => s.name === 'budget:judge-off'),
     'desligar o juiz em silêncio esconderia por que os critérios semânticos pararam de ser julgados',
   );
+  fs.rmSync(baseDir, { recursive: true, force: true });
+});
+
+test('cache: resposta que reprova na validação NÃO é gravada', async () => {
+  const baseDir = tmp('izanagi-cache-invalid-');
+  const cache = new ResponseCache({ baseDir, enabled: true });
+  const node: GraphNode = { id: 'scan', kind: 'agent', outputs: ['security-report'], status: 'pending', tokenBudget: 1000 };
+
+  let chamadas = 0;
+  const producer = createLLMProducer({
+    objective: 'auditar a API',
+    cache,
+    contextResolver: new ContextResolver(),
+    buildSystemPrompt: () => 'system estável',
+    client: {
+      complete: async () => {
+        chamadas++;
+        // Falta severity/vulnerabilities/remediation: reprova no schema.
+        return { text: 'achei alguns problemas', tokens: 100, model: 'm', provider: 'p' };
+      },
+    },
+  });
+
+  const ctx = { provider: 'p', model: 'm' } as unknown as ExecuteCtx;
+  await producer(node, ctx);
+  await producer(node, ctx);
+
+  assert.equal(chamadas, 2, 'a segunda chamada precisa acontecer: o cache não pode servir uma resposta reprovada');
+  // Uma resposta válida, por contraste, é gravada e reaproveitada.
+  const validProducer = createLLMProducer({
+    objective: 'auditar a API',
+    cache,
+    contextResolver: new ContextResolver(),
+    buildSystemPrompt: () => 'outro system',
+    client: {
+      complete: async () => {
+        chamadas++;
+        return { text: 'x'.repeat(400) + ' severity vulnerabilities remediation', tokens: 100, model: 'm', provider: 'p' };
+      },
+    },
+  });
+  await validProducer(node, ctx);
+  const antes = chamadas;
+  await validProducer(node, ctx);
+  assert.equal(chamadas, antes, 'resposta válida precisa ser reaproveitada — senão o cache não serve para nada');
   fs.rmSync(baseDir, { recursive: true, force: true });
 });

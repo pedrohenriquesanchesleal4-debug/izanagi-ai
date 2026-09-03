@@ -269,7 +269,7 @@ escrevia sobre um repositório que nunca tinha visto.
       estouro de orçamento, parada antecipada e aprovação humana — cada um
       pelo Commander e pelo Orchestrator reais, com só o producer injetado.
 
-### Onze bugs que a implementação revelou
+### Catorze bugs que a implementação revelou
 
 - **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
   (`<projeto>/.agents`, ou a própria instalação do pacote). A sandbox de tool e
@@ -292,6 +292,10 @@ escrevia sobre um repositório que nunca tinha visto.
   sempre, decide depois.
 - **O gasto do juiz semântico não era checado.** Fase `evaluation` esgotada e o
   juiz continuava sendo chamado a cada nó: o teto era decorativo.
+- **O cache guardava resposta reprovada na validação**, então o run seguinte
+  com o mesmo objetivo recomeçava do que já se sabia ruim.
+- **O cache de resposta e o `runtime-state` do `diagnose`** ficaram para trás na
+  separação de raízes de estado.
 - **A telemetria afirmava paralelismo no momento em que ele era cortado.** O
   tamanho do batch era contado antes do teto de concorrência: pool de 1
   reportava "paralelo 5", e justamente sob a degradação que reduz paralelismo.

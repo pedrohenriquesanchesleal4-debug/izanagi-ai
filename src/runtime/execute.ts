@@ -18,7 +18,7 @@ import { SkillResolver } from './routing/resolver.js';
 import { ModelRouter } from './model/router.js';
 import { ContextResolver } from './orchestration/context-resolver.js';
 import { ResponseCache } from './cache/response-cache.js';
-import { simulatedArtifact } from './contracts/artifacts.js';
+import { simulatedArtifact, validateArtifact } from './contracts/artifacts.js';
 import { createModelJudge } from './verification/judge.js';
 import type { SemanticJudge } from './verification/engine.js';
 import type { TrustTier } from './security/policy.js';
@@ -215,7 +215,22 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
     opts.cache.recordMissIfEnabled(ctx.execBudget);
 
     const result = await opts.client.complete(ctx.provider, { model: ctx.model, system, messages, maxTokens });
-    opts.cache.set(key, result);
+
+    // Só entra no cache a resposta que produz artefato VÁLIDO.
+    //
+    // Sem isto, uma resposta reprovada pela validação era gravada do mesmo
+    // jeito. Na própria retentativa ela não voltava (a correção muda o system
+    // prompt, e portanto a chave), mas o run SEGUINTE com o mesmo objetivo
+    // recomeçava a partir da resposta que já se sabia ruim — e recomeçava
+    // deterministicamente, sempre. Um cache que serve para economizar não pode
+    // guardar o que já foi reprovado: o barato ali é repetir o erro.
+    //
+    // A validação é a mesma do Orchestrator e é memoizada por `(kind, hash)`,
+    // então conferir aqui não paga uma segunda conta.
+    const kind = node.outputs?.[0] ?? 'raw';
+    if (validateArtifact(kind as never, result.text).valid) {
+      opts.cache.set(key, result);
+    }
     opts.onNode?.({
       nodeId: node.id,
       ...(ctx.nodeRole ? { role: ctx.nodeRole } : {}),
@@ -224,7 +239,7 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
       cachedTokens: result.cachedTokens ?? 0,
       fromCache: false,
     });
-    return { content: result.text, kind: node.outputs?.[0] ?? 'raw', tokens: result.tokens, model: result.model };
+    return { content: result.text, kind, tokens: result.tokens, model: result.model };
   };
 }
 
