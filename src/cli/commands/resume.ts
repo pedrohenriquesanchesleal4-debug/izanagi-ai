@@ -7,7 +7,12 @@
 import { CheckpointStore, checkpointProgress } from '../../runtime/recovery/checkpoint.js';
 import { runRuntime, findAgentJson } from './run.js';
 
-export async function resumeCommand(baseDir: string, args: string[]): Promise<void> {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills).
+ * @param stateDir Raiz do ESTADO deste projeto (`.izanagi/state`). Default:
+ *                 `baseDir`. Ver `resolveStateRoot` no installer.
+ */
+export async function resumeCommand(baseDir: string, args: string[], stateDir = baseDir): Promise<void> {
   const runId = args[0];
   if (!runId) {
     console.error('\x1b[31mError:\x1b[0m informe o run-id.');
@@ -15,7 +20,7 @@ export async function resumeCommand(baseDir: string, args: string[]): Promise<vo
     process.exit(1);
   }
 
-  const checkpoints = new CheckpointStore({ baseDir });
+  const checkpoints = new CheckpointStore({ baseDir: stateDir });
   const data = checkpoints.load(runId);
   if (!data) {
     console.error(`\x1b[31mError:\x1b[0m nenhum checkpoint encontrado para "${runId}" — nada a retomar (execução já concluída ou run-id inválido).`);
@@ -31,6 +36,7 @@ export async function resumeCommand(baseDir: string, args: string[]): Promise<vo
 
   const agent = findAgentJson(data.primaryAgent, baseDir) ?? { name: data.primaryAgent };
   await runRuntime(baseDir, {
+    stateDir,
     task: data.task,
     category: data.category,
     agentId: data.primaryAgent,

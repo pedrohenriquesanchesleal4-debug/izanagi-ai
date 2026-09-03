@@ -77,6 +77,17 @@ export interface OrchestratorOptions {
    * checkpoints, memória) continua em `baseDir`.
    */
   workspaceDir?: string;
+  /**
+   * Onde vive o estado do run (`.izanagi/state`: trace, artefatos, memória,
+   * checkpoints, aprovações, decisões). Default: `baseDir`, para que nenhum
+   * caller existente mude de comportamento.
+   *
+   * Separado de `baseDir` porque as duas perguntas são diferentes: `baseDir`
+   * responde "de onde leio agentes e skills?" e cai na instalação do pacote
+   * quando o projeto não foi inicializado — o que está certo para assets e
+   * errado para estado, que assim vazava entre projetos.
+   */
+  stateDir?: string;
   command: string;
   task: string;
   category: string;
@@ -231,8 +242,12 @@ export class Orchestrator {
    */
   private readonly workspaceDir: string;
 
+  /** Raiz do estado do run. Ver `OrchestratorOptions.stateDir`. */
+  private readonly stateDir: string;
+
   constructor(private readonly opts: OrchestratorOptions) {
     this.workspaceDir = path.resolve(opts.workspaceDir ?? opts.baseDir);
+    this.stateDir = path.resolve(opts.stateDir ?? opts.baseDir);
   }
 
   /** Pontos de extensão (compatibilidade: permite injetar implementações). */
@@ -310,12 +325,13 @@ export class Orchestrator {
 
   /** Executa o ciclo completo e retorna trace + avaliação. */
   async run(): Promise<OrchestrationResult> {
-    const store = this.store ?? new TraceStore({ baseDir: this.opts.baseDir });
-    const memory = this.memory ?? new MemoryStore({ baseDir: this.opts.baseDir });
-    const checkpoints = this.checkpointStore ?? new CheckpointStore({ baseDir: this.opts.baseDir });
-    const artifactRegistry = this.artifactRegistry ?? new ArtifactRegistry({ baseDir: this.opts.baseDir });
-    const decisions = this.decisionJournal ?? new DecisionJournal({ baseDir: this.opts.baseDir });
-    const approvals = this.approvalStore ?? new ApprovalStore({ baseDir: this.opts.baseDir });
+    const stateDir = this.stateDir;
+    const store = this.store ?? new TraceStore({ baseDir: stateDir });
+    const memory = this.memory ?? new MemoryStore({ baseDir: stateDir });
+    const checkpoints = this.checkpointStore ?? new CheckpointStore({ baseDir: stateDir });
+    const artifactRegistry = this.artifactRegistry ?? new ArtifactRegistry({ baseDir: stateDir });
+    const decisions = this.decisionJournal ?? new DecisionJournal({ baseDir: stateDir });
+    const approvals = this.approvalStore ?? new ApprovalStore({ baseDir: stateDir });
     const healing: HealingAction[] = [];
     const startedAt = Date.now();
     // Canal A2A do run. A primeira mensagem é o próprio pedido do usuário: o

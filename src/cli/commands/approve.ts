@@ -9,7 +9,12 @@ import { CheckpointStore } from '../../runtime/recovery/checkpoint.js';
 import { ApprovalStore, findPendingApprovalNodeId } from '../../runtime/recovery/approvals.js';
 import { runRuntime, findAgentJson } from './run.js';
 
-export async function approveCommand(baseDir: string, args: string[]): Promise<void> {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills).
+ * @param stateDir Raiz do ESTADO deste projeto (`.izanagi/state`). Default:
+ *                 `baseDir`. Ver `resolveStateRoot` no installer.
+ */
+export async function approveCommand(baseDir: string, args: string[], stateDir = baseDir): Promise<void> {
   const positionals = args.filter((a) => !a.startsWith('-'));
   const runId = positionals[0];
   const nodeIdArg = positionals[1];
@@ -19,14 +24,14 @@ export async function approveCommand(baseDir: string, args: string[]): Promise<v
     process.exit(1);
   }
 
-  const checkpoints = new CheckpointStore({ baseDir });
+  const checkpoints = new CheckpointStore({ baseDir: stateDir });
   const data = checkpoints.load(runId);
   if (!data) {
     console.error(`\x1b[31mError:\x1b[0m nenhum checkpoint encontrado para "${runId}" — nada pendente de aprovação.`);
     process.exit(1);
   }
 
-  const approvals = new ApprovalStore({ baseDir });
+  const approvals = new ApprovalStore({ baseDir: stateDir });
   const nodeId = nodeIdArg ?? findPendingApprovalNodeId(approvals, runId, data.graph);
   if (!nodeId) {
     console.error(`\x1b[31mError:\x1b[0m nenhuma aprovação pendente encontrada para o run "${runId}".`);
@@ -38,6 +43,7 @@ export async function approveCommand(baseDir: string, args: string[]): Promise<v
 
   const agent = findAgentJson(data.primaryAgent, baseDir) ?? { name: data.primaryAgent };
   await runRuntime(baseDir, {
+    stateDir,
     task: data.task,
     category: data.category,
     agentId: data.primaryAgent,

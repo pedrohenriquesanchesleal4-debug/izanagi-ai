@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { getPackageDir, resolveFrameworkRoot } from '../installer.js';
+import { getPackageDir, resolveFrameworkRoot, resolveStateRoot } from '../installer.js';
 
 import { doctorCommand } from './commands/doctor.js';
 import { listCommand } from './commands/list.js';
@@ -43,6 +43,21 @@ import { budgetCommand } from './commands/budget.js';
 const packageDir = getPackageDir();
 const baseDir = resolveFrameworkRoot(process.cwd());
 
+/**
+ * Raiz do ESTADO deste projeto (`.izanagi/state`), que NÃO é a mesma coisa que
+ * `baseDir`.
+ *
+ * `baseDir` responde "de onde leio agentes e skills?" e cai na instalação do
+ * pacote quando o projeto não tem `.agents/` — o que está certo para assets.
+ * Usar a mesma raiz para o estado fazia todo projeto não inicializado gravar
+ * trace, artefato (com conteúdo) e memória dentro de `node_modules/izanagi-ai/`,
+ * compartilhados entre todos esses projetos: `izanagi trace` listava execução
+ * de outro projeto, e um `npm update` apagava o histórico.
+ *
+ * Projeto inicializado não muda de lugar.
+ */
+const stateDir = resolveStateRoot(process.cwd());
+
 function showVersion(): void {
   const pkg = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'));
   console.log(`Izanagi AI CLI v${pkg.version}`);
@@ -80,16 +95,16 @@ export async function runCLI(args: string[]): Promise<void> {
 
     case 'run':
     case 'resolve':
-      await runCommand(baseDir, rest);
+      await runCommand(baseDir, rest, stateDir);
       break;
 
     case 'trace':
-      traceCommand(baseDir, rest);
+      traceCommand(stateDir, rest);
       break;
 
     case 'eval':
     case 'evaluate':
-      evalCommand(baseDir, rest);
+      evalCommand(stateDir, rest);
       break;
 
     case 'benchmark':
@@ -99,11 +114,11 @@ export async function runCLI(args: string[]): Promise<void> {
     // comandos redundantes"); `benchmark`/`bench` continuam funcionando por
     // compatibilidade com quem já usa a CLI hoje.
     case 'arena':
-      await benchmarkCommand(baseDir, rest);
+      await benchmarkCommand(baseDir, rest, stateDir);
       break;
 
     case 'memory':
-      memoryCommand(baseDir, rest);
+      memoryCommand(stateDir, rest);
       break;
 
     case 'models':
@@ -111,7 +126,7 @@ export async function runCLI(args: string[]): Promise<void> {
       break;
 
     case 'budget':
-      budgetCommand(baseDir, rest);
+      budgetCommand(stateDir, rest);
       break;
 
     case 'diagnose':
@@ -119,23 +134,23 @@ export async function runCLI(args: string[]): Promise<void> {
       break;
 
     case 'dashboard':
-      dashboardCommand(baseDir, rest);
+      dashboardCommand(stateDir, rest);
       break;
 
     case 'resume':
-      await resumeCommand(baseDir, rest);
+      await resumeCommand(baseDir, rest, stateDir);
       break;
 
     case 'approve':
-      await approveCommand(baseDir, rest);
+      await approveCommand(baseDir, rest, stateDir);
       break;
 
     case 'reject':
-      await rejectCommand(baseDir, rest);
+      await rejectCommand(baseDir, rest, stateDir);
       break;
 
     case 'explain':
-      explainCommand(baseDir, rest);
+      explainCommand(stateDir, rest);
       break;
 
     // Ponte de diagnóstico com os núcleos poliglotas (Rust/Go/Python/packages TS):

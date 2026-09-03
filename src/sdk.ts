@@ -75,6 +75,13 @@ export interface IzanagiRunOptions {
    * reconhecido. `false` desliga.
    */
   survey?: boolean;
+  /**
+   * Raiz do estado (`.izanagi/state`: trace, artefatos, memória, checkpoints).
+   * Default: `baseDir`. Separado porque `baseDir` também é a raiz de onde os
+   * assets do framework são lidos, e as duas respostas divergem num projeto
+   * sem `.agents/` — ver `resolveStateRoot` no installer.
+   */
+  stateDir?: string;
 }
 
 export interface IzanagiRunResult {
@@ -155,6 +162,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     availableProviders: providers,
     ...(outputDir ? { output: outputDir } : {}),
     ...(options.survey ?? looksLikeProject(baseDir) ? { survey: true } : {}),
+    ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });
 
@@ -189,6 +197,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     // declarar isso explicitamente evita que a sandbox de tool caia no cwd do
     // processo hospedeiro, que pode ser outro.
     workspaceDir: baseDir,
+    ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     command: 'sdk',
     task: options.objective,
     category: planning.plan?.classification.category ?? classified.category,

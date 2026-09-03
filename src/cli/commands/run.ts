@@ -276,7 +276,12 @@ function agentLabel(agent: any): string {
   return agent.name || 'Custom agent';
 }
 
-export async function runCommand(baseDir: string, args: string[]): Promise<void> {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills, RULES.md).
+ * @param stateDir Raiz do ESTADO deste projeto (`.izanagi/state`). Default:
+ *                 `baseDir`, o comportamento anterior. Ver `resolveStateRoot`.
+ */
+export async function runCommand(baseDir: string, args: string[], stateDir = baseDir): Promise<void> {
   const parsed = parseRunArgs(args);
   const { agentId, task, promptOnly, verbose, noCacheFoundation } = parsed;
 
@@ -510,6 +515,7 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     // um projeto (sem manifesto reconhecido) não há o que levantar, então não
     // se paga o nó. `--survey` força, `--no-survey` desliga.
     survey: parsed.noSurvey ? false : parsed.survey || looksLikeProject(cwd),
+    stateDir,
     explicitAgent: Boolean(agentId),
   });
 
@@ -617,6 +623,8 @@ export async function runRuntime(
     output?: string;
     /** Levanta a forma do projeto antes de decidir (nó de tool na cabeça do grafo). */
     survey?: boolean;
+    /** Raiz do estado (`.izanagi/state`). Default: `baseDir`. */
+    stateDir?: string;
   },
 ): Promise<OrchestrationResult | undefined> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
@@ -655,6 +663,7 @@ export async function runRuntime(
     availableProviders: llmProviders,
     ...(opts.output ? { output: opts.output } : {}),
     ...(opts.survey ? { survey: true } : {}),
+    ...(opts.stateDir ? { stateDir: opts.stateDir } : {}),
     // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
     noCommander: Boolean(opts.noCommander || opts.resumeRunId),
   });
@@ -719,6 +728,7 @@ export async function runRuntime(
     // Raiz do projeto do usuário: é contra ela que a sandbox de tool e o check
     // `file-exists` resolvem. `baseDir` continua sendo a raiz do framework.
     workspaceDir: process.cwd(),
+    ...(opts.stateDir ? { stateDir: opts.stateDir } : {}),
     command: 'run',
     task: opts.task,
     category: opts.category,

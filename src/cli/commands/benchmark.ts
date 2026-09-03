@@ -19,7 +19,12 @@ import { MemoryStore } from '../../runtime/memory/store.js';
 import os from 'os';
 import { run as runObjective } from '../../sdk.js';
 
-export async function benchmarkCommand(baseDir: string, args: string[]): Promise<void> {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills).
+ * @param stateDir Raiz do ESTADO deste projeto (`.izanagi/state`). Default:
+ *                 `baseDir`. Ver `resolveStateRoot` no installer.
+ */
+export async function benchmarkCommand(baseDir: string, args: string[], stateDir = baseDir): Promise<void> {
   const sub = args[0]?.toLowerCase() ?? 'list';
 
   if (sub === 'list') {
@@ -28,7 +33,7 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
   }
   if (sub === 'run') {
     const domain = args.slice(1).find((a) => !a.startsWith('-'));
-    await benchmarkRun(baseDir, domain, { execute: args.includes('--execute') });
+    await benchmarkRun(baseDir, domain, { execute: args.includes('--execute') }, stateDir);
     return;
   }
   if (sub === 'compare') {
@@ -38,11 +43,11 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
       console.error('\x1b[31mUsage:\x1b[0m izanagi benchmark compare <prev-report-id> <curr-report-id>\n');
       process.exit(1);
     }
-    benchmarkCompare(baseDir, prev, curr);
+    benchmarkCompare(stateDir, prev, curr);
     return;
   }
   if (sub === 'memory' || sub === 'context') {
-    benchmarkMemory(baseDir, args.includes('--json'));
+    benchmarkMemory(stateDir, args.includes('--json'));
     return;
   }
   if (sub === 'tokens' || sub === 'economy') {
@@ -55,7 +60,7 @@ export async function benchmarkCommand(baseDir: string, args: string[]): Promise
       console.error('\x1b[31mUsage:\x1b[0m izanagi benchmark report <report-id>\n');
       process.exit(1);
     }
-    benchmarkReport(baseDir, id);
+    benchmarkReport(stateDir, id);
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
@@ -81,7 +86,7 @@ function benchmarkList(baseDir: string): void {
   console.log('Executar: \x1b[33mizanagi benchmark run [domain]\x1b[0m\n');
 }
 
-async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?: boolean } = {}): Promise<void> {
+async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?: boolean } = {}, stateDir = baseDir): Promise<void> {
   const registry = new BenchmarkRegistry();
   const cases = registry.filterByDomain(registry.load(baseDir), domain);
   if (cases.length === 0) {
@@ -115,7 +120,7 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
   // execução real do runtime: o grafo roda, a verificação roda, o healing roda.
   // O que não é real ali é o conteúdo dos artefatos, e o relatório diz isso.
   const executed = async (c: (typeof cases)[number]) => {
-    const result = await runObjective({ baseDir, objective: c.task });
+    const result = await runObjective({ baseDir, stateDir, objective: c.task });
     return {
       output: {
         ...outputOnly(c),
@@ -137,7 +142,7 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
   const report = await runner.runSuite(
     cases,
     flags.execute ? executed : outputOnly,
-    { baseDir, suite: `${domain ?? 'all'}${flags.execute ? ':executed' : ''}` },
+    { baseDir: stateDir, suite: `${domain ?? 'all'}${flags.execute ? ':executed' : ''}` },
   );
 
   for (const r of report.results) {

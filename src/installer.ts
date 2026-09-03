@@ -151,6 +151,32 @@ export function resolveFrameworkRoot(cwd: string): string {
 }
 
 /**
+ * Onde vive o ESTADO deste projeto (`.izanagi/state`: traces, artefatos,
+ * memória, checkpoints, aprovações, decisões).
+ *
+ * Não é a mesma pergunta que `resolveFrameworkRoot`, e confundir as duas era
+ * um bug real: aquela função responde "de onde leio agentes e skills?", e o
+ * fallback dela para a instalação do pacote está certo — é lá que os agentes
+ * embutidos moram. Usar a MESMA raiz para o estado fazia todo projeto sem
+ * `izanagi init` gravar trace, artefato (com conteúdo) e memória dentro de
+ * `node_modules/izanagi-ai/`, compartilhados entre todos esses projetos. Na
+ * prática: `izanagi trace` listava execução de outro projeto, e um
+ * `npm update` apagava o histórico.
+ *
+ * Projeto inicializado continua com o estado em `<projeto>/.agents/`, exatamente
+ * onde sempre esteve — mover isso apagaria o histórico de quem já usa. O que
+ * muda é só o caso quebrado: sem `.agents/`, o estado fica no próprio
+ * diretório do projeto, e não na instalação do framework.
+ */
+export function resolveStateRoot(cwd: string): string {
+  const projectAgents = path.join(cwd, '.agents');
+  if (fs.existsSync(path.join(projectAgents, 'core'))) {
+    return projectAgents;
+  }
+  return path.resolve(cwd);
+}
+
+/**
  * Instala os packs selecionados do Izanagi AI na pasta `.agents` do projeto do usuário.
  */
 export function installToProject(targetDir: string, selectedPackIds: string[], cliTarget?: string): void {

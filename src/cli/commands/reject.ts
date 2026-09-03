@@ -31,7 +31,12 @@ function parseRejectArgs(args: string[]): { positionals: string[]; reason?: stri
   return { positionals, reason, verbose };
 }
 
-export async function rejectCommand(baseDir: string, args: string[]): Promise<void> {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills).
+ * @param stateDir Raiz do ESTADO deste projeto (`.izanagi/state`). Default:
+ *                 `baseDir`. Ver `resolveStateRoot` no installer.
+ */
+export async function rejectCommand(baseDir: string, args: string[], stateDir = baseDir): Promise<void> {
   const { positionals, reason, verbose } = parseRejectArgs(args);
   const runId = positionals[0];
   const nodeIdArg = positionals[1];
@@ -41,14 +46,14 @@ export async function rejectCommand(baseDir: string, args: string[]): Promise<vo
     process.exit(1);
   }
 
-  const checkpoints = new CheckpointStore({ baseDir });
+  const checkpoints = new CheckpointStore({ baseDir: stateDir });
   const data = checkpoints.load(runId);
   if (!data) {
     console.error(`\x1b[31mError:\x1b[0m nenhum checkpoint encontrado para "${runId}" — nada pendente de aprovação.`);
     process.exit(1);
   }
 
-  const approvals = new ApprovalStore({ baseDir });
+  const approvals = new ApprovalStore({ baseDir: stateDir });
   const nodeId = nodeIdArg ?? findPendingApprovalNodeId(approvals, runId, data.graph);
   if (!nodeId) {
     console.error(`\x1b[31mError:\x1b[0m nenhuma aprovação pendente encontrada para o run "${runId}".`);
@@ -60,6 +65,7 @@ export async function rejectCommand(baseDir: string, args: string[]): Promise<vo
 
   const agent = findAgentJson(data.primaryAgent, baseDir) ?? { name: data.primaryAgent };
   await runRuntime(baseDir, {
+    stateDir,
     task: data.task,
     category: data.category,
     agentId: data.primaryAgent,

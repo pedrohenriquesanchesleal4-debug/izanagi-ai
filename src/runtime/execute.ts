@@ -57,6 +57,11 @@ export interface PlanningInput {
   output?: string;
   /** Levanta a forma do projeto num nó de tool na cabeça do grafo (`--survey`). */
   survey?: boolean;
+  /**
+   * Raiz do estado (`.izanagi/state`) consultado no planejamento. Default:
+   * `baseDir`. Ver `OrchestratorOptions.stateDir` para o porquê da separação.
+   */
+  stateDir?: string;
 }
 
 export interface PlanningOutput {
@@ -109,7 +114,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
   // Memória e skills entram no PLANEJAMENTO, não só na execução: o Commander
   // passa a saber que padrão de falha existe para este objetivo e que skills
   // cada tarefa realmente pede. Leitura apenas — quem escreve é o Orchestrator.
-  const memory = input.noCommander || input.noMemory ? undefined : new MemoryStore({ baseDir });
+  const memory = input.noCommander || input.noMemory ? undefined : new MemoryStore({ baseDir: input.stateDir ?? baseDir });
   const skillResolver = memory ? new SkillResolver({ baseDir, memory }) : undefined;
 
   const commander = new Commander();

@@ -269,7 +269,7 @@ escrevia sobre um repositório que nunca tinha visto.
       estouro de orçamento, parada antecipada e aprovação humana — cada um
       pelo Commander e pelo Orchestrator reais, com só o producer injetado.
 
-### Três bugs que a implementação revelou
+### Quatro bugs que a implementação revelou
 
 - **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
   (`<projeto>/.agents`, ou a própria instalação do pacote). A sandbox de tool e
@@ -285,6 +285,15 @@ escrevia sobre um repositório que nunca tinha visto.
   passou. Dois testes existentes caíram com isso e estavam medindo a coisa
   errada: as fixtures não cobriam o schema de `critique`/`test-plan`, o nó
   falhava, e o run saía verde.
+- **Estado de projeto vazava para a instalação do framework.** Sem
+  `izanagi init`, `.izanagi/state` (trace, artefato com conteúdo, memória,
+  checkpoint) era gravado dentro de `node_modules/izanagi-ai/` e compartilhado
+  entre todos esses projetos: `izanagi trace` listava execução alheia, e
+  `npm update` apagava o histórico. A causa é a mesma da anterior — uma raiz só
+  respondendo duas perguntas diferentes. `resolveStateRoot` separa; projeto
+  inicializado não muda de lugar, porque mover apagaria o histórico de quem já
+  usa. Encontrado procurando o trace de um run de teste e achando 300 traces de
+  outros projetos.
 - **Groundedness reprovava documento correto.** A primeira versão do check
   resolvia referência só contra a raiz do repositório, e o `docs/HANDOFF.md`
   deste projeto saiu com **0 de 17** caminhos fundamentados: ele cita
