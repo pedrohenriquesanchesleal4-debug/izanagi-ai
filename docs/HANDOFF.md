@@ -160,7 +160,7 @@ izanagi run "adicionar paginacao em GET /users" --output docs   (projeto Node de
   entrega gravada e conferida por file-exists sobre o arquivo que a tool escreveu
 ```
 
-Testes: **613, com 612 passando**. O vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo — não roda no Windows. É anterior a esta rodada e independente dela.
+Testes: **674, todos passando no Linux**. O vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo — não roda no Windows. É anterior a esta rodada e independente dela.
 
 ---
 
@@ -233,7 +233,7 @@ Para quem pegar o repositório e quiser confirmar que está tudo de pé:
 ```bash
 npm ci
 npm run build
-node --test "dist/runtime/tests/*.test.js"     # 613 testes, 1 vermelho conhecido (polyglot/Windows)
+node --test "dist/runtime/tests/*.test.js"     # 674 testes (no Linux, todos verdes; 1 vermelho conhecido no Windows: polyglot)
 
 izanagi benchmark memory                        # medição de busca e compressão
 izanagi run "auditar a segurança da API" --mode orchestrated --json

@@ -892,6 +892,12 @@ export async function runRuntime(
   // Imprime o trace detalhado
   printTrace(result.trace);
 
+  // Sem `--output`, o trabalho fica no content store e o usuário precisa saber
+  // que existe uma forma de trazê-lo para o projeto. Só aparece quando houve
+  // artefato de produto: num run que não produziu nada, a dica seria ruído.
+  if (!opts.output && Object.values(producedArtifacts).some((a) => a.kind !== 'evaluation' && a.kind !== 'critique')) {
+    console.log(`\n\x1b[90mPara receber o resultado como arquivo no projeto:\x1b[0m \x1b[36mizanagi run "..." --output <dir>\x1b[0m`);
+  }
   console.log(`\n\x1b[90mVer o trace completo:\x1b[0m \x1b[36mizanagi trace ${result.trace.runId}\x1b[0m`);
   console.log(`\x1b[90mAvaliação isolada:\x1b[0m \x1b[36mizanagi eval --report ${result.trace.runId}\x1b[0m`);
   console.log(`\x1b[90mExplicação da execução:\x1b[0m \x1b[36mizanagi explain ${result.trace.runId}\x1b[0m\n`);
