@@ -428,6 +428,18 @@ export interface ModelProvider {
   id: string;
   name: string;
   models: ModelSpec[];
+  /**
+   * Data (ISO `YYYY-MM-DD`) da tabela de preços deste provider.
+   *
+   * Obrigatória na prática para quem cobra por token, ausente para
+   * self-hosted: custo 0 é fato, não cotação. Existe porque preço em
+   * código-fonte envelhece sem avisar, e `estimateCostForRole` alimenta o teto
+   * de orçamento: preço velho é teto errado, e o teto decide degradar,
+   * rebaixar papel ou pedir aprovação. Com a data, `izanagi models` mostra a
+   * idade e avisa; sem ela, o framework afirmaria um número que ninguém
+   * conferiu. Opcional no tipo para não quebrar catálogo de projeto existente.
+   */
+  pricingAsOf?: string;
 }
 
 export interface ModelSpec {

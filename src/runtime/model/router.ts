@@ -17,27 +17,44 @@ export const DEFAULT_PROVIDERS: ModelProvider[] = [
   {
     id: 'openai',
     name: 'OpenAI',
+    // Fonte: developers.openai.com/api/docs/pricing (consultado 2026-09-03).
+    // `gpt-5.6-sol` declara janela 272000 e NÃO 1050000: 1M é opt-in
+    // experimental, e acima de 272K a entrada custa 2x e a saída 1.5x. O
+    // roteador precisa planejar contra o que uma chamada recebe sem
+    // configuração especial, senão o teto de contexto mente para cima.
+    pricingAsOf: '2026-09-03',
     models: [
       { id: 'gpt-4o-mini', tier: 'fast', contextWindow: 128000, costPer1kInput: 0.00015, costPer1kOutput: 0.0006, avgLatencyMs: 900, reasoning: 'low' },
       { id: 'gpt-4o', tier: 'balanced', contextWindow: 128000, costPer1kInput: 0.0025, costPer1kOutput: 0.01, avgLatencyMs: 1400, reasoning: 'medium' },
-      { id: 'gpt-4.1', tier: 'premium', contextWindow: 1040000, costPer1kInput: 0.002, costPer1kOutput: 0.008, avgLatencyMs: 2200, reasoning: 'high' },
+      { id: 'gpt-5.6-sol', tier: 'premium', contextWindow: 272000, costPer1kInput: 0.004, costPer1kOutput: 0.02, avgLatencyMs: 2200, reasoning: 'high' },
     ],
   },
   {
     id: 'anthropic',
     name: 'Anthropic',
+    // Fonte: tabela de modelos correntes da Anthropic (consultado 2026-09-03).
+    pricingAsOf: '2026-09-03',
     models: [
       { id: 'claude-haiku-4-5', tier: 'fast', contextWindow: 200000, costPer1kInput: 0.001, costPer1kOutput: 0.005, avgLatencyMs: 800, reasoning: 'low' },
-      { id: 'claude-sonnet-4-5', tier: 'balanced', contextWindow: 200000, costPer1kInput: 0.003, costPer1kOutput: 0.015, avgLatencyMs: 1500, reasoning: 'medium' },
-      { id: 'claude-opus-4-1', tier: 'premium', contextWindow: 200000, costPer1kInput: 0.015, costPer1kOutput: 0.075, avgLatencyMs: 2500, reasoning: 'high' },
+      { id: 'claude-sonnet-5', tier: 'balanced', contextWindow: 1000000, costPer1kInput: 0.002, costPer1kOutput: 0.01, avgLatencyMs: 1500, reasoning: 'medium' },
+      { id: 'claude-opus-5', tier: 'premium', contextWindow: 1000000, costPer1kInput: 0.005, costPer1kOutput: 0.025, avgLatencyMs: 2500, reasoning: 'high' },
     ],
   },
   {
     id: 'google',
     name: 'Google',
+    // Fonte: ai.google.dev/gemini-api/docs/pricing + páginas de modelo
+    // (consultado 2026-09-03). Só entram modelos cujo preço E janela foram
+    // confirmados: `gemini-3.5-flash-lite` é mais barato ($0.30/$2.50 por 1M)
+    // mas a janela não estava documentada na consulta, e janela chutada num
+    // roteador que decide por contexto é pior que um modelo a menos. Quem
+    // quiser usá-lo declara em `.izanagi/izanagi.config.json`.
+    // `gemini-3.1-pro-preview` tem faixa: acima de 200K vira $4/$18 por 1M.
+    // O catálogo registra a faixa base, e por isso o teto é ESTIMATIVA.
+    pricingAsOf: '2026-09-03',
     models: [
-      { id: 'gemini-2.0-flash', tier: 'fast', contextWindow: 1000000, costPer1kInput: 0.0001, costPer1kOutput: 0.0004, avgLatencyMs: 700, reasoning: 'low' },
-      { id: 'gemini-2.5-pro', tier: 'premium', contextWindow: 1000000, costPer1kInput: 0.00125, costPer1kOutput: 0.01, avgLatencyMs: 2000, reasoning: 'high' },
+      { id: 'gemini-3.8-flash', tier: 'fast', contextWindow: 1000000, costPer1kInput: 0.00075, costPer1kOutput: 0.00375, avgLatencyMs: 700, reasoning: 'low' },
+      { id: 'gemini-3.1-pro-preview', tier: 'premium', contextWindow: 1000000, costPer1kInput: 0.002, costPer1kOutput: 0.012, avgLatencyMs: 2000, reasoning: 'high' },
     ],
   },
   /**
@@ -68,6 +85,37 @@ export const DEFAULT_PROVIDERS: ModelProvider[] = [
   // número aqui seria verificável. Adicione o(s) modelo(s) reais em
   // `.izanagi/izanagi.config.json` (loadProjectProviders mescla com este catálogo).
 ];
+
+/**
+ * A partir de quantos dias a tabela de preços de um provider é tratada como
+ * obsoleta e avisada ao usuário.
+ *
+ * 120 dias é uma escolha, e o motivo é o intervalo observado entre gerações de
+ * modelo dos providers grandes: abaixo disso o aviso dispararia em catálogo
+ * ainda correto e viraria ruído que se aprende a ignorar; muito acima, ele
+ * nunca dispara antes do preço já estar errado. Não é uma medição.
+ */
+export const STALE_CATALOG_AFTER_DAYS = 120;
+
+/**
+ * Idade em dias da tabela de preços de um provider, ou `null` quando ele não
+ * declara data. `null` é ausência de informação, e o chamador tem que
+ * apresentá-la como ausente: idade 0 diria "o preço é de hoje", que é
+ * exatamente a afirmação que não se pode fazer sem a data.
+ */
+export function catalogAgeDays(provider: ModelProvider, now: Date = new Date()): number | null {
+  if (!provider.pricingAsOf) return null;
+  const asOf = Date.parse(`${provider.pricingAsOf}T00:00:00Z`);
+  if (Number.isNaN(asOf)) return null;
+  const dias = Math.floor((now.getTime() - asOf) / 86_400_000);
+  return dias < 0 ? 0 : dias;
+}
+
+/** `true` quando a tabela passou de `STALE_CATALOG_AFTER_DAYS`. Sem data, nunca. */
+export function isCatalogStale(provider: ModelProvider, now: Date = new Date()): boolean {
+  const dias = catalogAgeDays(provider, now);
+  return dias !== null && dias > STALE_CATALOG_AFTER_DAYS;
+}
 
 export class ModelRouter {
   constructor(private readonly providers: ModelProvider[] = DEFAULT_PROVIDERS) {}

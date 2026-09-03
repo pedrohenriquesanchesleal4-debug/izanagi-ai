@@ -72,10 +72,15 @@ test('router: risco baixo não justifica premium em tarefa média', () => {
 
 test('router: IZANAGI_MODEL força o modelo mesmo contra a heurística', () => {
   const prev = process.env.IZANAGI_MODEL;
+  // O id sai do catálogo em tempo de teste, não fixado no fonte: um id
+  // hardcoded aqui volta a falhar na próxima atualização de catálogo, que é
+  // exatamente como este teste quebrou. O que o teste afirma é o pin vencer a
+  // heurística — a tarefa é trivial, então a heurística NÃO escolheria premium.
+  const premium = DEFAULT_PROVIDERS.find((p) => p.id === 'anthropic')!.models.find((m) => m.tier === 'premium')!;
   try {
-    process.env.IZANAGI_MODEL = 'claude-opus-4-1';
+    process.env.IZANAGI_MODEL = premium.id;
     const r = router.route({ task: 'oi', taskComplexity: 1, reasoningRequirement: 'low', risk: 0.1, tokenBudget: 1000, requiresTools: false });
-    assert.equal(r.model.id, 'claude-opus-4-1');
+    assert.equal(r.model.id, premium.id);
     assert.equal(r.provider, 'anthropic');
     assert.ok(r.reasons.some((x) => x.includes('IZANAGI_MODEL')));
   } finally {

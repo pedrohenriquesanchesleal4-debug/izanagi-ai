@@ -48,24 +48,36 @@ test('router: catálogo restrito a um provider sem tier premium cai para o tier 
   assert.ok(routed.reasons.some((r) => r.includes('indisponível')), 'a queda de tier precisa ficar explícita nas razões');
 });
 
+/**
+ * Ids para pin saem do catálogo em tempo de teste, não fixados no fonte. Estes
+ * dois testes quebraram na atualização de catálogo por citarem `gpt-4.1` e
+ * `gemini-2.0-flash`, e o que eles afirmam não tem nada a ver com id nenhum:
+ * é que o pin vence a heurística, e que env vence config.
+ */
+const PIN_CONFIG = DEFAULT_PROVIDERS.find((p) => p.id === 'openai')!.models.find((m) => m.tier === 'premium')!.id;
+const PIN_ENV = DEFAULT_PROVIDERS.find((p) => p.id === 'google')!.models.find((m) => m.tier === 'fast')!.id;
+
 test('router: pin por papel no izanagi.config.json vence a heurística', () => {
-  const dir = tmpProject({ roles: { worker: { model: 'gpt-4.1' } } });
+  const dir = tmpProject({ roles: { worker: { model: PIN_CONFIG } } });
   const policy = ModelRouter.loadRolePolicy(dir);
   assert.ok(policy?.worker, 'policy do worker deveria ser carregada');
   const router = new ModelRouter().withRolePolicy(policy);
   const routed = router.routeForRole('worker', ctx);
-  assert.equal(routed.model.id, 'gpt-4.1');
+  // `PIN_CONFIG` é premium e o papel worker prefere fast: se o pin não
+  // vencesse, o id seria outro.
+  assert.equal(routed.model.id, PIN_CONFIG);
   assert.ok(routed.reasons[0].includes('fixado'));
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('router: pin por env vence o pin de config', () => {
-  const dir = tmpProject({ roles: { worker: { model: 'gpt-4.1' } } });
+  const dir = tmpProject({ roles: { worker: { model: PIN_CONFIG } } });
   const policy = ModelRouter.loadRolePolicy(dir);
-  process.env.IZANAGI_MODEL_WORKER = 'gemini-2.0-flash';
+  process.env.IZANAGI_MODEL_WORKER = PIN_ENV;
   try {
     const routed = new ModelRouter().withRolePolicy(policy).routeForRole('worker', ctx);
-    assert.equal(routed.model.id, 'gemini-2.0-flash');
+    assert.notEqual(PIN_ENV, PIN_CONFIG, 'os dois pins têm que ser distintos para o teste significar algo');
+    assert.equal(routed.model.id, PIN_ENV);
   } finally {
     delete process.env.IZANAGI_MODEL_WORKER;
     fs.rmSync(dir, { recursive: true, force: true });
