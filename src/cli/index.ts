@@ -201,6 +201,7 @@ function showHelp(): void {
   \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: Commander + graph + roteamento por papel + verificação + trace + healing.
                           (--mode direct|assisted|orchestrated|autonomous força o modo de execução)
                           (--budget N · --max-cost N · --model <id> · --local · --cache · --no-commander · --no-judge · --json · --notify-webhook=<url>)
+                          (--output <dir> grava a entrega do run no projeto; --no-survey desliga a leitura do projeto antes de decidir)
                           (--prompt-only só compila izanagi-prompt.md, sem executar)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
@@ -240,6 +241,8 @@ function showHelp(): void {
   izanagi run "Converta 10 dólares para reais"                  (modo direct: 1 chamada, sem grafo)
   izanagi run "..." --mode autonomous --max-cost 0.50
   izanagi run "..." --local --cache
+  izanagi run "adicionar paginação em GET /users" --output docs   (lê o projeto, entrega o arquivo em docs/)
+  izanagi run "..." --no-survey                                   (não levanta o projeto antes de decidir)
   izanagi models
   izanagi budget
   izanagi run architect --task "Design a microservices architecture"

@@ -211,6 +211,70 @@ sem itens abertos: o que resta são oito escolhas com motivo registrado (rede
 não isolada na sandbox, templates sem nós de tool, Token Benchmark medindo
 plano, entre outras), não dívida.
 
+## Fase 13: O trabalho sai do runtime (v3.18.0) ✅
+
+Duas coisas que o runtime fazia e ninguém via, e uma que ele não fazia.
+
+O caminho seguro de tool (permissão declarada no contrato, trust tier pela
+origem do arquivo, Policy Engine antes de executar, sandbox) existia desde a
+Fase 10, era testado, e **nenhum `izanagi run` passava por ele**. Ao mesmo
+tempo, o trabalho de um run terminava em `.izanagi/state/artifacts/` — visível
+por `izanagi explain --artifacts`, invisível para o projeto. E cada agente
+escrevia sobre um repositório que nunca tinha visto.
+
+- [x] **Nó `deliver` (`--output <dir>`)**: primeiro nó `kind: 'tool'` gerado
+      pelo planejamento em produção. Grava o que o run produziu num documento
+      único, e a verificação do nó confere o arquivo escrito. Isso muda o que o
+      critério significa: `file-exists` sobre arquivo que ninguém escreveu passa
+      quando o arquivo já existia por outro motivo; aqui ele passa a significar
+      "o runtime gravou isto".
+- [x] **Nó `survey` (`project.survey`, `--no-survey` desliga)**: levantamento
+      determinístico do projeto na cabeça do grafo — stack, manifestos, árvore
+      por extensão, entrypoints, começo do README. Não custa token, tem teto de
+      profundidade e de entradas, e **declara o próprio corte**. Só as raízes
+      dependem dele: repetir o levantamento em sete prompts seria a duplicação
+      de contexto que a arquitetura proíbe.
+- [x] **Marcadores de input de tool** (`{ $artifact: '<nó>' }`,
+      `{ $deliverable: true }`): um nó de tool é declarado no plano, antes de
+      existir o que ele vai gravar. A resolução é determinística, na hora da
+      chamada. Referência a nó inexistente é **erro**, nunca string vazia.
+      `code.execute` recusa marcador em qualquer campo: levar saída de modelo
+      para dentro de código executado é injeção com outro nome.
+- [x] **Menor privilégio verificado nó a nó**: `survey` recebe `fs:read`,
+      `deliver` recebe `fs:write`, e nenhum nó de agente recebe permissão
+      nenhuma. Há teste que percorre o plano inteiro conferindo isso.
+
+### Dois bugs que a implementação revelou
+
+- **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
+  (`<projeto>/.agents`, ou a própria instalação do pacote). A sandbox de tool e
+  o check `file-exists` resolviam contra ela: um nó `fs.read` lia dentro de
+  `.agents/`, não do projeto. Rodando de dentro do checkout do framework as duas
+  coincidem, que é por que passava despercebido. Novo `workspaceDir`, com
+  default = `baseDir` para que nenhum caller existente mude de comportamento.
+- **Nó falho sem artefato era invisível para a avaliação.** `correctness` é a
+  média das verificações registradas e `artifactValidity` a razão dos artefatos
+  existentes: as duas ignoram quem não chegou a produzir nada. Um nó abortado
+  por permissão negada deixava o run terminar `PASS`. Agora vira regressão — nó
+  `optional` fica de fora, porque reforço que falha não invalida evidência que
+  passou. Dois testes existentes caíram com isso e estavam medindo a coisa
+  errada: as fixtures não cobriam o schema de `critique`/`test-plan`, o nó
+  falhava, e o run saía verde.
+
+### Limitações desta fase
+
+- **A entrega é um documento, não um patch.** O run grava o que produziu; ele
+  não altera o código do projeto. Materializar arquivos de implementação exige
+  um contrato de manifesto que o modelo cumpra de forma verificável, e essa é
+  outra ordem de problema.
+- **O survey conta, não julga.** Ele devolve stack, contagem por extensão e
+  manifestos. Não devolve "o projeto usa arquitetura X": quem interpreta é o
+  agente a jusante, e essa separação é deliberada.
+- **Grounding não foi medido contra ausência de grounding.** A comparação
+  honesta (mesmo objetivo, mesmo provider, com e sem survey) exige provider
+  real e um gabarito de acerto. Está registrado como próximo passo, não como
+  resultado.
+
 ## Critérios de aceite das próximas fases
 
 Toda mudança no framework deve provar impacto em pelo menos uma dimensão:

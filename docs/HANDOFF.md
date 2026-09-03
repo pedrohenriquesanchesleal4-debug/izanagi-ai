@@ -1,4 +1,4 @@
-# Handoff: rearquitetura do runtime (v3.13.0 → v3.17.0)
+# Handoff: rearquitetura do runtime (v3.13.0 → v3.18.0)
 
 > Escrito em 2026-09-02. Documento de passagem: o que mudou, onde cada coisa vive, o que foi decidido e por quê, o que sobrou. Feito para quem abrir o repositório sem ter acompanhado a sessão.
 >
@@ -10,7 +10,7 @@
 
 A v3.13.0 entregou as peças da rearquitetura (Commander, Task Contracts, roteamento por papel, verificação por evidência) e deixou registrado, com honestidade, que várias delas **existiam e não tinham caller**. Este handoff cobre o fechamento disso.
 
-| | v3.13.0 | v3.17.0 |
+| | v3.13.0 | v3.18.0 |
 |---|---|---|
 | Crítica adversarial | Produzia texto que ninguém lia | Reprova o nó criticado, com correção mínima e reverificação |
 | Protocolo A2A | Testado, sem caller | `ConversationLog` do run, por referência de artefato |
@@ -27,6 +27,9 @@ A v3.13.0 entregou as peças da rearquitetura (Commander, Task Contracts, roteam
 | Sucesso repetido | Virava estatística | Vira skill procedural por recorrência |
 | Headless (sem API key) | Terminava `FAIL` sempre | `PASS` com verificação real |
 | Uso agendado | Impossível | `--json` + exit code + webhook |
+| Conhecimento do projeto | Nenhum: o agente escrevia sobre um repositório que nunca viu | Nó `survey` na cabeça do grafo, determinístico e com corte declarado |
+| Resultado do run | Ficava em `.izanagi/state/`, invisível para o projeto | Nó `deliver` grava no projeto, e a verificação confere o arquivo escrito |
+| Caminho seguro de tool | Existia, testado, sem ninguém passando por ele | Dois nós de tool gerados pelo planejamento, em todo run comum |
 
 ### Fluxo hoje
 
@@ -36,6 +39,8 @@ usuário ──> Commander (classifica · consulta memória · escolhe modo)
                 ├─ contratos por tarefa, com skills do próprio objetivo
                 ▼
             Task Graph ──> pool com teto de concorrência
+                │
+                ├─ [survey]  tool · fs:read · 0 token · lê o projeto de verdade
                 │
                 ├─ nó de agente  ──> modelo do papel (commander/specialist/worker)
                 └─ nó de tool    ──> ToolRegistry ─> PolicyEngine ─> sandbox
@@ -49,6 +54,8 @@ usuário ──> Commander (classifica · consulta memória · escolhe modo)
         │
         ├─ crítica bloqueante? ──> reprova o criticado + correção mínima
         ▼
+    [deliver]  tool · fs:write · 0 token · grava a entrega; file-exists confere
+        │
     trajetória registrada ──> 3ª recorrência verificada ──> skill procedural
 
   em volta: orçamento com degradação real · ConversationLog A2A · trace · cache
@@ -70,6 +77,10 @@ Arquivos criados nesta rodada, com a responsabilidade de cada um:
 | `runtime/benchmarks/arena.ts` | Métricas de execução real: verificação, recuperação, retries, custo |
 | `runtime/benchmarks/memory-benchmark.ts` | Medição de busca e compressão, com limiar declarado |
 | `runtime/notify/webhook.ts` | Notificação de fim de run, payload de metadado, exit code |
+| `runtime/tools/project-survey.ts` | Varredura determinística do projeto: stack, manifestos, árvore por extensão. Teto de profundidade e de entradas, corte declarado |
+| `runtime/tools/input-refs.ts` | Marcadores `$artifact`/`$deliverable` no input de tool. `code.execute` recusa marcador (injeção) |
+| `runtime/orchestration/grounding.ts` | Nó `survey` na cabeça do grafo; só as RAÍZES dependem dele |
+| `runtime/orchestration/delivery.ts` | Nó `deliver` no fim: documento único, destino validado, comprovante de escrita verificado |
 
 Arquivos que mudaram de comportamento e valem uma leitura antes de mexer:
 
@@ -96,6 +107,9 @@ Nenhum destes foi procurado: todos apareceram escrevendo o teste da feature ao l
 | **`minSize: 60` reprovava crítica que aprova** | `{"status":"approved","issues":[]}` tem 33 chars |
 | **Recomendação de crítica nunca aparecia** | Testava `ctx.artifacts.has('critique')` — `critique` é o *kind*, a chave do mapa é o id do nó (`critic`) |
 | **Tabela de economia do dashboard** | Referenciava `costUsd`/`degradations`; os campos reais são `estimatedCostUsd`/`degradationsApplied`. Metade sairia vazia |
+| **Sandbox de tool resolvia contra a raiz do FRAMEWORK** | `baseDir` é `<projeto>/.agents`, ou a instalação do pacote — não o projeto. Um nó `fs.read` lia dentro de `.agents/`, e `file-exists` procurava o arquivo no lugar errado. Rodando de dentro do checkout do framework as duas coincidem, e é por isso que nenhum teste pegou |
+| **Nó falho sem artefato era invisível para a avaliação** | `correctness` é a média das verificações registradas, `artifactValidity` a razão dos artefatos existentes: as duas ignoram quem não produziu nada. Um nó abortado por permissão negada deixava o run terminar `PASS` com score 0.98. Duas fixtures de teste estavam verdes exatamente por isso |
+| **Replan apagaria o contrato de um nó de tool** | `contractFor` por cima de contrato de tool removeria `tool` e `permissions`: o nó viraria chamada de modelo com o mesmo id, e a "correção" seria a regressão |
 
 ---
 
@@ -139,9 +153,14 @@ izanagi run "..." --mode autonomous          (headless, sem API key)
 
 izanagi run "..." --json
   JSON único no stdout · stderr vazio · exit 0
+
+izanagi run "adicionar paginacao em GET /users" --output docs   (projeto Node de fixture)
+  grafo: [survey] -> [execute] -> [verify] -> [evaluation] -> [deliver]
+  5/5 VERIFIED · survey detectou name/version/scripts reais e a stack por contagem
+  entrega gravada e conferida por file-exists sobre o arquivo que a tool escreveu
 ```
 
-Testes: **572, com 571 passando**. O vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo — não roda no Windows. É anterior a esta rodada e independente dela.
+Testes: **613, com 612 passando**. O vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo — não roda no Windows. É anterior a esta rodada e independente dela.
 
 ---
 
@@ -167,13 +186,35 @@ Nada aqui está aberto por falta de tempo. Está aberto por escolha, e a escolha
 
 Em ordem de valor por esforço, com o critério de pronto de cada um.
 
+**0. Medir o grounding contra a ausência dele.** A v3.18.0 pôs o survey no
+caminho por um argumento (agente que nunca viu o projeto inventa stack e
+caminho), não por um número. A medição honesta é o mesmo objetivo, mesmo
+provider, com e sem `--survey`, contra um gabarito de acerto — quantos caminhos
+citados existem de fato, quantas dependências citadas estão no manifesto.
+*Pronto quando:* houver dois relatórios comparáveis e a taxa de acerto de
+referência aparecer nos dois.
+
 **1. Rodar a Arena contra um provider real.** Tudo que existe hoje foi exercitado headless ou com producer de teste. `izanagi benchmark run --execute` com uma API key configurada produziria os primeiros números de verificação e recuperação sobre execução de verdade. *Pronto quando:* existir um relatório salvo em `.izanagi/state/benchmarks/` com `execution.verificationRate` vindo de chamadas reais, e um segundo relatório para comparar.
 
 **2. Exercitar o critique loop com modelo real.** O parsing é tolerante e testado, mas nenhum modelo de verdade produziu uma crítica ainda. É onde o formato costuma quebrar. *Pronto quando:* um run `--mode autonomous` com provider real registrar uma correção dirigida no `izanagi explain --conversation`.
 
-**3. Primeiro nó de tool num template.** Hoje o caminho seguro existe e ninguém passa por ele em produção. O candidato natural é um nó de verificação que roda teste de verdade (`code.execute` chamando o runner do projeto) em vez de um critério `file-exists`. *Pronto quando:* um template gerar nó de tool e a verificação de um run depender do resultado dele.
+**~~3. Primeiro nó de tool num template.~~** Fechado na v3.18.0, e não como o
+item previa. A ideia original era um nó de verificação rodando o teste do
+projeto via `code.execute` — mas a sandbox bloqueia subprocessos de propósito,
+então `code.execute` não roda `npm test`, e forçar isso significaria afrouxar o
+isolamento para caber num item de roadmap. O que fechou o item foi outra coisa,
+e melhor: o nó `deliver` grava a entrega e a verificação confere o arquivo
+escrito, e o nó `survey` lê o projeto antes de qualquer decisão. A frase do item
+("em vez de um critério `file-exists`") estava certa pelo motivo errado: o
+problema nunca foi o `file-exists`, foi conferir arquivo que ninguém escreveu.
 
-**4. Cache de resultado de tool.** É função pura da entrada, como a validação. Vale depois do item 3, quando houver tool sendo chamada.
+**~~4. Cache de resultado de tool.~~** Avaliado na v3.18.0 e recusado com
+motivo: nenhuma tool builtin é função pura da entrada. `fs.read`, `fs.ls` e
+`project.survey` dependem do disco, que é mutável; `fs.write` e `code.execute`
+têm efeito colateral, e cachear um write significaria não escrever. Um cache
+correto para as de leitura precisaria de `mtime`+`size` na chave, e o `stat`
+custa quase o que a leitura pequena que ele evitaria custaria. Está em
+`RUNTIME-PENDING.md` como decisão medida, não como pendência.
 
 **5. Estatística por domínio com volume real.** `agentStats(agent, domain)` já existe mas só decide com amostra mínima. Precisa de runs acumulados para significar algo.
 
@@ -188,7 +229,7 @@ Para quem pegar o repositório e quiser confirmar que está tudo de pé:
 ```bash
 npm ci
 npm run build
-node --test "dist/runtime/tests/*.test.js"     # 572 testes, 1 vermelho conhecido (polyglot/Windows)
+node --test "dist/runtime/tests/*.test.js"     # 613 testes, 1 vermelho conhecido (polyglot/Windows)
 
 izanagi benchmark memory                        # medição de busca e compressão
 izanagi run "auditar a segurança da API" --mode orchestrated --json

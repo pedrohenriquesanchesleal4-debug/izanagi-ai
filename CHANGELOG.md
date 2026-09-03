@@ -4,6 +4,32 @@
 
 ---
 
+## [3.18.0]: 2026-09-02
+
+O caminho seguro de tool existia desde a 3.15.0, era testado, e nenhum `izanagi run` passava por ele. Nesta versão o planejamento gera dois nós de tool em produção: um que **lê o projeto** antes de decidir, outro que **entrega arquivo** no fim.
+
+### Added
+- **`--output <dir>` / `output` no SDK — nó `deliver`.** Primeiro nó `kind: 'tool'` gerado pelo planejamento em produção. Grava o que o run produziu num documento único dentro do projeto, com contrato concedendo `fs:write` e mais nada. A verificação do nó confere o arquivo escrito: um critério `file-exists` sobre arquivo que ninguém escreveu passa quando o arquivo já existia por outro motivo; aqui ele passa a significar "o runtime gravou isto". O nome sai do objetivo, então repetir o mesmo objetivo reescreve a mesma entrega — entrega é produto, e o histórico continua em `.izanagi/state/`. `IzanagiRunResult.deliveredTo` só aparece quando a gravação realmente aconteceu.
+- **`project.survey` — nó `survey` na cabeça do grafo.** Levantamento determinístico do repositório: stack por manifesto e por volume de arquivo, manifestos resumidos, árvore por extensão, entrypoints e o começo do README. Não custa token; tem teto de profundidade (3) e de entradas, e **declara o próprio corte** (`truncated` é campo obrigatório do schema). Só as raízes do grafo dependem dele — repetir o levantamento em cada prompt seria a duplicação de contexto que a arquitetura proíbe. Ligado por default quando o diretório tem manifesto reconhecido; `--no-survey` desliga; modo `direct` nunca paga.
+- **Marcadores de input de tool** (`runtime/tools/input-refs.ts`): `{ $artifact: '<nó>' }` e `{ $deliverable: true }` resolvidos deterministicamente na hora da chamada, porque um nó de tool é declarado no plano antes de existir o que ele vai gravar. Referência a nó inexistente é erro, nunca string vazia. `code.execute` recusa marcador em qualquer campo do input: levar saída de modelo para dentro de código executado é injeção com outro nome.
+- **Kinds de artefato `delivery` e `project-survey`**, com schema próprio. `delivery` exige `written` (o comprovante da escrita, não o conteúdo); `project-survey` exige `root`, `stack`, `tree` e `truncated`.
+- **`OrchestratorOptions.workspaceDir`**: raiz do projeto do usuário, separada da raiz do framework.
+
+### Fixed
+- **Sandbox de tool e `file-exists` resolviam contra a raiz do FRAMEWORK.** `baseDir` é `<projeto>/.agents` num projeto inicializado, ou a própria instalação do pacote quando não há uma. Um nó `fs.read` lia dentro de `.agents/` em vez do projeto, e um check `file-exists` procurava o arquivo no lugar errado. Rodando de dentro do checkout do framework as duas coincidem, que é exatamente por que passava despercebido.
+- **Nó que terminava `failed` sem produzir artefato era invisível para a avaliação final.** `correctness` é a média das verificações registradas e `artifactValidity` a razão dos artefatos existentes: as duas ignoram quem não chegou a produzir nada. Na prática, um nó abortado por permissão negada deixava o run terminar `PASS` com score alto. Agora cada nó falho entra como regressão — nó `optional` fica de fora, porque reforço que falha não invalida evidência que passou.
+- **Replanejamento apagava o contrato de um nó de tool.** `contractFor` por cima de um contrato de tool removeria `tool` e `permissions`, e o nó viraria uma chamada de modelo com o mesmo id: a "correção" seria uma regressão silenciosa. Nó de tool não tem plano B estrutural (não há agente para trocar nem papel para subir) e volta para a fila com o mesmo contrato, com o motivo registrado nas decisões.
+- **Duas fixtures de teste mediam a coisa errada.** `orchestrator.test.ts` e `checkpoint.test.ts` não cobriam o schema de `critique`/`test-plan`: o nó produzia artefato inválido, terminava `failed`, e o run seguia `PASS`. Só apareceu quando nó falho passou a contar.
+
+### Compatibility
+- **Nenhuma quebra.** Sem `--output` e sem `--survey`, o plano é byte-a-byte o de antes e nenhum nó do grafo recebe permissão. `workspaceDir` tem default `baseDir`, então todo caller existente do `Orchestrator` mantém o comportamento exato — a CLI e o SDK declaram o valor novo.
+- **Mudança de veredito possível**: um run cujo nó falhava sem produzir artefato passava a `PASS` e agora sai `FAIL`. Isso é a correção, não a regressão: o run reportava sucesso com uma tarefa não executada.
+
+### Tests
+- 613 testes, 613 passando (41 novos: 23 em `delivery.test.ts`, 18 em `grounding.test.ts`).
+
+---
+
 ## [3.17.1]: 2026-09-02
 
 ### Fixed

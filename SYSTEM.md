@@ -91,7 +91,7 @@ User Input / Comando CLI
 | **Agent Genome** (`agents/*.json`) | 13 campos formais por agente (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility): preenchidos nos 22 agentes core. |
 | **Agent Factory** (`factories/agent-factory.ts`) | Gera novos agentes com genome a partir de requisito: detecção de lacuna vs. 22 core, ID slug, skills requeridas/opcionais, validação e escrita em `agents/generated/`. |
 | **Skill Factory** (`factories/skill-factory.ts`) | Cria skills novas com frontmatter, security scan pré-escrita, recusa de lacuna já coberta e escrita em `skills/generated/<name>/SKILL.md`. |
-| **Tool Registry** (`tools/registry.ts`) | Tools builtin (fs.read, fs.write, fs.ls) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → validate → execute. |
+| **Tool Registry** (`tools/registry.ts`) | Tools builtin (`fs.read`, `fs.write`, `fs.ls`, `project.survey`, `code.execute`) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → policy → validate → execute. Desde a v3.18.0 o planejamento gera dois nós de tool (`survey` e `deliver`), então o fluxo é atravessado por um `izanagi run` comum. |
 | **Model Router** (`model/router.ts`) | Catálogo por provider + `routeForRole` (tier por papel: commander→premium, specialist→balanced, worker→fast), pin por papel via config/env, escalada worker→specialist→commander e custo real em USD. `route()` legado preservado. |
 | **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
 | **Failure Memory** (`memory/store.ts`) | `recordFailure` + `findRelevantFailures` por categoria: erros reais registrados são injetados como evidência em runs futuros (anti-repetição). |
@@ -246,7 +246,16 @@ Toda rodada de batches persiste um checkpoint (§ Checkpoint & Resume) e cada de
 
 `src/runtime/security/policy.ts` responde "isso é permitido NESTE CONTEXTO?": distinto do Skill Scanner, que responde "isso parece perigoso?". A mesma permissão pode ser negada em produção e liberada em desenvolvimento, ou negada para uma skill de trust tier `community` e liberada para `builtin`. Regras default: deploy de produção e operações destrutivas em produção exigem aprovação humana; `community` nunca recebe `fs:write`/`shell` por default.
 
-⚠️ **Estado real (2026-08-15): motor completo e testado (`src/runtime/tests/tools.test.ts`), mas órfão em produção.** `Orchestrator.executeNode()` (`src/runtime/orchestrator.ts`) chama `opts.produce(node, ctx)` diretamente: o producer de `src/cli/commands/run.ts` fala com o LLM ou simula sem tocar `ToolRegistry`/`PolicyEngine` em nenhum ponto. Ou seja: nada do que `izanagi run` executa hoje passa por este gate. Antes de confiar nesta camada como fronteira de segurança real, ela precisa ser conectada ao caminho de execução (roadmap), ou qualquer efeito colateral de tool/filesystem que o producer vier a fazer precisa ser roteado por `ToolRegistry.execute()` explicitamente.
+**Estado real (2026-09-02, v3.18.0): no caminho de execução, e exercitado.** A ressalva anterior — motor completo, testado e órfão em produção — valeu até a v3.15.0, quando `Orchestrator.executeNode()` passou a rotear nó `kind: 'tool'` por `ToolRegistry`. Desde a v3.18.0 o **planejamento** gera dois desses nós, então o gate é atravessado por um `izanagi run` comum:
+
+| Nó | Quando | Permissão concedida | Efeito |
+|---|---|---|---|
+| `survey` | default num diretório com manifesto reconhecido (`--no-survey` desliga) | `fs:read` | Levanta a forma do projeto na cabeça do grafo |
+| `deliver` | `--output <dir>` | `fs:write` | Grava a entrega do run dentro do projeto |
+
+Menor privilégio permanece verificado, e não presumido: nenhum nó de agente recebe permissão nenhuma, e existe teste que percorre o plano inteiro conferindo isso nó a nó. Os dois nós de tool não declaram agente, então o trust tier é `builtin` — quem declarou a tool foi o planejamento do próprio framework, e não um agente que afirmou algo sobre si.
+
+A raiz da sandbox é `workspaceDir` (raiz do PROJETO), não `baseDir` (raiz do FRAMEWORK: `<projeto>/.agents`, ou a instalação do pacote). Até a v3.18.0 as duas eram a mesma coisa no código, e um nó `fs.read` lia dentro de `.agents/` em vez do projeto — rodando de dentro do checkout do framework elas coincidem, que é por que o erro passava despercebido.
 
 ## Agent Factory & Skill Factory
 
@@ -270,7 +279,23 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 
 ## Tool Registry (Tools/MCP-ready)
 
-`src/runtime/tools/registry.ts` expõe tools builtin (`fs.read`, `fs.write`, `fs.ls`) atrás de um fluxo `discover → permission → validate → execute`: sandbox de zona (bloqueia path traversal via `..`), permissões least-privilege por tool, e schemas prontos para exposição a agentes externos (MCP-ready).
+`src/runtime/tools/registry.ts` expõe tools builtin atrás de um fluxo `discover → permission → policy → validate → execute`: sandbox de zona (bloqueia path traversal via `..`), permissões least-privilege por tool, e schemas prontos para exposição a agentes externos (MCP-ready).
+
+| Tool | Permissão | O que faz |
+|---|---|---|
+| `fs.read` / `fs.ls` | `fs:read` | Lê arquivo / lista diretório dentro da zona permitida |
+| `fs.write` | `fs:write` | Grava arquivo (cria diretórios), com Unicode Hygiene aplicada antes |
+| `project.survey` | `fs:read` | Levanta stack, manifestos, árvore por extensão, entrypoints e começo do README. Conta e lista; **não abre arquivo de código**, e o script do `package.json` entra pelo NOME e nunca pelo comando |
+| `code.execute` | `shell` | Script Node ESM em processo isolado (Permission Model). Rede **não** é isolada, e a política nega `shell` a `generated`/`community` |
+
+### Marcadores de input (`tools/input-refs.ts`)
+
+Um nó de tool é declarado no PLANO, antes de existir o que ele precisa gravar. `{ $artifact: '<nó>' }` e `{ $deliverable: true }` são resolvidos deterministicamente na hora da chamada — substituição de valor, não interpretação, e nenhuma chamada de modelo.
+
+Duas regras que não afrouxam:
+
+- **Referência a nó inexistente é erro**, nunca string vazia. Gravar um arquivo vazio e chamar isso de entrega é a falha silenciosa que a verificação por evidência existe para impedir.
+- **`code.execute` recusa marcador em qualquer campo** do input. Levar saída de modelo para dentro de código executado é injeção com outro nome, e o fato de a sandbox isolar filesystem e processo não torna o código inócuo: ele ainda tem rede, e ainda decide o que devolver para a verificação. Quem precisa de um artefato dentro de um script grava com `fs.write` e lê o arquivo.
 
 ## Doctor
 

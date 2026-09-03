@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.13.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel → grafo → verificação por evidência → healing → memória. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
+> **v3.18.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel → grafo → verificação por evidência → healing → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
 **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -31,6 +31,7 @@ izanagi init my-project
 izanagi run "Converta 10 dólares para reais"                  # modo direct: 1 chamada, sem grafo
 izanagi run "Criar uma landing page de um SaaS de analytics"  # modo composto, com verificação
 izanagi run "..." --mode autonomous --max-cost 0.50           # teto de custo respeitado no plano
+izanagi run "adicionar paginação em GET /users" --output docs # lê o projeto e entrega o arquivo
 
 # 3. Observabilidade, custo e auditoria
 izanagi trace            # spans, healing, graph, avaliação
@@ -69,6 +70,21 @@ Nenhuma tarefa termina porque o agente disse que terminou. Cada contrato carrega
 
 Com `--prompt-only`, apenas compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. Nós de aprovação (`human-in-the-loop`) pausam a execução até `izanagi approve <run-id>`.
 
+### O run lê o projeto e entrega arquivo
+
+Dois nós do plano não chamam modelo nenhum: eles passam pela `ToolRegistry`, com permissão declarada no contrato, trust tier pela origem e política aplicada **antes** de executar.
+
+| Nó | Quando | Permissão | O que faz |
+|---|---|---|---|
+| `survey` | default num diretório com manifesto reconhecido; `--no-survey` desliga | `fs:read` | Levanta stack, manifestos, árvore por extensão, entrypoints e o começo do README. O resultado entra no contexto mínimo das tarefas raiz |
+| `deliver` | `--output <dir>` | `fs:write` | Grava o que o run produziu num documento único dentro do projeto |
+
+Nenhum outro nó do grafo recebe permissão nenhuma: um agente não escreve, não lê arquivo e não executa comando.
+
+O survey existe porque a alternativa era pior e invisível: um agente escrevia sobre um projeto que nunca viu, inventava a stack e os caminhos, e o artefato passava na verificação — o schema pergunta se os campos existem, não se correspondem a alguma realidade. O levantamento é determinístico (não custa token), tem teto de profundidade e de entradas, e **declara o próprio corte**. Só as raízes do grafo dependem dele: repetir o mesmo levantamento em sete prompts seria a duplicação de contexto que a arquitetura proíbe.
+
+A entrega muda o que a verificação significa. Um critério `file-exists` sobre um arquivo que ninguém escreveu passa quando o arquivo já existia por outro motivo; aqui o arquivo é gravado pela `ToolRegistry` e conferido depois, então o critério passa a significar "o runtime gravou isto". O nome do arquivo sai do objetivo, então repetir o mesmo objetivo reescreve a mesma entrega em vez de acumular um arquivo por execução — entrega é produto, e o histórico continua em `.izanagi/state/`.
+
 ### SDK
 
 ```ts
@@ -78,10 +94,16 @@ import { izanagi } from 'izanagi-ai';
 const plan = izanagi.plan({ objective: 'auditar a API de login' });
 console.log(plan?.mode, plan?.estimate.maxCostUsd);
 
-const run = izanagi.run({ objective: 'auditar a API de login', budget: { maxCost: 0.5 } });
+const run = izanagi.run({
+  objective: 'auditar a API de login',
+  budget: { maxCost: 0.5 },
+  output: 'docs',   // grava a entrega em <baseDir>/docs; fora da raiz, run() rejeita antes de planejar
+  // survey: false  // default: ligado quando baseDir tem manifesto reconhecido
+});
 run.on('task:start', (e) => console.log(e.data));
 const result = await run;
 console.log(result.status, result.telemetry?.estimatedCostUsd, result.verification);
+console.log(result.deliveredTo);  // só presente quando a gravação REALMENTE aconteceu
 ```
 
 ---
@@ -140,7 +162,7 @@ CLI legado (`izanagi`, publicada no npm):
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local`, `--cache`, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
+| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local`, `--cache`, `--output <dir>` (grava a entrega no projeto), `--no-survey` (não levanta o projeto antes de decidir), `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
 | `izanagi models [--json]` | Catálogo de modelos, providers configurados e qual modelo cada papel (commander/specialist/worker) receberia agora, com custo por 10k tokens. |
 | `izanagi budget [run-id] [--json]` | Para onde foi o orçamento daquele run: tokens por fase, custo estimado, cache local e do provider, contexto poupado, escaladas, degradação e verificação por tarefa. |
 | `izanagi chat` | REPL interativo da CLI. |
@@ -261,7 +283,7 @@ O webhook leva **metadado**: status, score, tokens, custo, verificação por tar
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
 | [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
-| [`docs/HANDOFF.md`](docs/HANDOFF.md) | Passagem completa da rearquitetura v3.13.0 → v3.17.0: o que mudou, onde cada coisa vive, decisões e por quê, bugs encontrados, números medidos e por onde continuar. **Comece por aqui** se pegou o repositório sem contexto. |
+| [`docs/HANDOFF.md`](docs/HANDOFF.md) | Passagem completa da rearquitetura v3.13.0 → v3.18.0: o que mudou, onde cada coisa vive, decisões e por quê, bugs encontrados, números medidos e por onde continuar. **Comece por aqui** se pegou o repositório sem contexto. |
 | [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | Nenhum item aberto: a tabela do que foi fechado, em qual commit e como, mais as limitações que são escolha com motivo registrado. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Visão arquitetural do framework e da topologia poliglota. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Guia de contribuição: convenções, fluxo de PR e padrões do repo. |

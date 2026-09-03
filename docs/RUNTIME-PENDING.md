@@ -1,6 +1,6 @@
 # Runtime: trabalho pendente
 
-> Estado em **v3.17.0** (2026-09-02). Handoff vivo da rearquitetura do runtime. Nesta versão ele deixa de ter itens abertos: o que resta são escolhas com motivo registrado, não dívida.
+> Estado em **v3.18.0** (2026-09-02). Handoff vivo da rearquitetura do runtime. Sem itens abertos: o que resta são escolhas com motivo registrado, não dívida.
 >
 > Passagem completa da rearquitetura (o que mudou, decisões, números medidos, por onde continuar): [`HANDOFF.md`](HANDOFF.md).
 >
@@ -37,12 +37,16 @@ O que isso NÃO dá: receber comando de fora. Para isso seria preciso autentica�
 Coisas que alguém pode confundir com dívida ao ler o código. São escolhas, e o motivo está registrado.
 
 - **Rede não é isolada na sandbox de código.** O Permission Model do Node não cobre rede: um script executado por `code.execute` pode fazer requisição de saída. Existe um teste que MEDE isso e quebra se o comportamento mudar. A mitigação é a permissão `shell` no contrato, que a `PolicyEngine` nega a trust tier `generated` e `community`. Isolar rede de verdade exige container ou firewall de processo — outra ordem de dependência.
-- **Templates do Planner não geram nós de tool.** O caminho `kind: 'tool'` existe, é seguro e testado; quem monta grafo com tool é o SDK ou uma decomposição externa. Colocar tool nos templates exige saber QUAL tool cada workflow precisa, e isso depende do projeto.
+- **~~Templates do Planner não geram nós de tool.~~** Fechado na v3.18.0. O planejamento gera dois: `survey` (lê o projeto, `fs:read`) e `deliver` (grava a entrega, `fs:write`). O que continua valendo da observação original é o motivo: colocar tool nos *templates de workflow* exige saber QUAL tool cada workflow precisa, e isso depende do projeto. Os dois nós novos são do Commander, não dos templates — valem para qualquer categoria porque não presumem nada sobre o domínio.
 - **Decomposição por LLM no planejamento não tem caller.** `Commander.plan({ decompose })` aceita decomposição externa, mas nem CLI nem SDK injetam uma. O planejamento em produção é template + heurística, e é determinístico por isso: planejar não gasta token. (Decomposição em EXECUÇÃO é outra coisa e existe — ver `orchestration/subgraph.ts`.)
 - **Token Benchmark mede plano, não execução.** Continua separado de propósito. Consumo real sai de `izanagi budget <run-id>` ou de `izanagi benchmark run --execute`.
 - **Cache de validação economiza CPU, não token.** Nenhuma chamada de modelo é evitada, e por isso não aparece na telemetria de economia.
 - **Estatística por domínio depende de volume.** `agentStats(agent, domain)` só decide com amostra mínima no domínio; abaixo disso vale o agregado global.
 - **A medição de compressão não avalia qualidade.** Mede razão de tamanho, não se o que sobrou é o que importava. Avaliar isso exigiria gabarito anotado, e é por isso que a reavaliação de compressão neural fica condicionada a essa medida existir.
+- **A entrega é um documento, não um patch.** O run grava o que produziu; ele não altera o código do projeto. Materializar arquivos de implementação exige um contrato de manifesto que o modelo cumpra de forma verificável (nome de arquivo, conteúdo completo, sem stub) — e sem essa verificação, escrever no repositório de alguém é distribuir AI slop com permissão de escrita.
+- **O survey conta, não julga.** Devolve stack, contagem por extensão e manifestos; não devolve "o projeto usa arquitetura X". Quem interpreta é o agente a jusante, e a separação é deliberada: um levantamento que já conclui é um levantamento que já errou.
+- **Grounding não foi medido contra ausência de grounding.** A comparação honesta (mesmo objetivo, mesmo provider, com e sem `--survey`, contra um gabarito de acerto) exige provider real. Está no "por onde continuar", não nos números.
+- **Cache de resultado de tool não existe, e não é esquecimento.** Nenhuma tool builtin é função pura da entrada: `fs.read`/`fs.ls`/`project.survey` dependem do disco (mutável), `fs.write` e `code.execute` têm efeito colateral — cachear um write significaria não escrever. Um cache correto para as de leitura precisaria de `mtime`+`size` na chave, e o `stat` custa quase o mesmo que a leitura pequena que ele evitaria. Fica registrado como decisão medida, não como pendência.
 - **Sub-orquestração só é oferecida a papel `commander` em modo `autonomous`.** Não é limitação técnica: é onde o planejamento tem mais chance de subestimar escopo e onde o orçamento comporta a divisão.
 
 ---
@@ -69,4 +73,5 @@ Coisas que alguém pode confundir com dívida ao ler o código. São escolhas, e
 | 🔵 16. `execute_code` | `1387bb0` | `tools/code-sandbox.ts`: processo isolado com Permission Model. FS restrito ao diretório de trabalho, subprocessos/workers/addons bloqueados, ambiente montado do zero, timeout com kill. Rede continua não isolada, e isso está testado como limite. |
 | 🔵 17. Síntese de skills por trajetória | `4490dbf` | `evolution/trajectories.ts`: barra de recorrência (3 execuções verificadas), assinatura por caminho e não por objetivo, skill que declara o próprio limite. |
 | ⏸ 19. Local-first ou serviço hospedado | `v3.17.0` | Decisão tomada: local-first. `--json`, código de saída com significado (0/1/2) e `--notify-webhook` fecham o caminho pelo agendador do SO, sem processo de longa duração. Payload leva metadado, nunca conteúdo. |
+| 🔵 3b. Templates sem nós de tool em produção | `v3.18.0` | O planejamento gera `survey` (`fs:read`, cabeça do grafo) e `deliver` (`fs:write`, fim). O critério `file-exists` passou a significar "o runtime gravou isto" em vez de "existe um arquivo com esse nome". Menor privilégio verificado nó a nó. |
 | 🔵 18. FTS5 e compressão neural | `4490dbf` | `izanagi benchmark memory` mede e aplica limiar declarado: busca p95 2.0ms sobre 296KB (FTS5 não se paga), compressão a 8.3% do original (neural não se justifica pelo tamanho). Bug encontrado pela medição: a busca tinha recall truncado em 4000 chars por arquivo. |

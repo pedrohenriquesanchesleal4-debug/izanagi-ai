@@ -62,18 +62,24 @@ src/
     │   ├── artifacts.ts             # Schemas de artefato + validateArtifact
     │   └── task-contract.ts         # Task Contract, modos de execução, papéis, critérios de aceite
     ├── orchestration/
-    │   ├── commander.ts             # LEVEL 0: classifica, escolhe o modo, gera contratos, estima custo
+    │   ├── commander.ts             # LEVEL 0: classifica, escolhe o modo, gera contratos, estima custo, replaneja
     │   ├── domains.ts               # Detecção bilíngue de domínio (fonte única)
     │   ├── planner.ts               # Templates de workflow por categoria
     │   ├── graph.ts                 # ExecutionGraph + Kahn + batches paralelos
+    │   ├── concurrency.ts           # Pool com teto: ordem preservada, falha isolada
+    │   ├── subgraph.ts              # Decomposição em EXECUÇÃO: orçamento do pai dividido, teto de largura
+    │   ├── grounding.ts             # Nó `survey` na cabeça do grafo (lê o projeto antes de decidir)
+    │   ├── delivery.ts              # Nó `deliver` no fim (grava a entrega, e a verificação confere)
     │   ├── context-resolver.ts      # Contexto mínimo por tarefa (insumos resumidos + referência)
     │   └── safe-eval.ts             # Avaliação de condição sem executar código arbitrário
     ├── registry/
     │   └── capabilities.ts          # Agent Capability Registry (quem sabe fazer isso?)
     ├── protocol/
-    │   └── messages.ts              # AgentMessage + crítica estruturada + correção mínima
+    │   ├── messages.ts              # AgentMessage + crítica estruturada + correção mínima
+    │   └── conversation.ts          # ConversationLog A2A: referência de artefato, nunca cópia de conteúdo
     ├── verification/
-    │   └── engine.ts                # Verification Engine 2.0: determinística, evidência, semântica
+    │   ├── engine.ts                # Verification Engine 2.0: determinística, evidência, semântica
+    │   └── judge.ts                 # Juiz semântico (papel worker); ilegível vira `inconclusive`, nunca reprovação
     ├── token/
     │   ├── budget.ts                # PhaseTokenBudget (tokens por fase)
     │   └── execution-budget.ts      # Budget Controller: custo, tetos, escada de degradação
@@ -92,13 +98,22 @@ src/
     ├── recovery/                    # Healer + CheckpointStore + ApprovalStore
     ├── observability/               # Tracer + TraceStore + EventBus
     ├── security/                    # SkillScanner + PolicyEngine
-    ├── tools/registry.ts            # ToolRegistry (least privilege, MCP-ready)
-    ├── evolution/learning.ts        # LearningEngine
+    ├── tools/
+    │   ├── registry.ts              # ToolRegistry (least privilege, policy no caminho, MCP-ready)
+    │   ├── input-refs.ts            # Marcadores $artifact/$deliverable; code.execute recusa marcador
+    │   ├── project-survey.ts        # Varredura determinística do projeto, com corte declarado
+    │   └── code-sandbox.ts          # Processo isolado com Permission Model do Node (rede NÃO isolada)
+    ├── notify/webhook.ts            # Fim de run para agendador: metadado, nunca conteúdo de artefato
+    ├── evolution/
+    │   ├── learning.ts              # LearningEngine
+    │   └── trajectories.ts          # Trajetória recorrente (3 execuções verificadas) vira skill
     ├── research/evidence.ts         # EvidenceRegistry
     ├── factories/                   # AgentFactory + SkillFactory
     └── benchmarks/
         ├── registry.ts · runner.ts · definitions.ts   # Suíte de casos
-        └── token-benchmark.ts       # Legado vs Commander: chamadas, tokens, custo
+        ├── arena.ts                 # Métricas de EXECUÇÃO real (verificação, recuperação, custo)
+        ├── memory-benchmark.ts      # Busca e compressão, com limiar declarado no código
+        └── token-benchmark.ts       # Legado vs Commander: chamadas, tokens, custo (mede PLANO)
 ```
 
 ### Fluxo de um run
@@ -122,6 +137,10 @@ src/
                       ┌───────────────────┐
                       │    TASK GRAPH     │  Kahn + batches paralelos
                       └─────────┬─────────┘
+                                │
+                     [survey]  nó de tool · fs:read · 0 token
+                     lê o projeto de verdade antes de qualquer decisão
+                                │
                  ┌──────────────┼──────────────┐
                  ▼              ▼              ▼
              Specialist     Specialist       Worker
@@ -137,13 +156,22 @@ src/
                  VERIFIED    UNVERIFIED   FAILED
                      │           │          │
                      ▼           ▼          ▼
-                   DONE      reporta    DIAGNOSE → HEAL → REPLAN ──┐
-              (early stop     como                                 │
-               em opcionais) inconclusivo                          │
-                                                                   └──► TASK GRAPH
+                     │       reporta    DIAGNOSE → HEAL → REPLAN ──┐
+                     │         como                                │
+                     │     inconclusivo                            │
+                     │                                             └──► TASK GRAPH
+                     ▼
+                 [deliver]  nó de tool · fs:write · 0 token
+                 grava a entrega, e a verificação confere o arquivo escrito
+                     │
+                     ▼
+                   DONE   (early stop dispensa tarefa opcional já desnecessária)
 
 Ao redor: Budget Controller (custo/tempo/chamadas + degradação) · Response Cache ·
 Memory · Decision Journal · Policy Engine · Tracer/EventBus · Telemetria de economia
+
+Menor privilégio: `survey` e `deliver` são os ÚNICOS nós com permissão. Nenhum nó
+de agente lê arquivo, escreve arquivo ou executa comando.
 ```
 
 ---
