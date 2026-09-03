@@ -29,6 +29,11 @@ import { TraceStore } from '../observability/tracer.js';
 import { contractOf } from '../contracts/task-contract.js';
 import { validateArtifact } from '../contracts/artifacts.js';
 import { createHeadlessProducer } from '../execute.js';
+import { ApprovalStore } from '../recovery/approvals.js';
+import { CheckpointStore } from '../recovery/checkpoint.js';
+import { ExecutionGraphBuilder } from '../orchestration/graph.js';
+import { attachContract, type TaskContract } from '../contracts/task-contract.js';
+import type { GraphNode } from '../types.js';
 
 function tmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-deliver-'));
@@ -329,5 +334,85 @@ test('execução: escrita recusada reprova o nó — não existe entrega declara
 
   assert.notEqual(result.status, 'PASS');
   assert.equal(fs.existsSync(path.join(workspace, deliverableRelPath('entregas', objective))), false);
+  fs.rmSync(workspace, { recursive: true, force: true });
+});
+
+/* ============================ pausa e retomada ============================ */
+
+test('retomada: run pausado por aprovação humana ainda entrega depois de aprovado', async () => {
+  const workspace = tmpDir();
+  const objective = 'auditar a seguranca da API';
+  const approvals = new ApprovalStore({ baseDir: workspace });
+  const produce = createHeadlessProducer(objective);
+
+  // Plano real + um nó de aprovação antes da entrega. É a forma que o
+  // human-in-the-loop tem num plano de verdade: alguém confirma antes de o
+  // runtime gravar no projeto.
+  const plan = new Commander().plan({ objective, mode: 'orchestrated', output: 'entregas' });
+  const gate: GraphNode = {
+    id: 'confirma',
+    kind: 'approval',
+    outputs: ['raw'],
+    dependencies: [],
+    status: 'pending',
+    tokenBudget: 0,
+  };
+  const gateContract: TaskContract = {
+    ...(contractOf(plan.graph.nodes[0]) as TaskContract),
+    id: gate.id,
+    objective: 'confirmar antes de gravar no projeto',
+    inputs: [],
+    dependencies: [],
+    expectedOutput: { kind: 'raw' },
+    budget: { maxTokens: 0 },
+  };
+  const withGate = [
+    attachContract(gate, gateContract),
+    ...plan.graph.nodes.map((n) =>
+      (n.dependencies ?? []).length === 0 ? { ...n, dependencies: [gate.id] } : n,
+    ),
+  ];
+  plan.graph = new ExecutionGraphBuilder().build({
+    id: plan.graph.id,
+    task: plan.graph.task,
+    nodes: withGate,
+    budget: plan.graph.budget,
+  });
+
+  const build = (resumeRunId?: string) => {
+    const o = new Orchestrator({
+      baseDir: workspace,
+      workspaceDir: workspace,
+      command: 'test',
+      task: objective,
+      category: 'security_audit',
+      primaryAgent: 'security',
+      skillChain: [],
+      plan,
+      ...(resumeRunId ? { resumeRunId } : {}),
+      produce,
+    });
+    o.setMemory(new MemoryStore({ baseDir: workspace }));
+    o.setStore(new TraceStore({ baseDir: workspace }));
+    o.setCheckpointStore(new CheckpointStore({ baseDir: workspace }));
+    o.setApprovalStore(approvals);
+    return o;
+  };
+
+  const pausado = await build().run();
+  const file = path.join(workspace, deliverableRelPath('entregas', objective));
+  assert.equal(pausado.status, 'BLOCKED');
+  assert.equal(pausado.pendingApproval?.nodeId, 'confirma');
+  assert.equal(fs.existsSync(file), false, 'nada pode ser gravado antes da decisão humana');
+
+  approvals.decide(pausado.trace.runId, 'confirma', 'approved', { reason: 'revisado e liberado' });
+  const retomado = await build(pausado.trace.runId).run();
+
+  assert.equal(retomado.status, 'PASS');
+  assert.equal(fs.existsSync(file), true, 'a entrega precisa acontecer DEPOIS da aprovação, não ser perdida por ela');
+  assert.equal(
+    retomado.verification?.find((v) => v.nodeId === DELIVER_NODE_ID)?.result.status,
+    'VERIFIED',
+  );
   fs.rmSync(workspace, { recursive: true, force: true });
 });
