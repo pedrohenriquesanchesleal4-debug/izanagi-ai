@@ -182,7 +182,9 @@ izanagi run "adicionar paginacao em GET /users" --output docs   (projeto Node de
   entrega gravada e conferida por file-exists sobre o arquivo que a tool escreveu
 ```
 
-Testes: **674, todos passando no Linux**. O vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo — não roda no Windows. É anterior a esta rodada e independente dela.
+Testes: **695, 694 passando** (medido em 2026-09-03, no Windows). O único vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda no Windows, passa no Linux. É anterior a esta rodada e independente dela. Zero testes marcados como skip, e nenhum condicional de plataforma: o número é o mesmo nos dois sistemas.
+
+> Este parágrafo dizia **674** e o número medido era 682, com o `CHANGELOG.md` da mesma versão dizendo 682. Drift de documentação contra a regra do próprio arquivo ("só entra o que é verificável no código"), corrigido na rodada de 2026-09-03, que também acrescentou 13 testes (682 para 695).
 
 ---
 
@@ -217,10 +219,10 @@ propósito: são tarefas sintéticas que não falam do projeto onde o comando ro
 e medi-las contra ele daria um número que parece significativo e não é.) O que falta é o provider real e o par:
 mesmo objetivo, mesmo provider, uma execução com `--survey` e outra com
 `--no-survey`. *Pronto quando:* houver dois relatórios em
-`.izanagi/state/benchmarks/` com a fundamentação medida nos dois e a diferença
+`<raiz de estado>/.izanagi/state/benchmarks/` com a fundamentação medida nos dois e a diferença
 registrada.
 
-**1. Rodar a Arena contra um provider real.** Tudo que existe hoje foi exercitado headless ou com producer de teste. `izanagi benchmark run --execute` com uma API key configurada produziria os primeiros números de verificação e recuperação sobre execução de verdade. *Pronto quando:* existir um relatório salvo em `.izanagi/state/benchmarks/` com `execution.verificationRate` vindo de chamadas reais, e um segundo relatório para comparar.
+**1. Rodar a Arena contra um provider real.** Tudo que existe hoje foi exercitado headless ou com producer de teste. `izanagi benchmark run --execute` com uma API key configurada produziria os primeiros números de verificação e recuperação sobre execução de verdade. *Pronto quando:* existir um relatório salvo em `<raiz de estado>/.izanagi/state/benchmarks/` com `execution.verificationRate` vindo de chamadas reais, e um segundo relatório para comparar. (A raiz é `<projeto>/.agents` num projeto inicializado, e o próprio comando imprime o caminho resolvido desde 2026-09-03.)
 
 **2. Exercitar o critique loop com modelo real.** O parsing é tolerante e testado, mas nenhum modelo de verdade produziu uma crítica ainda. É onde o formato costuma quebrar. *Pronto quando:* um run `--mode autonomous` com provider real registrar uma correção dirigida no `izanagi explain --conversation`.
 
@@ -255,9 +257,10 @@ Para quem pegar o repositório e quiser confirmar que está tudo de pé:
 ```bash
 npm ci
 npm run build
-node --test "dist/runtime/tests/*.test.js"     # 674 testes (no Linux, todos verdes; 1 vermelho conhecido no Windows: polyglot)
+node --test "dist/runtime/tests/*.test.js"     # 695 testes (todos verdes no Linux; 1 vermelho conhecido no Windows: polyglot)
 
 izanagi benchmark memory                        # medição de busca e compressão
+izanagi models                                  # catálogo, com a IDADE da tabela de preços de cada provider
 izanagi run "auditar a segurança da API" --mode orchestrated --json
 echo $?                                         # 0 concluiu · 1 falhou · 2 aguarda aprovação
 izanagi explain <run-id> --conversation         # quem falou com quem

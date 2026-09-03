@@ -4,6 +4,33 @@
 
 ---
 
+## [Não publicado]
+
+Rodada de auditoria: três defeitos encontrados lendo o código contra a documentação, nenhum deles procurado. Todos da mesma família (o framework afirmando um número ou um caminho que ninguém conferiu), que é a família que o `HANDOFF.md` diz combater.
+
+### Added
+- **`ModelProvider.pricingAsOf`: a tabela de preços declara a própria data.** Preço em código-fonte apodrece sem avisar, e `estimateCostForRole` alimenta o teto de `ExecutionBudget`: preço velho é teto errado, e o teto é o que decide degradar, rebaixar papel ou pedir aprovação humana. `izanagi models` passa a mostrar a idade da tabela por provider e avisa acima de `STALE_CATALOG_AFTER_DAYS` (120 dias, escolha declarada e não medida). Provider self-hosted não declara data, porque custo 0 é fato e não cotação. Campo opcional no tipo: catálogo de projeto existente não quebra.
+- **`catalogAgeDays()` / `isCatalogStale()`** em `runtime/model/router.ts`. Sem data declarada a idade é `null`, nunca `0`: idade 0 afirmaria "o preço é de hoje", que é exatamente a afirmação impossível sem a data. Mesma regra de "ausência não é aprovação" já aplicada às métricas.
+- **`benchmarkReportsDir(stateDir)`** em `runtime/benchmarks/runner.ts`: fonte única do diretório de relatórios, usada pela escrita, pela leitura e pela mensagem que anuncia a escrita.
+- **`MemoryStore.stateFilePath` / `.memoryDirPath`**: onde o store de fato lê e grava, para que quem imprime o caminho imprima o mesmo que a escrita usou.
+
+### Fixed
+- **O catálogo default de modelos estava uma geração atrás, e isso não era cosmético.** `claude-opus-4-1` (premium), `claude-sonnet-4-5` (balanced) e `gpt-4.1` (premium, o default do papel `commander`) saíram do catálogo. Entraram, com fonte e data consultadas em 2026-09-03: `claude-opus-5` e `claude-sonnet-5`; `gpt-5.6-sol`; `gemini-3.8-flash` e `gemini-3.1-pro-preview`. Um id retirado da API faz a chamada falhar; um preço de geração anterior faz o teto de orçamento mentir. Dois cuidados registrados no código: `gpt-5.6-sol` entra com janela **272000** e não 1050000 (1M é opt-in experimental, e acima de 272K a entrada custa 2x e a saída 1.5x, então planejar contra 1M mentiria para cima), e `gemini-3.5-flash-lite` ficou **fora** apesar de ser mais barato, porque a janela de contexto dele não estava documentada na consulta: janela chutada num roteador que decide por contexto é pior que um modelo a menos.
+- **O caminho impresso do relatório de benchmark não era o caminho onde o relatório estava.** A escrita sempre foi para a raiz de estado (`<projeto>/.agents` num projeto inicializado); as três mensagens da CLI eram um literal `.izanagi/state/benchmarks/`, relativo ao `cwd`. Neste repositório esse diretório existe e guarda relatórios de agosto: caminho errado que parece certo é pior que caminho ausente, porque o número velho é lido como se fosse o novo. Agora a mensagem sai do mesmo cálculo da escrita. Mesma correção em `izanagi memory inspect`, que imprimia `.izanagi/state/runtime-state.json` sem raiz.
+- **`memoryCommand` e `dashboardCommand` recebiam `stateDir` num parâmetro chamado `baseDir`.** Funcionalmente corretos (a chamada em `cli/index.ts` sempre passou a raiz certa), mas é exatamente a confusão de raiz que já produziu dois bugs neste runtime. Renomeados.
+- **Documentação: `docs/HANDOFF.md` e `README.md` afirmavam 674 testes.** O medido era 682, e o `CHANGELOG.md` da mesma versão já dizia 682. Drift contra a regra do próprio `HANDOFF.md` ("só entra o que é verificável no código"). O `HANDOFF.md` também citava `.izanagi/state/benchmarks/` nos critérios de pronto, herdando o caminho errado da CLI.
+
+### Tests
+- 695 testes, 694 passando (13 novos: 5 em `benchmark-report-path.test.ts`, 8 em `model-catalog-freshness.test.ts`). O único vermelho segue sendo `polyglot: bin Rust presente com --version barato`, que não roda no Windows e é anterior a esta rodada.
+- **Dois testes existentes fixavam id de modelo no fonte e quebraram na atualização de catálogo** (`model.test.ts`, `model-role-routing.test.ts`). Reescritos para derivar o id do catálogo em tempo de teste: o que eles afirmam é o pin vencer a heurística e env vencer config, e nada disso tem a ver com id nenhum. Um id hardcoded ali volta a quebrar na próxima atualização, que é a lição do achado.
+- `model-catalog-freshness.test.ts` fixa duas invariantes que o conserto de valor sozinho não protege: nenhum id de geração retirada volta ao catálogo, e cada tier pago mantém a ordem de custo que `demoteRole` presume (se um preço novo invertesse a ordem, a degradação por orçamento passaria a AUMENTAR o gasto, em silêncio).
+
+### Compatibility
+- Nenhum breaking change de API. `pricingAsOf` é opcional. `benchmarkReportsDir`, `catalogAgeDays`, `isCatalogStale`, `STALE_CATALOG_AFTER_DAYS`, `MemoryStore.stateFilePath` e `.memoryDirPath` são adições. Os renames de parâmetro são posicionais e internos à CLI.
+- **Muda comportamento para quem não configura modelo:** o papel `commander` deixa de rotear para `gpt-4.1`. Quem dependia de um id específico deve fixá-lo em `.izanagi/izanagi.config.json` → `roles`, ou declarar o próprio catálogo em `models`.
+
+---
+
 ## [3.18.0]: 2026-09-02
 
 O caminho seguro de tool existia desde a 3.15.0, era testado, e nenhum `izanagi run` passava por ele. Nesta versão o planejamento gera dois nós de tool em produção: um que **lê o projeto** antes de decidir, outro que **entrega arquivo** no fim.

@@ -236,7 +236,7 @@ Ordem importa: `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/
 # Legado npm (raiz)
 npm install
 npm run build       # tsc && node dist/scripts/generate-manifest.js
-npm test            # build + node --test dist/runtime/tests/*.test.js (674 testes)
+npm test            # build + node --test dist/runtime/tests/*.test.js (695 testes)
 npm run verify      # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor      # node bin/izanagi.js doctor [--deep]
 
