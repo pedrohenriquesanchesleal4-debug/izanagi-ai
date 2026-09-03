@@ -722,7 +722,15 @@ export async function runRuntime(
     console.log('');
   }
 
-  const cache = new ResponseCache({ baseDir, enabled: Boolean(opts.cache) || ResponseCache.enabledFromEnv() });
+  // O cache de resposta vive em `.izanagi/state/cache`, então segue a raiz de
+  // ESTADO como todo o resto do estado. Deixá-lo no `baseDir` faria as
+  // respostas de todo projeto não inicializado se acumularem dentro da
+  // instalação do pacote — o mesmo vazamento que o `stateDir` corrigiu para
+  // trace, artefato e memória, sobrando num diretório só.
+  const cache = new ResponseCache({
+    baseDir: opts.stateDir ?? baseDir,
+    enabled: Boolean(opts.cache) || ResponseCache.enabledFromEnv(),
+  });
   const contextResolver = new ContextResolver();
 
   const llmProducer = createLLMProducer({

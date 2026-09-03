@@ -166,7 +166,11 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(options.noCommander ? { noCommander: true } : {}),
   });
 
-  const cache = new ResponseCache({ baseDir, enabled: Boolean(options.cache) || ResponseCache.enabledFromEnv() });
+  // Cache de resposta é estado: segue `stateDir` como trace, artefato e memória.
+  const cache = new ResponseCache({
+    baseDir: options.stateDir ?? baseDir,
+    enabled: Boolean(options.cache) || ResponseCache.enabledFromEnv(),
+  });
   const contextResolver = new ContextResolver();
   const agentId = options.agent ?? planning.plan?.contracts[0]?.agent ?? classified.agent;
 
