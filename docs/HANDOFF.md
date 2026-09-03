@@ -108,7 +108,16 @@ Nenhum destes foi procurado: todos apareceram escrevendo o teste da feature ao l
 | **Recomendação de crítica nunca aparecia** | Testava `ctx.artifacts.has('critique')` — `critique` é o *kind*, a chave do mapa é o id do nó (`critic`) |
 | **Tabela de economia do dashboard** | Referenciava `costUsd`/`degradations`; os campos reais são `estimatedCostUsd`/`degradationsApplied`. Metade sairia vazia |
 | **Sandbox de tool resolvia contra a raiz do FRAMEWORK** | `baseDir` é `<projeto>/.agents`, ou a instalação do pacote — não o projeto. Um nó `fs.read` lia dentro de `.agents/`, e `file-exists` procurava o arquivo no lugar errado. Rodando de dentro do checkout do framework as duas coincidem, e é por isso que nenhum teste pegou |
+| **Estado de projeto morava na instalação do framework** | Mesma confusão de raiz, outro efeito: sem `izanagi init`, trace, artefato COM CONTEÚDO, memória e checkpoint iam para `node_modules/izanagi-ai/`, compartilhados entre todos esses projetos. `izanagi trace` listava execução alheia e `npm update` apagava o histórico. Encontrado procurando o trace de um run de teste e achando 300 de outros projetos |
 | **Nó falho sem artefato era invisível para a avaliação** | `correctness` é a média das verificações registradas, `artifactValidity` a razão dos artefatos existentes: as duas ignoram quem não produziu nada. Um nó abortado por permissão negada deixava o run terminar `PASS` com score 0.98. Duas fixtures de teste estavam verdes exatamente por isso |
+| **A telemetria de custo mentia para baixo** | `spend()` é chamado DEPOIS da resposta do modelo, mas recusava sem registrar ao estourar o teto: a chamada que estourou sumia da conta por ter estourado. Medido: $0.0010 reportados de $0.0510 gastos |
+| **O teto de avaliação não limitava nada** | O resultado do gasto do juiz semântico era ignorado, então com a fase `evaluation` esgotada cada nó seguinte continuava chamando o juiz |
+| **`budgetLimits.maxTokens` era descartado em silêncio** | Custo, tempo, agentes, retries e tool calls do mesmo objeto eram honrados; só o teto de tokens era substituído pelo do plano, sem erro nem aviso |
+| **A memória contava retentativa como recorrência** | Um incidente com três retries virava "3 ocorrências" do padrão. A memória passava a medir teimosia do runtime, e recorrência é justamente o que decide se um padrão vira conhecimento |
+| **Decompor podia AUMENTAR o orçamento** | O piso de 512 tokens por sub-tarefa, sem teto de largura, fazia 5 sub-tarefas de um pai com 2000 somarem 2560 — quebrando a regra que o piso servia |
+| **A telemetria afirmava paralelismo cortado** | O tamanho do batch era contado antes do teto de concorrência: pool de 1 reportava "paralelo 5", justamente sob a degradação que reduz paralelismo |
+| **O cache guardava resposta reprovada** | Na retentativa ela não voltava (a correção muda a chave), mas o run seguinte com o mesmo objetivo recomeçava do que já se sabia ruim, deterministicamente |
+| **Groundedness reprovava documento correto** | Resolver referência só contra a raiz do repo dava 0 de 17 caminhos fundamentados no `docs/HANDOFF.md` deste projeto: ele cita `runtime/x.ts`, que existe em `src/runtime/x.ts` |
 | **Replan apagaria o contrato de um nó de tool** | `contractFor` por cima de contrato de tool removeria `tool` e `permissions`: o nó viraria chamada de modelo com o mesmo id, e a "correção" seria a regressão |
 
 ---
@@ -116,6 +125,19 @@ Nenhum destes foi procurado: todos apareceram escrevendo o teste da feature ao l
 ## 4. Decisões que valem conhecer antes de mexer
 
 Cada uma foi tomada com um motivo, e mudá-las sem esse motivo em mente vai quebrar algo que hoje funciona.
+
+**Uma raiz, uma pergunta.** `baseDir` responde "de onde leio agentes e
+skills?", `workspaceDir` "qual é o projeto de trabalho?", `stateDir` "onde vive
+o estado deste projeto?". Rodando de dentro do checkout do framework as três
+coincidem — que é como a confusão sobreviveu tanto tempo e produziu dois bugs
+diferentes. Ambos os campos novos têm default `baseDir`, então nenhum caller
+existente mudou de comportamento.
+
+**Número que se reporta é número que aconteceu.** Gasto recusado por teto ainda
+é gasto: registrar depois de ter acontecido é o que mantém a telemetria igual à
+fatura. Paralelismo contado é o executado, não o pedido. Recorrência conta
+incidentes, não retentativas. Métrica sem medida aparece como ausente, nunca
+como zero.
 
 **Ausência não é aprovação.** Juiz que não respondeu devolve `inconclusive`, não reprovação nem aprovação. Métrica sem execução aparece como ausente, nunca como `0%`. Artefato sem validade avaliada é `valid: false`, não `true` por conveniência de tipo. Recall truncado era exatamente a violação disso.
 
