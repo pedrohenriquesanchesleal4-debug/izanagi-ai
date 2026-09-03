@@ -520,7 +520,11 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     explicitAgent: Boolean(agentId),
   });
 
-  await finishForScheduler(resultado, parsed);
+  // O que o run gravou, em caminhos relativos: é o que um agendador precisa
+  // para saber se há trabalho novo no disco. Caminho absoluto ficaria de fora
+  // mesmo que fosse conveniente — ele carrega o diretório do usuário para um
+  // endpoint que costuma ser canal de equipe.
+  await finishForScheduler(resultado, parsed, produzido(resultado, outputDir, task));
 }
 
 /**
@@ -531,10 +535,14 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
  * Scheduler do sistema; o que faltava era o Izanagi ser consumível por eles —
  * uma saída estruturada e um código de saída que signifique alguma coisa.
  */
-async function finishForScheduler(result: OrchestrationResult | undefined, parsed: RunArgs): Promise<void> {
+async function finishForScheduler(
+  result: OrchestrationResult | undefined,
+  parsed: RunArgs,
+  produced?: { delivered?: string; materialized?: string[] },
+): Promise<void> {
   if (!result) return;
 
-  const payload = buildNotification(result);
+  const payload = buildNotification({ ...result, ...(produced ? { produced } : {}) });
 
   if (parsed.notifyWebhook) {
     const outcome = await notifyWebhook(parsed.notifyWebhook, payload);
@@ -557,6 +565,39 @@ async function finishForScheduler(result: OrchestrationResult | undefined, parse
   const code = exitCodeFor(result);
   if (code !== 0) process.exitCode = code;
 }
+
+/**
+ * Caminhos relativos do que o run gravou no projeto. `undefined` quando não
+ * houve `--output` — sem destino declarado, nada foi gravado.
+ */
+function produzido(
+  result: OrchestrationResult | undefined,
+  outputDir: string | undefined,
+  task: string,
+): { delivered?: string; materialized?: string[] } | undefined {
+  if (!result || !outputDir) return undefined;
+  const delivered =
+    result.graph.nodes.find((n) => n.id === DELIVER_NODE_ID)?.status === 'succeeded'
+      ? deliverableRelPath(outputDir, task)
+      : undefined;
+  const receipt = lastReceipt;
+  const materialized =
+    receipt?.written && receipt.written.length > 0 && receipt.dir
+      ? receipt.written.map((f) => `${receipt.dir}/${f}`)
+      : undefined;
+  if (!delivered && !materialized) return undefined;
+  return { ...(delivered ? { delivered } : {}), ...(materialized ? { materialized } : {}) };
+}
+
+/**
+ * Comprovante do último `project.materialize` deste processo.
+ *
+ * Módulo-nível porque `runRuntime` (que observa os artefatos) e `runCommand`
+ * (que monta a notificação) são funções separadas, e a CLI roda um comando por
+ * processo. O SDK não passa por aqui: quem usa `izanagi.run()` lê o artefato
+ * `materialization` direto do resultado.
+ */
+let lastReceipt: MaterializationReceipt | undefined;
 
 /** Comprovante devolvido por `project.materialize`: o que o run gravou, e onde. */
 interface MaterializationReceipt {
@@ -764,6 +805,7 @@ export async function runRuntime(
       // teria que ir procurar no diretório de saída para descobrir.
       if (artifact.kind === 'materialization') {
         receipt = artifact.content as MaterializationReceipt;
+        lastReceipt = receipt;
       }
       producedArtifacts[node.id] = { kind: artifact.kind, content: artifact.content };
       if (!artifact.valid) {

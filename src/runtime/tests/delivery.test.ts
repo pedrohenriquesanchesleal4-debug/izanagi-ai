@@ -15,6 +15,7 @@ import path from 'path';
 import { Commander } from '../orchestration/commander.js';
 import {
   DELIVER_NODE_ID,
+  MAX_DOCUMENT_CHARS,
   buildDeliverable,
   deliverNode,
   deliverableRelPath,
@@ -121,6 +122,21 @@ test('entrega: mesma entrada produz exatamente o mesmo documento (sem timestamp)
     artifacts: [{ nodeId: 'a', kind: 'raw', content: 'y', valid: true }],
   };
   assert.equal(buildDeliverable(input), buildDeliverable(input));
+});
+
+test('entrega: o documento tem teto total, e o que não coube vira referência', () => {
+  const enorme = 'x'.repeat(200 * 1024);
+  const doc = buildDeliverable({
+    objective: 'run grande',
+    runId: 'r',
+    mode: 'autonomous',
+    order: ['a', 'b', 'c', 'd', 'e', 'f'],
+    artifacts: ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => ({ nodeId: id, kind: 'raw', content: enorme, valid: true })),
+  });
+  assert.ok(doc.length < MAX_DOCUMENT_CHARS * 1.2, `documento com ${doc.length} chars: o teto por seção sozinho não limita nada`);
+  assert.match(doc, /Conteúdo omitido: o documento atingiu o teto/);
+  // Toda seção continua listada: o leitor sabe que o artefato existe.
+  for (const id of ['a', 'b', 'c', 'd', 'e', 'f']) assert.match(doc, new RegExp(`## ${id} `));
 });
 
 test('entrega: run sem artefato de produto diz isso, em vez de entregar um documento vazio', () => {

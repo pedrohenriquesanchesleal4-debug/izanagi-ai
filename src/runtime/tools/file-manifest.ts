@@ -23,6 +23,16 @@
  * linguagem na cerca). Adivinhar o destino de um arquivo que vai ser gravado é
  * o tipo de heurística cujo erro só aparece depois de gravado.
  *
+ * ## Arquivo que contém cerca
+ *
+ * O bloco termina na primeira cerca de fechamento com pelo menos o mesmo
+ * comprimento da de abertura e sem info string — a convenção padrão de
+ * markdown. Um arquivo `.md` cujo conteúdo tem ``` precisa, portanto, ser
+ * aberto com ````, exatamente como em qualquer documento markdown aninhado.
+ * Sem a convenção, o arquivo sairia cortado na primeira cerca interna, e o
+ * corte seria silencioso — por isso a cerca não fechada é recusada em vez de
+ * engolir o resto da resposta.
+ *
  * ## Tudo ou nada
  *
  * A validação roda sobre o manifesto INTEIRO antes de qualquer escrita.

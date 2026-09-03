@@ -35,6 +35,16 @@ const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace', 'project-surve
 /** Teto por artefato no documento entregue, com o corte declarado no próprio texto. */
 export const MAX_SECTION_CHARS = 128 * 1024;
 
+/**
+ * Teto do documento inteiro.
+ *
+ * O teto por seção sozinho não limita nada: um run de nove nós podia produzir
+ * um documento de mais de um megabyte, e ninguém abre isso. Quando o total
+ * estoura, as seções seguintes entram como REFERÊNCIA em vez de conteúdo — o
+ * leitor continua sabendo que o artefato existe e onde encontrá-lo inteiro.
+ */
+export const MAX_DOCUMENT_CHARS = 512 * 1024;
+
 /** Id do nó de entrega. Fixo: `izanagi explain` e os testes referenciam por nome. */
 export const DELIVER_NODE_ID = 'deliver';
 
@@ -117,6 +127,17 @@ export function buildDeliverable(input: DeliverableInput): string {
     '',
   ];
 
+  let used = lines.join('\n').length;
+  /** Corpo da seção, ou a referência quando o documento já estourou o teto. */
+  const body = (artifact: DeliverableArtifact): string => {
+    if (used >= MAX_DOCUMENT_CHARS) {
+      return `_Conteúdo omitido: o documento atingiu o teto de ${MAX_DOCUMENT_CHARS} chars. O artefato inteiro está em \`.izanagi/state/artifacts/\`._`;
+    }
+    const text = fence(artifact.kind, clipSection(toText(artifact.content)));
+    used += text.length;
+    return text;
+  };
+
   if (product.length === 0) {
     lines.push('_O run não produziu artefato de produto._', '');
   }
@@ -124,7 +145,7 @@ export function buildDeliverable(input: DeliverableInput): string {
     lines.push(
       `## ${artifact.nodeId} · \`${artifact.kind}\`${artifact.valid ? '' : ' — **artefato inválido contra o schema**'}`,
       '',
-      fence(artifact.kind, clipSection(toText(artifact.content))),
+      body(artifact),
       '',
     );
   }
@@ -135,7 +156,7 @@ export function buildDeliverable(input: DeliverableInput): string {
       lines.push(
         `### ${artifact.nodeId} · \`${artifact.kind}\`${artifact.valid ? '' : ' — **inválido**'}`,
         '',
-        fence(artifact.kind, clipSection(toText(artifact.content))),
+        body(artifact),
         '',
       );
     }

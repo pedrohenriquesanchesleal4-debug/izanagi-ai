@@ -32,6 +32,17 @@ export interface RunNotification {
   healing: Array<{ kind: string; nodeId?: string }>;
   /** Nome, tipo e validade. Nunca o conteúdo. */
   artifacts: Array<{ name: string; kind: string; valid: boolean }>;
+  /**
+   * O que o run gravou no projeto, em caminhos RELATIVOS: o documento entregue
+   * e os arquivos materializados.
+   *
+   * Caminho é metadado e cabe na regra do payload; caminho ABSOLUTO não cabe —
+   * carrega o diretório do usuário para um endpoint que pode ser um canal de
+   * equipe. Ausente quando o run não gravou nada, e ausência aqui significa
+   * "não gravou", não "não sei": o agendador precisa dessa diferença para
+   * decidir se tem trabalho novo para buscar.
+   */
+  produced?: { delivered?: string; materialized?: string[] };
   pendingApproval?: { nodeId: string; context?: string };
   traceFile: string;
   task: string;
@@ -116,6 +127,8 @@ export interface NotifiableRun {
   verification?: Array<{ nodeId: string; result: { status: string; score: number } }>;
   telemetry?: { estimatedCostUsd?: number };
   pendingApproval?: { nodeId: string; context?: string };
+  /** Caminhos relativos do que foi gravado, montados por quem executou o run. */
+  produced?: { delivered?: string; materialized?: string[] };
   traceFile: string;
   trace: {
     runId: string;
@@ -146,6 +159,9 @@ export function buildNotification(result: NotifiableRun): RunNotification {
     // transformar isso em "válido" por conveniência de tipo.
     artifacts: (result.trace.artifacts ?? []).map((a) => ({ name: a.name, kind: a.kind, valid: a.valid === true })),
     ...(result.pendingApproval ? { pendingApproval: result.pendingApproval } : {}),
+    ...(result.produced && (result.produced.delivered || result.produced.materialized?.length)
+      ? { produced: result.produced }
+      : {}),
     traceFile: result.traceFile,
     task: result.trace.task,
     notifiedAt: new Date().toISOString(),

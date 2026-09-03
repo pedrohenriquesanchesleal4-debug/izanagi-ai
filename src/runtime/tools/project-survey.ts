@@ -159,6 +159,10 @@ export function surveyProject(root: string, opts: { maxEntries?: number; maxDept
   let entries = 0;
   let truncatedEntries = false;
 
+  // `entry.isDirectory()` é falso para link simbólico, então diretório
+  // linkado não é percorrido. É o comportamento certo aqui: seguir link é
+  // como uma varredura entra em ciclo, e um projeto que aponta para fora de
+  // si mesmo não fica melhor descrito por contar o que está do outro lado.
   const walk = (dir: string, depth: number): void => {
     if (depth > maxDepth || truncatedEntries) return;
     let listing: fs.Dirent[];

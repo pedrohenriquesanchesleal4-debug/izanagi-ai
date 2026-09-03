@@ -65,6 +65,24 @@ test('agendador: artefato sem validade avaliada não vira "válido"', () => {
   assert.equal(payload.artifacts[0].valid, false);
 });
 
+test('agendador: o payload diz O QUE foi gravado, em caminho relativo', () => {
+  const payload = buildNotification(runResult({
+    produced: { delivered: 'docs/auditar-a-api.md', materialized: ['docs/auditar-a-api/src/routes/a.ts'] },
+  }));
+  assert.equal(payload.produced?.delivered, 'docs/auditar-a-api.md');
+  assert.deepEqual(payload.produced?.materialized, ['docs/auditar-a-api/src/routes/a.ts']);
+  // Caminho é metadado e cabe na regra; caminho ABSOLUTO não cabe, porque
+  // carrega o diretório do usuário para um endpoint que costuma ser canal de
+  // equipe. Quem monta o payload é responsável por mandar relativo.
+  assert.ok(!JSON.stringify(payload.produced).includes('/home/'));
+  assert.ok(!JSON.stringify(payload.produced).includes('C:\\'));
+});
+
+test('agendador: run que não gravou nada omite o campo — ausência significa "não gravou"', () => {
+  assert.equal(buildNotification(runResult()).produced, undefined);
+  assert.equal(buildNotification(runResult({ produced: { materialized: [] } })).produced, undefined);
+});
+
 /* ============================ código de saída ============================ */
 
 test('agendador: o código de saída diz o que aconteceu sem parsear nada', () => {
