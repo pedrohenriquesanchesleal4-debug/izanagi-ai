@@ -8,6 +8,8 @@ import { Orchestrator, type ExecuteCtx } from '../orchestrator.js';
 import { Commander } from '../orchestration/commander.js';
 import { MemoryStore } from '../memory/store.js';
 import { ModelRouter } from '../model/router.js';
+import { TraceStore } from '../observability/tracer.js';
+import { createHeadlessProducer } from '../execute.js';
 import type { GraphNode } from '../types.js';
 
 function tmpDir(): string {
@@ -281,5 +283,38 @@ test('runtime: concorrência default é aplicada quando nada é configurado', as
   orchestrator.setMemory(new MemoryStore({ baseDir }));
   await orchestrator.run();
   assert.ok(peak <= DEFAULT_MAX_CONCURRENCY, `pico ${peak} acima do default ${DEFAULT_MAX_CONCURRENCY}`);
+  fs.rmSync(baseDir, { recursive: true, force: true });
+});
+
+test('telemetria: batch estrangulado pelo pool não é contado como paralelo', async () => {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-par-'));
+  const objective = 'projetar a arquitetura de um SaaS de analytics do zero';
+
+  const run = async (maxConcurrency: number) => {
+    const orchestrator = new Orchestrator({
+      baseDir,
+      command: 'test',
+      task: objective,
+      category: 'fullstack',
+      primaryAgent: 'architect',
+      skillChain: [],
+      plan: new Commander().plan({ objective, mode: 'autonomous' }),
+      budgetLimits: { maxConcurrency },
+      produce: createHeadlessProducer(objective),
+    });
+    orchestrator.setMemory(new MemoryStore({ baseDir }));
+    orchestrator.setStore(new TraceStore({ baseDir }));
+    return (await orchestrator.run()).telemetry?.parallelTasks ?? 0;
+  };
+
+  const comPool = await run(4);
+  const serial = await run(1);
+
+  assert.ok(comPool > 0, 'o template precisa ter batch paralelo para o teste significar algo');
+  assert.equal(
+    serial,
+    0,
+    `com pool de 1 nada roda em paralelo, mas a telemetria reportou ${serial}: afirmar paralelismo no momento em que ele foi cortado é o pior lugar para errar`,
+  );
   fs.rmSync(baseDir, { recursive: true, force: true });
 });

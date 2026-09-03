@@ -955,11 +955,16 @@ export class Orchestrator {
         }
       }
 
-      ctx.execBudget?.recordParallelBatch(batchNodes.length);
       batchNodes.forEach((nodeId) => ctx.trace.events.emit('node.started', { nodeId }));
       const limit = this.degradation.concurrency
         ?? this.opts.budgetLimits?.maxConcurrency
         ?? DEFAULT_MAX_CONCURRENCY;
+      // Paralelismo EFETIVO, não o tamanho do batch. A contagem era feita antes
+      // de o teto de concorrência entrar, então um batch de 5 com pool de 1
+      // aparecia como "paralelo 5" — e isso acontecia justamente no caso da
+      // degradação `reduce-parallelism`, ou seja, a telemetria afirmava o
+      // paralelismo no exato momento em que o runtime tinha acabado de cortá-lo.
+      ctx.execBudget?.recordParallelBatch(Math.min(batchNodes.length, limit));
       const settled = await runWithConcurrency(
         batchNodes.map((nodeId) => () => this.executeNode(graph, nodeId, ctx)),
         limit,
