@@ -269,7 +269,7 @@ escrevia sobre um repositório que nunca tinha visto.
       estouro de orçamento, parada antecipada e aprovação humana — cada um
       pelo Commander e pelo Orchestrator reais, com só o producer injetado.
 
-### Oito bugs que a implementação revelou
+### Dez bugs que a implementação revelou
 
 - **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
   (`<projeto>/.agents`, ou a própria instalação do pacote). A sandbox de tool e
@@ -292,6 +292,11 @@ escrevia sobre um repositório que nunca tinha visto.
   sempre, decide depois.
 - **O gasto do juiz semântico não era checado.** Fase `evaluation` esgotada e o
   juiz continuava sendo chamado a cada nó: o teto era decorativo.
+- **Decompor podia aumentar o orçamento do pai.** O piso de 512 tokens por
+  sub-tarefa, sem teto de largura, fazia 5 sub-tarefas de um pai com 2000
+  somarem 2560. A largura passou a ser limitada pelo que o pai paga no piso.
+- **Sub-tarefa herdava as permissões do pai** — inertes hoje, e é assim que
+  privilégio indevido começa.
 - **A memória contava retentativa como recorrência.** Um incidente com três
   retries virava três ocorrências do padrão, e recorrência é justamente o que
   decide se um padrão vira conhecimento reutilizável.

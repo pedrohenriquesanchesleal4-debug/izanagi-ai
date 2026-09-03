@@ -25,6 +25,12 @@ export const DEFAULT_MAX_ORCHESTRATION_DEPTH = 2;
 /** Sub-tarefas por decomposição. Mais que isto não é decompor, é replanejar. */
 export const MAX_SUBTASKS = 5;
 
+/**
+ * Piso de tokens por sub-tarefa. Abaixo disto a chamada é gasta sem produzir
+ * nada utilizável, e o subgrafo fica mais caro que a tarefa que ele dividiu.
+ */
+export const MIN_SUBTASK_TOKENS = 512;
+
 export interface DecompositionRequest {
   /** Por que a tarefa não cabe numa entrega só. Entra no trace. */
   reason: string;
@@ -110,15 +116,41 @@ export function buildSubgraph(
 
   const parentContract = contractOf(parent);
   const prefix = `${parent.id}/`;
-  const localIds = new Set(request.tasks.map((t) => t.id));
-  // Orçamento dividido, com piso: uma sub-tarefa com 40 tokens não produz nada
-  // e só gasta a chamada.
-  const share = Math.max(512, Math.floor((parent.tokenBudget ?? 4000) / request.tasks.length));
 
-  const nodes: GraphNode[] = request.tasks.map((t) => {
+  // Orçamento dividido, com piso: uma sub-tarefa com 40 tokens não produz nada
+  // e só gasta a chamada. Mas o piso sozinho QUEBRAVA a regra que ele deveria
+  // servir: com 1000 tokens e 5 sub-tarefas, cada uma recebia 512 e o subgrafo
+  // saía com 2560 — decompor virava a forma de multiplicar o orçamento por
+  // 2.5, que é exatamente o incentivo que "decompor não libera orçamento"
+  // existe para eliminar.
+  //
+  // A quantidade de sub-tarefas passa a ser limitada pelo que o pai consegue
+  // pagar no tamanho mínimo. Quem não tem orçamento para duas sub-tarefas não
+  // decompõe: executa o que pediu para dividir.
+  const parentBudget = parent.tokenBudget ?? 4000;
+  const affordable = Math.floor(parentBudget / MIN_SUBTASK_TOKENS);
+  if (affordable < 2) {
+    return {
+      graph: emptyGraph(parent),
+      taskIds: [],
+      issues: [
+        `orçamento do nó "${parent.id}" (${parentBudget} tokens) não paga duas sub-tarefas no mínimo de ${MIN_SUBTASK_TOKENS}: decomposição recusada`,
+      ],
+    };
+  }
+  const tasks = request.tasks.slice(0, Math.min(request.tasks.length, affordable));
+  if (tasks.length < request.tasks.length) {
+    issues.push(
+      `decomposição cortada de ${request.tasks.length} para ${tasks.length} sub-tarefas: o orçamento do pai não paga mais que isso no mínimo de ${MIN_SUBTASK_TOKENS} tokens`,
+    );
+  }
+  const localTaskIds = new Set(tasks.map((t) => t.id));
+  const share = Math.max(MIN_SUBTASK_TOKENS, Math.floor(parentBudget / tasks.length));
+
+  const nodes: GraphNode[] = tasks.map((t) => {
     const id = `${prefix}${t.id}`;
     const kind = t.outputKind ?? parent.outputs?.[0] ?? 'raw';
-    const dependencies = (t.dependencies ?? []).filter((d) => localIds.has(d)).map((d) => `${prefix}${d}`);
+    const dependencies = (t.dependencies ?? []).filter((d) => localTaskIds.has(d)).map((d) => `${prefix}${d}`);
     const node: GraphNode = {
       id,
       kind: 'agent',
@@ -150,6 +182,11 @@ export function buildSubgraph(
       decomposable: false,
       // Herda `tool`? Não: o pai pediu decomposição em vez de executar a tool.
       ...(parentContract.tool ? { tool: undefined } : {}),
+      // Nem `permissions`. Hoje seriam inertes (só nó de tool as usa, e a
+      // sub-tarefa não tem tool), mas conceder privilégio que não é usado é
+      // como um privilégio usado indevidamente começa: menor privilégio é por
+      // construção, não por acidente de quem consome.
+      ...(parentContract.permissions ? { permissions: [] } : {}),
     };
     return attachContract(node, contract);
   });

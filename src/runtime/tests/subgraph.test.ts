@@ -302,3 +302,54 @@ test('subgraph: o protocolo entra no prompt com os limites explícitos', () => {
   assert.ok(rendered.includes('máximo 5 sub-tarefas'));
   assert.ok(rendered.includes('DIVIDIDO'), 'o agente precisa saber que decompor não libera orçamento');
 });
+
+/** Nó pai com contrato, para os testes de orçamento e privilégio. */
+function parentNode(opts: { tokenBudget: number; permissions?: TaskContract['permissions'] }): GraphNode {
+  const node: GraphNode = { id: 'auditoria', kind: 'agent', status: 'pending', tokenBudget: opts.tokenBudget, outputs: ['raw'] };
+  return attachContract(node, {
+    ...contractFor('auditoria', true),
+    budget: { maxTokens: opts.tokenBudget },
+    ...(opts.permissions ? { permissions: opts.permissions } : {}),
+  });
+}
+
+test('subgrafo: decompor NÃO multiplica o orçamento do pai', () => {
+  // Com 2000 tokens e 5 sub-tarefas, o piso de 512 dava 512 a cada uma e o
+  // subgrafo saía com 2560 — decompor virava a forma de AUMENTAR o orçamento,
+  // o incentivo exato que a regra existe para eliminar.
+  const built = buildSubgraph(
+    parentNode({ tokenBudget: 2000 }),
+    { reason: 'quebrar em partes', tasks: Array.from({ length: 5 }, (_, i) => ({ id: `t${i}`, objective: `parte ${i}` })) },
+    { depth: 0, maxDepth: 2 },
+  );
+
+  const somaDosFilhos = built.graph.nodes.reduce((acc, n) => acc + (n.tokenBudget ?? 0), 0);
+  assert.ok(
+    somaDosFilhos <= 2000,
+    `sub-tarefas somam ${somaDosFilhos} tokens de um pai com 2000: decompor não pode liberar orçamento`,
+  );
+  assert.equal(built.graph.nodes.length, 3, 'a largura é cortada pelo que o pai paga no piso, não pelo que o agente pediu');
+  assert.match(built.issues.join(' '), /cortada de 5 para 3/, 'o corte precisa ser dito, não silencioso');
+});
+
+test('subgrafo: orçamento que não paga duas sub-tarefas recusa a decomposição inteira', () => {
+  const built = buildSubgraph(
+    parentNode({ tokenBudget: 600 }),
+    { reason: 'quebrar', tasks: [{ id: 'a', objective: 'parte a' }, { id: 'b', objective: 'parte b' }] },
+    { depth: 0, maxDepth: 2 },
+  );
+  assert.deepEqual(built.taskIds, []);
+  assert.match(built.issues.join(' '), /não paga duas sub-tarefas/);
+});
+
+test('subgrafo: sub-tarefa não herda permissão do pai', () => {
+  const parent = parentNode({ tokenBudget: 8000, permissions: ['fs:write'] });
+  const built = buildSubgraph(
+    parent,
+    { reason: 'quebrar', tasks: [{ id: 'a', objective: 'parte a' }, { id: 'b', objective: 'parte b' }] },
+    { depth: 0, maxDepth: 2 },
+  );
+  for (const node of built.graph.nodes) {
+    assert.deepEqual(contractOf(node)?.permissions, [], `"${node.id}" herdou privilégio que ninguém concedeu a ele`);
+  }
+});
