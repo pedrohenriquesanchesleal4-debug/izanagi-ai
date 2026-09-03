@@ -213,3 +213,51 @@ test('healing: backoff exponencial com cap', () => {
   assert.equal(Healer.backoff(500, 20), 60000);
   assert.equal(Healer.backoff(500, 50), 60000);
 });
+
+test('healing: retentativa do mesmo incidente não recontabiliza o padrão na memória', () => {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-heal-count-'));
+  const memory = new MemoryStore({ baseDir });
+  memory.recordFailure({
+    pattern: 'provider-timeout',
+    symptoms: ['request timed out'],
+    rootCause: 'provider lento',
+    solution: 'retry com backoff',
+    confidence: 0.7,
+  });
+  // O NÚMERO, não o objeto: `findRelevantFailures` devolve a referência
+  // guardada no estado, então segurar o objeto seria compará-lo consigo mesmo
+  // depois de ele ter sido incrementado.
+  const antes = memory.findRelevantFailures('request timed out')[0].occurrences;
+
+  const healer = new Healer();
+  const input = {
+    nodeId: 'scan',
+    error: 'request timed out',
+    attempt: 1,
+    maxAttempts: 5,
+    elapsedMs: 10,
+    maxTimeMs: 600_000,
+    tokensUsed: 10,
+    maxTokens: 100_000,
+    memory,
+  };
+  healer.heal({ ...input, attempt: 1 });
+  healer.heal({ ...input, attempt: 2 });
+  healer.heal({ ...input, attempt: 3 });
+
+  const depois = memory.findRelevantFailures('request timed out')[0].occurrences;
+  assert.equal(
+    depois,
+    antes + 1,
+    'três retries do MESMO incidente são um incidente: contar três faria a memória medir teimosia do runtime, não recorrência do problema',
+  );
+
+  // Nó diferente no mesmo run é outro incidente, e conta.
+  healer.heal({ ...input, nodeId: 'deep-analysis' });
+  assert.equal(memory.findRelevantFailures('request timed out')[0].occurrences, antes + 2);
+
+  // Run novo (Healer novo) conta de novo: entre runs é recorrência de verdade.
+  new Healer().heal(input);
+  assert.equal(memory.findRelevantFailures('request timed out')[0].occurrences, antes + 3);
+  fs.rmSync(baseDir, { recursive: true, force: true });
+});

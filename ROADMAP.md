@@ -269,7 +269,7 @@ escrevia sobre um repositório que nunca tinha visto.
       estouro de orçamento, parada antecipada e aprovação humana — cada um
       pelo Commander e pelo Orchestrator reais, com só o producer injetado.
 
-### Sete bugs que a implementação revelou
+### Oito bugs que a implementação revelou
 
 - **`baseDir` não é a raiz do projeto.** É a raiz do FRAMEWORK
   (`<projeto>/.agents`, ou a própria instalação do pacote). A sandbox de tool e
@@ -292,6 +292,9 @@ escrevia sobre um repositório que nunca tinha visto.
   sempre, decide depois.
 - **O gasto do juiz semântico não era checado.** Fase `evaluation` esgotada e o
   juiz continuava sendo chamado a cada nó: o teto era decorativo.
+- **A memória contava retentativa como recorrência.** Um incidente com três
+  retries virava três ocorrências do padrão, e recorrência é justamente o que
+  decide se um padrão vira conhecimento reutilizável.
 - **`budgetLimits.maxTokens` era descartado em silêncio** enquanto os outros
   cinco tetos do mesmo objeto eram honrados.
 - **Estado de projeto vazava para a instalação do framework.** Sem

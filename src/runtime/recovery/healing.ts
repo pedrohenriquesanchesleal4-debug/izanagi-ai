@@ -106,6 +106,20 @@ export function categorizeFailure(kind: FailureKind, error: string): FailureCate
 }
 
 export class Healer {
+  /**
+   * Padrões de falha já contabilizados neste run, por `nó:padrão`.
+   *
+   * Sem isto, cada RETENTATIVA do mesmo nó com a mesma causa contava como uma
+   * nova ocorrência do padrão na memória: um único incidente com três retries
+   * virava "3 ocorrências" e somava +0.09 de confiança. A memória passava a
+   * medir teimosia do runtime em vez de recorrência do problema — e é a
+   * recorrência que decide se um padrão vira conhecimento reutilizável.
+   *
+   * Uma instância de `Healer` por run é o que dá o escopo certo: dentro do run
+   * é o mesmo incidente, entre runs é recorrência de verdade.
+   */
+  private readonly counted = new Set<string>();
+
   /** Backoff exponencial simples. */
   static backoff(baseMs: number, attempt: number, factor = 1.6): number {
     return Math.min(60_000, baseMs * Math.pow(factor, attempt));
@@ -140,14 +154,18 @@ export class Healer {
     const patterns = input.memory.findRelevantFailures(input.error);
     if (patterns.length > 0) {
       const best = patterns[0];
-      input.memory.recordFailure({
-        pattern: best.pattern,
-        symptoms: best.symptoms,
-        rootCause: best.rootCause,
-        solution: best.solution,
-        confidence: best.confidence,
-        kind,
-      });
+      const key = `${input.nodeId}:${best.pattern}`;
+      if (!this.counted.has(key)) {
+        this.counted.add(key);
+        input.memory.recordFailure({
+          pattern: best.pattern,
+          symptoms: best.symptoms,
+          rootCause: best.rootCause,
+          solution: best.solution,
+          confidence: best.confidence,
+          kind,
+        });
+      }
       return {
         action: {
           id,

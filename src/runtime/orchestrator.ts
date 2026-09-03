@@ -548,6 +548,7 @@ export class Orchestrator {
     };
 
     let finalEvaluation: EvaluationReport | undefined;
+    const healer = new Healer();
     let attempts = resumed?.attempts ?? 0;
     const maxAttempts = graph.budget.maxAttempts;
     let workingGraph = graph;
@@ -616,8 +617,9 @@ export class Orchestrator {
         break;
       }
 
-      // Self-healing
-      const healer = new Healer();
+      // Self-healing. O `Healer` é do RUN, não da rodada: ele guarda quais
+      // padrões de falha já contou, e uma instância nova por rodada faria cada
+      // retentativa recontar o mesmo incidente na memória.
       const elapsed = Date.now() - startedAt;
       trace.events.emit('diagnosis.started', { nodeId: failure.nodeId, error: failure.error });
       trace.events.emit('healing.started', { nodeId: failure.nodeId, attempt: attempts });
