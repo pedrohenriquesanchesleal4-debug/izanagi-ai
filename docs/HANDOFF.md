@@ -188,11 +188,13 @@ Em ordem de valor por esforço, com o critério de pronto de cada um.
 
 **0. Medir o grounding contra a ausência dele.** A v3.18.0 pôs o survey no
 caminho por um argumento (agente que nunca viu o projeto inventa stack e
-caminho), não por um número. A medição honesta é o mesmo objetivo, mesmo
-provider, com e sem `--survey`, contra um gabarito de acerto — quantos caminhos
-citados existem de fato, quantas dependências citadas estão no manifesto.
-*Pronto quando:* houver dois relatórios comparáveis e a taxa de acerto de
-referência aparecer nos dois.
+caminho), não por um número. **O instrumento já existe**: `izanagi benchmark
+run --execute` reporta `fundamentação X% (n/m)` — dos caminhos que os artefatos
+citaram, quantos existem no projeto. O que falta é o provider real e o par:
+mesmo objetivo, mesmo provider, uma execução com `--survey` e outra com
+`--no-survey`. *Pronto quando:* houver dois relatórios em
+`.izanagi/state/benchmarks/` com a fundamentação medida nos dois e a diferença
+registrada.
 
 **1. Rodar a Arena contra um provider real.** Tudo que existe hoje foi exercitado headless ou com producer de teste. `izanagi benchmark run --execute` com uma API key configurada produziria os primeiros números de verificação e recuperação sobre execução de verdade. *Pronto quando:* existir um relatório salvo em `.izanagi/state/benchmarks/` com `execution.verificationRate` vindo de chamadas reais, e um segundo relatório para comparar.
 

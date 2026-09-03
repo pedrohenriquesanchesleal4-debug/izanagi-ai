@@ -135,7 +135,10 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
         ...(result.verification ? { verification: result.verification } : {}),
         ...(result.telemetry ? { telemetry: result.telemetry } : {}),
         trace: result.trace,
-      }),
+        artifacts: result.artifacts,
+      // A fundamentação é medida contra o PROJETO (cwd), não contra a raiz de
+      // assets: é o projeto que o artefato afirma descrever.
+      }, process.cwd()),
     };
   };
 

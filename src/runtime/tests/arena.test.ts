@@ -15,6 +15,7 @@ import {
   aggregateExecution,
   evidenceFromRun,
   formatExecutionSummary,
+  measureGroundedness,
   type ExecutionEvidence,
   type RunLikeResult,
 } from '../benchmarks/arena.js';
@@ -162,4 +163,93 @@ test('arena: producer sem evidência mantém o relatório sem métricas de execu
   assert.equal(report.execution, undefined, 'relatório sem execução não pode exibir taxa nenhuma');
   assert.equal(report.results[0].execution, undefined);
   fs.rmSync(baseDir, { recursive: true, force: true });
+});
+
+/* ============================ fundamentação ============================ */
+
+test('arena: fundamentação conta REFERÊNCIAS, não artefatos', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-arena-ground-'));
+  fs.mkdirSync(path.join(root, 'src', 'routes'), { recursive: true });
+
+  const evidence = measureGroundedness(
+    {
+      // Um plano que cita muito e acerta tudo.
+      plano: { kind: 'implementation-plan', content: 'Editar src/routes/a.ts, src/routes/b.ts e src/routes/c.ts.' },
+      // Uma ADR curta que inventa o layout.
+      adr: { kind: 'architecture', content: 'Mover para app/models/user.rb.' },
+    },
+    root,
+  );
+
+  assert.equal(evidence.references, 4);
+  assert.equal(evidence.grounded, 3);
+  assert.equal(evidence.rate, 0.75, 'média de médias daria 0.5 e esconderia o peso do plano');
+  assert.equal(evidence.artifactsWithReferences, 2);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('arena: artefato sem caminho citado não entra na conta (não é fundamentação zero)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-arena-none-'));
+  const evidence = measureGroundedness({ adr: { kind: 'architecture', content: 'Adotar CQRS.' } }, root);
+  assert.equal(evidence.references, 0);
+  assert.equal(evidence.rate, null, 'zero significaria "errou tudo"; null significa "não há o que medir"');
+  assert.equal(evidence.artifactsWithReferences, 0);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('arena: sem workspace declarado a fundamentação nem é medida', () => {
+  const evidence = evidenceFromRun({
+    status: 'PASS',
+    healing: [],
+    trace: { durationMs: 10, tokens: { total: 100 } },
+    artifacts: { a: { kind: 'raw', content: 'src/x.ts' } },
+  });
+  assert.equal(evidence.groundedness, undefined, 'medir contra raiz nenhuma produziria um número sem significado');
+});
+
+test('arena: o resumo diz "n/a" quando não houve referência, nunca 0%', () => {
+  const semReferencia = aggregateExecution([
+    {
+      status: 'PASS',
+      verifiedTasks: 2,
+      totalVerifiedTasks: 2,
+      verificationRate: 1,
+      recoveryRate: null,
+      failures: 0,
+      recovered: 0,
+      retries: 0,
+      healingActions: 0,
+      tokensUsed: 100,
+      costUsd: 0,
+      durationMs: 10,
+      groundedness: { references: 0, grounded: 0, rate: null, artifactsWithReferences: 0 },
+    },
+  ]);
+  assert.equal(semReferencia?.groundedness, null);
+  assert.match(formatExecutionSummary(semReferencia), /fundamentação n\/a/);
+});
+
+test('arena: fundamentação agregada soma sobre os TOTAIS de vários casos', () => {
+  const base = {
+    status: 'PASS',
+    verifiedTasks: 1,
+    totalVerifiedTasks: 1,
+    verificationRate: 1,
+    recoveryRate: null,
+    failures: 0,
+    recovered: 0,
+    retries: 0,
+    healingActions: 0,
+    tokensUsed: 10,
+    costUsd: 0,
+    durationMs: 1,
+  };
+  const summary = aggregateExecution([
+    { ...base, groundedness: { references: 10, grounded: 9, rate: 0.9, artifactsWithReferences: 1 } },
+    { ...base, groundedness: { references: 2, grounded: 0, rate: 0, artifactsWithReferences: 1 } },
+  ]);
+  assert.equal(summary?.groundedness?.references, 12);
+  assert.equal(summary?.groundedness?.grounded, 9);
+  assert.equal(summary?.groundedness?.rate, 0.75);
+  assert.match(formatExecutionSummary(summary), /fundamentação 75% \(9\/12\)/);
 });

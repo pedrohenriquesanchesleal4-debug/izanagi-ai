@@ -13,6 +13,31 @@
  * teto de orçamento como consumo real.
  */
 
+import { checkGroundedness } from '../verification/groundedness.js';
+
+/**
+ * Fundamentação dos artefatos de um run: dos caminhos que eles citaram, quantos
+ * existem no projeto.
+ *
+ * É a única métrica da Arena que fala sobre o CONTEÚDO, e não sobre a mecânica
+ * do runtime. Verificação alta com fundamentação baixa é um run que cumpriu
+ * todos os critérios de schema descrevendo um projeto que não existe — e essa
+ * combinação é invisível em qualquer das outras métricas.
+ *
+ * `rate` é `null` quando nenhum artefato citou caminho nenhum. Ausência de
+ * referência não é fundamentação zero: é ausência de medida, e a Arena não
+ * imprime `0%` para dizer "não sei".
+ */
+export interface GroundednessEvidence {
+  /** Caminhos citados e conferidos. */
+  references: number;
+  /** Caminhos cujo lugar existe no projeto. */
+  grounded: number;
+  rate: number | null;
+  /** Artefatos que citaram pelo menos um caminho. */
+  artifactsWithReferences: number;
+}
+
 /** Evidência de UMA execução real, extraída do resultado do Orchestrator. */
 export interface ExecutionEvidence {
   /** Veredito final do run. */
@@ -34,6 +59,8 @@ export interface ExecutionEvidence {
   tokensUsed: number;
   costUsd: number;
   durationMs: number;
+  /** Fundamentação dos artefatos. Ausente quando não havia projeto para conferir. */
+  groundedness?: GroundednessEvidence;
 }
 
 /** Superfície mínima do resultado do Orchestrator consumida aqui. */
@@ -45,6 +72,8 @@ export interface RunLikeResult {
   verification?: Array<{ nodeId: string; result: { status: string } }>;
   telemetry?: { estimatedCostUsd?: number };
   trace: { durationMs: number; tokens?: { total: number } };
+  /** Artefatos produzidos, por id de tarefa. Necessário para medir fundamentação. */
+  artifacts?: Record<string, { kind: string; content: unknown }>;
 }
 
 /**
@@ -54,7 +83,7 @@ export interface RunLikeResult {
  * é a definição operacional de "o runtime se curou". Contar ações de healing
  * como sucesso seria contar a tentativa, não o conserto.
  */
-export function evidenceFromRun(result: RunLikeResult): ExecutionEvidence {
+export function evidenceFromRun(result: RunLikeResult, workspaceDir?: string): ExecutionEvidence {
   const verification = result.verification ?? [];
   const verified = verification.filter((v) => v.result.status === 'VERIFIED').length;
 
@@ -79,7 +108,47 @@ export function evidenceFromRun(result: RunLikeResult): ExecutionEvidence {
     tokensUsed: result.trace.tokens?.total ?? 0,
     costUsd: result.telemetry?.estimatedCostUsd ?? 0,
     durationMs: result.trace.durationMs,
+    ...(workspaceDir ? { groundedness: measureGroundedness(result.artifacts ?? {}, workspaceDir) } : {}),
   };
+}
+
+/**
+ * Soma a fundamentação de todos os artefatos do run.
+ *
+ * Conta REFERÊNCIAS, não artefatos: um plano que cita vinte caminhos e uma ADR
+ * que cita um não podem pesar igual. Artefato que não cita caminho nenhum
+ * simplesmente não entra na conta — não é fundamentação zero, é ausência de
+ * medida.
+ */
+export function measureGroundedness(
+  artifacts: Record<string, { kind: string; content: unknown }>,
+  workspaceDir: string,
+): GroundednessEvidence {
+  let references = 0;
+  let grounded = 0;
+  let artifactsWithReferences = 0;
+  for (const artifact of Object.values(artifacts)) {
+    const text = typeof artifact.content === 'string' ? artifact.content : safeJson(artifact.content);
+    const report = checkGroundedness(text, workspaceDir);
+    if (report.total === 0) continue;
+    artifactsWithReferences++;
+    references += report.total;
+    grounded += report.grounded;
+  }
+  return {
+    references,
+    grounded,
+    rate: references > 0 ? round(grounded / references) : null,
+    artifactsWithReferences,
+  };
+}
+
+function safeJson(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2) ?? '';
+  } catch {
+    return String(value);
+  }
 }
 
 export interface ExecutionSummary {
@@ -92,6 +161,8 @@ export interface ExecutionSummary {
   tokensUsed: number;
   costUsd: number;
   durationMs: number;
+  /** Fundamentação somada. `null` quando nenhum artefato citou caminho. */
+  groundedness: GroundednessEvidence | null;
 }
 
 /**
@@ -105,9 +176,20 @@ export function aggregateExecution(evidence: ExecutionEvidence[]): ExecutionSumm
   const totalTasks = evidence.reduce((a, e) => a + e.totalVerifiedTasks, 0);
   const totalFailures = evidence.reduce((a, e) => a + e.failures, 0);
   const totalRecovered = evidence.reduce((a, e) => a + e.recovered, 0);
+  const references = evidence.reduce((a, e) => a + (e.groundedness?.references ?? 0), 0);
+  const grounded = evidence.reduce((a, e) => a + (e.groundedness?.grounded ?? 0), 0);
   return {
     cases: evidence.length,
     verificationRate: totalTasks > 0 ? round(totalVerified / totalTasks) : null,
+    groundedness:
+      references > 0
+        ? {
+            references,
+            grounded,
+            rate: round(grounded / references),
+            artifactsWithReferences: evidence.reduce((a, e) => a + (e.groundedness?.artifactsWithReferences ?? 0), 0),
+          }
+        : null,
     recoveryRate: totalFailures > 0 ? round(totalRecovered / totalFailures) : null,
     retries: evidence.reduce((a, e) => a + e.retries, 0),
     healingActions: evidence.reduce((a, e) => a + e.healingActions, 0),
@@ -123,6 +205,9 @@ export function formatExecutionSummary(summary: ExecutionSummary | null): string
   const pct = (v: number | null) => (v === null ? 'n/a' : `${Math.round(v * 100)}%`);
   return [
     `verificação ${pct(summary.verificationRate)}`,
+    // Fundamentação sem referência nenhuma sai como `n/a`, não como 0%: um run
+    // que não citou caminho não errou sobre caminho nenhum.
+    `fundamentação ${summary.groundedness ? `${Math.round((summary.groundedness.rate ?? 0) * 100)}% (${summary.groundedness.grounded}/${summary.groundedness.references})` : 'n/a'}`,
     `recuperação ${pct(summary.recoveryRate)}`,
     `retries ${summary.retries}`,
     `healing ${summary.healingActions}`,
