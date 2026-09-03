@@ -22,7 +22,12 @@ export function resolveProjectRoot(cwd: string, baseDir: string): string {
   return hasJsonAgents ? path.join(cwd, '.agents') : baseDir;
 }
 
-export function doctorCommand(baseDir: string, args: string[] = []): boolean {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills, casos de benchmark).
+ * @param stateDir Raiz do ESTADO deste projeto (memória, traces, relatórios).
+ *                 Default: `baseDir`. Ver `resolveStateRoot` no installer.
+ */
+export function doctorCommand(baseDir: string, args: string[] = [], stateDir = baseDir): boolean {
   const deep = args.includes('--deep') || args.includes('-d');
 
   console.log('\n\x1b[36m=== Izanagi AI Doctor & Integrity Check ===\x1b[0m\n');
@@ -141,7 +146,7 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   }
 
   if (deep) {
-    const deepErrors = runDeepChecks(baseDir);
+    const deepErrors = runDeepChecks(baseDir, stateDir);
     errors += deepErrors;
   }
 
@@ -149,14 +154,14 @@ export function doctorCommand(baseDir: string, args: string[] = []): boolean {
   return errors === 0;
 }
 
-function runDeepChecks(baseDir: string): number {
+function runDeepChecks(baseDir: string, stateDir: string): number {
   let errors = 0;
   console.log('\n\x1b[1m\x1b[36m-- Deep checks (runtime) --\x1b[0m\n');
 
-  const memory = checkMemory(baseDir);
+  const memory = checkMemory(stateDir);
   console.log(` \x1b[32m✔\x1b[0m Memory: ${memory.detail}`);
 
-  const traces = checkTraces(baseDir, 10);
+  const traces = checkTraces(stateDir, 10);
   console.log(` \x1b[32m✔\x1b[0m Traces: ${traces.detail}`);
 
   const benchmarks = checkBenchmarkSuite(baseDir);

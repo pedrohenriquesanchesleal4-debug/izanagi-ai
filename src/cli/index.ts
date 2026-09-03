@@ -130,7 +130,7 @@ export async function runCLI(args: string[]): Promise<void> {
       break;
 
     case 'diagnose':
-      diagnoseCommand(baseDir);
+      diagnoseCommand(baseDir, stateDir);
       break;
 
     case 'dashboard':
@@ -177,7 +177,7 @@ export async function runCLI(args: string[]): Promise<void> {
     case 'doctor':
     case 'check':
     case 'validate':
-      doctorCommand(baseDir, rest);
+      doctorCommand(baseDir, rest, stateDir);
       break;
 
     case 'export':

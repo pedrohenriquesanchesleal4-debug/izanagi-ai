@@ -242,6 +242,23 @@ Toda rodada de batches persiste um checkpoint (§ Checkpoint & Resume) e cada de
 
 `src/runtime/artifacts/registry.ts` torna artefatos rastreáveis além do `Map` efêmero de `ExecuteCtx`: cada nó bem-sucedido vira um registro com produtor (agent/skill/run/nó), hash, dependências (artefatos upstream) e versão: retry/replan do mesmo nó gera nova versão, não uma duplicata perdida.
 
+## As três raízes (assets, workspace, estado)
+
+Um único `baseDir` respondia três perguntas diferentes, e as três divergem num projeto que não rodou `izanagi init`. Rodando de dentro do checkout do framework elas coincidem — e é exatamente por isso que a confusão sobreviveu tanto tempo.
+
+| Raiz | Pergunta que responde | Resolução | O que vive lá |
+|---|---|---|---|
+| `baseDir` | De onde leio os assets do framework? | `resolveFrameworkRoot(cwd)`: `<projeto>/.agents` se inicializado, senão a **instalação do pacote** | agentes, skills, `RULES.md`, `SYSTEM.md`, casos de benchmark, referências |
+| `workspaceDir` | Qual é o projeto sobre o qual estou trabalhando? | `process.cwd()` na CLI; `baseDir` no SDK | sandbox de tool (`fs.read`/`fs.write`/`project.survey`), raiz do check `file-exists`, destino de `--output` |
+| `stateDir` | Onde vive o estado DESTE projeto? | `resolveStateRoot(cwd)`: `<projeto>/.agents` se inicializado, senão o **próprio projeto** | `.izanagi/state`: traces, artefatos com conteúdo, memória, checkpoints, aprovações, decisões |
+
+Os dois bugs que essa confusão produziu, ambos corrigidos na v3.18.0:
+
+- **Tool lia dentro de `.agents/`, não do projeto.** Um nó `fs.read` com caminho relativo resolvia contra a raiz de assets, e o check `file-exists` procurava o arquivo no lugar errado.
+- **Estado vazava entre projetos.** Sem `izanagi init`, trace, artefato **com conteúdo**, memória e checkpoint iam para dentro de `node_modules/izanagi-ai/`, compartilhados com todos os outros projetos na mesma condição: `izanagi trace` listava execução alheia, e `npm update` apagava o histórico.
+
+Ambos os campos novos têm default `baseDir`, então nenhum caller existente do `Orchestrator` mudou de comportamento — quem declara o valor certo é a CLI e o SDK. E projeto inicializado não mudou de lugar: mover o estado apagaria o histórico de quem já usa.
+
 ## Policy Engine
 
 `src/runtime/security/policy.ts` responde "isso é permitido NESTE CONTEXTO?": distinto do Skill Scanner, que responde "isso parece perigoso?". A mesma permissão pode ser negada em produção e liberada em desenvolvimento, ou negada para uma skill de trust tier `community` e liberada para `builtin`. Regras default: deploy de produção e operações destrutivas em produção exigem aprovação humana; `community` nunca recebe `fs:write`/`shell` por default.

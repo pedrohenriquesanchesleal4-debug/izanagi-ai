@@ -22,7 +22,12 @@ import {
   type CheckResult,
 } from '../checks.js';
 
-export function diagnoseCommand(baseDir: string): void {
+/**
+ * @param baseDir  Raiz dos ASSETS do framework (agentes, skills, casos de benchmark).
+ * @param stateDir Raiz do ESTADO deste projeto (memória, traces, relatórios).
+ *                 Default: `baseDir`. Ver `resolveStateRoot` no installer.
+ */
+export function diagnoseCommand(baseDir: string, stateDir = baseDir): void {
   console.log('\n\x1b[36m=== Izanagi AI Runtime Diagnosis ===\x1b[0m\n');
 
   const checks: CheckResult[] = [];
@@ -38,13 +43,13 @@ export function diagnoseCommand(baseDir: string): void {
   });
 
   // 2. Traces
-  checks.push(checkTraces(baseDir, 50));
+  checks.push(checkTraces(stateDir, 50));
 
   // 3. Memória
-  checks.push(checkMemory(baseDir));
+  checks.push(checkMemory(stateDir));
 
   // 4. Relatórios de benchmark persistidos (execuções passadas)
-  checks.push(checkBenchmarkReports(baseDir));
+  checks.push(checkBenchmarkReports(stateDir));
 
   // 5. Skill frontmatter (contrato)
   const manifest = checkSkillManifest(baseDir);
