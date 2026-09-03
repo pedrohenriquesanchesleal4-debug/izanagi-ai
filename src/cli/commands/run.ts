@@ -13,6 +13,7 @@ import { ContextResolver } from '../../runtime/orchestration/context-resolver.js
 import { ResponseCache } from '../../runtime/cache/response-cache.js';
 import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
 import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
+import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from '../../runtime/orchestration/delivery.js';
 import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } from '../../runtime/notify/webhook.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
@@ -42,6 +43,8 @@ interface RunArgs {
   noJudge: boolean;
   /** Saída única em JSON no stdout, para o agendador do SO consumir (`--json`). */
   json: boolean;
+  /** Diretório onde o run grava a entrega (`--output <dir>`), relativo à raiz do projeto. */
+  output?: string;
   /** Endpoint POST avisado no fim do run (`--notify-webhook=<url>`). */
   notifyWebhook?: string;
 }
@@ -62,6 +65,7 @@ export function parseRunArgs(args: string[]): RunArgs {
   let noJudge = false;
   let json = false;
   let notifyWebhook: string | undefined;
+  let output: string | undefined;
   const positionals: string[] = [];
 
   /** Aceita tanto `--flag valor` quanto `--flag=valor`. */
@@ -122,6 +126,10 @@ export function parseRunArgs(args: string[]): RunArgs {
       const read = readValue(arg, '--notify-webhook', args[i + 1]);
       if (read.consumed) i++;
       if (read.value) notifyWebhook = read.value;
+    } else if (arg === '--output' || arg.startsWith('--output=')) {
+      const read = readValue(arg, '--output', args[i + 1]);
+      if (read.consumed) i++;
+      if (read.value) output = read.value;
     } else if (!arg.startsWith('-')) {
       positionals.push(arg);
     }
@@ -154,6 +162,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     noJudge,
     json,
     ...(notifyWebhook ? { notifyWebhook } : {}),
+    ...(output ? { output } : {}),
   };
 }
 
@@ -285,6 +294,24 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
       console.error(`\x1b[31mError:\x1b[0m --notify-webhook: ${check.reason}`);
       process.exit(1);
     }
+  }
+
+  // `--output` é validado ANTES de planejar. Um destino fora da raiz seria
+  // recusado pela ToolRegistry na hora de escrever — descobrir isso depois de
+  // um grafo inteiro executado é jogar fora o run por um erro de digitação.
+  let outputDir: string | undefined;
+  if (parsed.output) {
+    // Validado contra o CWD, não contra `baseDir`: a entrega é do PROJETO do
+    // usuário. `baseDir` é a raiz do framework (`<projeto>/.agents`, ou a
+    // própria instalação do pacote quando o projeto não foi inicializado) —
+    // gravar a entrega lá dentro seria escondê-la no lugar onde ninguém
+    // procura o resultado do próprio trabalho.
+    const check = validateOutputDir(process.cwd(), parsed.output);
+    if (!check.ok) {
+      console.error(`\x1b[31mError:\x1b[0m --output: ${check.error}`);
+      process.exit(1);
+    }
+    outputDir = check.rel;
   }
 
   const cwd = process.cwd();
@@ -463,6 +490,7 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     noCommander: parsed.noCommander,
     noJudge: parsed.noJudge,
     json: parsed.json,
+    ...(outputDir ? { output: outputDir } : {}),
     explicitAgent: Boolean(agentId),
   });
 
@@ -559,6 +587,8 @@ export async function runRuntime(
     json?: boolean;
     /** O usuário nomeou o agente explicitamente (`izanagi run architect ...`). */
     explicitAgent?: boolean;
+    /** Diretório de entrega já validado contra a raiz do projeto (`--output`). */
+    output?: string;
   },
 ): Promise<OrchestrationResult | undefined> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
@@ -595,6 +625,7 @@ export async function runRuntime(
     ...(opts.maxCost !== undefined ? { maxCostUsd: opts.maxCost } : {}),
     ...(opts.model ? { model: opts.model } : {}),
     availableProviders: llmProviders,
+    ...(opts.output ? { output: opts.output } : {}),
     // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
     noCommander: Boolean(opts.noCommander || opts.resumeRunId),
   });
@@ -654,6 +685,9 @@ export async function runRuntime(
 
   const orchestrator = new Orchestrator({
     baseDir,
+    // Raiz do projeto do usuário: é contra ela que a sandbox de tool e o check
+    // `file-exists` resolvem. `baseDir` continua sendo a raiz do framework.
+    workspaceDir: process.cwd(),
     command: 'run',
     task: opts.task,
     category: opts.category,
@@ -728,6 +762,16 @@ export async function runRuntime(
     for (const c of corrections.slice(0, 2)) {
       console.log(`    \x1b[33m•\x1b[0m ${c.from} -> ${c.to}: ${c.summary}`);
     }
+  }
+  if (opts.output) {
+    // Onde a entrega foi parar. Sem esta linha o usuário precisa adivinhar a
+    // raiz que o runtime resolveu — que nem sempre é o cwd de onde ele chamou.
+    const rel = deliverableRelPath(opts.output, opts.task);
+    const delivered = result.graph.nodes.find((n) => n.id === DELIVER_NODE_ID);
+    const ok = delivered?.status === 'succeeded';
+    console.log(
+      `  \x1b[90mEntrega:\x1b[0m ${ok ? '\x1b[32m✔\x1b[0m ' : '\x1b[33m✗ não gravada — \x1b[0m'}${path.resolve(process.cwd(), rel)}`,
+    );
   }
   console.log(`  \x1b[90mDuration:\x1b[0m ${result.trace.durationMs}ms | tokens ${result.trace.tokens?.total ?? 0}`);
 

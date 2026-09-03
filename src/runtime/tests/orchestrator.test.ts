@@ -35,6 +35,11 @@ function validContentFor(kind: string | undefined): string {
     evaluation: 'verdict score metrics',
     trace: 'runId spans',
     'qa-report': 'summary results',
+    // `critique` entrou quando a avaliação passou a contar nó falho como
+    // regressão: sem estes campos o nó `critic` produzia artefato inválido,
+    // terminava `failed`, e o run seguia PASS como se nada tivesse falhado.
+    critique: 'status issues',
+    delivery: 'written',
   };
   const extra = (kind && req[kind]) || '';
   return LONG_TEXT + extra;

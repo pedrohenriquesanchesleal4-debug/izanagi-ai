@@ -39,6 +39,7 @@ import {
 import type { AgentCapabilityRegistry } from '../registry/capabilities.js';
 import { ModelRouter } from '../model/router.js';
 import { detectDomains, type Domain } from './domains.js';
+import { DELIVER_NODE_ID, deliverNode } from './delivery.js';
 
 export type { Domain } from './domains.js';
 
@@ -244,6 +245,13 @@ export interface CommanderInput {
    * chain do agente para o run inteiro.
    */
   resolveSkills?: (objective: string, limit: number) => string[];
+  /**
+   * Diretório de entrega, RELATIVO à raiz do projeto (`--output`). Quando
+   * presente, o plano ganha um nó `kind: 'tool'` que grava o que o run
+   * produziu e cuja verificação confere o arquivo escrito. Ausente: nenhum nó
+   * do grafo recebe permissão de escrita, e o comportamento é o de antes.
+   */
+  output?: string;
 }
 
 /**
@@ -447,6 +455,35 @@ export class Commander {
     const objective = contract?.objective ?? objectiveForNode(failed, input.objective);
     const aggressive = failure.attempt >= 2;
 
+    // Nó de tool não tem plano B estrutural: não há agente para trocar, papel
+    // para subir nem tarefa para quebrar — a tool ou executou ou foi recusada,
+    // e a causa está no ambiente (permissão, política, caminho), não na
+    // escolha de quem executa. Repetir a escada aqui produziria um contrato de
+    // agente por cima de um contrato de tool, ou seja: o nó perderia a tool e
+    // a permissão, e a "correção" seria uma regressão silenciosa.
+    if (isToolContract(failed, contract)) {
+      decisions.push(
+        `nó "${failure.nodeId}" é de tool: sem alternativa estrutural (agente/papel/decomposição não se aplicam). O nó volta para a fila com o mesmo contrato.`,
+      );
+      const reopenedOnly = previous.graph.nodes.map((node) =>
+        node.id === failure.nodeId
+          ? ({ ...node, status: 'pending' as const, attempts: 0, error: undefined })
+          : ({ ...node, status: (node.status === 'succeeded' ? 'skipped' : node.status) as GraphNode['status'] }),
+      );
+      const toolGraph = this.builder.build({
+        id: `${previous.graph.id}-replan-${failure.attempt}`,
+        task: previous.graph.task,
+        nodes: reopenedOnly,
+        budget: previous.graph.budget,
+      });
+      return {
+        graph: toolGraph,
+        contracts: toolGraph.nodes.map((n) => contractOf(n)).filter((c): c is TaskContract => Boolean(c)),
+        decisions,
+        changes,
+      };
+    }
+
     // Agentes já queimados NESTE nó: o que falhou agora e os das tentativas
     // anteriores. O histórico viaja no metadata do nó, não num estado global.
     const previouslyTried = Array.isArray(failed.metadata?.triedAgents) ? (failed.metadata!.triedAgents as string[]) : [];
@@ -536,6 +573,9 @@ export class Commander {
     const classification = classify(input.objective);
     const rebuilt = nodes.map((node) => {
       if (!touched.has(node.id)) return node;
+      // Contrato de tool jamais é regerado por `contractFor`: perderia `tool` e
+      // `permissions` e o nó viraria uma chamada de modelo com o mesmo id.
+      if (isToolContract(node, contractOf(node))) return node;
       const fresh = this.contractFor(node, input, classification, 'orchestrated');
       const withFailure: TaskContract = {
         ...fresh,
@@ -594,6 +634,20 @@ export class Commander {
     const nodes = planned.map((node) => this.withTaskSkills(node, input));
     const contracts = nodes.map((node) => this.contractFor(node, input, classification, mode));
     const withContracts = nodes.map((node, i) => attachContract(node, contracts[i]));
+
+    // Entrega: depende de TODO nó anterior, então roda no último batch e vê o
+    // run inteiro. Nó pulado por early stopping não bloqueia — os batches são
+    // topológicos e calculados antes, não uma fila que espera cada predecessor.
+    if (input.output) {
+      const { node, contract } = deliverNode({
+        outputDir: input.output,
+        objective: input.objective,
+        dependencies: withContracts.map((n) => n.id),
+      });
+      withContracts.push(attachContract(node, contract));
+      contracts.push(contract);
+    }
+
     const graph = this.builder.build({
       id: `graph-${crypto.randomBytes(3).toString('hex')}`,
       task: input.objective,
@@ -893,6 +947,16 @@ export function validateDecomposition(tasks: DecomposedTask[]): string[] {
     }
   }
   return issues;
+}
+
+/**
+ * Nó de tool: o contrato declara a tool, ou o metadata do nó declara. As duas
+ * fontes existem porque o `Orchestrator` aceita as duas (`isToolNode`), e
+ * reconhecer só uma deixaria a outra escapar da proteção.
+ */
+function isToolContract(node: GraphNode, contract?: TaskContract): boolean {
+  const fromMetadata = node.metadata?.tool as { id?: unknown } | undefined;
+  return Boolean(contract?.tool?.id || (fromMetadata && typeof fromMetadata.id === 'string' && fromMetadata.id.length > 0));
 }
 
 /** Corta a causa da falha para caber no contrato sem virar um segundo prompt. */

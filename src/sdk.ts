@@ -13,9 +13,11 @@
  *   const result = await run;
  */
 
+import path from 'path';
 import { Orchestrator, type ExecuteCtx } from './runtime/orchestrator.js';
 import { LLMClient } from './runtime/llm/client.js';
 import { ContextResolver } from './runtime/orchestration/context-resolver.js';
+import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from './runtime/orchestration/delivery.js';
 import { ResponseCache } from './runtime/cache/response-cache.js';
 import {
   buildExecutionPlan,
@@ -58,10 +60,19 @@ export interface IzanagiRunOptions {
   noJudge?: boolean;
   /** Client LLM alternativo (testes, proxy, gateway próprio). */
   client?: ProducerLLMClient & { configuredProviders(): string[] };
+  /**
+   * Diretório onde o run grava a entrega, relativo a `baseDir`. Presente, o
+   * plano ganha um nó de tool que escreve o resultado e verifica o arquivo
+   * escrito — a única permissão de escrita concedida no grafo inteiro. Fora da
+   * raiz do projeto, `run()` rejeita antes de planejar.
+   */
+  output?: string;
 }
 
 export interface IzanagiRunResult {
   runId: string;
+  /** Caminho absoluto do arquivo entregue, quando `output` foi pedido e a gravação passou. */
+  deliveredTo?: string;
   status: 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'UNKNOWN';
   score: number;
   mode?: ExecutionMode;
@@ -115,6 +126,15 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
   const allProviders = client.configuredProviders();
   const providers = options.local ? allProviders.filter((p) => LOCAL_PROVIDERS.includes(p)) : allProviders;
 
+  // Destino inválido é erro de programação do chamador: falha imediata, com o
+  // motivo, em vez de um run inteiro que termina sem gravar nada.
+  let outputDir: string | undefined;
+  if (options.output) {
+    const check = validateOutputDir(baseDir, options.output);
+    if (!check.ok) throw new Error(`izanagi.run: output inválido — ${check.error}`);
+    outputDir = check.rel;
+  }
+
   const classified = classifyTask(options.objective);
   const planning = buildExecutionPlan(baseDir, {
     objective: options.objective,
@@ -125,6 +145,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(options.budget?.maxCost !== undefined ? { maxCostUsd: options.budget.maxCost } : {}),
     ...(options.model ? { model: options.model } : {}),
     availableProviders: providers,
+    ...(outputDir ? { output: outputDir } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });
 
@@ -155,6 +176,10 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
 
   const orchestrator = new Orchestrator({
     baseDir,
+    // No SDK, `baseDir` já É a raiz do projeto de quem chamou (default cwd):
+    // declarar isso explicitamente evita que a sandbox de tool caia no cwd do
+    // processo hospedeiro, que pode ser outro.
+    workspaceDir: baseDir,
     command: 'sdk',
     task: options.objective,
     category: planning.plan?.classification.category ?? classified.category,
@@ -208,6 +233,11 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
       trace: result.trace,
       traceFile: result.traceFile,
       ...(result.pendingApproval ? { pendingApproval: result.pendingApproval } : {}),
+      // Só aparece quando a gravação REALMENTE aconteceu. Devolver o caminho
+      // planejado de um nó que falhou entregaria uma promessa por um arquivo.
+      ...(outputDir && result.graph.nodes.find((n) => n.id === DELIVER_NODE_ID)?.status === 'succeeded'
+        ? { deliveredTo: path.resolve(baseDir, deliverableRelPath(outputDir, options.objective)) }
+        : {}),
       headless: providers.length === 0,
     }));
 

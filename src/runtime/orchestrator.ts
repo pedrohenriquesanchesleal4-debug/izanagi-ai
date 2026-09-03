@@ -45,6 +45,8 @@ import { runWithConcurrency, DEFAULT_MAX_CONCURRENCY } from './orchestration/con
 import type { DegradationStep } from './token/execution-budget.js';
 import { ConversationLog, type ConversationEntry } from './protocol/conversation.js';
 import { ToolRegistry, type ToolContext } from './tools/registry.js';
+import { resolveToolInput } from './tools/input-refs.js';
+import { buildDeliverable } from './orchestration/delivery.js';
 import {
   aggregateSubgraph,
   buildSubgraph,
@@ -56,6 +58,25 @@ import { formatCorrection, isBlocking, parseCritique, worstSeverity, type Critiq
 
 export interface OrchestratorOptions {
   baseDir: string;
+  /**
+   * Raiz do PROJETO do usuário. Default: o próprio `baseDir`, para que quem
+   * já construía um `Orchestrator` continue com o comportamento exato de
+   * antes — a CLI e o SDK declaram o valor certo, e nenhum caller existente
+   * muda de comportamento sem pedir.
+   *
+   * Não é a mesma coisa que `baseDir`, e a diferença importa: `baseDir` é a
+   * raiz do FRAMEWORK — `<projeto>/.agents` num projeto inicializado, ou a
+   * própria instalação do pacote quando não há uma — e é onde vive
+   * `.izanagi/state`. Rodando de dentro do checkout do framework as duas
+   * coincidem, que é exatamente por que a confusão passava despercebida: um nó
+   * `fs.read` lia dentro de `.agents/` em vez do projeto, e um check
+   * `file-exists` procurava o arquivo no lugar errado.
+   *
+   * Tudo que é do PROJETO (sandbox de tool, entrega, existência de arquivo)
+   * resolve contra este diretório. Tudo que é do RUNTIME (trace, artefatos,
+   * checkpoints, memória) continua em `baseDir`.
+   */
+  workspaceDir?: string;
   command: string;
   task: string;
   category: string;
@@ -203,7 +224,16 @@ export interface OrchestrationResult {
 }
 
 export class Orchestrator {
-  constructor(private readonly opts: OrchestratorOptions) {}
+  /**
+   * Raiz do projeto do usuário, resolvida uma vez no construtor: o cwd do
+   * processo pode mudar durante o run (um consumer que faz `chdir`), e a
+   * sandbox de uma tool não pode depender de quando ela foi chamada.
+   */
+  private readonly workspaceDir: string;
+
+  constructor(private readonly opts: OrchestratorOptions) {
+    this.workspaceDir = path.resolve(opts.workspaceDir ?? opts.baseDir);
+  }
 
   /** Pontos de extensão (compatibilidade: permite injetar implementações). */
   private store?: TraceStore;
@@ -700,6 +730,20 @@ export class Orchestrator {
       regressions: [
         ...(testsFailed > 0 ? [`${testsFailed} teste(s) falhando (test-results)`] : []),
         ...unverified.map((v) => `verificação não conclusiva: ${v.reason}`),
+        // Nó que terminou em falha SEM produzir artefato era invisível para a
+        // avaliação: `correctness` é a média das verificações registradas e
+        // `artifactValidity` a razão dos artefatos existentes — as duas
+        // ignoram quem não chegou a produzir nada. Na prática, um nó abortado
+        // por permissão negada ou por tool recusada deixava o run terminar
+        // PASS. Ausência de artefato num nó falho não é ausência de sinal: é o
+        // sinal. `skipped` fica de fora de propósito (early stopping e corte
+        // por orçamento são decisões do runtime, não falhas).
+        // Nó opcional fica de fora: crítica adversarial e revisão extra são
+        // reforço, e reforço que falha não invalida evidência que passou — é a
+        // mesma regra do critério de aceite `optional`.
+        ...workingGraph.nodes
+          .filter((n) => n.status === 'failed' && contractOf(n)?.optional !== true)
+          .map((n) => `nó "${n.id}" terminou em falha: ${n.error ?? 'motivo não registrado'}`),
       ],
       recommendations: this.critiqueRecommendations(ctx),
     });
@@ -1073,7 +1117,7 @@ export class Orchestrator {
       // Tudo a jusante (validação, registro, verificação, A2A) é o mesmo
       // caminho de um nó de agente — o que muda é quem produziu.
       let result = isToolNode(node, contract)
-        ? await this.executeTool(node, contract, ctx)
+        ? await this.executeTool(node, contract, ctx, graph)
         : await this.opts.produce(node, ctx);
       if (result.tokens) {
         ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
@@ -1157,7 +1201,7 @@ export class Orchestrator {
           contract,
           content: result.content,
           artifacts: new Map(Array.from(ctx.artifacts.entries()).map(([id, a]) => [id, { kind: a.kind, content: a.content, valid: a.valid }])),
-          baseDir: this.opts.baseDir,
+          baseDir: this.workspaceDir,
           ...(this.opts.judge ? { judge: this.opts.judge } : {}),
         });
         this.verifications.set(node.id, verification);
@@ -1405,6 +1449,7 @@ export class Orchestrator {
     node: GraphNode,
     contract: TaskContract | undefined,
     ctx: ExecuteCtx,
+    graph: ExecutionGraph,
   ): Promise<{ content: unknown; kind: string; tokens?: number; model?: string }> {
     const spec = contract?.tool ?? (node.metadata?.tool as { id: string; input: unknown } | undefined);
     if (!spec?.id) {
@@ -1427,12 +1472,48 @@ export class Orchestrator {
 
     const toolCtx: ToolContext = {
       permissions: contract?.permissions ?? [],
-      baseDir: this.opts.baseDir,
+      baseDir: this.workspaceDir,
       environment: this.opts.environment ?? 'development',
       trustTier,
     };
 
-    const outcome = await registry.execute(spec.id, spec.input, toolCtx);
+    // Marcadores do input resolvidos AGORA: o plano declarou "grave o que o run
+    // produziu", e só neste ponto existe o que o run produziu. Substituição
+    // determinística, sem modelo — e recusada em `code.execute`, onde levar
+    // saída de agente para dentro de código executado seria injeção.
+    let input: unknown;
+    try {
+      input = resolveToolInput(spec.id, spec.input, {
+        artifact: (nodeId) => {
+          const produced = ctx.artifacts.get(nodeId);
+          if (!produced) {
+            throw new Error(
+              `nó "${node.id}" referencia o artefato de "${nodeId}", que não existe no run (nó não executado, pulado ou falho)`,
+            );
+          }
+          return typeof produced.content === 'string' ? produced.content : JSON.stringify(produced.content, null, 2);
+        },
+        deliverable: () =>
+          buildDeliverable({
+            objective: this.opts.task,
+            runId: ctx.runId,
+            mode: this.opts.plan?.mode ?? 'orchestrated',
+            order: graph.order,
+            artifacts: [...ctx.artifacts.entries()].map(([nodeId, a]) => ({
+              nodeId,
+              kind: a.kind,
+              content: a.content,
+              valid: a.valid,
+            })),
+          }),
+      });
+    } catch (e) {
+      // Referência quebrada é falha do NÓ, não exceção do runtime: entra na
+      // verificação e no healing como qualquer outra, com a causa dita.
+      throw new Error(`nó "${node.id}": ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    const outcome = await registry.execute(spec.id, input, toolCtx);
     ctx.trace.markTool(`tool:${spec.id}`);
     ctx.trace.span(`tool:${spec.id}`, 'tool', {
       node: node.id,

@@ -109,6 +109,19 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     // os campos obrigatórios, não o tamanho.
     minSize: 20,
   },
+  /**
+   * Entrega gravada em disco pelo nó de tool. O artefato NÃO é o documento: é
+   * o comprovante da escrita (`{ written: <caminho> }`) devolvido pela
+   * `ToolRegistry`. Por isso `written` é obrigatório e o teto de tamanho é
+   * baixo — um comprovante grande significaria que alguém trocou o
+   * comprovante pelo conteúdo, e a verificação passaria a conferir a coisa
+   * errada.
+   */
+  delivery: {
+    kind: 'delivery',
+    required: ['written'],
+    minSize: 12,
+  },
   raw: {
     kind: 'raw',
     required: [],

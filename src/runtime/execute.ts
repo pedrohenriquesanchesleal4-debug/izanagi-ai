@@ -49,6 +49,12 @@ export interface PlanningInput {
    * decisão de plano sem o histórico interferindo.
    */
   noMemory?: boolean;
+  /**
+   * Diretório de entrega relativo à raiz do projeto (`--output`). Presente,
+   * acrescenta ao plano o nó de tool que grava o resultado do run e verifica o
+   * arquivo escrito. Ausente, nenhum nó recebe permissão de escrita.
+   */
+  output?: string;
 }
 
 export interface PlanningOutput {
@@ -129,6 +135,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(skillResolver
           ? { resolveSkills: (objective: string, limit: number) => skillResolver.rankSkills(objective, limit).map((s) => s.alias) }
           : {}),
+        ...(input.output ? { output: input.output } : {}),
         estimateCostUsd: (role, tokens) => router.estimateCostForRole(role, tokens),
       });
 

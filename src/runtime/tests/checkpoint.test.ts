@@ -15,11 +15,22 @@ function tmpDir(): string {
 
 const LONG_TEXT = 'Aqui temos um artefato completo e extenso para validação. '.repeat(20);
 
+/**
+ * Conteúdo que satisfaz o schema de cada kind exercitado aqui.
+ *
+ * `test-plan` e `repro` entraram quando a avaliação passou a contar nó falho
+ * como regressão: antes, o nó `regression-test` produzia um artefato sem
+ * "unit"/"integration", terminava `failed`, o nó de avaliação nem rodava — e
+ * o run ainda saía PASS. O teste continuava verde medindo a coisa errada.
+ */
 function validContentFor(kind: string | undefined): string {
   const req: Record<string, string> = {
     implementation: '',
     'qa-report': 'summary results',
     evaluation: 'verdict score metrics',
+    'test-plan': 'unit integration scenarios',
+    repro: 'steps expected actual',
+    'root-cause': 'cause evidence',
   };
   return LONG_TEXT + ((kind && req[kind]) ?? '');
 }
