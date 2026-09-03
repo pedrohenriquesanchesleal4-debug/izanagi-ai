@@ -103,6 +103,7 @@ src/
     │   ├── registry.ts              # ToolRegistry (least privilege, policy no caminho, MCP-ready)
     │   ├── input-refs.ts            # Marcadores $artifact/$deliverable; code.execute recusa marcador
     │   ├── project-survey.ts        # Varredura determinística do projeto, com corte declarado
+    │   ├── file-manifest.ts         # Parser do contrato de materialização; validação tudo-ou-nada
     │   └── code-sandbox.ts          # Processo isolado com Permission Model do Node (rede NÃO isolada)
     ├── notify/webhook.ts            # Fim de run para agendador: metadado, nunca conteúdo de artefato
     ├── evolution/
@@ -162,6 +163,11 @@ src/
                      │     inconclusivo                            │
                      │                                             └──► TASK GRAPH
                      ▼
+              [materialize]  nó de tool · fs:write · 0 token
+              o código declarado pelo agente vira arquivo em <output>/<slug>/
+              (tudo ou nada; NUNCA por cima da fonte do projeto)
+                     │
+                     ▼
                  [deliver]  nó de tool · fs:write · 0 token
                  grava a entrega, e a verificação confere o arquivo escrito
                      │
@@ -171,8 +177,9 @@ src/
 Ao redor: Budget Controller (custo/tempo/chamadas + degradação) · Response Cache ·
 Memory · Decision Journal · Policy Engine · Tracer/EventBus · Telemetria de economia
 
-Menor privilégio: `survey` e `deliver` são os ÚNICOS nós com permissão. Nenhum nó
-de agente lê arquivo, escreve arquivo ou executa comando.
+Menor privilégio: só nó de TOOL tem permissão (`survey` lê, `materialize` e
+`deliver` escrevem). Nenhum nó de agente lê arquivo, escreve arquivo ou executa
+comando — e há teste que percorre o plano inteiro conferindo isso.
 ```
 
 ---

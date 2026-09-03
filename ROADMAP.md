@@ -244,6 +244,19 @@ escrevia sobre um repositório que nunca tinha visto.
       `deliver` recebe `fs:write`, e nenhum nó de agente recebe permissão
       nenhuma. Há teste que percorre o plano inteiro conferindo isso.
 
+- [x] **Nó `materialize` (`project.materialize`)**: o código que o agente
+      escreve vira arquivo. O Blueprint Engine já definia o contrato de
+      materialização, mas só em `--prompt-only` — um texto para a pessoa colar
+      em outra ferramenta. Agora o contrato da tarefa PEDE o formato e um
+      parser determinístico o materializa. A fronteira que torna isto
+      defensável: os arquivos vão para um subdiretório da SAÍDA, nunca por cima
+      do código do projeto. Escrita é tudo ou nada — a validação roda sobre o
+      manifesto inteiro antes de qualquer arquivo tocar o disco.
+- [x] **Outcome `not-applicable` na verificação**: distinto de `unknown`. O
+      primeiro é "a pergunta não existe para este artefato", o segundo é
+      "havia pergunta e não houve resposta". Sem a distinção, groundedness
+      derrubava toda ADR para `UNVERIFIED` — um critério que reprova por não se
+      aplicar é um critério que ninguém mantém ligado.
 - [x] **Check `references-exist` (groundedness)**: a verificação passou a
       perguntar se o artefato corresponde a alguma realidade, e não só se ele
       tem os campos do schema. A fronteira que dá valor à checagem: reprovar
@@ -281,10 +294,15 @@ escrevia sobre um repositório que nunca tinha visto.
 
 ### Limitações desta fase
 
-- **A entrega é um documento, não um patch.** O run grava o que produziu; ele
-  não altera o código do projeto. Materializar arquivos de implementação exige
-  um contrato de manifesto que o modelo cumpra de forma verificável, e essa é
-  outra ordem de problema.
+- **A materialização não toca o código do projeto, e isso é a decisão, não a
+  limitação.** Os arquivos vão para `<output>/<slug>/`; aplicar por cima da
+  fonte exigiria uma garantia que nenhuma verificação determinística consegue
+  dar hoje. Quem quer aplicar revisa e copia — e é aí que uma pessoa olha o
+  diff, que é exatamente o passo que não se deve automatizar antes de tempo.
+- **O manifesto só é reconhecido no formato combinado.** `### FILE: <caminho>`
+  seguido de bloco de código. Inferir caminho do texto ao redor ou do nome da
+  linguagem na cerca seria adivinhar o destino de um arquivo que vai ser
+  gravado, e esse erro só aparece depois de gravado.
 - **O survey conta, não julga.** Ele devolve stack, contagem por extensão e
   manifestos. Não devolve "o projeto usa arquitetura X": quem interpreta é o
   agente a jusante, e essa separação é deliberada.

@@ -194,9 +194,17 @@ test('plano: com --output a entrega é o último nó e depende de todos os outro
   const lastBatch = plan.graph.parallelBatches[plan.graph.parallelBatches.length - 1];
   assert.deepEqual(lastBatch, [DELIVER_NODE_ID]);
   assert.deepEqual(plan.issues, [], 'contrato da entrega precisa ser válido como qualquer outro');
-  // Permissão de escrita existe em UM nó só.
-  const withWrite = plan.contracts.filter((c) => (c.permissions ?? []).includes('fs:write')).map((c) => c.id);
-  assert.deepEqual(withWrite, [DELIVER_NODE_ID]);
+
+  // Escrita existe SÓ em nó de tool. Este é o invariante que importa: não
+  // "um nó escreve", e sim "nenhum agente escreve".
+  const withWrite = plan.contracts.filter((c) => (c.permissions ?? []).includes('fs:write'));
+  assert.ok(withWrite.length > 0);
+  for (const c of withWrite) assert.ok(c.tool, `"${c.id}" tem permissão de escrita sem ser nó de tool`);
+  assert.deepEqual(
+    plan.contracts.filter((c) => !c.tool && (c.permissions ?? []).length > 0).map((c) => c.id),
+    [],
+    'nenhum nó de agente pode ter permissão',
+  );
 });
 
 test('plano: entrega também vale no modo direct — quem pediu --output pediu o arquivo', () => {

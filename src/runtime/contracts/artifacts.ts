@@ -135,6 +135,17 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     required: ['root', 'stack', 'tree', 'truncated'],
     minSize: 40,
   },
+  /**
+   * Comprovante de materialização devolvido por `project.materialize`.
+   * `candidates` é obrigatório junto com `written` para que "nenhum arquivo
+   * declarado" (`candidates: 0`) não se confunda com "escreveu": os dois casos
+   * têm `written` vazio, e sem o primeiro campo eles seriam indistinguíveis.
+   */
+  materialization: {
+    kind: 'materialization',
+    required: ['dir', 'candidates', 'written'],
+    minSize: 20,
+  },
   raw: {
     kind: 'raw',
     required: [],

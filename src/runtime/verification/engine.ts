@@ -33,11 +33,33 @@ export type VerificationStatus = 'VERIFIED' | 'UNVERIFIED' | 'FAILED';
  */
 export const DEFAULT_GROUNDEDNESS_RATIO = 0.5;
 
+/**
+ * Resultado de um critério.
+ *
+ * A distinção que importa é entre `unknown` e `not-applicable`, e ela não é
+ * cosmética:
+ *
+ *   unknown        : havia uma pergunta a responder e a resposta não foi
+ *                    obtida (juiz semântico ausente, `file-exists` sem raiz).
+ *                    NUNCA vira aprovação — é a regra que impede "ninguém
+ *                    reprovou, então passou".
+ *   not-applicable : a pergunta não existe para este artefato. Groundedness
+ *                    num texto que não cita caminho nenhum não está sem
+ *                    resposta: está respondida por vacuidade, e não há como o
+ *                    artefato estar errado sobre caminhos que ele não citou.
+ *
+ * Tratar o segundo caso como `unknown` fazia todo artefato de prosa cair em
+ * UNVERIFIED por um critério que não tinha o que medir nele — e um critério
+ * que reprova por não se aplicar é um critério que ninguém vai manter ligado.
+ *
+ * Só um check que consegue PROVAR a inaplicabilidade devolve `not-applicable`.
+ * Na dúvida, `unknown`.
+ */
 export interface CheckResult {
   criterionId: string;
   description: string;
   layer: 'deterministic' | 'evidence' | 'semantic';
-  outcome: 'pass' | 'fail' | 'unknown';
+  outcome: 'pass' | 'fail' | 'unknown' | 'not-applicable';
   message?: string;
   optional: boolean;
 }
@@ -113,7 +135,7 @@ function toText(content: unknown): string {
 export function runCheck(
   check: DeterministicCheck,
   ctx: { content: unknown; text: string; kind: string; baseDir?: string },
-): { outcome: 'pass' | 'fail' | 'unknown'; message?: string } {
+): { outcome: 'pass' | 'fail' | 'unknown' | 'not-applicable'; message?: string } {
   switch (check.kind) {
     case 'artifact-valid': {
       const report = validateArtifact(ctx.kind as never, ctx.content);
@@ -177,9 +199,11 @@ export function runCheck(
       const report = checkGroundedness(ctx.text, ctx.baseDir);
       if (report.ratio === null) {
         // Artefato que não cita caminho nenhum (uma ADR, um relatório de
-        // pesquisa) não é mais nem menos fundamentado por isso. `unknown`
-        // mantém a regra: ausência de evidência não vira aprovação.
-        return { outcome: 'unknown', message: 'o artefato não cita caminho de arquivo: nada a conferir contra o projeto' };
+        // pesquisa) não está SEM resposta: está respondido por vacuidade. Não
+        // há como estar errado sobre caminhos que não citou. `unknown` aqui
+        // derrubaria todo artefato de prosa para UNVERIFIED por um critério
+        // que não tinha o que medir nele.
+        return { outcome: 'not-applicable', message: 'o artefato não cita caminho de arquivo: nada a conferir contra o projeto' };
       }
       const min = check.minRatio ?? DEFAULT_GROUNDEDNESS_RATIO;
       if (report.ratio >= min) return { outcome: 'pass' };
@@ -265,7 +289,10 @@ export class VerificationEngine {
     const own = validateArtifact(kind as never, input.content);
     evidence.push({ kind: 'artifact', ref: contract.id, valid: own.valid, detail: `${kind}, score ${own.score.toFixed(2)}` });
 
-    const required = checks.filter((c) => !c.optional);
+    // Critério inaplicável sai da conta inteira: não conta como aprovado (não
+    // houve prova) nem como pendente (não há o que provar). Contá-lo como
+    // aprovado inflaria o score com nada.
+    const required = checks.filter((c) => !c.optional && c.outcome !== 'not-applicable');
     const failed = required.filter((c) => c.outcome === 'fail');
     const unknown = required.filter((c) => c.outcome === 'unknown');
     const passed = required.filter((c) => c.outcome === 'pass');

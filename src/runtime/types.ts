@@ -93,6 +93,7 @@ export type ArtifactKind =
   | 'critique'
   | 'delivery'
   | 'project-survey'
+  | 'materialization'
   | 'raw';
 
 export interface ArtifactRef {

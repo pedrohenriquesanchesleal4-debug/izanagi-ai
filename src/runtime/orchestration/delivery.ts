@@ -23,14 +23,37 @@ import path from 'path';
 import type { GraphNode } from '../types.js';
 import type { AcceptanceCriterion, TaskContract } from '../contracts/task-contract.js';
 
-/** Kinds que descrevem o PROCESSO do run, não o produto dele. */
-const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace']);
+/**
+ * Kinds que descrevem o PROCESSO do run, não o produto dele.
+ *
+ * `project-survey` e `materialization` entram aqui porque são, respectivamente,
+ * o que o run leu antes de trabalhar e o comprovante do que ele gravou —
+ * úteis para auditar a execução, e não a entrega que alguém pediu.
+ */
+const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace', 'project-survey', 'materialization']);
 
 /** Teto por artefato no documento entregue, com o corte declarado no próprio texto. */
 export const MAX_SECTION_CHARS = 128 * 1024;
 
 /** Id do nó de entrega. Fixo: `izanagi explain` e os testes referenciam por nome. */
 export const DELIVER_NODE_ID = 'deliver';
+
+/** Id do nó de materialização. */
+export const MATERIALIZE_NODE_ID = 'materialize';
+
+/**
+ * Contrato de materialização levado ao PROMPT do agente.
+ *
+ * O Blueprint Engine já dizia isto — declare a árvore, escreva cada arquivo
+ * completo, zero stub — mas só em `--prompt-only`, num texto para a pessoa
+ * colar em outra ferramenta. Dentro do runtime o contrato não existia, e o
+ * parser só reconhece o que foi combinado: pedir o formato é o que torna a
+ * materialização determinística em vez de adivinhação sobre a saída.
+ */
+export const MATERIALIZATION_CONSTRAINT =
+  'ao entregar código, declare CADA arquivo com o marcador "### FILE: <caminho relativo>" ' +
+  'seguido do bloco de código completo em cerca tripla; caminho relativo ao projeto, ' +
+  'arquivo inteiro e funcional, zero TODO/FIXME/stub (arquivo com marca de trabalho não feito é recusado inteiro)';
 
 export interface DeliverableArtifact {
   nodeId: string;
@@ -187,6 +210,81 @@ export function validateOutputDir(baseDir: string, outputDir: string): { ok: tru
   }
   const rel = path.relative(root, abs);
   return { ok: true, rel: normalizeDir(rel === '' ? '.' : rel) };
+}
+
+/**
+ * Nó de materialização + contrato.
+ *
+ * Escreve os arquivos declarados pelos agentes num subdiretório da saída — e
+ * NUNCA por cima do código do projeto. Essa é a fronteira que torna a
+ * materialização defensável: o que o runtime produz fica num lugar que o
+ * usuário nomeou e pode revisar, apagar ou copiar. Sobrescrever fonte exigiria
+ * uma garantia que nenhuma verificação determinística consegue dar hoje.
+ */
+export function materializeNode(opts: {
+  outputDir: string;
+  objective: string;
+  dependencies: string[];
+  /** Nó cujo artefato carrega o manifesto (normalmente o de implementação). */
+  manifestFrom: string;
+}): { node: GraphNode; contract: TaskContract } {
+  const dir = path.posix.join(normalizeDir(opts.outputDir), slugify(opts.objective));
+  const spec = {
+    id: 'project.materialize',
+    input: { dir, manifest: { $artifact: opts.manifestFrom } },
+  };
+  const acceptance: AcceptanceCriterion[] = [
+    {
+      id: `${MATERIALIZE_NODE_ID}:valid`,
+      description: 'comprovante de materialização válido contra o schema',
+      kind: 'deterministic',
+      check: { kind: 'artifact-valid' },
+    },
+    {
+      id: `${MATERIALIZE_NODE_ID}:counted`,
+      description: 'o comprovante diz quantos arquivos foram declarados',
+      kind: 'deterministic',
+      check: {
+        kind: 'json-field',
+        field: 'candidates',
+        message: 'sem a contagem de declarados, "nenhum arquivo" e "escreveu" ficam indistinguíveis',
+      },
+    },
+  ];
+
+  const node: GraphNode = {
+    id: MATERIALIZE_NODE_ID,
+    kind: 'tool',
+    outputs: ['materialization'],
+    dependencies: [...opts.dependencies],
+    status: 'pending',
+    tokenBudget: 0,
+    timeoutMs: 60_000,
+    metadata: { role: 'worker', tool: spec },
+  };
+
+  const contract: TaskContract = {
+    id: MATERIALIZE_NODE_ID,
+    objective: `materializar em "${dir}" os arquivos declarados por "${opts.manifestFrom}"`,
+    role: 'worker',
+    inputs: [opts.manifestFrom],
+    constraints: [],
+    expectedOutput: { kind: 'materialization' },
+    dependencies: [...opts.dependencies],
+    priority: 'normal',
+    budget: { maxTokens: 0, maxTimeMs: 60_000, maxToolCalls: 1 },
+    verification: { deterministic: acceptance.map((c) => c.check!), requireAllCriteria: true },
+    acceptance,
+    permissions: ['fs:write'],
+    tool: spec,
+  };
+
+  return { node, contract };
+}
+
+/** Diretório onde os arquivos materializados de um objetivo vão parar. */
+export function materializeRelDir(outputDir: string, objective: string): string {
+  return path.posix.join(normalizeDir(outputDir), slugify(objective));
 }
 
 /**

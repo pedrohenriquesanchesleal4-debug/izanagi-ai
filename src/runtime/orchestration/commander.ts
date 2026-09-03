@@ -39,7 +39,7 @@ import {
 import type { AgentCapabilityRegistry } from '../registry/capabilities.js';
 import { ModelRouter } from '../model/router.js';
 import { detectDomains, type Domain } from './domains.js';
-import { DELIVER_NODE_ID, deliverNode } from './delivery.js';
+import { DELIVER_NODE_ID, MATERIALIZATION_CONSTRAINT, MATERIALIZE_NODE_ID, deliverNode, materializeNode } from './delivery.js';
 import { SURVEY_NODE_ID, surveyNode, withSurveyAtHead } from './grounding.js';
 
 export type { Domain } from './domains.js';
@@ -656,6 +656,24 @@ export class Commander {
       contracts.unshift(contract);
     }
 
+    // Materialização: só quando existe um nó cujo artefato pode CARREGAR
+    // código. Pendurar isto em qualquer artefato faria o runtime tentar
+    // materializar uma ADR, e o resultado seria sempre "nenhum arquivo
+    // declarado" — ruído com aparência de etapa.
+    if (input.output) {
+      const manifestFrom = codeBearingNode(withContracts);
+      if (manifestFrom) {
+        const { node, contract } = materializeNode({
+          outputDir: input.output,
+          objective: input.objective,
+          dependencies: [manifestFrom],
+          manifestFrom,
+        });
+        withContracts.push(attachContract(node, contract));
+        contracts.push(contract);
+      }
+    }
+
     // Entrega: depende de TODO nó anterior, então roda no último batch e vê o
     // run inteiro. Nó pulado por early stopping não bloqueia — os batches são
     // topológicos e calculados antes, não uma fila que espera cada predecessor.
@@ -863,7 +881,7 @@ export class Commander {
       ...base,
       role,
       objective: objectiveForNode(node, input.objective),
-      constraints: constraintsFor(classification, mode),
+      constraints: constraintsFor(classification, mode, { materialize: Boolean(input.output) && bearsCode(kind) }),
       priority: classification.risk > 0.6 ? 'high' : 'normal',
       budget: {
         maxTokens: node.tokenBudget ?? 4000,
@@ -939,13 +957,41 @@ function objectiveForNode(node: GraphNode, runObjective: string): string {
   return `${node.id} (${label}): produzir "${node.outputs?.[0] ?? 'raw'}" para o objetivo do run: ${runObjective}`;
 }
 
-function constraintsFor(classification: Classification, mode: ExecutionMode): string[] {
+/**
+ * Kinds cujo artefato pode carregar CÓDIGO, e portanto um manifesto de
+ * arquivos. Lista explícita e curta: pendurar materialização em qualquer
+ * artefato faria o runtime tentar materializar uma ADR.
+ */
+const CODE_BEARING_KINDS = new Set(['implementation', 'fixes', 'database-schema', 'api-contract']);
+
+function bearsCode(kind: string): boolean {
+  return CODE_BEARING_KINDS.has(kind);
+}
+
+/** Último nó do grafo cujo artefato pode carregar código, ou null. */
+function codeBearingNode(nodes: GraphNode[]): string | null {
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const kind = nodes[i].outputs?.[0];
+    if (kind && bearsCode(kind)) return nodes[i].id;
+  }
+  return null;
+}
+
+function constraintsFor(
+  classification: Classification,
+  mode: ExecutionMode,
+  opts: { materialize?: boolean } = {},
+): string[] {
   const constraints = [
     'zero stubs, TODO, placeholder ou checklist: conteúdo real e completo',
     'responder apenas o artefato pedido, sem repetir contexto já fornecido',
   ];
   if (classification.risk > 0.6) constraints.push('nenhum segredo, credencial ou dado sensível em texto claro');
   if (mode === 'direct') constraints.push('resposta direta e curta: a tarefa não justifica elaboração longa');
+  // O parser de manifesto só reconhece o que foi combinado. Pedir o formato é o
+  // que torna a materialização determinística em vez de adivinhação sobre a
+  // saída do modelo.
+  if (opts.materialize) constraints.push(MATERIALIZATION_CONSTRAINT);
   return constraints;
 }
 

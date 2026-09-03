@@ -286,7 +286,29 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 | `fs.read` / `fs.ls` | `fs:read` | Lê arquivo / lista diretório dentro da zona permitida |
 | `fs.write` | `fs:write` | Grava arquivo (cria diretórios), com Unicode Hygiene aplicada antes |
 | `project.survey` | `fs:read` | Levanta stack, manifestos, árvore por extensão, entrypoints e começo do README. Conta e lista; **não abre arquivo de código**, e o script do `package.json` entra pelo NOME e nunca pelo comando |
+| `project.materialize` | `fs:write` | Escreve os arquivos declarados num manifesto de agente (`### FILE: <caminho>` + bloco de código). Tudo ou nada, e só dentro do diretório de saída |
 | `code.execute` | `shell` | Script Node ESM em processo isolado (Permission Model). Rede **não** é isolada, e a política nega `shell` a `generated`/`community` |
+
+### Materialização (`tools/file-manifest.ts`)
+
+O Blueprint Engine (`cli/blueprint.ts`) já definia o contrato de materialização — declare a árvore, escreva cada arquivo completo, zero stub — mas só em `--prompt-only`, isto é, num texto para a pessoa colar em outra ferramenta. Dentro do runtime o contrato não existia: o agente entregava código dentro de um artefato de texto, e o texto ia para o content store.
+
+Agora o `TaskContract` de um nó que produz artefato capaz de carregar código PEDE o formato, e o parser reconhece exatamente ele:
+
+```
+### FILE: src/routes/pagination.ts
+```ts
+export function paginate(page: number) { ... }
+```
+```
+
+Três decisões que definem o comportamento:
+
+- **Nunca por cima da fonte.** Os arquivos vão para `<output>/<slug do objetivo>/`. O que o runtime produz fica num lugar que o usuário nomeou e pode revisar, apagar ou copiar. Aplicar sobre o código do projeto exigiria uma garantia que nenhuma verificação determinística consegue dar hoje.
+- **Tudo ou nada.** A validação roda sobre o manifesto INTEIRO antes de qualquer escrita. Materialização parcial que se declara concluída é a desonestidade que a verificação por evidência existe para impedir: o usuário veria "6 arquivos escritos" sem saber que 3 foram recusados.
+- **Só o formato combinado.** Inferir caminho do texto ao redor ou do nome da linguagem na cerca seria adivinhar o destino de um arquivo que vai ser gravado — e esse erro só aparece depois de gravado.
+
+Recusas: caminho absoluto (o destino é de quem executa, não do agente), escape de diretório, caminho declarado duas vezes, arquivo vazio, marca de trabalho não feito (`TODO`/`FIXME`/`implement later`), e os tetos de 60 arquivos / 256KB por arquivo / 2MB no total.
 
 ### Groundedness (`verification/groundedness.ts`)
 
@@ -297,7 +319,7 @@ A fronteira que dá valor à checagem é o que ela NÃO pergunta. Não é "todos
 - **Extração conservadora**: exige separador de diretório E extensão conhecida. `GET /users` é rota e não entra; `package.json` sem diretório não entra. Precisão importa mais que cobertura — reprovar um caminho legítimo faz o usuário desconfiar da verificação inteira, e o estado anterior era não checar nada.
 - **Resolve contra a raiz E contra cada diretório de primeiro nível.** Gente e modelo escrevem caminho relativo à raiz de FONTE (`runtime/x.ts` para `src/runtime/x.ts`). Sem isso, o `docs/HANDOFF.md` deste próprio repositório saía com 0 de 17 caminhos fundamentados.
 - **Piso de 0.5**: o artefato legítimo mistura o que existe com o que propõe criar. Abaixo de metade não é mistura, é outro projeto.
-- **Sem referência nenhuma → `UNKNOWN`**, nunca aprovado. Mesma regra do juiz semântico ausente.
+- **Sem referência nenhuma → `NOT-APPLICABLE`**, um outcome distinto de `UNKNOWN`. A diferença não é cosmética: `unknown` é "havia uma pergunta e a resposta não foi obtida" (juiz ausente) e nunca vira aprovação; `not-applicable` é "a pergunta não existe para este artefato" — uma ADR que não cita arquivo nenhum não está sem resposta, está respondida por vacuidade. Tratar o segundo como o primeiro derrubava todo artefato de prosa para `UNVERIFIED`, e um critério que reprova por não se aplicar é um critério que ninguém mantém ligado. Critério inaplicável sai da conta: não conta como aprovado nem como pendente.
 - **Cobrado só quando o survey rodou.** Exigir um layout que nunca foi mostrado ao agente seria reprovar por informação que o runtime decidiu não dar.
 
 ### Marcadores de input (`tools/input-refs.ts`)

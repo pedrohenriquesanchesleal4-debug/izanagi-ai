@@ -112,10 +112,45 @@ test('check: sem baseDir fica UNKNOWN em vez de fingir conferência', () => {
   assert.equal(out.outcome, 'unknown');
 });
 
-test('check: artefato sem caminho citado fica UNKNOWN — ausência de sinal não é aprovação', () => {
+test('check: artefato sem caminho citado é NOT-APPLICABLE, não UNKNOWN', () => {
   const root = projectRoot();
   const out = runCheck({ kind: 'references-exist' }, { content: 'texto', text: 'Use CQRS.', kind: 'raw', baseDir: root });
-  assert.equal(out.outcome, 'unknown');
+  // A distinção não é cosmética: `unknown` derruba o nó para UNVERIFIED, e
+  // uma ADR que não cita arquivo nenhum não está sem resposta — está
+  // respondida por vacuidade. Como `unknown`, o check reprovaria todo
+  // artefato de prosa por não ter o que medir nele, e ninguém o manteria ligado.
+  assert.equal(out.outcome, 'not-applicable');
+  assert.notEqual(out.outcome, 'unknown');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('verificação: critério inaplicável não derruba o nó nem infla o score', async () => {
+  const root = projectRoot();
+  const contract: TaskContract = {
+    id: 'adr',
+    objective: 'decidir a arquitetura',
+    role: 'commander',
+    inputs: [],
+    constraints: [],
+    expectedOutput: { kind: 'raw' },
+    dependencies: [],
+    priority: 'normal',
+    budget: { maxTokens: 1000 },
+    verification: { deterministic: [], requireAllCriteria: false },
+    acceptance: [
+      { id: 'adr:size', description: 'tem conteúdo', kind: 'deterministic', check: { kind: 'min-size', bytes: 10 } },
+      { id: 'adr:grounded', description: 'caminhos citados existem', kind: 'deterministic', check: { kind: 'references-exist' } },
+    ],
+  };
+  const result = await new VerificationEngine().verify({
+    contract,
+    content: 'Adotar CQRS separando leitura de escrita, sem citar arquivo nenhum.',
+    baseDir: root,
+  });
+  assert.equal(result.status, 'VERIFIED');
+  assert.equal(result.score, 1, 'um critério obrigatório, um aprovado');
+  assert.equal(result.checks.find((c) => c.criterionId === 'adr:grounded')?.outcome, 'not-applicable');
+  assert.deepEqual(result.unmet, [], 'inaplicável não é pendência');
   fs.rmSync(root, { recursive: true, force: true });
 });
 

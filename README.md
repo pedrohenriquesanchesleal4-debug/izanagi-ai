@@ -77,11 +77,14 @@ Dois nós do plano não chamam modelo nenhum: eles passam pela `ToolRegistry`, c
 | Nó | Quando | Permissão | O que faz |
 |---|---|---|---|
 | `survey` | default num diretório com manifesto reconhecido; `--no-survey` desliga | `fs:read` | Levanta stack, manifestos, árvore por extensão, entrypoints e o começo do README. O resultado entra no contexto mínimo das tarefas raiz |
+| `materialize` | `--output <dir>`, e só quando o plano produz artefato que pode carregar código | `fs:write` | Escreve os arquivos que o agente declarou (`### FILE: <caminho>` + bloco de código) em `<output>/<slug>/` |
 | `deliver` | `--output <dir>` | `fs:write` | Grava o que o run produziu num documento único dentro do projeto |
 
-Nenhum outro nó do grafo recebe permissão nenhuma: um agente não escreve, não lê arquivo e não executa comando.
+Nenhum nó de agente recebe permissão nenhuma: um agente não escreve, não lê arquivo e não executa comando. Há teste que percorre o plano inteiro conferindo isso nó a nó.
 
 O survey existe porque a alternativa era pior e invisível: um agente escrevia sobre um projeto que nunca viu, inventava a stack e os caminhos, e o artefato passava na verificação — o schema pergunta se os campos existem, não se correspondem a alguma realidade. O levantamento é determinístico (não custa token), tem teto de profundidade e de entradas, e **declara o próprio corte**. Só as raízes do grafo dependem dele: repetir o mesmo levantamento em sete prompts seria a duplicação de contexto que a arquitetura proíbe.
+
+A materialização tem uma fronteira que a torna defensável: os arquivos vão para um subdiretório da saída, **nunca por cima do código do projeto**. Aplicar sobre a fonte exigiria uma garantia que nenhuma verificação determinística consegue dar hoje; quem quer aplicar revisa e copia — e é aí que uma pessoa olha o diff. A escrita é **tudo ou nada**: a validação roda sobre o manifesto inteiro antes de qualquer arquivo tocar o disco, porque "6 arquivos escritos, 3 recusados" é o relatório que engana. Arquivo vazio, caminho absoluto, escape de diretório e marca de trabalho não feito (`TODO`, `FIXME`, `implement later`) recusam o manifesto inteiro.
 
 A entrega muda o que a verificação significa. Um critério `file-exists` sobre um arquivo que ninguém escreveu passa quando o arquivo já existia por outro motivo; aqui o arquivo é gravado pela `ToolRegistry` e conferido depois, então o critério passa a significar "o runtime gravou isto". O nome do arquivo sai do objetivo, então repetir o mesmo objetivo reescreve a mesma entrega em vez de acumular um arquivo por execução — entrega é produto, e o histórico continua em `.izanagi/state/`.
 

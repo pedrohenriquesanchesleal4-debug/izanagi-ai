@@ -551,6 +551,13 @@ async function finishForScheduler(result: OrchestrationResult | undefined, parse
   if (code !== 0) process.exitCode = code;
 }
 
+/** Comprovante devolvido por `project.materialize`: o que o run gravou, e onde. */
+interface MaterializationReceipt {
+  dir?: string;
+  candidates?: number;
+  written?: string[];
+}
+
 /** Restaurador do console silenciado por `--json` (no-op quando não houve). */
 let restoreConsole: () => void = () => {};
 
@@ -705,6 +712,8 @@ export async function runRuntime(
     console.log(`  Juiz semântico: desligado (${opts.noJudge ? '--no-judge' : 'sem provider configurado'}) — critérios semânticos ficarão sem evidência conclusiva.`);
   }
 
+  let receipt: MaterializationReceipt | undefined;
+
   const orchestrator = new Orchestrator({
     baseDir,
     // Raiz do projeto do usuário: é contra ela que a sandbox de tool e o check
@@ -737,7 +746,13 @@ export async function runRuntime(
     trustTierOf: planning.trustTierOf,
     produce: (node: GraphNode, ctx: ExecuteCtx) =>
       (llmProviders.length === 0 ? headlessProducer : llmProducer)(node, ctx),
-    consume: (node: GraphNode, artifact: { kind: string; valid: boolean }) => {
+    consume: (node: GraphNode, artifact: { kind: string; content?: unknown; valid: boolean }) => {
+      // O comprovante de materialização é o único artefato que a CLI guarda:
+      // é o que diz ao usuário QUAIS arquivos o run escreveu, e sem isso ele
+      // teria que ir procurar no diretório de saída para descobrir.
+      if (artifact.kind === 'materialization') {
+        receipt = artifact.content as MaterializationReceipt;
+      }
       if (!artifact.valid) {
         console.log(`  \x1b[33m⚠\x1b[0m Nó "${node.id}": artefato inválido (${artifact.kind})`);
       }
@@ -786,6 +801,17 @@ export async function runRuntime(
     }
   }
   if (opts.output) {
+    // Arquivos materializados: o run escreveu código de verdade, e o usuário
+    // precisa saber ONDE antes de procurar. Zero declarado é informação, não
+    // silêncio — o run pode ter produzido só documento.
+    if (receipt && typeof receipt.candidates === 'number') {
+      const written = receipt.written?.length ?? 0;
+      console.log(
+        written > 0
+          ? `  \x1b[90mArquivos:\x1b[0m \x1b[32m✔\x1b[0m ${written} materializado(s) em ${receipt.dir}/`
+          : `  \x1b[90mArquivos:\x1b[0m nenhum arquivo declarado pelos agentes (o run entregou documento, não código)`,
+      );
+    }
     // Onde a entrega foi parar. Sem esta linha o usuário precisa adivinhar a
     // raiz que o runtime resolveu — que nem sempre é o cwd de onde ele chamou.
     const rel = deliverableRelPath(opts.output, opts.task);

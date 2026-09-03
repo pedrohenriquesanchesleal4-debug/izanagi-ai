@@ -12,6 +12,7 @@ import { PolicyEngine, type PolicyEnvironment, type TrustTier } from '../securit
 import { sanitizeText } from '../text/unicode-hygiene.js';
 import { runInSandbox, sandboxAvailability, DEFAULT_TIMEOUT_MS } from './code-sandbox.js';
 import { surveyProject } from './project-survey.js';
+import { parseFileManifest, validateManifest } from './file-manifest.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
 
@@ -168,6 +169,54 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
       // diretório da máquina.
       const root = ensureInside(ctx.baseDir, i.dir ?? '.', ctx.allowedDirs);
       return surveyProject(root, { ...(i.maxEntries ? { maxEntries: i.maxEntries } : {}) });
+    },
+  },
+  'project.materialize': {
+    id: 'project.materialize',
+    description: 'Escreve em disco os arquivos declarados num manifesto de agente (### FILE: <caminho> + bloco de código), tudo ou nada',
+    requiredPermission: 'fs:write',
+    validateInput: (input) => {
+      const i = (input ?? {}) as { dir?: unknown; manifest?: unknown };
+      const issues: string[] = [];
+      if (typeof i.dir !== 'string' || i.dir.length === 0) issues.push('campo "dir" (string) obrigatório');
+      if (typeof i.manifest !== 'string') issues.push('campo "manifest" (string) obrigatório');
+      return issues;
+    },
+    execute: (input, ctx) => {
+      const { dir, manifest } = input as { dir: string; manifest: string };
+      const target = ensureInside(ctx.baseDir, dir, ctx.allowedDirs);
+      const { accepted, rejected } = validateManifest(parseFileManifest(manifest));
+
+      // Tudo ou nada, e a validação inteira ANTES de qualquer escrita.
+      // Materialização parcial que se declara concluída é a desonestidade que a
+      // verificação por evidência existe para impedir: o usuário veria "6
+      // arquivos escritos" sem saber que 3 foram recusados.
+      if (rejected.length > 0) {
+        throw new Error(
+          `manifesto recusado (${rejected.length} de ${accepted.length + rejected.length}): ` +
+            rejected.slice(0, 5).map((r) => `${r.path} — ${r.reason}`).join('; '),
+        );
+      }
+      if (accepted.length === 0) {
+        // Nenhum arquivo declarado é um resultado legítimo (o run pode ter
+        // produzido só documento). O que não pode é isso virar "escreveu".
+        return { dir, candidates: 0, written: [] };
+      }
+
+      // Segunda checagem de zona, agora com o caminho já resolvido: a primeira
+      // valida a FORMA do que o agente declarou, esta valida o destino real.
+      const resolved = accepted.map((f) => ({ file: f, abs: ensureInside(target, f.path) }));
+      const written: string[] = [];
+      for (const { file, abs } of resolved) {
+        fs.mkdirSync(path.dirname(abs), { recursive: true });
+        const { text: clean } = sanitizeText(file.content);
+        fs.writeFileSync(abs, clean, 'utf-8');
+        written.push(file.path);
+      }
+      // `dir` volta RELATIVO, como foi declarado: o comprovante entra no
+      // documento entregue, que o usuário pode compartilhar, e o caminho
+      // absoluto da máquina dele não tem por que viajar junto.
+      return { dir, candidates: accepted.length, written };
     },
   },
   'fs.ls': {

@@ -196,11 +196,13 @@ test('plano: survey e entrega convivem — leitura na cabeça, escrita no fim', 
   assert.deepEqual(plan.graph.parallelBatches[0], [SURVEY_NODE_ID]);
   assert.deepEqual(plan.graph.parallelBatches[plan.graph.parallelBatches.length - 1], [DELIVER_NODE_ID]);
   const perms = Object.fromEntries(plan.contracts.map((c) => [c.id, c.permissions ?? []]));
-  assert.deepEqual(perms[SURVEY_NODE_ID], ['fs:read']);
-  assert.deepEqual(perms[DELIVER_NODE_ID], ['fs:write']);
-  // Nenhum nó de agente recebe permissão nenhuma.
+  assert.deepEqual(perms[SURVEY_NODE_ID], ['fs:read'], 'leitura na cabeça');
+  assert.deepEqual(perms[DELIVER_NODE_ID], ['fs:write'], 'escrita no fim');
+  // Nenhum nó de AGENTE recebe permissão: só nó de tool, e cada um só o que
+  // precisa. É por isso que a checagem é pelo `tool`, e não por uma lista de
+  // ids que precisaria ser atualizada toda vez que um nó de tool novo entrasse.
   for (const c of plan.contracts) {
-    if (c.id === SURVEY_NODE_ID || c.id === DELIVER_NODE_ID) continue;
+    if (c.tool) continue;
     assert.deepEqual(c.permissions ?? [], [], `nó "${c.id}" não devia ter permissão`);
   }
 });
