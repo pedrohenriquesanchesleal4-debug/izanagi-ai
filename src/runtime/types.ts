@@ -92,6 +92,7 @@ export type ArtifactKind =
   | 'trace'
   | 'critique'
   | 'delivery'
+  | 'project-survey'
   | 'raw';
 
 export interface ArtifactRef {

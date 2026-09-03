@@ -11,6 +11,7 @@ import path from 'path';
 import { PolicyEngine, type PolicyEnvironment, type TrustTier } from '../security/policy.js';
 import { sanitizeText } from '../text/unicode-hygiene.js';
 import { runInSandbox, sandboxAvailability, DEFAULT_TIMEOUT_MS } from './code-sandbox.js';
+import { surveyProject } from './project-survey.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
 
@@ -142,6 +143,31 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
         );
       }
       return { stdout: result.stdout, stderr: result.stderr, durationMs: result.durationMs, truncated: result.truncated };
+    },
+  },
+  'project.survey': {
+    id: 'project.survey',
+    description: 'Levanta a forma do projeto (stack, manifestos, árvore por extensão, entrypoints, README) sem despejar código',
+    // Leitura, e só leitura. O survey conta e lista; não abre arquivo de
+    // código. Quem precisa do conteúdo de um arquivo pede `fs.read`, que passa
+    // pela mesma política e deixa rastro do que foi lido.
+    requiredPermission: 'fs:read',
+    validateInput: (input) => {
+      const i = (input ?? {}) as { dir?: unknown; maxEntries?: unknown };
+      const issues: string[] = [];
+      if (i.dir !== undefined && typeof i.dir !== 'string') issues.push('campo "dir" deve ser string quando presente');
+      if (i.maxEntries !== undefined && (typeof i.maxEntries !== 'number' || i.maxEntries <= 0)) {
+        issues.push('campo "maxEntries" deve ser um número positivo');
+      }
+      return issues;
+    },
+    execute: (input, ctx) => {
+      const i = (input ?? {}) as { dir?: string; maxEntries?: number };
+      // A raiz do survey passa pela MESMA checagem de zona das outras tools:
+      // "levantar o projeto" não pode virar a porta de leitura de qualquer
+      // diretório da máquina.
+      const root = ensureInside(ctx.baseDir, i.dir ?? '.', ctx.allowedDirs);
+      return surveyProject(root, { ...(i.maxEntries ? { maxEntries: i.maxEntries } : {}) });
     },
   },
   'fs.ls': {

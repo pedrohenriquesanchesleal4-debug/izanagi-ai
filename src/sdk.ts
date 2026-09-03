@@ -18,6 +18,7 @@ import { Orchestrator, type ExecuteCtx } from './runtime/orchestrator.js';
 import { LLMClient } from './runtime/llm/client.js';
 import { ContextResolver } from './runtime/orchestration/context-resolver.js';
 import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from './runtime/orchestration/delivery.js';
+import { looksLikeProject } from './runtime/tools/project-survey.js';
 import { ResponseCache } from './runtime/cache/response-cache.js';
 import {
   buildExecutionPlan,
@@ -67,6 +68,13 @@ export interface IzanagiRunOptions {
    * raiz do projeto, `run()` rejeita antes de planejar.
    */
   output?: string;
+  /**
+   * Lê o projeto antes de decidir: um nó de tool determinístico na cabeça do
+   * grafo levanta stack, manifestos e árvore, e o resultado entra no contexto
+   * mínimo das tarefas raiz. Default: ligado quando `baseDir` tem manifesto
+   * reconhecido. `false` desliga.
+   */
+  survey?: boolean;
 }
 
 export interface IzanagiRunResult {
@@ -146,6 +154,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(options.model ? { model: options.model } : {}),
     availableProviders: providers,
     ...(outputDir ? { output: outputDir } : {}),
+    ...(options.survey ?? looksLikeProject(baseDir) ? { survey: true } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });
 

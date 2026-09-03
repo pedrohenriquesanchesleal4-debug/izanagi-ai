@@ -40,6 +40,7 @@ import type { AgentCapabilityRegistry } from '../registry/capabilities.js';
 import { ModelRouter } from '../model/router.js';
 import { detectDomains, type Domain } from './domains.js';
 import { DELIVER_NODE_ID, deliverNode } from './delivery.js';
+import { SURVEY_NODE_ID, surveyNode, withSurveyAtHead } from './grounding.js';
 
 export type { Domain } from './domains.js';
 
@@ -252,6 +253,14 @@ export interface CommanderInput {
    * do grafo recebe permissão de escrita, e o comportamento é o de antes.
    */
   output?: string;
+  /**
+   * Lê o projeto antes de decidir (`--survey`). Acrescenta um nó de tool na
+   * CABEÇA do grafo que levanta stack, manifestos e árvore de forma
+   * determinística, e o resultado entra no contexto mínimo das tarefas raiz.
+   * Ignorado em modo `direct`: uma resposta de uma chamada não justifica
+   * dobrar o grafo para levantar o terreno.
+   */
+  survey?: boolean;
 }
 
 /**
@@ -628,12 +637,24 @@ export class Commander {
         ? this.assistedNodes(input, classification)
         : this.graphNodes(mode, input, classification);
 
+    // Grounding ANTES dos contratos: a dependência do survey precisa existir no
+    // nó quando `contractFor` deriva `inputs` dele, senão o Context Resolver
+    // nunca entrega o levantamento a quem deveria consumi-lo — o grafo teria a
+    // aresta e não a transferência de informação.
+    const grounded = input.survey && mode !== 'direct' ? withSurveyAtHead(planned) : planned;
+
     // Skills POR TAREFA: cada nó carrega o que o próprio objetivo pede, não a
     // chain do agente para o run inteiro. Sem o resolver injetado, o
     // comportamento anterior (chain do run) permanece intacto.
-    const nodes = planned.map((node) => this.withTaskSkills(node, input));
+    const nodes = grounded.map((node) => this.withTaskSkills(node, input));
     const contracts = nodes.map((node) => this.contractFor(node, input, classification, mode));
     const withContracts = nodes.map((node, i) => attachContract(node, contracts[i]));
+
+    if (grounded !== planned) {
+      const { node, contract } = surveyNode();
+      withContracts.unshift(attachContract(node, contract));
+      contracts.unshift(contract);
+    }
 
     // Entrega: depende de TODO nó anterior, então roda no último batch e vê o
     // run inteiro. Nó pulado por early stopping não bloqueia — os batches são

@@ -122,6 +122,19 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     required: ['written'],
     minSize: 12,
   },
+  /**
+   * Levantamento determinístico do repositório, produzido pela tool
+   * `project.survey`. Os campos obrigatórios são os que um agente a jusante
+   * precisa para não inventar a stack: a raiz, o que foi detectado e a forma
+   * da árvore. `truncated` é obrigatório de propósito — um survey que não
+   * declara o próprio corte vira conclusão errada sobre um projeto que só foi
+   * lido pela metade.
+   */
+  'project-survey': {
+    kind: 'project-survey',
+    required: ['root', 'stack', 'tree', 'truncated'],
+    minSize: 40,
+  },
   raw: {
     kind: 'raw',
     required: [],

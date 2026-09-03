@@ -55,6 +55,8 @@ export interface PlanningInput {
    * arquivo escrito. Ausente, nenhum nó recebe permissão de escrita.
    */
   output?: string;
+  /** Levanta a forma do projeto num nó de tool na cabeça do grafo (`--survey`). */
+  survey?: boolean;
 }
 
 export interface PlanningOutput {
@@ -136,6 +138,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
           ? { resolveSkills: (objective: string, limit: number) => skillResolver.rankSkills(objective, limit).map((s) => s.alias) }
           : {}),
         ...(input.output ? { output: input.output } : {}),
+        ...(input.survey ? { survey: true } : {}),
         estimateCostUsd: (role, tokens) => router.estimateCostForRole(role, tokens),
       });
 

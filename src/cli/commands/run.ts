@@ -14,6 +14,7 @@ import { ResponseCache } from '../../runtime/cache/response-cache.js';
 import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
 import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
 import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from '../../runtime/orchestration/delivery.js';
+import { looksLikeProject } from '../../runtime/tools/project-survey.js';
 import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } from '../../runtime/notify/webhook.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
@@ -45,6 +46,10 @@ interface RunArgs {
   json: boolean;
   /** Diretório onde o run grava a entrega (`--output <dir>`), relativo à raiz do projeto. */
   output?: string;
+  /** Força o levantamento do projeto (`--survey`), mesmo sem manifesto reconhecido. */
+  survey?: boolean;
+  /** Desliga o levantamento do projeto (`--no-survey`). */
+  noSurvey?: boolean;
   /** Endpoint POST avisado no fim do run (`--notify-webhook=<url>`). */
   notifyWebhook?: string;
 }
@@ -66,6 +71,8 @@ export function parseRunArgs(args: string[]): RunArgs {
   let json = false;
   let notifyWebhook: string | undefined;
   let output: string | undefined;
+  let survey = false;
+  let noSurvey = false;
   const positionals: string[] = [];
 
   /** Aceita tanto `--flag valor` quanto `--flag=valor`. */
@@ -126,6 +133,10 @@ export function parseRunArgs(args: string[]): RunArgs {
       const read = readValue(arg, '--notify-webhook', args[i + 1]);
       if (read.consumed) i++;
       if (read.value) notifyWebhook = read.value;
+    } else if (arg === '--survey') {
+      survey = true;
+    } else if (arg === '--no-survey') {
+      noSurvey = true;
     } else if (arg === '--output' || arg.startsWith('--output=')) {
       const read = readValue(arg, '--output', args[i + 1]);
       if (read.consumed) i++;
@@ -163,6 +174,8 @@ export function parseRunArgs(args: string[]): RunArgs {
     json,
     ...(notifyWebhook ? { notifyWebhook } : {}),
     ...(output ? { output } : {}),
+    ...(survey ? { survey } : {}),
+    ...(noSurvey ? { noSurvey } : {}),
   };
 }
 
@@ -491,6 +504,12 @@ export async function runCommand(baseDir: string, args: string[]): Promise<void>
     noJudge: parsed.noJudge,
     json: parsed.json,
     ...(outputDir ? { output: outputDir } : {}),
+    // Grounding LIGADO por default quando o diretório tem cara de projeto de
+    // código: rodar `izanagi run` dentro de um repositório e o runtime NÃO
+    // olhar para ele é o comportamento surpreendente, não o contrário. Fora de
+    // um projeto (sem manifesto reconhecido) não há o que levantar, então não
+    // se paga o nó. `--survey` força, `--no-survey` desliga.
+    survey: parsed.noSurvey ? false : parsed.survey || looksLikeProject(cwd),
     explicitAgent: Boolean(agentId),
   });
 
@@ -589,6 +608,8 @@ export async function runRuntime(
     explicitAgent?: boolean;
     /** Diretório de entrega já validado contra a raiz do projeto (`--output`). */
     output?: string;
+    /** Levanta a forma do projeto antes de decidir (nó de tool na cabeça do grafo). */
+    survey?: boolean;
   },
 ): Promise<OrchestrationResult | undefined> {
   console.log('\n\x1b[36m=== Izanagi Adaptive Runtime ===\x1b[0m\n');
@@ -626,6 +647,7 @@ export async function runRuntime(
     ...(opts.model ? { model: opts.model } : {}),
     availableProviders: llmProviders,
     ...(opts.output ? { output: opts.output } : {}),
+    ...(opts.survey ? { survey: true } : {}),
     // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
     noCommander: Boolean(opts.noCommander || opts.resumeRunId),
   });
