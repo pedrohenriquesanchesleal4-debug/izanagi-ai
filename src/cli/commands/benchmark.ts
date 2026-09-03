@@ -136,9 +136,16 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
         ...(result.telemetry ? { telemetry: result.telemetry } : {}),
         trace: result.trace,
         artifacts: result.artifacts,
-      // A fundamentação é medida contra o PROJETO (cwd), não contra a raiz de
-      // assets: é o projeto que o artefato afirma descrever.
-      }, process.cwd()),
+      // SEM medir fundamentação aqui, de propósito. Os casos do benchmark são
+      // tarefas sintéticas ("desenhe a arquitetura de um monólito modular para
+      // um SaaS de faturamento") que não falam do projeto onde o comando roda:
+      // um artefato correto para o caso citaria `src/modules/billing/` e sairia
+      // como não fundamentado em QUALQUER projeto real. O número existiria,
+      // pareceria significativo, e mediria a coisa errada.
+      //
+      // A fundamentação é medida onde a pergunta faz sentido: num `izanagi run`
+      // cujo objetivo é sobre o projeto em que ele roda.
+      }),
     };
   };
 

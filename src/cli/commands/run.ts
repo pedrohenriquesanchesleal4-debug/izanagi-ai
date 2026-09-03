@@ -15,6 +15,7 @@ import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
 import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
 import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from '../../runtime/orchestration/delivery.js';
 import { looksLikeProject } from '../../runtime/tools/project-survey.js';
+import { measureGroundedness } from '../../runtime/benchmarks/arena.js';
 import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } from '../../runtime/notify/webhook.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
@@ -722,6 +723,7 @@ export async function runRuntime(
   }
 
   let receipt: MaterializationReceipt | undefined;
+  const producedArtifacts: Record<string, { kind: string; content: unknown }> = {};
 
   const orchestrator = new Orchestrator({
     baseDir,
@@ -763,6 +765,7 @@ export async function runRuntime(
       if (artifact.kind === 'materialization') {
         receipt = artifact.content as MaterializationReceipt;
       }
+      producedArtifacts[node.id] = { kind: artifact.kind, content: artifact.content };
       if (!artifact.valid) {
         console.log(`  \x1b[33m⚠\x1b[0m Nó "${node.id}": artefato inválido (${artifact.kind})`);
       }
@@ -801,6 +804,17 @@ export async function runRuntime(
     for (const v of [...failed, ...unverified].slice(0, 3)) {
       console.log(`    \x1b[33m•\x1b[0m ${v.nodeId}: ${v.result.reason}${v.result.unmet.length > 0 ? ` (${v.result.unmet.slice(0, 2).join('; ')})` : ''}`);
     }
+  }
+  // Fundamentação: dos caminhos que os artefatos citaram, quantos existem no
+  // projeto. Só faz sentido aqui — o objetivo de um `izanagi run` É sobre o
+  // projeto onde ele roda, ao contrário de um caso sintético de benchmark.
+  const grounding = measureGroundedness(producedArtifacts, process.cwd());
+  if (grounding.references > 0) {
+    const pct = Math.round((grounding.rate ?? 0) * 100);
+    const color = pct >= 80 ? '\x1b[32m' : pct >= 50 ? '\x1b[33m' : '\x1b[31m';
+    console.log(
+      `  \x1b[90mFundamentação:\x1b[0m ${color}${pct}%\x1b[0m ${grounding.grounded}/${grounding.references} caminho(s) citado(s) existem no projeto`,
+    );
   }
   if (result.conversation && result.conversation.length > 0) {
     const critiques = result.conversation.filter((m) => m.type === 'critique');

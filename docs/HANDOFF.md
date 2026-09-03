@@ -188,9 +188,11 @@ Em ordem de valor por esforço, com o critério de pronto de cada um.
 
 **0. Medir o grounding contra a ausência dele.** A v3.18.0 pôs o survey no
 caminho por um argumento (agente que nunca viu o projeto inventa stack e
-caminho), não por um número. **O instrumento já existe**: `izanagi benchmark
-run --execute` reporta `fundamentação X% (n/m)` — dos caminhos que os artefatos
-citaram, quantos existem no projeto. O que falta é o provider real e o par:
+caminho), não por um número. **O instrumento já existe**: `izanagi run`
+reporta `Fundamentação X% (n/m)` — dos caminhos que os artefatos citaram,
+quantos existem no projeto. (Nos casos embutidos do benchmark ele sai `n/a` de
+propósito: são tarefas sintéticas que não falam do projeto onde o comando roda,
+e medi-las contra ele daria um número que parece significativo e não é.) O que falta é o provider real e o par:
 mesmo objetivo, mesmo provider, uma execução com `--survey` e outra com
 `--no-survey`. *Pronto quando:* houver dois relatórios em
 `.izanagi/state/benchmarks/` com a fundamentação medida nos dois e a diferença
