@@ -4,9 +4,15 @@
 
 import { MemoryStore } from '../../runtime/memory/store.js';
 
-export function memoryCommand(baseDir: string, args: string[]): void {
+/**
+ * @param stateDir Raiz do ESTADO deste projeto, não a raiz de assets do
+ *                 framework. O parâmetro se chamava `baseDir` e recebia
+ *                 `stateDir`: correto na chamada, enganoso na leitura, e é
+ *                 exatamente a confusão de raiz que já produziu dois bugs.
+ */
+export function memoryCommand(stateDir: string, args: string[]): void {
   const sub = args[0]?.toLowerCase() ?? 'inspect';
-  const store = new MemoryStore({ baseDir });
+  const store = new MemoryStore({ baseDir: stateDir });
 
   if (sub === 'inspect') {
     memoryInspect(store);
@@ -49,8 +55,8 @@ function memoryInspect(store: MemoryStore): void {
   const failures = Object.values(state.failures);
 
   console.log(`\n\x1b[35m=== Izanagi AI Memory ===\x1b[0m\n`);
-  console.log(`  \x1b[1mEstado do runtime:\x1b[0m .izanagi/state/runtime-state.json`);
-  console.log(`  \x1b[1mMemória markdown:\x1b[0m .agents/memoria/\n`);
+  console.log(`  \x1b[1mEstado do runtime:\x1b[0m ${store.stateFilePath}`);
+  console.log(`  \x1b[1mMemória markdown:\x1b[0m ${store.memoryDirPath}\n`);
 
   console.log(`\x1b[1mCategorias markdown (${entries.length}):\x1b[0m`);
   for (const e of entries) {

@@ -15,6 +15,19 @@ import { makeArtifact, validateArtifact } from '../contracts/artifacts.js';
 import { safeEvaluate } from '../orchestration/safe-eval.js';
 import { aggregateExecution, type ExecutionEvidence } from './arena.js';
 
+/**
+ * Onde vivem os relatórios de benchmark, para uma raiz de ESTADO.
+ *
+ * Existe para que a escrita e a mensagem que a anuncia saiam do MESMO cálculo.
+ * Antes eram dois: `path.join(...)` aqui e um literal `.izanagi/state/...` na
+ * CLI. Num projeto inicializado a raiz de estado é `<projeto>/.agents`, então o
+ * literal apontava para um diretório relativo ao `cwd` que podia existir e
+ * guardar relatórios antigos.
+ */
+export function benchmarkReportsDir(stateDir: string): string {
+  return path.join(stateDir, '.izanagi', 'state', 'benchmarks');
+}
+
 export interface BenchmarkRunOptions {
   baseDir: string;
   suite?: string;
@@ -169,7 +182,7 @@ export class BenchmarkRunner {
       ...(executionSummary ? { execution: executionSummary } : {}),
     };
 
-    const dir = path.join(opts.baseDir, '.izanagi', 'state', 'benchmarks');
+    const dir = benchmarkReportsDir(opts.baseDir);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, `${report.id}.json`), JSON.stringify(report, null, 2), 'utf-8');
 
@@ -254,7 +267,7 @@ export class BenchmarkRunner {
 
 /** Lista os relatórios de benchmark já salvos em .izanagi/state/benchmarks/ (mais recente primeiro). */
 export function listBenchmarkReports(baseDir: string): BenchmarkReport[] {
-  const dir = path.join(baseDir, '.izanagi', 'state', 'benchmarks');
+  const dir = benchmarkReportsDir(baseDir);
   if (!fs.existsSync(dir)) return [];
   const reports: BenchmarkReport[] = [];
   for (const f of fs.readdirSync(dir).filter((f) => f.endsWith('.json'))) {

@@ -5,7 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
-import { BenchmarkRunner } from '../../runtime/benchmarks/runner.js';
+import { BenchmarkRunner, benchmarkReportsDir } from '../../runtime/benchmarks/runner.js';
 import type { BenchmarkReport } from '../../runtime/types.js';
 import { runTokenBenchmark, formatTokenBenchmark } from '../../runtime/benchmarks/token-benchmark.js';
 import { evidenceFromRun, formatExecutionSummary } from '../../runtime/benchmarks/arena.js';
@@ -169,7 +169,7 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
   const s = report.summary;
   console.log(`\n\x1b[1mSummary:\x1b[0m ${s.passed}/${s.total} passaram | score médio ${s.avgScore} | ${s.totalDurationMs}ms`);
   console.log(`\x1b[1mArena:\x1b[0m ${formatExecutionSummary(report.execution ?? null)}`);
-  console.log(`\x1b[90mRelatório salvo em .izanagi/state/benchmarks/${report.id}.json\x1b[0m`);
+  console.log(`\x1b[90mRelatório salvo em ${path.join(benchmarkReportsDir(stateDir), `${report.id}.json`)}\x1b[0m`);
   console.log(`\x1b[90mComparar versões: \x1b[0mizanagi benchmark compare <anterior> ${report.id}\n`);
 }
 
@@ -186,7 +186,7 @@ function loadReport(baseDir: string, id: string): Record<string, unknown> | null
 function benchmarkReport(baseDir: string, id: string): void {
   const report = loadReport(baseDir, id) as { id: string; suite: string; frameworkVersion: string; createdAt: string; summary: { total: number; passed: number; failed: number; avgScore: number; totalDurationMs: number }; byDomain: Record<string, number>; results: Array<{ caseId: string; domain: string; passed: boolean; score: number; durationMs: number; artifactsMissing: string[]; validatorFailures: string[] }> } | null;
   if (!report) {
-    console.error(`\x1b[31mRelatório não encontrado:\x1b[0m ${id} (.izanagi/state/benchmarks/${id}.json)\n`);
+    console.error(`\x1b[31mRelatório não encontrado:\x1b[0m ${id} (${path.join(benchmarkReportsDir(baseDir), `${id}.json`)})\n`);
     process.exit(1);
   }
   console.log(`\n\x1b[35m=== Benchmark Report: ${report!.id} ===\x1b[0m`);
@@ -209,7 +209,7 @@ function benchmarkCompare(baseDir: string, prevId: string, currId: string): void
   const prev = load(prevId);
   const curr = load(currId);
   if (!prev || !curr) {
-    console.error('\x1b[31mRelatório(s) não encontrado(s) em .izanagi/state/benchmarks/. Use `izanagi benchmark list` no dir raiz ou informe IDs válidos.\x1b[0m');
+    console.error(`\x1b[31mRelatório(s) não encontrado(s) em ${benchmarkReportsDir(baseDir)}. Use \`izanagi benchmark list\` ou informe IDs válidos.\x1b[0m`);
     process.exit(1);
   }
   const runner = new BenchmarkRunner();

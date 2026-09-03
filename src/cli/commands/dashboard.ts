@@ -3,17 +3,23 @@
  * (Fase 7, fundação) lendo `.izanagi/state/` do projeto atual.
  */
 
+import path from 'path';
 import { createDashboardServer } from '../../runtime/dashboard/server.js';
 
-export function dashboardCommand(baseDir: string, args: string[]): void {
+/**
+ * @param stateDir Raiz do ESTADO deste projeto. Mesmo motivo do rename em
+ *                 `memory.ts`: o parâmetro recebia `stateDir` chamando-se
+ *                 `baseDir`, e o dashboard lê trace, artefato e memória.
+ */
+export function dashboardCommand(stateDir: string, args: string[]): void {
   const portFlagIdx = args.findIndex((a) => a === '--port' || a === '-p');
   const port = portFlagIdx >= 0 ? Number(args[portFlagIdx + 1]) || 4321 : 4321;
 
-  const server = createDashboardServer({ baseDir });
+  const server = createDashboardServer({ baseDir: stateDir });
   server.listen(port, () => {
     console.log(`\n\x1b[35m=== Izanagi Dashboard ===\x1b[0m`);
     console.log(`  \x1b[32m✔\x1b[0m rodando em \x1b[36mhttp://localhost:${port}\x1b[0m`);
-    console.log(`  \x1b[90mCtrl+C para encerrar. Lê dados de ${baseDir}/.izanagi/state/.\x1b[0m\n`);
+    console.log(`  \x1b[90mCtrl+C para encerrar. Lê dados de ${path.join(stateDir, '.izanagi', 'state')}.\x1b[0m\n`);
   });
 
   server.on('error', (err: NodeJS.ErrnoException) => {

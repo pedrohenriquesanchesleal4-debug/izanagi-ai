@@ -84,6 +84,21 @@ export class MemoryStore {
     return this.state;
   }
 
+  /**
+   * Onde este store de fato lê e grava. Público para que quem IMPRIME o
+   * caminho imprima o mesmo que a escrita usou: a raiz de estado de um projeto
+   * inicializado é `<projeto>/.agents`, então um literal relativo ao `cwd`
+   * aponta para outro lugar (e às vezes para um arquivo antigo que existe).
+   */
+  get stateFilePath(): string {
+    return this.stateFile;
+  }
+
+  /** Onde vive a memória markdown deste projeto. Mesmo motivo de `stateFilePath`. */
+  get memoryDirPath(): string {
+    return this.memoryDir;
+  }
+
   /* ==================== AGENT STATS ==================== */
 
   recordAgentRun(agent: string, opts: { success: boolean; score: number; tokens: number; domains?: string[] }): void {
