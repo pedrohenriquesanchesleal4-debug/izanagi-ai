@@ -1,6 +1,6 @@
 # IZANAGI AI: Operating Rules
 
-> Version 3.10.0
+> Version 3.18.0
 
 ---
 
@@ -99,51 +99,44 @@ Diretrizes de desperdício-zero ao executar e editar; detalhamento completo na s
 
 ### 3.1 Skill Declaration
 
-Every skill file must contain:
+**Obrigatório**, e é o mínimo do padrão aberto `SKILL.md` (o que mantém as skills portáveis para Cursor, Copilot, Codex e VS Code sem modificação):
 
 ```yaml
-name: Skill Name
-version: 1.0.0
-priority: critical | high | medium | low
-dependencies:
-  - Dependency A
-  - Dependency B
-triggers:
-  - Trigger condition 1
-  - Trigger condition 2
-inputs:
-  - Input 1
-outputs:
-  - Output 1
-token_budget: 500
-compatibility: ">=1.0.0"
+name: skill-name
+description: O que a skill faz e quando usar. Este campo alimenta o scoring do resolver.
 ```
+
+**Opcional**, lido pelo `SkillManifest` quando presente (`version`, `lifecycle`, `compatibility`, `triggers`, `capabilities`, `inputs`, `outputs`, `permissions`, `risk`, `token_budget`). O parser aceita escalar, lista inline (`[a, b]`) e lista de bloco:
+
+```yaml
+triggers:
+  - migração de schema em PostgreSQL
+  - índice composto
+```
+
+> **O que esta seção afirmava e o disco desmentia.** Ela declarava `priority` e `dependencies` como obrigatórios. Nenhuma skill do repositório declara qualquer um dos dois, e `SkillManifest` não tem campo `priority`: eram exigências que nada aplicava e ninguém cumpria. `dependencies` existe no tipo, e não é onde as cadeias vivem (ver 3.3).
 
 ### 3.2 Skill Structure
 
+As 106 skills do catálogo v2 usam estas seções, e a verificação é medível (`grep -c "^## Triggering Criteria" .skills/*/SKILL.md` = 106/106):
+
 ```
-## Identity
-## Goals
-## Triggers
-## Dependencies
-## Workflow
-## Decision Tree
-## Rules (Always / Never)
-## Checklists
-## Algorithms
-## Examples (Good / Bad)
-## Tests
-## Metrics
-## Evolution
-## Memory Hooks
-## Token Budget
-## Reflection
-## Changelog
+## Triggering Criteria
+## Step-by-Step Workflow
+## Verification Steps
+## Common Rationalizations
+## Red Flags
 ```
+
+Subpastas `references/` carregam o material longo, consumido por progressive disclosure.
+
+> **Idem.** Esta seção listava dezessete seções fixas (`## Identity`, `## Goals`, `## Decision Tree`, `## Algorithms`, `## Metrics`, `## Memory Hooks`, `## Token Budget`, `## Changelog`...). Nenhuma skill do repositório usa esse conjunto. Estrutura obrigatória que zero arquivos seguem não é padrão: é ficção documentada.
 
 ### 3.3 Skill Activation
 
-Skills are activated by the Decision Engine based on task classification. Multiple skills can form a chain (DAG). A skill chain must be declared in the `dependencies` field.
+Skills são ativadas pelo resolver a partir da classificação da tarefa, com teto de 3 skills por tarefa. Várias skills formam uma cadeia (DAG), e **a cadeia é declarada em `compositions` do `core/skill-resolver.json`** (16 composições), não em campo de frontmatter. A seção 3.4 descreve como a cadeia encadeia output em input.
+
+> **Idem.** Esta seção dizia "A skill chain must be declared in the `dependencies` field". Nenhuma skill tem `dependencies` preenchido, e a 3.4 logo abaixo já dizia o lugar certo: as duas frases se contradiziam no mesmo arquivo.
 
 ### 3.4 Skill Composition (Como as Skills se Conversam)
 

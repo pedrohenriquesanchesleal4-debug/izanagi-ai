@@ -1,6 +1,6 @@
 # Roadmap
 
-> Versão atual: **3.10.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
+> Versão atual: **3.18.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
 > Legenda: ✅ Done · 🔧 In progress · 📋 Planned · 💡 Future idea
 > Histórico linha-a-linha de cada release em `CHANGELOG.md`: este arquivo resume por fase, não duplica o changelog.
 
@@ -352,6 +352,119 @@ escrevia sobre um repositório que nunca tinha visto.
   citado existe; não confere que a função citada exista dentro do arquivo. Isso
   exigiria análise sintática por linguagem — o `python-engine/ast_analyzer` já
   faz parte disso, e ligá-lo à verificação é trabalho de outra fase.
+
+## Fase 14: Os tetos que não limitavam nada (2026-09-04) ✅
+
+Auditoria dos 49 itens de Definition of Done da especificação de evolução do
+runtime contra o código real, item por item. O `RUNTIME-PENDING.md` afirmava
+**nenhum item aberto**. A auditoria encontrou **doze tetos, campos e caminhos
+que existiam no código, eram plumbados de ponta a ponta e não tinham caller
+nenhum**, mais um bug de formato entre produtor e consumidor do mesmo
+repositório.
+
+Nenhum item desta fase é feature nova. Todos são peças que o runtime já
+declarava ter. O padrão é sempre o mesmo, e é o que o `HANDOFF.md` diz
+combater: **um limite declarado que nada aplica**.
+
+- [x] **Cancelamento cooperativo do run.** Era o item aberto 1 das pendências, e
+      foi fechado na mesma sessão: sem ele o prazo por nó era metade de uma
+      garantia. O sinal é conferido no topo de cada batch, desce até a
+      requisição (combinado com o timeout HTTP) e recusa a chamada antes de
+      gastá-la quando já está abortado. **Ctrl-C na CLI cancela em vez de matar
+      o processo**, e a combinação com o checkpoint por batch é o que dá valor:
+      o progresso pago fica em disco e `izanagi resume` retoma dali. Dois bugs
+      apareceram escrevendo o teste: o checkpoint de um run cancelado era
+      APAGADO (o que anula o resume), e falha `non-recoverable` era retentada
+      quando casava com um padrão da memória (o passo de padrão conhecido vinha
+      antes da classificação decidir, e valia desde antes para permissão
+      negada).
+- [x] **`maxRetries` e `maxAgents` passaram a limitar.** `recordRetry()`
+      existia desde a Fase 9 sem caller de produção, então `telemetry.retries`,
+      `RunTrace.retries` e o teto do `budgetLimits` eram estruturalmente
+      mortos: `izanagi budget`, `izanagi trace` e o dashboard mostravam 0
+      retries num run que retentou três vezes, enquanto a Arena, contando por
+      `node.attempts`, relatava o número certo. Duas contas do mesmo fato e só
+      uma verdadeira. Contado antes de gastar a chamada, pelo mesmo motivo do
+      teto de tool calls. `recordAgent` tinha o retorno booleano descartado.
+- [x] **Teto de run estourado deixou de ser retentado.** A mensagem do teto de
+      tool calls contém a palavra "tool" e casava com a regra
+      `/tool|mcp|exec|command failed|exit code/` do `Healer`, virando
+      recuperável: o runtime retentava um limite que não se move entre
+      tentativas.
+- [x] **Prazo por nó aplicado** (`orchestration/deadline.ts`). `node.timeoutMs`
+      é escrito por todo o caminho de planejamento e vira
+      `TaskContract.budget.maxTimeMs`; nada lia nenhum dos dois. **Metade de
+      uma garantia, e está dito que é metade:** o prazo interrompe a espera,
+      não o trabalho em voo. Cancelamento cooperativo é o item 1 das
+      pendências.
+- [x] **O Plano B do Commander ficou alcançável.** `replan` só era acionado por
+      falha de PLANEJAMENTO. Reprovação da Verification Engine classifica como
+      `validation` e ia direto para "troca a skill e tenta de novo", com o mesmo
+      agente, mesmo papel e mesma decomposição: o caminho de falha mais comum do
+      runtime era exatamente o "repetir" que o replanejamento existe para
+      evitar. 1ª falha troca skill, 2ª replaneja.
+- [x] **Roteamento por tarefa, não por run.** O `RoutingContext` era montado
+      uma vez e reusado em todo nó com `risk: 0.2`, raciocínio `medium`, o teto
+      de tokens do run inteiro e nenhum histórico. O `scoreModel` lê todos esses
+      campos: metade dos critérios de roteamento estava implementada no scorer e
+      nunca era alimentada.
+- [x] **`--local` serializa o pool; `--max-concurrency` expõe o teto.**
+      `LOCAL_MAX_CONCURRENCY` existia desde a Fase 8 com o motivo escrito no
+      arquivo e zero referências no repositório.
+- [x] **`allowedTools`: allowlist de tool do run inteiro.** Camada distinta da
+      permissão do contrato, conferida antes dela e da política: a permissão diz
+      o que a TAREFA pode fazer, a allowlist diz o que este RUN pode usar. Lista
+      vazia proíbe toda tool, ausência é "sem allowlist".
+- [x] **`BenchmarkCase.budget` / `.mode` / `.allowedTools`.** A base oficial não
+      tinha como declarar o teto sob o qual um caso deve ser resolvido: custo era
+      observado no relatório e nunca imposto na execução.
+- [x] **Verificação por tarefa emite evento** (`task.verification.passed` /
+      `.failed`). `quality_gate.*` é do veredito final: um nó que reprovava não
+      emitia evento nenhum, e o dado só aparecia depois do await.
+- [x] **Checkpoint por batch.** O docstring de `captureCheckpoint` já dizia "a
+      cada rodada de batches" e não era verdade: um run interrompido no meio do
+      grafo descartava todo o progresso da tentativa, e o `resume` pagava de
+      novo chamadas já pagas.
+- [x] **Nó aprovado sem prova carrega o fato.** `VerificationEngine.isDone` não
+      tinha caller e o docstring dele contradizia o código. O nó segue como
+      `succeeded` (derrubá-lo transformaria "não medi" em "está errado"), e
+      passa a levar `metadata.unverified` mais uma mensagem A2A de tipo
+      `evidence`.
+- [x] **`parseFrontmatter` lê lista de bloco YAML.** A `SkillFactory` escreve
+      exclusivamente lista de bloco e o parser só entendia inline: toda skill
+      gerada pela Factory perdia em silêncio os `triggers` pelos quais
+      `rankSkills` a encontraria.
+- [x] **O registry para de descartar `model`, `permissions` e `evaluation`** dos
+      22 agentes que os declaram em 22/22 arquivos. `declaredPermissions` tem
+      esse nome porque é prosa do autor, **não** a concessão de permissão do
+      runtime: um agente não se autoriza declarando o que quer.
+- [x] **A lista literal de 19 agentes saiu do orquestrador.** Ela decidia se a
+      Agent Factory geraria um agente novo, e esquecia 3 dos 22 core além de
+      ignorar qualquer agente do projeto do usuário.
+- [x] **Gate de banner de versão** (`scripts/doc-version.ts`). `bump` e
+      `release` mexiam só no `package.json`: `ROADMAP`, `ARCHITECTURE`, `SYSTEM`
+      e `RULES` diziam 3.10.0 e `AGENTS.md` 3.9.0 com o código em 3.18.0. Oito
+      minors de drift, e a Fase 7 já tinha corrigido isso à mão uma vez. O
+      banner **não** é estampado automaticamente: escrever uma versão num
+      documento que ninguém leu é afirmar um número que não aconteceu.
+
+### O que esta fase deliberadamente NÃO fechou
+
+Catorze itens, cada um com critério de pronto, em
+[`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md). Os de maior valor:
+a camada determinística não executar teste do projeto
+de verdade (a métrica `tests` vem de um artefato que um agente escreveu),
+critérios de aceite falarem da forma do artefato e não do objetivo, o Decision
+Journal ser write-only, e o cost-aware planning não comparar estratégias
+alternativas nem ter piso de qualidade configurável.
+
+Também está registrado ali que **três afirmações do próprio
+`RUNTIME-PENDING.md` não se sustentavam no código** e foram corrigidas. Um
+documento de pendências que afirma estar vazio é a pior versão da família de
+defeitos que este runtime existe para combater.
+
+Testes: **764, 763 passando** (69 novos). Cada teto novo tem teste que mede o
+teto, não a contagem.
 
 ## Critérios de aceite das próximas fases
 

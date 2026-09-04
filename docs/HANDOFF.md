@@ -4,6 +4,10 @@
 >
 > Regra deste arquivo, herdada do `RUNTIME-PENDING.md`: **só entra o que é verificável no código**. Onde há número, ele foi medido. Onde não há, está dito que não há.
 
+> **Rodada de 2026-09-04, depois deste documento.** Uma auditoria dos 49 itens de Definition of Done da especificação de evolução do runtime encontrou **doze tetos, campos e caminhos que existiam no código, eram plumbados de ponta a ponta e não tinham caller nenhum** — a mesma família que a seção 3 abaixo cataloga, sobrevivendo em campos diferentes. Os doze foram fechados; quinze itens continuam abertos, cada um com critério de pronto. O que mudou está na Fase 14 do [`ROADMAP.md`](../ROADMAP.md) e no `CHANGELOG.md`; o que sobrou está em [`RUNTIME-PENDING.md`](RUNTIME-PENDING.md), que **deixou de afirmar "nenhum item aberto"**.
+>
+> Três afirmações deste documento não se sustentavam e estão corrigidas na leitura abaixo: a contagem de testes, "dois nós de tool" (são três) e a implicação de que `budgetLimits` honrava retries (o teto era morto).
+
 ---
 
 ## 1. O que era e o que ficou
@@ -29,7 +33,7 @@ A v3.13.0 entregou as peças da rearquitetura (Commander, Task Contracts, roteam
 | Uso agendado | Impossível | `--json` + exit code + webhook |
 | Conhecimento do projeto | Nenhum: o agente escrevia sobre um repositório que nunca viu | Nó `survey` na cabeça do grafo, determinístico e com corte declarado |
 | Resultado do run | Ficava em `.izanagi/state/`, invisível para o projeto | Nó `deliver` grava no projeto, e a verificação confere o arquivo escrito |
-| Caminho seguro de tool | Existia, testado, sem ninguém passando por ele | Dois nós de tool gerados pelo planejamento, em todo run comum |
+| Caminho seguro de tool | Existia, testado, sem ninguém passando por ele | Três nós de tool gerados pelo planejamento (`survey`, `materialize`, `deliver`), em todo run comum |
 
 ### Fluxo hoje
 
@@ -54,6 +58,8 @@ usuário ──> Commander (classifica · consulta memória · escolhe modo)
         │
         ├─ crítica bloqueante? ──> reprova o criticado + correção mínima
         ▼
+    [materialize] tool · fs:write · o código do agente vira arquivo
+        │
     [deliver]  tool · fs:write · 0 token · grava a entrega; file-exists confere
         │
     trajetória registrada ──> 3ª recorrência verificada ──> skill procedural
@@ -182,9 +188,9 @@ izanagi run "adicionar paginacao em GET /users" --output docs   (projeto Node de
   entrega gravada e conferida por file-exists sobre o arquivo que a tool escreveu
 ```
 
-Testes: **695, 694 passando** (medido em 2026-09-03, no Windows). O único vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda no Windows, passa no Linux. É anterior a esta rodada e independente dela. Zero testes marcados como skip, e nenhum condicional de plataforma: o número é o mesmo nos dois sistemas.
+Testes: **764, 763 passando** (medido em 2026-09-04, no Windows). O único vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda no Windows, passa no Linux. É anterior a esta rodada e independente dela. Zero testes marcados como skip, e nenhum condicional de plataforma: o número é o mesmo nos dois sistemas.
 
-> Este parágrafo dizia **674** e o número medido era 682, com o `CHANGELOG.md` da mesma versão dizendo 682. Drift de documentação contra a regra do próprio arquivo ("só entra o que é verificável no código"), corrigido na rodada de 2026-09-03, que também acrescentou 13 testes (682 para 695).
+> Este parágrafo já dizia **674** quando o medido era 682, e depois **695** quando a rodada de 2026-09-04 levou o número a 764. As duas correções são do mesmo tipo: drift contra a regra do próprio arquivo ("só entra o que é verificável no código"). Desde 2026-09-04 o banner de versão dos documentos de raiz tem gate de teste (`doc-version-freshness.test.ts`); a contagem de testes, não: quem edita esta linha ainda precisa medir.
 
 ---
 
@@ -257,7 +263,7 @@ Para quem pegar o repositório e quiser confirmar que está tudo de pé:
 ```bash
 npm ci
 npm run build
-node --test "dist/runtime/tests/*.test.js"     # 695 testes (todos verdes no Linux; 1 vermelho conhecido no Windows: polyglot)
+node --test "dist/runtime/tests/*.test.js"     # 764 testes (todos verdes no Linux; 1 vermelho conhecido no Windows: polyglot)
 
 izanagi benchmark memory                        # medição de busca e compressão
 izanagi models                                  # catálogo, com a IDADE da tabela de preços de cada provider

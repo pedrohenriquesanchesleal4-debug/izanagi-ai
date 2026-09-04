@@ -1,6 +1,6 @@
 # AGENTS.md: Izanagi AI Framework Reference
 
-> Version 3.9.0
+> Version 3.18.0
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
 > Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi (Smart Auto-Detection & Selective Generation)
 
@@ -46,18 +46,18 @@ O framework conta com **22 agentes especializados** em `agents/*.json` + orquest
 
 ---
 
-## 3. Arquitetura Poliglota (Waves 1–4)
+## 3. Arquitetura Poliglota
 
 Coexistência **Strangler Fig** (ADR-001): o legado npm (`src/`, CLI `izanagi`) permanece intocado e publicável; o crescimento novo vive num SDK TypeScript + 4 núcleos nativos, orquestrados pela CLI de nova geração (`packages/cli`, binário `izanagi-next`). Referência canônica de contratos IPC, error codes (`-32001..-32005`), env vars e ADRs: **`docs/POLYGLOT.md`** (ADRs integrais em `.agents/memoria/decisoes.md`, gitignored).
 
 | Componente | Linguagem | Responsabilidade | Como testar |
 |---|---|---|---|
-| `crates/izanagi_core` | Rust | Quality engine: 7 heurísticas anti-slop sobre TS/Python/Go; protocolo NDJSON stdin/stdout (`validate`/`rules`/`version`) + op `scan-rationalizations` (`--file=<path>` / `--stdin`, exit 0/1/2); bindings WASM feature-gated (`--features wasm`, subcomandos `--version`/`--help`) | `cargo test --workspace` (111 testes) · `cargo check -p izanagi_core --features wasm` |
+| `crates/izanagi_core` | Rust | Quality engine: 7 heurísticas anti-slop sobre TS/Python/Go; protocolo NDJSON stdin/stdout (`validate`/`rules`/`version`) + op `scan-rationalizations` (`--file=<path>` / `--stdin`, exit 0/1/2); bindings WASM feature-gated (`--features wasm`, subcomandos `--version`/`--help`) | `cargo test --workspace` (126 testes declarados no fonte) · `cargo check -p izanagi_core --features wasm` |
 | `crates/izanagi_mcp` | Rust | Cliente MCP JSON-RPC 2.0 sobre stdio: discovery + invocação pontual (`izanagi-mcp call --tool=<name>`) | incluso no `cargo test --workspace` |
 | `go-services/swarm_orchestrator` | Go | Orquestrador de swarm (Uber Fx): pipeline architect→engineer→qa→security via JSON-RPC 2.0 sobre UDS com event push | `(cd go-services/swarm_orchestrator && go build ./... && go vet ./... && go test ./...)` |
-| `python-engine/ast_analyzer` | Python ≥3.10 | Análise semântica multilíngue: símbolos, complexidade ciclomática, imports (tree-sitter + fallback estrutural) | `(cd python-engine && .venv/bin/python -m pytest tests/ -q)` (70 testes) |
+| `python-engine/ast_analyzer` | Python ≥3.10 | Análise semântica multilíngue: símbolos, complexidade ciclomática, imports (tree-sitter + fallback estrutural) | `(cd python-engine && .venv/bin/python -m pytest tests/ -q)` (41 testes; o venv não é versionado) |
 | `packages/sdk` | TypeScript | `@izanagi/sdk`: clientes tipados strict para os 4 núcleos + catálogo de skills; zero deps runtime | `(cd packages/sdk && npm install && npm test)` |
-| `packages/cli` | TypeScript | Binário `izanagi-next`: run em 4 fases com auto-heal (N=2), `agent list`, `skill list`, `gates check`; exit codes próprios (0 ok · 1 gate/falha · 2 uso · 3 ambiente) | smoke manual (`help`, `agent list`) — suíte própria pendente |
+| `packages/cli` | TypeScript | Binário `izanagi-next`: run em 4 fases com auto-heal (N=2), `agent list`, `skill list`, `gates check`; exit codes próprios (0 ok · 1 gate/falha · 2 uso · 3 ambiente) | `npm test` dentro de `packages/cli` (13 testes em `tests/{run,skill}.test.ts`) |
 | `packages/skill-migrator` · `agent-migrator` | Node ESM | Migradores determinísticos idempotentes: skills v1→v2 (106 módulos) e agents JSON→YAML (22) — ADR-004/005 | `node packages/agent-migrator/cli.mjs --check` · `node packages/skill-migrator/cli.mjs --dry-run` |
 
 **Gotchas poliglotas:**
@@ -73,7 +73,7 @@ Coexistência **Strangler Fig** (ADR-001): o legado npm (`src/`, CLI `izanagi`) 
 # Legado npm (raiz)
 npm install          # instala deps
 npm run build        # tsc && node dist/scripts/generate-manifest.js
-npm test             # build + node --test dist/runtime/tests/*.test.js (284 testes)
+npm test             # build + node --test dist/runtime/tests/*.test.js (764 testes)
 npm run verify       # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor       # node bin/izanagi.js doctor [--deep]: auditoria de integridade
 npm run bump:patch   # npm version patch --no-git-tag-version (também minor/major)
@@ -81,7 +81,7 @@ npm publish          # prepublishOnly roda build; depois: git push
 
 # Núcleos poliglotas
 cargo build --workspace                       # Rust: bins izanagi-core / izanagi-mcp em target/debug/
-cargo test --workspace                        # 111 testes (core + mcp)
+cargo test --workspace                        # 126 testes declarados no fonte (core + mcp)
 cargo check -p izanagi_core --features wasm   # type-check dos bindings WASM (ADR-003)
 (cd go-services/swarm_orchestrator && go build ./... && go vet ./... && go test ./...)
 (cd python-engine && .venv/bin/python -m pip install -r requirements-dev.txt && .venv/bin/python -m pytest tests/ -q)
@@ -97,7 +97,7 @@ node packages/skill-migrator/cli.mjs --dry-run          # valida migração skil
 **Gotchas críticos:**
 - `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js`: **rode `npm run build` antes de qualquer comando CLI local** (`doctor`, `polyglot status`, `export`...), senão roda código obsoleto ou quebra. O mesmo vale para `packages/*/dist`: rode o build do package antes de consumir SDK/CLI-next.
 - `doctor`: instalação completa do usuário = `.agents/agents/` contendo agentes em **JSON** (formato distribuído); os YAMLs derivados do repo-fonte não caracterizam instalação.
-- Há test runner real (`node:test`, 284 testes em `src/runtime/tests/`). Verificação = `npm test` + `npm run verify` + `npm run doctor` + suítes poliglotas da seção 3.
+- Há test runner real (`node:test`, 764 testes em `src/runtime/tests/`). Verificação = `npm test` + `npm run verify` + `npm run doctor` + suítes poliglotas da seção 3.
 - Padrão de commit do repo: `chore: bump to vX.Y.Z` para bumps e `feat:`/`fix:`/`docs:` descritivos em PT-BR para mudanças.
 
 ---
@@ -105,7 +105,7 @@ node packages/skill-migrator/cli.mjs --dry-run          # valida migração skil
 ## 5. Estrutura do Framework
 
 **Legado (fonte canônica de agentes e skills):**
-- `core/`: 14 engines (.md, incluindo `skill-composer.md`, `checkpoint-healing-engine.md`, `quality-gates.md`) + **`skill-resolver.json`** (mapa alias → target, 258 aliases, 16 `compositions`)
+- `core/`: 15 engines (.md, incluindo `skill-composer.md`, `checkpoint-healing-engine.md`, `quality-gates.md`) + **`skill-resolver.json`** (mapa alias → target, 258 aliases, 16 `compositions`)
 - `agents/`: 22 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos); derivados YAML em `.agents/agents/*.yaml` gerados pelo agent-migrator — proibido editar YAML à mão
 - `skills/`: legado histórico v1 (fonte do migrador). Catálogo ativo **v2**: `.skills/<name>/SKILL.md` (106 módulos; front-matter `name/description/version/category/tools.mcp` + seções Triggering Criteria / Step-by-Step Workflow / Verification Steps / Common Rationalizations / Red Flags; subpastas `references/`)
 - `references/`: curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
@@ -117,7 +117,7 @@ node packages/skill-migrator/cli.mjs --dry-run          # valida migração skil
 **Poliglota (crescimento novo):**
 - `crates/`: workspace Rust na raiz — `izanagi_core` (quality engine + bindings WASM feature-gated), `izanagi_mcp` (cliente MCP stdio); `Cargo.lock` commitado
 - `go-services/swarm_orchestrator/`: orquestrador Go (Uber Fx, JSON-RPC 2.0 sobre UDS, event push, artefatos por estágio)
-- `python-engine/`: analisador AST multilíngue (tree-sitter + fallback, ~70 testes, venv em `.venv/`)
+- `python-engine/`: analisador AST multilíngue (tree-sitter + fallback, 41 testes; venv em `.venv/`, criado localmente e não versionado)
 - `packages/`: `sdk` (`@izanagi/sdk`), `cli` (binário `izanagi-next`), `skill-migrator`, `agent-migrator` — todos `private`
 - `docs/POLYGLOT.md`: referência canônica da topologia poliglota (contratos IPC, tabela de env vars, gaps conhecidos, resumo dos ADRs)
 
@@ -163,7 +163,7 @@ O framework funciona em qualquer CLI de IA que leia `AGENTS.md` e possui adapter
 | **Kimi CLI** | `kimi.md` + `.kimi/README.md` | compatível com convenção `.opencode/` |
 
 - `izanagi init` possui **detecção inteligente de CLI**: auto-detecta a CLI/IDE em uso (ou permite selecionar via `--cli opencode|cursor|claude|codex|copilot|kimi|all`), gerando **apenas** o adaptador necessário para manter o workspace limpo e sem poluição visual.
-- `izanagi export --cli opencode|claude|codex|cursor|copilot|kimi|all` regenera os adapters sob demanda (idempotente: nunca sobrescreve arquivos existentes).
+- `izanagi export --cli opencode|claude|codex|cursor|copilot|kimi|all` regenera os adapters sob demanda. **Idempotente com uma regra:** arquivo que carrega o `GENERATED_MARKER` é reescrito; arquivo sem o marker (ou seja, editado à mão) é preservado intocado. "Nunca sobrescreve arquivos existentes" era a leitura errada disso: quem editou o gerado sem tirar o marker perde a edição.
 
 ---
 

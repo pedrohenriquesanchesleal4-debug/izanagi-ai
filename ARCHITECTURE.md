@@ -1,6 +1,6 @@
 # Izanagi AI — Target Architecture
 
-> Version: 3.10.0
+> Version: 3.18.0
 > Status: Legacy runtime implemented; polyglot topology growing alongside it (Strangler Fig, ADR-001)
 > Source of Truth: This document drives implementation · Canonical polyglot IPC contracts & ADRs: docs/POLYGLOT.md
 
@@ -67,9 +67,10 @@ src/
     │   ├── planner.ts               # Templates de workflow por categoria
     │   ├── graph.ts                 # ExecutionGraph + Kahn + batches paralelos
     │   ├── concurrency.ts           # Pool com teto: ordem preservada, falha isolada
+    │   ├── deadline.ts              # Prazo por nó + cancelamento cooperativo do run (AbortSignal)
     │   ├── subgraph.ts              # Decomposição em EXECUÇÃO: orçamento do pai dividido, teto de largura
     │   ├── grounding.ts             # Nó `survey` na cabeça do grafo (lê o projeto antes de decidir)
-    │   ├── delivery.ts              # Nó `deliver` no fim (grava a entrega, e a verificação confere)
+    │   ├── delivery.ts              # Nós `materialize` e `deliver` no fim (gravam, e a verificação confere)
     │   ├── context-resolver.ts      # Contexto mínimo por tarefa (insumos resumidos + referência)
     │   └── safe-eval.ts             # Avaliação de condição sem executar código arbitrário
     ├── registry/
@@ -343,9 +344,16 @@ izanagi run "<objetivo>" --mode autonomous    # força o modo
 izanagi run "<objetivo>" --budget 10000       # teto de tokens
 izanagi run "<objetivo>" --max-cost 0.50      # teto de custo (degrada o plano se estourar)
 izanagi run "<objetivo>" --model <id>         # fixa o modelo em todos os papéis
-izanagi run "<objetivo>" --local              # só providers locais
+izanagi run "<objetivo>" --local              # só providers locais, e serializa o pool (GPU única)
+izanagi run "<objetivo>" --max-concurrency 2  # teto de tarefas em voo
+izanagi run "<objetivo>" --output docs        # grava a entrega no projeto (nó de tool com fs:write)
+izanagi run "<objetivo>" --survey             # força o levantamento do projeto
+izanagi run "<objetivo>" --no-survey          # desliga o levantamento
 izanagi run "<objetivo>" --cache              # cache local de respostas
+izanagi run "<objetivo>" --no-judge           # sem juiz semântico: critério semântico fica UNVERIFIED
 izanagi run "<objetivo>" --no-commander       # planejamento legado por categoria
+izanagi run "<objetivo>" --json               # objeto único no stdout, para o agendador do SO
+izanagi run "<objetivo>" --prompt-only        # compila o prompt e não executa
 
 izanagi models [--json]                       # catálogo + roteamento por papel + custo
 izanagi budget [run-id] [--json]              # para onde foi o orçamento daquele run

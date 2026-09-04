@@ -1,6 +1,6 @@
 # IZANAGI AI: System Foundation
 
-> Version 3.10.0
+> Version 3.18.0
 > Codename: "The Architect's Mind"
 
 ---
@@ -81,19 +81,20 @@ User Input / Comando CLI
 | **Agent Capability Registry** (`registry/capabilities.ts`) | Descoberta de agentes em disco com capacidades, skills, chains, classe de custo, papel e domínios. Matching bilíngue por domínio, no lugar da lista fixa de agentes. |
 | **Agent-to-Agent Protocol** (`protocol/messages.ts`) | Mensagens tipadas com referência de artefato em vez de cópia de texto; crítica estruturada com parsing tolerante (saída não parseável vira `needs_revision`, nunca aprovação) e correção mínima só dos bloqueantes. |
 | **Verification Engine 2.0** (`verification/engine.ts`) | Três camadas: determinística, evidência e semântica. O juiz semântico default (`verification/judge.ts`) vem ligado na CLI e no SDK quando há provider, roda no papel `worker` e recebe o artefato resumido; sem juiz (`--no-judge` ou modo headless) o critério fica `UNVERIFIED` e NUNCA conta como aprovação. Juiz que não respondeu é `inconclusive`, nunca reprovação. Só `VERIFIED` encerra uma tarefa. |
-| **Budget Controller** (`token/execution-budget.ts`) | Custo em USD, tetos de tool call/agente/retry, tempo de parede e escada de degradação (contexto → saída → modelo → paralelismo → tarefas opcionais → aprovação humana). Gasto que estouraria um teto é recusado sem ser contabilizado. |
+| **Budget Controller** (`token/execution-budget.ts`) | Custo em USD, tetos de tool call/agente/retry, tempo de parede e escada de degradação (contexto → saída → modelo → paralelismo → tarefas opcionais → aprovação humana). Gasto que estouraria um teto é recusado, e **registrado antes de ser recusado**: gasto recusado por teto ainda aconteceu na fatura. Desde 2026-09-04 `maxRetries` e `maxAgents` de fato BARRAM (antes contavam e o retorno era descartado), e `remainingTokens` alimenta o roteamento por nó. Teto estourado é `non-recoverable` no `Healer`: um teto não se move entre tentativas, então retentar é gastar orçamento numa porta fechada. |
 | **Response Cache** (`cache/response-cache.ts`) | Cache local por hash de (provider, modelo, system, mensagens, teto, temperatura), com TTL, eviction e versão de esquema. Opt-in (`--cache` / `IZANAGI_CACHE=1`). |
 | **SDK** (`src/sdk.ts`) | `izanagi.run({ objective })` e `izanagi.plan({ objective })`: mesma engine da CLI, sem saída no terminal, com eventos do run em tempo real. |
 | **Evaluation Engine** (`evaluation/`) | Métricas ponderadas (correctness, completeness, security, etc.), veredito derivado, relatório com regressões e recomendações. |
 | **Artifact Contracts** (`contracts/artifacts.ts`) | 10+ schemas de artefato (requirements, architecture, database-schema, test-plan...) com validação por campos obrigatórios + tamanho mínimo, em PT-BR. |
 | **Skill Resolver** (`routing/resolver.ts`) | Alias → target (258), parse de frontmatter, scoring por relevância + histórico; `loadAgent` cobre `agents/` + `agents/generated/`. |
-| **Skill Scanner** (`security/skill-scanner.ts`) | 11 regras de segurança sobre skills (INJ, DNG, SCR, PER, NET, SEC) com severidade, allowlist e `DEFENSIVE_CONTEXT` (ignora exemplos defensivos/educativos). |
-| **Agent Genome** (`agents/*.json`) | 13 campos formais por agente (purpose, capabilities, requiredSkills, optionalSkills, inputs, outputs, constraints, permissions, handoffs, memory, evaluation, tokenBudget, compatibility): preenchidos nos 22 agentes core. |
+| **Skill Scanner** (`security/skill-scanner.ts`) | 10 regras de segurança sobre skills (INJ x3, DNG x4, NET x2, SEC x1) com severidade, allowlist e `DEFENSIVE_CONTEXT` (ignora exemplos defensivos/educativos). |
+| **Agent Genome** (`agents/*.json`) | campos formais por agente, preenchidos nos 22 core: `name`, `role`, `capabilities`, `skills`, `optionalSkills`, `chains`, `inputs`, `outputs`, `always`/`never`, `permissions`, `handoffs`, `memory`, `evaluation`, `token_budget`, `model`. Desde 2026-09-04 o `AgentCapabilityRegistry` também expõe `modelHint`, `declaredPermissions` e `evaluation` (antes descartados no parse). **`declaredPermissions` é prosa do autor do agente, NÃO a concessão de permissão do runtime:** o que autoriza uma tool é `TaskContract.permissions` no formato `fs:read`/`fs:write`/`shell`. |
 | **Agent Factory** (`factories/agent-factory.ts`) | Gera novos agentes com genome a partir de requisito: detecção de lacuna vs. 22 core, ID slug, skills requeridas/opcionais, validação e escrita em `agents/generated/`. |
 | **Skill Factory** (`factories/skill-factory.ts`) | Cria skills novas com frontmatter, security scan pré-escrita, recusa de lacuna já coberta e escrita em `skills/generated/<name>/SKILL.md`. |
-| **Tool Registry** (`tools/registry.ts`) | Tools builtin (`fs.read`, `fs.write`, `fs.ls`, `project.survey`, `code.execute`) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → policy → validate → execute. Desde a v3.18.0 o planejamento gera três nós de tool (`survey`, `materialize`, `deliver`), então o fluxo é atravessado por um `izanagi run` comum. |
+| **Tool Registry** (`tools/registry.ts`) | Seis tools builtin (`fs.read`, `fs.write`, `fs.ls`, `project.survey`, `project.materialize`, `code.execute`) com sandbox de zona (anti path-traversal), permissões least-privilege e fluxo discover → permission → policy → validate → execute. Desde a v3.18.0 o planejamento gera três nós de tool (`survey`, `materialize`, `deliver`), então o fluxo é atravessado por um `izanagi run` comum. Desde 2026-09-04 existe uma camada acima da permissão: `allowedTools` (no `Orchestrator`, no SDK e por caso de benchmark) é a allowlist do RUN INTEIRO, conferida antes da permissão do contrato e da política. A permissão diz o que a TAREFA pode fazer; a allowlist diz o que este run pode usar, sem depender de nenhum contrato estar correto. Lista vazia proíbe toda tool; ausência é "sem allowlist". |
+| **Deadline e cancelamento** (`orchestration/deadline.ts`) | **Prazo:** aplica `node.timeoutMs` e `TaskContract.budget.maxTimeMs` (vale o MENOR dos dois). Todo o planejamento declarava prazo por nó e nada lia: um provider pendurado travava o nó até o timeout HTTP do cliente, e uma tool externa sem cliente HTTP travava indefinidamente. Ausência, zero e negativo significam "sem prazo", nunca "prazo zero". Prazo estourado tira o nó do caminho do grafo e é **retentável**. **Cancelamento:** `OrchestratorOptions.signal` é conferido no topo de cada batch e desce até a requisição (combinado com o timeout HTTP via `AbortSignal.any`), então a chamada em voo aborta de verdade; sinal já abortado recusa a chamada antes de gastá-la. Cancelamento é do RUN, é `non-recoverable` (curar seria desobedecer quem cancelou) e **preserva o checkpoint**: apagá-lo tornaria `izanagi resume` impossível no único caso em que ele é claramente o que se quer. Na CLI, Ctrl-C cancela em vez de matar o processo; um segundo Ctrl-C força a saída (exit 130). |
 | **Model Router** (`model/router.ts`) | Catálogo por provider + `routeForRole` (tier por papel: commander→premium, specialist→balanced, worker→fast), pin por papel via config/env, escalada worker→specialist→commander e custo real em USD. `route()` legado preservado. |
-| **Healing Engine** | `retry` (transitório), `skill_replacement` (artefato inválido), `fallback`, `abort` (limite de tentativas). |
+| **Healing Engine** | `retry` (transitório), `skill_replacement` (1ª reprovação de validação), `replan` (2ª reprovação de validação, ou falha de planejamento), `handoff`, `abort` (limite de tentativas, ou teto de run estourado: teto não se cura tentando de novo). |
 | **Failure Memory** (`memory/store.ts`) | `recordFailure` + `findRelevantFailures` por categoria: erros reais registrados são injetados como evidência em runs futuros (anti-repetição). |
 | **Memory Store** (`memory/store.ts`) | Stats por agente, learnings, histórico de runs (JSON em disco). |
 | **Trace Store** (`observability/tracer.ts`) | Traces de execução em JSON (um arquivo por run em `.izanagi/state/traces/`) com spans, load/close e retry de escrita. |
@@ -113,10 +114,10 @@ User Input / Comando CLI
 O runtime mapeia a categoria da tarefa para um template de grafo + cadeia de skills (compositions em `core/skill-resolver.json`):
 
 ```
-implementation → [requirements, architecture, schema, optimize, implementation-plan, evaluation]
-testing        → [test-plan, execution, critic, evaluation]
-debugging      → [reproduce, isolate, hypothesis, fix, verify, prevent, evaluation]
-database_design→ [requirements, schema, optimize, review, evaluation]
+implementation  → [execute, verify, evaluation]
+testing         → [test-plan, execution, critic, evaluation]
+debugging       → [reproduce, root-cause, fix, regression-test, evaluation]
+database_design → [requirements, schema, optimize, review, evaluation]
 ```
 
 Categorias sem template específico usam o fluxo genérico (analisar → planejar → executar → avaliar). A cadeia completa de skills de cada domínio é definida pelas `compositions` do resolver.
@@ -170,13 +171,13 @@ A telemetria de cada run (`izanagi budget <run-id>`) reporta tokens de entrada/s
 
 Todo output passa por gates reais antes de ser considerado entregue (os heurísticos anti-slop/anti-racionalização também rodam como engine Rust em `crates/izanagi_core`: contratos e integração em `docs/POLYGLOT.md`):
 
-1. ✅ **Security Gate**: sem segredos no código; `skill-scanner` varre skills por injeção, comandos destrutivos, exfiltração e hardcode (11 regras), ignorando contexto defensivo/educativo.
+1. ✅ **Security Gate**: sem segredos no código; `skill-scanner` varre skills por injeção, comandos destrutivos, exfiltração e hardcode (10 regras), ignorando contexto defensivo/educativo.
 2. ✅ **Validation Gate**: artefatos validados contra schema (campos obrigatórios + tamanho mínimo); inválido → healing `skill_replacement`.
 3. ✅ **Evaluation Gate**: métricas ponderadas + veredito (PASS / PASS_WITH_WARNINGS / FAIL / BLOCKED / **UNKNOWN** quando faltam evidências mensuradas) com recomendações.
 4. ✅ **Token Phase Gate**: orçamento por fase (planning/execution/evaluation/recovery): retries consomem a fase recovery e estourar uma fase aborta o ciclo (Token Budget 2.0).
-4. ✅ **Style Gate**: segue `RULES.md`: anti-"cara de IA", design directions, high-craft.
-5. ✅ **Clarity & Conciseness Gate**: sem fluff; cada frase agrega valor.
-6. ✅ **Completeness Gate**: responde a pergunta, sem pontas soltas (Lei da Entrega Exaustiva).
+5. ✅ **Style Gate**: segue `RULES.md`: anti-"cara de IA", design directions, high-craft.
+6. ✅ **Clarity & Conciseness Gate**: sem fluff; cada frase agrega valor.
+7. ✅ **Completeness Gate**: responde a pergunta, sem pontas soltas (Lei da Entrega Exaustiva).
 
 ## Memory Architecture
 
@@ -218,9 +219,9 @@ O ciclo completo de execução: `Objetivo → Classificação → Modo → Task 
 
 
 1. **Understanding & Planning**: `requirements` decomposição de requisitos (artefatos em `contracts/artifacts.ts`), classificação da tarefa em categoria; Product Reasoner rotula claims de produto (FACT/ASSUMPTION/UNKNOWN) com confiança via Evidence System.
-2. **Execution Graph**: o Orchestrator monta um grafo por categoria (11 templates: implementation, testing, debugging, database_design...) com `parallelBatches` (nós independentes em paralelo, nós dependentes em sequência) e hooks de execução (`produce`: agêntico / LLM / comando).
+2. **Execution Graph**: o Orchestrator monta um grafo por categoria (10 templates: fullstack, debugging, security_audit, architecture, automacao, frontend, implementation, database_design, devops_infra, testing) com `parallelBatches` (nós independentes em paralelo, nós dependentes em sequência) e hooks de execução (`produce`: agêntico / LLM / comando).
 3. **Adaptive Routing**: o resolver pontua skills por relevância + histórico de uso por categoria (scorer com decaimento temporal), nunca lista estática; agents são resolvidos pelo mesmo scoring.
-4. **Verification & Evaluation**: cada artefato é verificado contra os critérios de aceite do contrato (determinística → evidência → semântica) e só `VERIFIED` encerra a tarefa; `UNVERIFIED` é reportado como inconclusivo, nunca como sucesso. A avaliação final agrega métricas ponderadas com thresholds e veredito derivado; sem métricas mensuradas → **UNKNOWN** com recomendação explícita de evidência.
+4. **Verification & Evaluation**: cada artefato é verificado contra os critérios de aceite do contrato (determinística → evidência → semântica) e só `VERIFIED` encerra a tarefa; `UNVERIFIED` é reportado como inconclusivo, nunca como sucesso. O nó em si SEGUE (sem juiz semântico todo critério semântico fica inconclusivo, e derrubar o nó transformaria "não medi" em "está errado"), mas desde 2026-09-04 ele carrega `metadata.unverified` com status, motivo e critérios não comprovados, mais uma mensagem A2A de tipo `evidence`: aprovado sem prova é distinguível de comprovado. A avaliação final agrega métricas ponderadas com thresholds e veredito derivado; sem métricas mensuradas → **UNKNOWN** com recomendação explícita de evidência.
 5. **Self-Healing & Classification**: healing classificado (retry para transitório, `skill_replacement` para artefato inválido, fallback de modelo, abort por limite); cada healing é registrado com stats por agente.
 6. **Memory & Evolution**: `recordFailure` + `findRelevantFailures` (memória de falhas por categoria), learnings e traces; a memória curada `.agents/memoria/` é atualizada ao fim do ciclo.
 
@@ -284,7 +285,7 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 
 ## Benchmarks & Regression
 
-`izanagi benchmark` executa 10 casos builtin (resolver parse, scoring, skill scanner, genome, composer, artifact validation...); `izanagi benchmark compare` mede regressões entre builds (ex.: `2.9.6 → 2.10.0`) com delta por caso.
+`izanagi benchmark` executa 10 casos builtin (resolver parse, scoring, skill scanner, genome, composer, artifact validation...); `izanagi benchmark compare` mede regressões entre builds (ex.: `2.9.6 → 2.10.0`) com delta por caso. `benchmark run --execute` roda cada caso pelo runtime real; desde 2026-09-04 um caso pode declarar `budget`, `mode` e `allowedTools`, e o teto passa a ser IMPOSTO na execução em vez de apenas observado no relatório (antes, um caso resolvido com dez vezes o orçamento passava igual).
 
 ## Model Router
 
@@ -372,6 +373,10 @@ Skills com `SKILL.md` declararam (quando aplicável) metadados no frontmatter:
 - `compatibility` (versão mínima do framework)
 - `triggers`
 - `token_budget`
+
+O parser aceita escalar, lista inline (`[a, b]`) e, desde 2026-09-04, **lista de bloco** (`triggers:` seguido de linhas `  - valor`), que é o formato que a `SkillFactory` escreve: antes disso toda skill gerada perdia em silêncio os próprios `triggers`. Chave sem valor e sem itens segue string vazia, nunca `[]` (ausência de valor não é lista vazia); chave aninhada (`tools:` → `mcp:`) continua fora de escopo, porque o `SkillManifest` é plano.
+
+**O que o catálogo REALMENTE declara hoje**, medido no disco: as 106 skills de `skills/` (v1, a fonte que o resolver lê) declaram só `name` e `description`; as 106 de `.skills/` (v2) acrescentam `version`, `category`, `tools.mcp` e `references`, e embutem os gatilhos como prosa dentro da `description`. Nenhuma declara `triggers` ou `capabilities` em campo próprio, então o haystack de `rankSkills` inclui dois arrays que na prática estão vazios: o ranking escolhe entre descrições. Está registrado como item aberto 13 em `docs/RUNTIME-PENDING.md`.
 
 O resolver **tolera** skills sem frontmatter (parse devolve `{}` e segue resolvendo pelo alias); metadados apenas aumentam a qualidade do scoring. **Só `name` e `description` são exigidos**: o mesmo mínimo do padrão aberto [agentskills.io](https://www.agensi.io/learn/skill-md-specification-open-standard), o que torna as skills do Izanagi portáveis para qualquer ferramenta compatível (Cursor, Copilot, Codex, VS Code...) sem modificação.
 

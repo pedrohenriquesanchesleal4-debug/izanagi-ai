@@ -113,14 +113,14 @@ console.log(result.deliveredTo);  // só presente quando a gravação REALMENTE 
 
 ## Arquitetura Poliglota
 
-Desde as Waves 1–5, o crescimento novo vive numa topologia poliglota que coexiste com o runtime npm legado em padrão Strangler Fig (ADR-001): contratos IPC, error codes e env vars canônicos em [`docs/POLYGLOT.md`](docs/POLYGLOT.md).
+O crescimento novo vive numa topologia poliglota que coexiste com o runtime npm legado em padrão Strangler Fig (ADR-001): contratos IPC, error codes e env vars canônicos em [`docs/POLYGLOT.md`](docs/POLYGLOT.md).
 
 | Componente | Linguagem | O que faz | Como testar |
 |---|---|---|---|
-| `crates/izanagi_core` | Rust | Quality engine: 7 heurísticas anti-slop sobre TS/Python/Go; protocolo NDJSON stdin/stdout (`validate`/`rules`/`version`) + op `scan-rationalizations`; bindings WASM feature-gated | `cargo test --workspace` (111 testes) |
+| `crates/izanagi_core` | Rust | Quality engine: 7 heurísticas anti-slop sobre TS/Python/Go; protocolo NDJSON stdin/stdout (`validate`/`rules`/`version`) + op `scan-rationalizations`; bindings WASM feature-gated | `cargo test --workspace` (126 testes declarados no fonte) |
 | `crates/izanagi_mcp` | Rust | Cliente MCP JSON-RPC 2.0 sobre stdio: discovery + invocação pontual (`izanagi-mcp call --tool=<name>`) | incluso no `cargo test --workspace` |
 | `go-services/swarm_orchestrator` | Go | Orquestrador de swarm (Uber Fx): pipeline architect→engineer→qa→security via JSON-RPC 2.0 sobre UDS com event push | `go build ./... && go vet ./... && go test ./...` |
-| `python-engine/ast_analyzer` | Python ≥ 3.10 | Análise semântica multilíngue: símbolos, complexidade ciclomática, imports (tree-sitter + fallback estrutural) | `.venv/bin/python -m pytest tests/ -q` (70 testes) |
+| `python-engine/ast_analyzer` | Python ≥ 3.10 | Análise semântica multilíngue: símbolos, complexidade ciclomática, imports (tree-sitter + fallback estrutural) | `.venv/bin/python -m pytest tests/ -q` (41 testes) |
 | `packages/sdk` (`@izanagi/sdk`) | TypeScript | Clientes tipados strict para os 4 núcleos + catálogo de skills; zero dependências de runtime | `npm test` dentro de `packages/sdk` (42 testes) |
 | `packages/cli` (`izanagi-next`) | TypeScript | CLI de nova geração: run em 4 fases com auto-heal (N=2) + gate anti-racionalização; `agent list`, `skill list/show --ref`, `gates check` | `npm test` dentro de `packages/cli` (13 testes) |
 
@@ -165,7 +165,7 @@ CLI legado (`izanagi`, publicada no npm):
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local`, `--cache`, `--output <dir>` (grava a entrega no projeto), `--no-survey` (não levanta o projeto antes de decidir), `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
+| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local` (só providers locais, e serializa o pool: GPU única não ganha com paralelismo), `--max-concurrency N` (teto de tarefas em voo), `--cache`, `--output <dir>` (grava a entrega no projeto), `--survey` / `--no-survey` (força ou desliga o levantamento do projeto antes de decidir). **Ctrl-C cancela o run** em vez de matar o processo: o batch em voo é abortado, o progresso já gravado fica no checkpoint e `izanagi resume <run-id>` retoma dali, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
 | `izanagi models [--json]` | Catálogo de modelos, providers configurados e qual modelo cada papel (commander/specialist/worker) receberia agora, com custo por 10k tokens. |
 | `izanagi budget [run-id] [--json]` | Para onde foi o orçamento daquele run: tokens por fase, custo estimado, cache local e do provider, contexto poupado, escaladas, degradação e verificação por tarefa. |
 | `izanagi chat` | REPL interativo da CLI. |
@@ -173,10 +173,10 @@ CLI legado (`izanagi`, publicada no npm):
 | `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]` | Agent Factory: gera agente com genome completo em `agents/generated/` (detecta lacuna vs. 22 core). |
 | `izanagi agent list \| inspect <name>` | Lista/inspeta agentes (inclui `agents/generated/`) com genome. |
 | `izanagi skill create <nome> --gap="<descrição>" [--force]` | Skill Factory: cria skill com frontmatter, security scan pré-escrita e recusa de lacuna já coberta. |
-| `izanagi skill list \| search <q> \| show <name>` | Lista, busca e detalha skills (catálogo v2, com progressive disclosure). |
+| `izanagi skill list \| search <q> \| inspect <name>` | Lista, busca e detalha skills (catálogo v2, com progressive disclosure). |
 | `izanagi create <agent\|skill> <name>` | Cria scaffold cru de agente (JSON) ou skill (SKILL.md), sem validação. |
 | `izanagi compile <agente> [arquivo]` | Compila um System Prompt completo do agente + fundação do sistema. |
-| `izanagi workflow list \| inspect <template>` | Templates de grafo de execução por categoria (11). |
+| `izanagi workflow list \| inspect <template>` | Templates de grafo de execução por categoria (10). |
 | `izanagi eval <file.json> \| --metrics ... \| --report <run-id>` | Evaluation Engine: métricas ponderadas + veredito (PASS/.../UNKNOWN). |
 | `izanagi benchmark [run\|tokens\|compare]` | 10 benchmarks builtin + comparação de regressões entre builds. `tokens` compara o plano do runtime legado com o do Commander (chamadas, tokens e custo, de forma determinística). Alias histórico: `arena`. |
 | `izanagi trace [run-id]` | Traces de execução (spans, healing, graph, avaliação). |
@@ -224,7 +224,7 @@ references:
 ---
 ```
 
-Seguido de seções fixas: *Triggering Criteria*, *Step-by-Step Workflow*, *Verification Steps*, *Common Rationalizations* e *Red Flags*. O consumo é por **progressive disclosure** (`skill show` carrega só o módulo necessário); skills nunca rodam isoladas — encadeiam via `compositions` do `core/skill-resolver.json` (258 aliases, 16 composições).
+Seguido de seções fixas: *Triggering Criteria*, *Step-by-Step Workflow*, *Verification Steps*, *Common Rationalizations* e *Red Flags*. O consumo é por **progressive disclosure** (`izanagi skill inspect`, ou `izanagi-next skill show`, carrega só o módulo necessário); skills nunca rodam isoladas — encadeiam via `compositions` do `core/skill-resolver.json` (258 aliases, 16 composições).
 
 ---
 
@@ -236,15 +236,16 @@ Ordem importa: `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/
 # Legado npm (raiz)
 npm install
 npm run build       # tsc && node dist/scripts/generate-manifest.js
-npm test            # build + node --test dist/runtime/tests/*.test.js (695 testes)
+npm test            # build + node --test dist/runtime/tests/*.test.js (764 testes)
 npm run verify      # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor      # node bin/izanagi.js doctor [--deep]
 
 # Núcleos poliglotas
-cargo test --workspace                                        # Rust: core + mcp (111 testes)
+cargo test --workspace                                        # Rust: core + mcp (126 testes declarados no fonte)
 cargo check -p izanagi_core --features wasm                   # type-check dos bindings WASM
 (cd go-services/swarm_orchestrator && go build ./... && go vet ./... && go test ./...)
-(cd python-engine && .venv/bin/python -m pytest tests/ -q)    # 70 testes
+(cd python-engine && python -m venv .venv && .venv/bin/python -m pip install -r requirements-dev.txt)  # o venv NAO e versionado
+(cd python-engine && .venv/bin/python -m pytest tests/ -q)     # 41 testes
 (cd packages/sdk && npm install && npm test)                  # 42 testes
 (cd packages/cli && npm install && npm test)                  # 13 testes
 ```
@@ -260,7 +261,7 @@ npm run bump:patch   # ou bump:minor / bump:major
 npm publish          # prepublishOnly roda o build automaticamente
 ```
 
-CI (`.github/workflows/polyglot.yml`): 7 jobs paralelos em push/PR para `main` — legacy-npm, rust (clippy+test+wasm check), wasm-build E2E, go, python, ts-packages.
+CI (`.github/workflows/polyglot.yml`): 6 jobs paralelos em push/PR para `main` — legacy-npm, rust (clippy+test+wasm check), wasm-build E2E, go, python, ts-packages.
 
 ---
 
