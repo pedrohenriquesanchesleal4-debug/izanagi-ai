@@ -4,7 +4,13 @@
 
 ---
 
-## [Não publicado]
+## [3.19.0]: 2026-09-04
+
+> **A 3.18.0 nunca chegou ao npm.** Ela foi para o GitHub e o `npm publish` não
+> aconteceu, então o registro parou na 3.17.1: esta release leva as duas rodadas
+> juntas. Mesma classe de incidente que a v3.4.0 (registrada na Fase 6 do
+> `ROADMAP.md`), e o motivo de existir o gate de banner de versão descrito
+> abaixo: "publicado" e "commitado" não são a mesma afirmação.
 
 ### Rodada de auditoria do runtime contra a especificação (2026-09-04)
 

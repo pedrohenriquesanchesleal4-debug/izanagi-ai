@@ -1,6 +1,6 @@
 # Roadmap
 
-> Versão atual: **3.18.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
+> Versão atual: **3.19.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
 > Legenda: ✅ Done · 🔧 In progress · 📋 Planned · 💡 Future idea
 > Histórico linha-a-linha de cada release em `CHANGELOG.md`: este arquivo resume por fase, não duplica o changelog.
 

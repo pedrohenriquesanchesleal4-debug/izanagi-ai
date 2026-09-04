@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.18.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel → grafo → verificação por evidência → healing → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
+> **v3.19.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
 **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
