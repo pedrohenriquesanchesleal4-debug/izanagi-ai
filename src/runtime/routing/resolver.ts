@@ -26,27 +26,71 @@ export interface ResolverOptions {
   scorer?: CandidateScorer;
 }
 
-/** Faz parse do frontmatter YAML simples (scalars + listas). Sem dependências. */
+/** Remove um par de aspas simples ou duplas ao redor do valor. */
+function unquote(value: string): string {
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) return value.slice(1, -1);
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1);
+  return value;
+}
+
+/**
+ * Faz parse do frontmatter YAML simples (scalars + listas inline e de bloco).
+ * Sem dependências.
+ *
+ * A lista de BLOCO (`triggers:` seguido de linhas `  - valor`) foi acrescentada
+ * porque produtor e consumidor deste mesmo repositório estavam em formatos
+ * incompatíveis: a `SkillFactory` escreve exclusivamente lista de bloco
+ * (`factories/skill-factory.ts`), e o parser só entendia escalar ou `[a, b]`
+ * inline. O efeito não era erro: `triggers:` casava com o regex de chave e
+ * gravava string vazia, as linhas `  - valor` não casavam com nada e eram
+ * puladas, e `readSkill` derivava `[]`. Toda skill gerada pela Factory (e toda
+ * skill sintetizada por trajetória, que usa o mesmo escritor) perdia em
+ * silêncio justamente o metadado pelo qual `rankSkills` a encontraria.
+ *
+ * Chave aninhada (`tools:` → `  mcp:` → `    - x`) continua fora de escopo, e
+ * de propósito: o único consumidor é `SkillManifest`, que é plano. Um parser
+ * YAML de verdade aqui seria dependência nova para ler seis campos.
+ */
 export function parseFrontmatter(content: string): Record<string, unknown> {
   const fm: Record<string, unknown> = {};
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return fm;
-  for (const line of match[1].split(/\r?\n/)) {
-    const m = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
+  const lines = match[1].split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
     if (!m) continue;
     const key = m[1];
-    let value: string = m[2].trim();
-    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-    else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+    const value = unquote(m[2].trim());
+
     if (/^\[.*\]$/.test(value)) {
       fm[key] = value
         .slice(1, -1)
         .split(',')
-        .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+        .map((s) => unquote(s.trim()))
         .filter(Boolean);
-    } else {
-      fm[key] = value;
+      continue;
     }
+
+    // Chave sem valor na própria linha: pode ser lista de bloco. Olha adiante
+    // sem consumir, para que uma chave vazia de verdade siga sendo string
+    // vazia em vez de virar `[]` (ausência de valor não é lista vazia).
+    if (value === '') {
+      const items: string[] = [];
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const item = lines[j].match(/^\s+-\s+(.*)$/);
+        if (!item) break;
+        const parsed = unquote(item[1].trim());
+        if (parsed) items.push(parsed);
+      }
+      if (items.length > 0) {
+        fm[key] = items;
+        i = j - 1;
+        continue;
+      }
+    }
+
+    fm[key] = value;
   }
   return fm;
 }

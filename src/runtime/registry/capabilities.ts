@@ -47,6 +47,33 @@ export interface AgentCapability {
    * declarar o próprio trust tier no JSON dele.
    */
   trustTier: TrustTier;
+  /**
+   * Tier de modelo declarado pelo agente (`"sonnet"` / `"opus"` nos 22 core).
+   *
+   * É uma PREFERÊNCIA, não um id de catálogo, e não é o que roteia: o modelo
+   * sai do papel via `ModelRouter.routeForRole`. Existe aqui para que o
+   * Commander possa perguntar "este agente pede modelo forte?" sem abrir o
+   * arquivo — o campo estava no disco em 22/22 agentes e era descartado no
+   * parse.
+   */
+  modelHint?: string;
+  /**
+   * Permissões que o agente DECLARA precisar, em prosa
+   * (`"ler agents/"`, `"escrever skills/ (draft em staging...)"`).
+   *
+   * Nome explícito porque a distinção é de segurança: isto NÃO é a concessão
+   * de permissão do runtime. O que autoriza uma tool é
+   * `TaskContract.permissions` no formato `fs:read`/`fs:write`/`shell`,
+   * conferido pela `PolicyEngine` contra o trust tier da ORIGEM do arquivo.
+   * Um agente não se autoriza declarando o que quer.
+   */
+  declaredPermissions: string[];
+  /**
+   * Métodos de verificação declarados pelo agente: quais métricas da
+   * Evaluation Engine se aplicam ao que ele produz e a nota mínima que ele
+   * mesmo estabelece.
+   */
+  evaluation?: { metrics: string[]; minScore?: number };
   file: string;
 }
 
@@ -60,6 +87,25 @@ export interface CapabilityMatch {
 const COMMANDER_AGENTS = new Set(['discovery', 'architect', 'product-reasoner', 'pm', 'techlead', 'agent-architect']);
 /** Agentes de tarefa curta e barata (extração, formatação, avaliação objetiva). */
 const WORKER_AGENTS = new Set(['evaluator', 'docs', 'professor']);
+
+/**
+ * Lê `evaluation` do JSON do agente. Bloco ausente ou sem métrica devolve
+ * objeto vazio, e o campo fica ausente no `AgentCapability`: métrica sem
+ * declaração é ausência de critério, nunca `minScore: 0` (que afirmaria que
+ * qualquer nota serve).
+ */
+function parseEvaluation(raw: unknown): { evaluation?: { metrics: string[]; minScore?: number } } {
+  if (!raw || typeof raw !== 'object') return {};
+  const block = raw as { metrics?: unknown; minScore?: unknown };
+  const metrics = Array.isArray(block.metrics) ? (block.metrics as string[]).filter((m) => typeof m === 'string') : [];
+  if (metrics.length === 0) return {};
+  return {
+    evaluation: {
+      metrics,
+      ...(typeof block.minScore === 'number' ? { minScore: block.minScore } : {}),
+    },
+  };
+}
 
 function roleFor(id: string): AgentRole {
   if (COMMANDER_AGENTS.has(id)) return 'commander';
@@ -149,6 +195,9 @@ export class AgentCapabilityRegistry {
       outputs: Array.isArray(raw.outputs) ? (raw.outputs as string[]) : [],
       domains: detectDomains([raw.role, raw.description, raw.name, ...capabilities, ...skills, ...Object.keys(chains)].filter(Boolean).join(' ')),
       trustTier: trustTierFor(file),
+      ...(typeof raw.model === 'string' && raw.model ? { modelHint: raw.model } : {}),
+      declaredPermissions: Array.isArray(raw.permissions) ? (raw.permissions as string[]) : [],
+      ...parseEvaluation(raw.evaluation),
       file,
     };
   }

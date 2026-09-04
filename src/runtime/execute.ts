@@ -22,9 +22,10 @@ import { simulatedArtifact, validateArtifact } from './contracts/artifacts.js';
 import { createModelJudge } from './verification/judge.js';
 import type { SemanticJudge } from './verification/engine.js';
 import type { TrustTier } from './security/policy.js';
-import type { AgentRole, ExecutionMode } from './contracts/task-contract.js';
+import { contractOf } from './contracts/task-contract.js';
+import type { AgentRole, ExecutionMode, TaskPriority } from './contracts/task-contract.js';
 import type { ExecuteCtx } from './orchestrator.js';
-import type { ExecutionGraph, GraphNode, ModelSpec, RoutingContext } from './types.js';
+import type { ExecutionGraph, GraphNode, ModelSpec, RoutingContext, RoutingHints } from './types.js';
 
 /** Providers que rodam na própria máquina (usados por `--local`). */
 export const LOCAL_PROVIDERS = ['ollama', 'lmstudio', 'custom'];
@@ -64,6 +65,65 @@ export interface PlanningInput {
   stateDir?: string;
 }
 
+/** Risco por prioridade do contrato. Prioridade alta é onde errar custa mais. */
+const RISK_BY_PRIORITY: Record<TaskPriority, number> = {
+  low: 0.1,
+  normal: 0.2,
+  high: 0.5,
+  critical: 0.8,
+};
+
+/**
+ * Deriva o `RoutingContext` DESTA tarefa a partir do contexto do run.
+ *
+ * O contexto do run era montado uma vez em `buildExecutionPlan` e usado em
+ * todos os nós: `reasoningRequirement: 'medium'`, `risk: 0.2`, `tokenBudget` do
+ * run inteiro e nenhum `historicalPerformance`. O `scoreModel` do router lê
+ * todos esses campos — então metade dos critérios do roteamento estava
+ * implementada e nunca era alimentada, e dentro de um run o modelo escolhido
+ * era função só do papel.
+ *
+ * O que muda por nó, e por quê:
+ * - `tokenBudget`: o teto de SAÍDA da tarefa (o que o nó realmente pede de
+ *   janela), limitado pelo saldo do run. Com o teto do run inteiro, todo modelo
+ *   de janela menor perdia 0.15 de score em toda tarefa, inclusive nas curtas.
+ * - `risk`: da prioridade do contrato. Risco alto reduz o peso do custo no
+ *   score, que é a decisão certa onde errar sai mais caro que a chamada.
+ * - `reasoningRequirement`: do papel. `worker` é a tarefa barata por definição
+ *   e não deve exigir raciocínio alto; `commander` deve.
+ * - `requiresTools`: nó de tool declara isso no contrato.
+ * - `historicalPerformance`: o que a memória mediu, já pronto no store.
+ */
+export function contextForNode(
+  runContext: RoutingContext,
+  node?: GraphNode,
+  hints?: RoutingHints,
+): RoutingContext {
+  const contract = node ? contractOf(node) : undefined;
+  const role = contract?.role;
+  const nodeTokens = contract?.budget?.maxTokens ?? node?.tokenBudget;
+  const ceiling = hints?.remainingTokens !== undefined && hints.remainingTokens > 0
+    ? Math.min(nodeTokens ?? runContext.tokenBudget, hints.remainingTokens)
+    : nodeTokens ?? runContext.tokenBudget;
+
+  return {
+    ...runContext,
+    ...(contract?.objective ? { task: contract.objective } : {}),
+    tokenBudget: Math.max(256, ceiling),
+    ...(role
+      ? {
+          reasoningRequirement: role === 'commander' ? 'high' : role === 'worker' ? 'low' : 'medium',
+          taskComplexity: runContext.taskComplexity,
+        }
+      : {}),
+    ...(contract?.priority ? { risk: RISK_BY_PRIORITY[contract.priority] } : {}),
+    ...(contract?.tool ? { requiresTools: true } : {}),
+    ...(hints?.historicalPerformance && Object.keys(hints.historicalPerformance).length > 0
+      ? { historicalPerformance: hints.historicalPerformance }
+      : {}),
+  };
+}
+
 export interface PlanningOutput {
   plan?: CommanderPlan;
   router: ModelRouter;
@@ -71,7 +131,7 @@ export interface PlanningOutput {
   /** Modelos do catálogo por id, para converter tokens em custo real. */
   specById: Map<string, ModelSpec>;
   capabilities: AgentCapabilityRegistry;
-  routeRole: (role: AgentRole, node: GraphNode) => { model: string; provider: string } | undefined;
+  routeRole: (role: AgentRole, node?: GraphNode, hints?: RoutingHints) => { model: string; provider: string } | undefined;
   costOf: (modelId: string, inputTokens: number, outputTokens: number) => number;
   /**
    * Replanejamento pelo Commander, pronto para o Orchestrator. Fecha sobre o
@@ -155,9 +215,9 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
     routingContext,
     specById,
     capabilities,
-    routeRole: (role: AgentRole) => {
+    routeRole: (role: AgentRole, node?: GraphNode, hints?: RoutingHints) => {
       try {
-        const routed = router.routeForRole(role, routingContext);
+        const routed = router.routeForRole(role, contextForNode(routingContext, node, hints));
         return { model: routed.model.id, provider: routed.provider };
       } catch {
         return undefined;
@@ -177,6 +237,8 @@ export interface ProducerLLMClient {
     system?: string;
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
     maxTokens?: number;
+    /** Cancelamento do run: o cliente combina com o próprio timeout HTTP. */
+    signal?: AbortSignal;
   }): Promise<{ text: string; tokens: number; model: string; provider: string; cachedTokens?: number }>;
 }
 
@@ -214,7 +276,15 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
     }
     opts.cache.recordMissIfEnabled(ctx.execBudget);
 
-    const result = await opts.client.complete(ctx.provider, { model: ctx.model, system, messages, maxTokens });
+    // O sinal do run desce até a requisição: sem ele, cancelar deixava a
+    // chamada em voo consumindo cota de um run que ninguém mais espera.
+    const result = await opts.client.complete(ctx.provider, {
+      model: ctx.model,
+      system,
+      messages,
+      maxTokens,
+      ...(ctx.signal ? { signal: ctx.signal } : {}),
+    });
 
     // Só entra no cache a resposta que produz artefato VÁLIDO.
     //
@@ -268,7 +338,7 @@ export function createHeadlessProducer(objective: string): NodeProducer {
 export interface SemanticJudgeWiring {
   client: ProducerLLMClient;
   /** Roteamento do papel `worker`: julgar é a tarefa barata por definição. */
-  routeRole: (role: AgentRole, node: GraphNode) => { model: string; provider: string } | undefined;
+  routeRole: (role: AgentRole, node?: GraphNode, hints?: RoutingHints) => { model: string; provider: string } | undefined;
   /** Teto de saída do juiz (default do `createModelJudge`). */
   maxTokens?: number;
 }

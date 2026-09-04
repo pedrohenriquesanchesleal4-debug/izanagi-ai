@@ -25,7 +25,14 @@ export type IzanagiEventName =
   | 'verification.started'
   | 'verification.completed'
   | 'quality_gate.passed'
-  | 'quality_gate.failed';
+  | 'quality_gate.failed'
+  // Verificacao POR TAREFA. `verification.started`/`.completed` e
+  // `quality_gate.*` sao do RUN: falam do veredito final agregado, emitidos uma
+  // vez. Uma tarefa que reprovava a verificacao nao emitia evento nenhum, e o
+  // dado so aparecia em `result.verification` depois do await -- ou seja, quem
+  // observava o run em tempo real nao tinha como saber que um no' reprovou.
+  | 'task.verification.passed'
+  | 'task.verification.failed';
 
 export interface IzanagiEvent {
   name: IzanagiEventName;

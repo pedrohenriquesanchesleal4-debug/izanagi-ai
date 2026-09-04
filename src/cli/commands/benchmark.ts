@@ -120,7 +120,18 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
   // execução real do runtime: o grafo roda, a verificação roda, o healing roda.
   // O que não é real ali é o conteúdo dos artefatos, e o relatório diz isso.
   const executed = async (c: (typeof cases)[number]) => {
-    const result = await runObjective({ baseDir, stateDir, objective: c.task });
+    // O caso declara o teto sob o qual deve ser resolvido, o modo e as tools
+    // autorizadas. Antes disto, `--execute` rodava todo caso sem orçamento,
+    // sem modo e sem restrição: "budget" e "allowed tools" da base oficial
+    // eram observados no relatório e nunca impostos na execução.
+    const result = await runObjective({
+      baseDir,
+      stateDir,
+      objective: c.task,
+      ...(c.budget ? { budget: c.budget } : {}),
+      ...(c.mode ? { mode: c.mode } : {}),
+      ...(c.allowedTools ? { allowedTools: c.allowedTools } : {}),
+    });
     return {
       output: {
         ...outputOnly(c),

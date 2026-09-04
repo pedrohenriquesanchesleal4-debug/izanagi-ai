@@ -62,6 +62,22 @@ export interface CompletionOptions {
    * histórico segue intacto, comportamento idêntico ao pré-AgentDiet.
    */
   diet?: boolean;
+  /**
+   * Sinal de cancelamento do run. Combinado com o timeout HTTP interno: a
+   * requisicao aborta pelo que vier primeiro. Sem isto, cancelar um run
+   * deixava as requisicoes em voo ate o timeout delas.
+   */
+  signal?: AbortSignal;
+}
+
+/**
+ * Combina o timeout HTTP com o sinal de cancelamento do run. `AbortSignal.any`
+ * aborta pelo primeiro dos dois, e sem sinal externo o comportamento e'
+ * identico ao anterior (so o timeout).
+ */
+function requestSignal(ms: number, external?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(ms);
+  return external ? AbortSignal.any([timeout, external]) : timeout;
 }
 
 export interface CompletionResult {
@@ -174,7 +190,7 @@ async function completeOpenAICompatible(provider: string, baseUrl: string, apiKe
         ? [{ role: 'system', content: systemContent }, ...opts.messages]
         : opts.messages,
     }),
-    signal: AbortSignal.timeout(timeoutMs()),
+    signal: requestSignal(timeoutMs(), opts.signal),
   });
 
   if (!res.ok) {
@@ -389,7 +405,7 @@ export class AnthropicAdapter implements ModelAdapter {
         system: AnthropicAdapter.systemToWire(opts.system),
         messages: opts.messages.filter((m) => m.role !== 'system'),
       }),
-      signal: AbortSignal.timeout(timeoutMs()),
+      signal: requestSignal(timeoutMs(), opts.signal),
     });
 
     if (!res.ok) {
@@ -457,7 +473,7 @@ export class GoogleAdapter implements ModelAdapter {
           .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
         generationConfig: { maxOutputTokens: opts.maxTokens ?? 2048, temperature: opts.temperature ?? 0.4 },
       }),
-      signal: AbortSignal.timeout(timeoutMs()),
+      signal: requestSignal(timeoutMs(), opts.signal),
     });
 
     if (!res.ok) {

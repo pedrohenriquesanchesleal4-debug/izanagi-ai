@@ -7,6 +7,11 @@
  * Nenhuma dependência externa. Todos os módulos do runtime consomem estes tipos.
  */
 
+// Import de TIPO apenas (apagado na compilação): `ExecutionMode` é definido
+// junto do Task Contract, que é seu dono. Reescrever a união aqui criaria duas
+// listas de modos e uma delas ficaria para trás.
+import type { ExecutionMode } from './contracts/task-contract.js';
+
 /* ============================ VERDICTS ============================ */
 
 export type Verdict = 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'UNKNOWN';
@@ -463,6 +468,20 @@ export interface RoutingContext {
   historicalPerformance?: Record<string, number>;
 }
 
+/**
+ * O que o roteamento por no' so' pode saber DURANTE a execucao: quanto sobrou
+ * do orcamento e como cada modelo se comportou historicamente. Opcional de
+ * proposito: quem roteia fora de um run (o juiz semantico, a estimativa de
+ * custo do plano) nao tem nem um nem outro, e ausencia aqui e' ausencia de
+ * sinal, nao sinal ruim.
+ */
+export interface RoutingHints {
+  /** Saldo do teto de tokens do run (`ExecutionBudget.remainingTokens`). */
+  remainingTokens?: number;
+  /** Taxa de sucesso por model id (`MemoryStore.historicalPerformance()`). */
+  historicalPerformance?: Record<string, number>;
+}
+
 /* ============================ BENCHMARKS ============================ */
 
 export type BenchmarkDomain =
@@ -487,6 +506,19 @@ export interface BenchmarkCase {
   validators?: Array<{ name: string; message: string; check: string }>;
   metrics: MetricName[];
   tags: string[];
+  /**
+   * Teto sob o qual o caso deve ser resolvido (`izanagi benchmark run
+   * --execute`). Sem isto, "custo" da base oficial era observado e nunca
+   * imposto: um caso resolvido com dez vezes o orcamento passava igual.
+   */
+  budget?: { maxTokens?: number; maxCost?: number; maxTimeMs?: number; maxToolCalls?: number; maxAgents?: number; maxRetries?: number };
+  /** Modo de execucao exigido pelo caso. Ausente: o Commander decide. */
+  mode?: ExecutionMode;
+  /**
+   * Tools que o caso autoriza. Ausente: sem allowlist. Lista vazia: nenhuma
+   * tool, que e' declaracao e nao ausencia.
+   */
+  allowedTools?: string[];
 }
 
 export interface BenchmarkResult {

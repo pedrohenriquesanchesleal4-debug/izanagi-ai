@@ -45,6 +45,22 @@ export interface IzanagiRunOptions {
   budget?: { maxTokens?: number; maxCost?: number; maxTimeMs?: number; maxToolCalls?: number; maxAgents?: number; maxRetries?: number };
   /** Fixa o mesmo modelo em todos os papéis. */
   model?: string;
+  /**
+   * Allowlist de ids de tool para o run inteiro. Ausente: vale o que o contrato
+   * de cada tarefa autoriza. Lista vazia proíbe toda tool (é declaração, não
+   * ausência).
+   */
+  allowedTools?: string[];
+  /**
+   * Cancelamento cooperativo do run. Abortar interrompe o grafo no próximo
+   * batch e cancela a requisição em voo; o checkpoint do último batch
+   * concluído fica em disco, e `izanagi resume <run-id>` retoma dali.
+   *
+   * Cancelar não é falhar por bug: o run termina `FAIL` com a falha declarando
+   * o cancelamento, e o `Healer` a trata como não-recuperável (curar seria
+   * desobedecer quem cancelou).
+   */
+  signal?: AbortSignal;
   /** Só providers locais (Ollama / LM Studio / endpoint próprio). */
   local?: boolean;
   /** Cache local de respostas. */
@@ -113,8 +129,13 @@ const EVENT_ALIASES: Record<string, IzanagiEventName> = {
   'task:complete': 'node.completed',
   'run:start': 'run.started',
   'run:complete': 'run.completed',
+  // Do RUN: veredito final agregado, emitido uma vez.
   'verification:failed': 'quality_gate.failed',
   'verification:passed': 'quality_gate.passed',
+  // De uma TAREFA: emitido por no' verificado, com nodeId e criterios nao
+  // comprovados no payload.
+  'task:verification:failed': 'task.verification.failed',
+  'task:verification:passed': 'task.verification.passed',
   'healing:start': 'healing.started',
   'healing:complete': 'healing.completed',
 };
@@ -209,6 +230,8 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     skillChain: options.skillChain ?? [],
     availableProviders: providers,
     ...(planning.plan ? { plan: planning.plan } : {}),
+    ...(options.allowedTools ? { allowedTools: options.allowedTools } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
     budgetLimits: {
       ...(options.budget?.maxCost !== undefined ? { maxCostUsd: options.budget.maxCost } : {}),
       ...(options.budget?.maxTimeMs !== undefined ? { maxTimeMs: options.budget.maxTimeMs } : {}),

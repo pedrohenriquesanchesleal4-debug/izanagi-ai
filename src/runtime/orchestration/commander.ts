@@ -786,12 +786,11 @@ export class Commander {
 
     // Modo orchestrated corta o que é reforço e não evidência: crítica
     // adversarial fica só no autonomous. O nó de avaliação permanece nos dois.
-    const nodes = graph.nodes.filter((n) => (mode === 'autonomous' ? true : n.id !== 'critic'));
-    const critics = new Set(['critic']);
+    const nodes = graph.nodes.filter((n) => (mode === 'autonomous' ? true : !isReinforcement(n)));
     return nodes.map((n) => ({
       ...n,
       dependencies: (n.dependencies ?? []).filter((d) => nodes.some((x) => x.id === d)),
-      metadata: { ...n.metadata, optional: critics.has(n.id) },
+      metadata: { ...n.metadata, optional: isReinforcement(n) },
     }));
   }
 
@@ -1047,4 +1046,31 @@ function isToolContract(node: GraphNode, contract?: TaskContract): boolean {
 function clip(text: string, max: number): string {
   const flat = String(text ?? '').replace(/\s+/g, ' ').trim();
   return flat.length <= max ? flat : `${flat.slice(0, max - 1)}...`;
+}
+
+/**
+ * Artefatos que são REFORÇO e não evidência: uma segunda opinião sobre algo que
+ * a verificação já comprovou.
+ *
+ * `evaluation` NÃO entra: o veredito do run é o que fecha a execução, e pular
+ * o avaliador porque tudo passou seria pular justamente quem afirma que passou.
+ */
+const REINFORCEMENT_ARTIFACTS = new Set(['critique']);
+
+/** Agentes cujo produto é crítica por definição. */
+const REINFORCEMENT_AGENTS = new Set(['adversarial-critic']);
+
+/**
+ * Um nó é dispensável (`optional`) quando o que ele produz é reforço.
+ *
+ * Antes isto era `new Set(['critic'])`, um id literal: um template de workflow
+ * do projeto do usuário com o nó de crítica sob outro nome (ou um agente
+ * gerado que produz `critique`) nunca era marcado como opcional, então o early
+ * stopping e o corte de opcionais por pressão de orçamento simplesmente não o
+ * alcançavam. A decisão passa a sair do QUE o nó produz, que é o dado
+ * estrutural — id é nome.
+ */
+function isReinforcement(node: GraphNode): boolean {
+  if ((node.outputs ?? []).some((o) => REINFORCEMENT_ARTIFACTS.has(o))) return true;
+  return node.agent !== undefined && REINFORCEMENT_AGENTS.has(node.agent);
 }

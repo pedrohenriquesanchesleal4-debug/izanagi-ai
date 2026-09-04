@@ -327,7 +327,16 @@ export class VerificationEngine {
     };
   }
 
-  /** Só VERIFIED conta como concluído: UNVERIFIED nunca é tratado como sucesso. */
+  /**
+   * Só `VERIFIED` conta como COMPROVADO.
+   *
+   * `UNVERIFIED` significa "nada falhou e nem tudo foi comprovado", e o
+   * orquestrador deixa o nó seguir como `succeeded` — derrubá-lo transformaria
+   * "não medi" em "está errado", e sem juiz semântico isso derrubaria todo run
+   * sem provider. O que `isDone` decide é se o nó carrega a marca
+   * `metadata.unverified`: aprovado sem prova precisa ser distinguível de
+   * comprovado por quem lê o grafo, o trace e a conversa A2A.
+   */
   static isDone(result: VerificationResult): boolean {
     return result.status === 'VERIFIED';
   }

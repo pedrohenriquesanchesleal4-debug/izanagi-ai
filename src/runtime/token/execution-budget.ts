@@ -237,6 +237,18 @@ export class ExecutionBudget {
     return this.inputTokens + this.outputTokens;
   }
 
+  /**
+   * Tokens que ainda cabem no teto do run. Nunca negativo: estourado é 0, e
+   * quem decide o que fazer com o estouro é `spend()`.
+   *
+   * Existe para alimentar o roteamento por nó — escolher modelo sem saber o
+   * saldo é como o `RoutingContext` funcionava até aqui, congelado no início
+   * do run com o teto INICIAL como se nada tivesse sido gasto.
+   */
+  get remainingTokens(): number {
+    return Math.max(0, this.limits.maxTokens - this.totalTokens);
+  }
+
   get spentUsd(): number {
     return this.costUsd;
   }

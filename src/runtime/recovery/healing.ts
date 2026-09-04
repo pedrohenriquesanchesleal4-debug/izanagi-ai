@@ -41,6 +41,15 @@ const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
   // gasta orçamento numa porta que continuará fechada. Só muda com decisão
   // humana (elevar trust tier, conceder permissão no contrato).
   { regex: /permissão negada|permissao negada|policy negou|permission denied/i, kind: 'non-recoverable' },
+  // Teto do Budget Controller estourado também não se cura tentando de novo: o
+  // teto é do run e não se move entre tentativas, então retentar é gastar o
+  // orçamento que já acabou. Precisa vir ANTES da regra de `tool`, que casava
+  // com "teto de tool calls do run excedido" e classificava como recuperável.
+  { regex: /teto d[eo] [^.]*excedido|budget ceiling exceeded/i, kind: 'non-recoverable' },
+  // Run cancelado: quem cancelou decidiu parar, e curar seria desobedecer.
+  // Precisa vir antes de qualquer regra que possa casar com o texto do motivo
+  // informado por quem cancelou (SIGINT, timeout de agendador, etc.).
+  { regex: /run cancelado|run aborted/i, kind: 'non-recoverable' },
   { regex: /timeout|timed out|etimedout|timeout/i, kind: 'recoverable' },
   { regex: /429|rate.?limit|too many requests/i, kind: 'recoverable' },
   { regex: /5\d\d|internal server|unavailable/i, kind: 'recoverable' },
@@ -150,6 +159,17 @@ export class Healer {
       return this.abort(id, kind, `orçamento de tokens (${input.maxTokens}) excedido`, input);
     }
 
+    // 1b. Não-recuperável por natureza: permissão negada, teto de run estourado,
+    // run cancelado. Nenhum dos três muda entre tentativas, e o passo 2 abaixo
+    // (padrão de falha conhecido na memória) devolve `retryNow: true` — então,
+    // sem este corte, uma permissão negada que casasse com um padrão da memória
+    // era RETENTADA, contra a regra que a própria `KIND_RULES` declara no topo
+    // do arquivo. Cancelamento é o caso mais claro: curar seria desobedecer
+    // quem cancelou.
+    if (kind === 'non-recoverable') {
+      return this.abort(id, kind, `falha não-recuperável: ${input.error.slice(0, 200)}`, input);
+    }
+
     // 2. Padrões de falha conhecidos — local repair guiado
     const patterns = input.memory.findRelevantFailures(input.error);
     if (patterns.length > 0) {
@@ -197,7 +217,35 @@ export class Healer {
       };
     }
 
-    // 4. Validação → skill replacement
+    // 4. Validação → skill replacement na 1ª vez, replan a partir da 2ª.
+    //
+    // Repetir é o que o replanejamento existe para evitar. Reprovação da
+    // Verification Engine classifica como `validation`, e `validation` só
+    // conhecia um caminho: trocar a skill e tentar de novo com o MESMO agente,
+    // MESMO papel e MESMA decomposição, até esgotar `maxAttempts`. Como
+    // `replan` só era alcançado por falha de PLANEJAMENTO (mensagem casando
+    // `/plan|graph|cycle|topological/`), o Plano B do Commander — trocar
+    // agente, subir papel, quebrar a tarefa — era inalcançável pelo caminho de
+    // falha mais comum do runtime.
+    //
+    // A partir da 2ª tentativa a troca de skill já foi tentada e não resolveu:
+    // insistir nela é a definição de repetir. Na prática isto só alcança modo
+    // `autonomous` (`maxAttempts: 3`), porque com 2 tentativas o hard limit do
+    // passo 1 já abortou — e é onde o replanejamento deve mesmo viver.
+    if (kind === 'validation' && input.attempt >= 2) {
+      return {
+        action: {
+          id,
+          kind: 'replan',
+          failureKind: kind,
+          category,
+          message: `artefato segue inválido após troca de skill (tentativa ${input.attempt}) — replanejando`,
+          nodeId: input.nodeId,
+          createdAt: new Date().toISOString(),
+        },
+      };
+    }
+
     if (kind === 'validation') {
       const replacement = input.skill ? repairSkillFor(input.skill) : undefined;
       return {

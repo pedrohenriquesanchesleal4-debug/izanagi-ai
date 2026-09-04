@@ -13,6 +13,7 @@ import { ContextResolver } from '../../runtime/orchestration/context-resolver.js
 import { ResponseCache } from '../../runtime/cache/response-cache.js';
 import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
 import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
+import { LOCAL_MAX_CONCURRENCY } from '../../runtime/orchestration/concurrency.js';
 import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from '../../runtime/orchestration/delivery.js';
 import { looksLikeProject } from '../../runtime/tools/project-survey.js';
 import { measureGroundedness } from '../../runtime/benchmarks/arena.js';
@@ -33,6 +34,11 @@ interface RunArgs {
   budget?: number;
   /** Teto global de custo em USD (`--max-cost N`). */
   maxCost?: number;
+  /**
+   * Teto de tarefas em voo (`--max-concurrency N`). O SDK sempre pôde declarar
+   * este teto por `budgetLimits.maxConcurrency`; a CLI não tinha por onde.
+   */
+  maxConcurrency?: number;
   /** Fixa o modelo de todos os papéis (`--model <id>`). */
   model?: string;
   /** Restringe a execução a providers locais (`--local`). */
@@ -65,6 +71,7 @@ export function parseRunArgs(args: string[]): RunArgs {
   let budget: number | undefined;
   let maxCost: number | undefined;
   let model: string | undefined;
+  let maxConcurrency: number | undefined;
   let local = false;
   let cache = false;
   let noCommander = false;
@@ -116,6 +123,11 @@ export function parseRunArgs(args: string[]): RunArgs {
       if (read.consumed) i++;
       const n = Number(read.value);
       if (Number.isFinite(n) && n >= 0) maxCost = n;
+    } else if (arg === '--max-concurrency' || arg.startsWith('--max-concurrency=')) {
+      const read = readValue(arg, '--max-concurrency', args[i + 1]);
+      if (read.consumed) i++;
+      const n = Number(read.value);
+      if (Number.isFinite(n) && n >= 1) maxConcurrency = Math.floor(n);
     } else if (arg === '--model' || arg.startsWith('--model=')) {
       const read = readValue(arg, '--model', args[i + 1]);
       if (read.consumed) i++;
@@ -168,6 +180,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     ...(budget !== undefined ? { budget } : {}),
     ...(maxCost !== undefined ? { maxCost } : {}),
     ...(model ? { model } : {}),
+    ...(maxConcurrency !== undefined ? { maxConcurrency } : {}),
     local,
     cache,
     noCommander,
@@ -504,6 +517,7 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     ...(parsed.budget !== undefined ? { budget: parsed.budget } : {}),
     ...(parsed.maxCost !== undefined ? { maxCost: parsed.maxCost } : {}),
     ...(parsed.model ? { model: parsed.model } : {}),
+    ...(parsed.maxConcurrency !== undefined ? { maxConcurrency: parsed.maxConcurrency } : {}),
     local: parsed.local,
     cache: parsed.cache,
     noCommander: parsed.noCommander,
@@ -649,6 +663,8 @@ export async function runRuntime(
     maxCost?: number;
     /** Modelo fixo para todos os papéis (`--model`). */
     model?: string;
+    /** Teto de tarefas em voo (`--max-concurrency`). */
+    maxConcurrency?: number;
     /** Só providers locais (`--local`). */
     local?: boolean;
     /** Cache local de respostas (`--cache`). */
@@ -771,6 +787,30 @@ export async function runRuntime(
     console.log(`  Juiz semântico: desligado (${opts.noJudge ? '--no-judge' : 'sem provider configurado'}) — critérios semânticos ficarão sem evidência conclusiva.`);
   }
 
+  // Ctrl-C cancela o run em vez de matar o processo no meio de um batch.
+  //
+  // A combinação é o que dá valor: o checkpoint é gravado ao fim de cada batch,
+  // e o cancelamento para no INÍCIO do próximo. O que já foi concluído e pago
+  // fica em disco, e `izanagi resume <run-id>` retoma dali em vez de recomeçar
+  // a tentativa inteira. Um segundo Ctrl-C força a saída, para o caso de o
+  // cancelamento cooperativo não bastar (provider que ignora o abort, por
+  // exemplo). Exit code 130 é a convenção de POSIX para término por SIGINT.
+  const controller = new AbortController();
+  let cancelling = false;
+  const onSigint = () => {
+    if (cancelling) {
+      console.error('Segundo Ctrl-C: encerrando o processo sem gravar o restante.');
+      process.exit(130);
+    }
+    cancelling = true;
+    controller.abort('interrompido pelo usuário (Ctrl-C)');
+    if (!opts.json) {
+      console.error('');
+      console.error('Cancelando o run: o batch em voo é abortado e o progresso já gravado fica no checkpoint.');
+      console.error('Retome com: izanagi resume <run-id> (o id sai no relatório final, ou em izanagi trace).');
+    }
+  };
+
   let receipt: MaterializationReceipt | undefined;
   const producedArtifacts: Record<string, { kind: string; content: unknown }> = {};
 
@@ -794,8 +834,20 @@ export async function runRuntime(
     ...(plan ? { plan } : {}),
     budgetLimits: {
       ...(opts.maxCost !== undefined ? { maxCostUsd: opts.maxCost } : {}),
+      // `--local` serializa o pool. `LOCAL_MAX_CONCURRENCY` existia desde a
+      // v3.13.0 com o motivo escrito no arquivo ("GPU única não ganha nada com
+      // paralelismo") e nenhuma referência: com `--local` o pool continuava em
+      // 3, disparando três requisições simultâneas contra a mesma GPU — que
+      // não é só inútil, é o caminho para estourar a memória do modelo local.
+      // Teto explícito do usuário vence, porque é ordem e não heurística.
+      ...(opts.local && opts.maxConcurrency === undefined
+        ? { maxConcurrency: LOCAL_MAX_CONCURRENCY }
+        : {}),
+      ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
     },
     ...(judge ? { judge } : {}),
+    // Ctrl-C para no início do próximo batch e aborta a requisição em voo.
+    signal: controller.signal,
     // Inteligência assimétrica: cada tarefa paga o preço do seu papel.
     routeRole: planning.routeRole,
     costOf: planning.costOf,
@@ -822,7 +874,14 @@ export async function runRuntime(
     },
   });
 
-  const result = await orchestrator.run();
+  process.once('SIGINT', onSigint);
+
+  let result: OrchestrationResult;
+  try {
+    result = await orchestrator.run();
+  } finally {
+    process.off('SIGINT', onSigint);
+  }
 
   if (llmProviders.length > 0 && tokenStats.nodes > 0) {
     const pct = tokenStats.input > 0 ? Math.round((tokenStats.cached / tokenStats.input) * 100) : 0;

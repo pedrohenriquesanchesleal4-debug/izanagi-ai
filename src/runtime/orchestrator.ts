@@ -16,6 +16,7 @@ import type {
   ExecutionGraph,
   GraphNode,
   HealingAction,
+  RoutingHints,
   RunTrace,
 } from './types.js';
 import { TraceStore, Tracer } from './observability/tracer.js';
@@ -26,6 +27,7 @@ import { Planner } from './orchestration/planner.js';
 import { SkillResolver } from './routing/resolver.js';
 import { Healer } from './recovery/healing.js';
 import { LearningEngine } from './evolution/learning.js';
+import { AgentCapabilityRegistry } from './registry/capabilities.js';
 import { AgentFactory } from './factories/agent-factory.js';
 import { SkillFactory } from './factories/skill-factory.js';
 import { describeTrajectory, skillNameFor, type TrajectoryStep } from './evolution/trajectories.js';
@@ -42,6 +44,7 @@ import { ContextResolver, type AvailableArtifact, type ResolvedContext } from '.
 import { ExecutionBudget, type ExecutionBudgetLimits } from './token/execution-budget.js';
 import { VerificationEngine, type SemanticJudge, type VerificationResult } from './verification/engine.js';
 import { runWithConcurrency, DEFAULT_MAX_CONCURRENCY } from './orchestration/concurrency.js';
+import { resolveDeadlineMs, withDeadline } from './orchestration/deadline.js';
 import type { DegradationStep } from './token/execution-budget.js';
 import { ConversationLog, type ConversationEntry } from './protocol/conversation.js';
 import { ToolRegistry, type ToolContext } from './tools/registry.js';
@@ -118,6 +121,26 @@ export interface OrchestratorOptions {
   plan?: CommanderPlan;
   /** Tetos de execução (custo, tempo, tool calls, agentes, retries). */
   budgetLimits?: Partial<ExecutionBudgetLimits>;
+  /**
+   * Allowlist de ids de tool para o run inteiro. Ausente (o default) significa
+   * "sem allowlist": vale o que o contrato de cada tarefa autoriza, e nada
+   * muda para quem já usa o Orchestrator. Presente, uma tool fora da lista
+   * falha o nó ANTES de qualquer permissão ou política ser consultada.
+   *
+   * Lista VAZIA é uma allowlist vazia, não ausência: proíbe toda tool. A
+   * diferença importa porque é a forma de declarar "este run não usa tool".
+   */
+  allowedTools?: string[];
+  /**
+   * Cancelamento cooperativo do run. Conferido no topo de cada batch e
+   * repassado ao `produce()` por `ExecuteCtx.signal`, que o cliente de modelo
+   * combina com o timeout HTTP: a requisicao em voo aborta de verdade em vez
+   * de continuar consumindo cota de um run que ninguem mais espera.
+   *
+   * Cancelar NAO e' falhar por bug: o checkpoint do ultimo batch concluido
+   * segue em disco, e `izanagi resume <run-id>` retoma dali.
+   */
+  signal?: AbortSignal;
   /** Juiz semântico opcional da Verification Engine. Sem juiz, critério semântico fica UNKNOWN. */
   judge?: SemanticJudge;
   /**
@@ -158,7 +181,7 @@ export interface OrchestratorOptions {
    * ausente, todos os nós usam o modelo roteado uma vez para o run inteiro
    * (comportamento anterior).
    */
-  routeRole?: (role: AgentRole, node: GraphNode) => { model: string; provider: string } | undefined;
+  routeRole?: (role: AgentRole, node?: GraphNode, hints?: RoutingHints) => { model: string; provider: string } | undefined;
   /**
    * Custo em USD de uma chamada. Sem esta função o runtime continua contando
    * tokens, mas o custo fica em 0 (não inventa preço de modelo desconhecido).
@@ -195,6 +218,12 @@ export interface ExecuteCtx {
   nodeRole?: AgentRole;
   /** Budget Controller com custo, cache e escada de degradação. */
   execBudget?: ExecutionBudget;
+  /**
+   * Cancelamento cooperativo do run. O producer deve repassá-lo ao cliente de
+   * modelo (`CompletionOptions.signal`); ignorá-lo não quebra nada, mas deixa a
+   * requisição em voo depois do cancelamento.
+   */
+  signal?: AbortSignal;
   /**
    * Canal agente-a-agente do run. Toda mensagem carrega REFERÊNCIA de artefato,
    * nunca cópia de conteúdo: é o que separa uma equipe coordenada por contratos
@@ -459,7 +488,7 @@ export class Orchestrator {
     // Adaptive routing: score agentes e skills
     const resolver = new SkillResolver({ baseDir: this.opts.baseDir, memory });
     const agentFactory = new AgentFactory(resolver);
-    const agentScore = resolver.rankAgents(this.opts.task, agentIds(), 3);
+    const agentScore = resolver.rankAgents(this.opts.task, agentIds(this.opts.baseDir), 3);
     if (agentScore.length === 0 || agentScore[0].finalScore < 0.25) {
       try {
         const drafted = agentFactory.generate({ requirement: this.opts.task });
@@ -545,6 +574,7 @@ export class Orchestrator {
       conversation,
       critiques: new Map(),
       depth: 0,
+      ...(this.opts.signal ? { signal: this.opts.signal } : {}),
     };
 
     let finalEvaluation: EvaluationReport | undefined;
@@ -555,7 +585,10 @@ export class Orchestrator {
 
     while (attempts < maxAttempts) {
       attempts++;
-      const failure = await this.executeBatches(workingGraph, ctx);
+      const currentAttempt = attempts;
+      const failure = await this.executeBatches(workingGraph, ctx, (batchGraph) => {
+        checkpoints.save(this.captureCheckpoint(trace.runId, batchGraph, ctx, currentAttempt));
+      });
       checkpoints.save(this.captureCheckpoint(trace.runId, workingGraph, ctx, attempts));
       if (!failure) break;
 
@@ -815,8 +848,21 @@ export class Orchestrator {
 
     memory.save();
 
-    // Run chegou a um veredito terminal (PASS/FAIL/...) — não há mais o que retomar.
-    checkpoints.delete(trace.runId);
+    // Run chegou a um veredito terminal (PASS/FAIL/...): não há mais o que
+    // retomar, e o checkpoint sai do disco.
+    //
+    // A EXCEÇÃO é o run cancelado. Ele também termina num veredito terminal,
+    // mas a premissa "não há mais o que retomar" é falsa justamente aí: quem
+    // cancelou parou trabalho que ainda fazia sentido, o progresso do último
+    // batch está gravado, e apagar o checkpoint tornaria `izanagi resume`
+    // impossível no único caso em que ele é claramente o que se quer.
+    if (this.opts.signal?.aborted) {
+      if (this.opts.verbose) {
+        console.log(`  Checkpoint preservado para retomar: izanagi resume ${trace.runId}`);
+      }
+    } else {
+      checkpoints.delete(trace.runId);
+    }
 
     // Trace persistido (com telemetria de economia e verificação por nó)
     const telemetry = execBudget.telemetry();
@@ -902,12 +948,33 @@ export class Orchestrator {
   /**
    * Executa os batches em ordem, respeitando paralelismo e retries.
    * Retorna a primeira falha não resolvida (ou null).
+   *
+   * `onBatchDone` persiste o progresso ao fim de CADA batch. O checkpoint era
+   * salvo só depois de todos os batches terminarem, então um run interrompido
+   * no meio do grafo (Ctrl-C, crash, queda de rede) descartava todos os nós já
+   * concluídos daquela tentativa e o `izanagi resume` recomeçava a tentativa
+   * inteira — pagando de novo chamadas de modelo que já tinham sido pagas. O
+   * docstring de `captureCheckpoint` já dizia "chamado a cada rodada de
+   * batches"; agora é verdade.
    */
   private async executeBatches(
     graph: ExecutionGraph,
     ctx: ExecuteCtx,
+    onBatchDone?: (graph: ExecutionGraph) => void,
   ): Promise<{ nodeId: string; agent?: string; skill?: string; error: string; blockedApproval?: boolean; context?: string } | null> {
     for (const batch of graph.parallelBatches) {
+      // Cancelamento cooperativo: conferido ANTES de despachar o batch, que é o
+      // único ponto do laço onde parar não deixa trabalho pela metade. O
+      // checkpoint do batch anterior já está em disco (`onBatchDone`), então
+      // `izanagi resume` retoma daqui em vez de recomeçar a tentativa.
+      if (this.opts.signal?.aborted) {
+        const reason = abortReasonText(this.opts.signal);
+        return {
+          nodeId: batch[0] ?? 'run',
+          error: `run cancelado${reason ? `: ${reason}` : ''} antes do batch [${batch.join(', ')}]`,
+        };
+      }
+
       // Early stopping: um nó opcional (crítica extra, revisão redundante) não
       // roda quando tudo que era obrigatório até aqui já está VERIFIED. Rodar
       // "porque o agente está disponível" é exatamente o desperdício que a
@@ -990,6 +1057,9 @@ export class Orchestrator {
       if (blocked) {
         return { nodeId: blocked.nodeId, error: blocked.error ?? 'aguardando aprovação humana', blockedApproval: true, context: blocked.context };
       }
+      // Progresso persistido ANTES de decidir sobre a falha: o que já terminou
+      // neste batch não deve ser perdido porque um irmão falhou.
+      onBatchDone?.(graph);
       const firstFailure = results.find((r) => r && r.status === 'error') as
         | { nodeId: string; agent?: string; skill?: string; error: string; status: string }
         | undefined;
@@ -1016,13 +1086,37 @@ export class Orchestrator {
     node.startedAt = new Date().toISOString();
     node.attempts = (node.attempts ?? 0) + 1;
 
+    // Retentativa: reexecução de um nó que já rodou e falhou. Contada ANTES de
+    // gastar a chamada, pelo mesmo motivo do teto de tool calls: recusar por
+    // teto depois de pagar o modelo é contabilizar um gasto que não deveria ter
+    // acontecido. `recordRetry()` existia desde a v3.14.0 sem nenhum caller de
+    // produção, e por isso `telemetry.retries`, `RunTrace.retries` e o teto
+    // `budgetLimits.maxRetries` (plumbado do SDK até aqui) eram estruturalmente
+    // mortos: o número saía 0 em `izanagi budget` e em `izanagi trace` mesmo
+    // num run que tinha retentado. Mesma família de "número que se reporta é
+    // número que aconteceu".
+    //
+    // Aprovação pendente não conta: o ramo `pending` devolve a tentativa
+    // (`node.attempts - 1`), então esperar decisão humana nunca chega aqui com
+    // `attempts > 1`.
+    const isRetry = (node.attempts ?? 0) > 1;
+    const retryWithinBudget = isRetry ? ctx.execBudget?.recordRetry() ?? true : true;
+
     const label = node.agent ?? node.skills?.join('+') ?? node.kind;
     if (node.agent) ctx.trace.markAgent(node.agent);
     if (node.skills) node.skills.forEach((s) => ctx.trace.markSkill(s));
     const closeSpan = ctx.trace.span(`node:${node.id}`, node.kind === 'evaluator' ? 'evaluation' : node.kind === 'agent' ? 'agent' : 'tool', {
       label,
       attempt: node.attempts,
+      ...(isRetry ? { retry: true } : {}),
     });
+
+    if (!retryWithinBudget) {
+      node.status = 'failed';
+      node.error = `teto de retentativas do run excedido (maxRetries) antes de reexecutar "${node.id}"`;
+      closeSpan(false, node.error);
+      return { status: 'error', nodeId: node.id, error: node.error };
+    }
 
     try {
       if (node.kind === 'approval') {
@@ -1126,7 +1220,14 @@ export class Orchestrator {
             effectiveRole = demoted;
           }
         }
-        const routed = this.opts.routeRole(effectiveRole, node);
+        // Hints que só existem DURANTE a execução: saldo do orçamento e
+        // histórico medido por modelo. O `scoreModel` do router lê os dois e
+        // nunca os recebia — o contexto de roteamento era montado uma vez no
+        // início do run e reusado em todo nó.
+        const routed = this.opts.routeRole(effectiveRole, node, {
+          ...(ctx.execBudget ? { remainingTokens: ctx.execBudget.remainingTokens } : {}),
+          ...(this.memory ? { historicalPerformance: this.memory.historicalPerformance() } : {}),
+        });
         if (routed) {
           ctx.model = routed.model;
           ctx.provider = routed.provider;
@@ -1134,7 +1235,16 @@ export class Orchestrator {
           node.model = routed.model;
         }
       }
-      if (node.agent) ctx.execBudget?.recordAgent(node.agent);
+      // Teto de agentes do Budget Controller, ANTES de gastar a chamada. O
+      // retorno de `recordAgent` era descartado, então `maxAgents` contava
+      // agentes distintos e não barrava nenhum: teto que conta e não limita é
+      // a mesma classe de teto morto que `maxRetries` era.
+      if (node.agent && ctx.execBudget && !ctx.execBudget.recordAgent(node.agent)) {
+        node.status = 'failed';
+        node.error = `teto de agentes distintos do run excedido (maxAgents) antes de acionar "${node.agent}"`;
+        closeSpan(false, node.error);
+        return { status: 'error', nodeId: node.id, agent: node.agent, error: node.error };
+      }
 
       // A2A: a tarefa é despachada como MENSAGEM tipada, com referência aos
       // artefatos de entrada. O conteúdo dos insumos não entra aqui — já está
@@ -1154,9 +1264,21 @@ export class Orchestrator {
       // permissão declarada no contrato, política e sandbox antes de executar.
       // Tudo a jusante (validação, registro, verificação, A2A) é o mesmo
       // caminho de um nó de agente — o que muda é quem produziu.
-      let result = isToolNode(node, contract)
-        ? await this.executeTool(node, contract, ctx, graph)
-        : await this.opts.produce(node, ctx);
+      // Prazo do nó: o plano declara `node.timeoutMs` e o contrato
+      // `budget.maxTimeMs` em todo caminho de planejamento, e nada os aplicava.
+      // O menor dos dois vale. Interrompe a ESPERA, não o trabalho em voo — o
+      // limite está declarado em `orchestration/deadline.ts`.
+      const deadlineMs = resolveDeadlineMs([contract?.budget?.maxTimeMs, node.timeoutMs]);
+      let result = await withDeadline(
+        // `produce` pode ser síncrono (producer headless, teste): `resolve`
+        // normaliza sem mudar o contrato de quem implementa.
+        async () => (isToolNode(node, contract)
+          ? this.executeTool(node, contract, ctx, graph)
+          : this.opts.produce(node, ctx)),
+        deadlineMs,
+        node.id,
+        this.opts.signal,
+      );
       if (result.tokens) {
         ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
         this.tokensUsed += result.tokens;
@@ -1279,11 +1401,55 @@ export class Orchestrator {
           score: verification.score,
           reason: verification.reason,
         })(verification.status !== 'FAILED', verification.status === 'FAILED' ? verification.reason : undefined);
+        // Evento POR TAREFA: quem observa o run em tempo real não tinha como
+        // saber que um nó reprovou — `quality_gate.*` é do veredito final, e
+        // `result.verification` só existe depois do await.
+        ctx.trace.events.emit(
+          verification.status === 'FAILED' ? 'task.verification.failed' : 'task.verification.passed',
+          {
+            nodeId: node.id,
+            status: verification.status,
+            score: verification.score,
+            ...(node.agent ? { agent: node.agent } : {}),
+            ...(verification.unmet.length > 0 ? { unmet: verification.unmet } : {}),
+          },
+        );
         if (verification.status === 'FAILED') {
           node.status = 'failed';
           node.error = `verificação falhou: ${verification.unmet.slice(0, 3).join('; ')}`;
           closeSpan(false, node.error);
           return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+        }
+        // `UNVERIFIED` não é reprovação (nada falhou) e não é aprovação (nem
+        // tudo foi comprovado). O nó segue como `succeeded` de propósito: sem
+        // juiz semântico — o caso default sem provider, e o de `--no-judge` —
+        // todo critério semântico fica sem evidência conclusiva, e derrubar o
+        // nó transformaria "não medi" em "está errado".
+        //
+        // O que faltava era o nó CARREGAR esse fato. Sem isto, um nó aprovado
+        // sem prova era indistinguível de um comprovado para quem lê o grafo, e
+        // `VerificationEngine.isDone` — a função que existe justamente para
+        // dizer o que conta como concluído — não tinha nenhum caller.
+        if (!VerificationEngine.isDone(verification)) {
+          node.metadata = {
+            ...node.metadata,
+            unverified: {
+              status: verification.status,
+              reason: verification.reason,
+              unmet: verification.unmet.slice(0, 5),
+            },
+          };
+          ctx.conversation.record({
+            from: node.agent ?? node.id,
+            to: 'commander',
+            type: 'evidence',
+            taskId: node.id,
+            summary: `concluído SEM prova (${verification.status}): ${verification.reason}`,
+            confidence: verification.score,
+          });
+          if (this.opts.verbose) {
+            console.log(`  ~ ${node.id}: concluído sem evidência conclusiva: ${verification.reason}`);
+          }
         }
       }
 
@@ -1509,6 +1675,18 @@ export class Orchestrator {
     if (!spec?.id) {
       throw new Error(`nó "${node.id}" é de tool mas não declara qual tool executar (contract.tool.id)`);
     }
+    // Allowlist de tools do run, quando quem chamou declarou uma. Vem ANTES da
+    // permissão do contrato e da política, e é outra camada: a permissão diz o
+    // que a tarefa PODE fazer, a allowlist diz o que ESTE RUN pode usar, sem
+    // depender de nenhum contrato estar correto. É o que dá sentido a "allowed
+    // tools" num caso de benchmark: sem ela, o caso observa o custo mas não
+    // impõe limite nenhum.
+    if (this.opts.allowedTools && !this.opts.allowedTools.includes(spec.id)) {
+      throw new Error(
+        `tool "${spec.id}" fora da allowlist do run (permitidas: ${this.opts.allowedTools.join(', ') || 'nenhuma'})`,
+      );
+    }
+
     const registry = (this.toolRegistry ??= new ToolRegistry());
 
     // Teto de tool calls do Budget Controller, ANTES de executar: estourar o
@@ -1837,7 +2015,21 @@ export class Orchestrator {
   }
 }
 
-function agentIds(): string[] {
+/**
+ * Agentes disponíveis, lidos do disco pelo `AgentCapabilityRegistry`.
+ *
+ * Era uma lista literal de 19 ids, e o efeito não era cosmético: ela decidia
+ * se a Agent Factory deveria gerar um agente novo. Um projeto com agentes
+ * próprios (ou os 3 core que a lista esquecia: `ai-engineer`, `evaluator`,
+ * `form-engineer`) tinha esses agentes ignorados nessa decisão, e o runtime
+ * podia sintetizar um agente para uma lacuna que já estava coberta em disco.
+ *
+ * O fallback para a lista antiga existe porque este caminho é o LEGADO (sem
+ * Commander): projeto sem `agents/` legível não deve deixar de rodar por isso.
+ */
+function agentIds(baseDir: string): string[] {
+  const discovered = new AgentCapabilityRegistry({ baseDir }).ids();
+  if (discovered.length > 0) return discovered;
   return [
     'discovery', 'product-reasoner', 'architect', 'security', 'database', 'pm', 'senior-engineer',
     'qa', 'adversarial-critic', 'bug-hunter', 'automation-engineer', 'animation',
@@ -1854,4 +2046,18 @@ function agentIds(): string[] {
 function isToolNode(node: GraphNode, contract?: TaskContract): boolean {
   const spec = contract?.tool ?? (node.metadata?.tool as { id?: string } | undefined);
   return Boolean(spec?.id);
+}
+
+/**
+ * Motivo do cancelamento em texto, quando quem cancelou informou um.
+ *
+ * Duplica deliberadamente o helper de `orchestration/deadline.ts` em vez de
+ * exportá-lo: são três linhas, e um export a mais na fronteira do módulo de
+ * prazo sugeriria que ler `signal.reason` é responsabilidade dele.
+ */
+function abortReasonText(signal: AbortSignal): string | undefined {
+  const reason = signal.reason;
+  if (reason === undefined || reason === null) return undefined;
+  if (reason instanceof Error) return reason.message;
+  return typeof reason === 'string' ? reason : undefined;
 }
