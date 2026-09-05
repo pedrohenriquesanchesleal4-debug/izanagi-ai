@@ -11,7 +11,8 @@
  * uma função. Assim este módulo continua sendo runtime puro.
  */
 
-import { Commander, type CommanderPlan, type ReplanFailure, type ReplanResult } from './orchestration/commander.js';
+import { Commander, type CommanderPlan, type PlanningMemory, type ReplanFailure, type ReplanResult } from './orchestration/commander.js';
+import { DecisionJournal } from './memory/decisions.js';
 import { AgentCapabilityRegistry } from './registry/capabilities.js';
 import { MemoryStore } from './memory/store.js';
 import { SkillResolver } from './routing/resolver.js';
@@ -198,6 +199,28 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
   const memory = input.noCommander || input.noMemory ? undefined : new MemoryStore({ baseDir: input.stateDir ?? baseDir });
   const skillResolver = memory ? new SkillResolver({ baseDir, memory }) : undefined;
 
+  // Decision Journal no planejamento. Ele era write-only: gravado a cada run,
+  // lido só por `izanagi explain`. A `PlanningMemory` é a interface estreita
+  // que o Commander enxerga, então o journal entra por ela em vez de o
+  // Commander conhecer mais uma classe.
+  const journal = memory ? new DecisionJournal({ baseDir: input.stateDir ?? baseDir }) : undefined;
+  const planningMemory: PlanningMemory | undefined = memory
+    ? {
+        findRelevantFailures: (query) => memory.findRelevantFailures(query),
+        agentStats: (agent, domain) => memory.agentStats(agent, domain),
+        ...(journal
+          ? {
+              pastDecisions: (objective: string, kind: string) =>
+                journal.findRelevant(objective, { kind, limit: 20 }).map((d) => ({
+                  chosen: d.chosen,
+                  outcomeStatus: d.outcome?.status ?? 'UNKNOWN',
+                  relevance: d.relevance,
+                })),
+            }
+          : {}),
+      }
+    : undefined;
+
   const commander = new Commander();
   const commanderInput = {
     objective: input.objective,
@@ -206,7 +229,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
     ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
     ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
     capabilities,
-    ...(memory ? { memory } : {}),
+    ...(planningMemory ? { memory: planningMemory } : {}),
   };
 
   // Parseado antes do plano: um critério malformado precisa chegar a quem
@@ -224,7 +247,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
         ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
         capabilities,
-        ...(memory ? { memory } : {}),
+        ...(planningMemory ? { memory: planningMemory } : {}),
         ...(skillResolver
           ? { resolveSkills: (objective: string, limit: number) => skillResolver.rankSkills(objective, limit).map((s) => s.alias) }
           : {}),

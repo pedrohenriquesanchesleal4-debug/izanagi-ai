@@ -10,6 +10,7 @@ import type { GraphNode } from '../../runtime/types.js';
 import { layeredSkillSummary, findV2Counterpart } from '../../runtime/text/frontmatter.js';
 import { printTrace } from './trace.js';
 import { ContextResolver } from '../../runtime/orchestration/context-resolver.js';
+import { MemoryStore } from '../../runtime/memory/store.js';
 import { ResponseCache } from '../../runtime/cache/response-cache.js';
 import { ExecutionBudget } from '../../runtime/token/execution-budget.js';
 import { buildExecutionPlan, createHeadlessProducer, createLLMProducer, createSemanticJudge, LOCAL_PROVIDERS } from '../../runtime/execute.js';
@@ -810,7 +811,18 @@ export async function runRuntime(
     baseDir: opts.stateDir ?? baseDir,
     enabled: Boolean(opts.cache) || ResponseCache.enabledFromEnv(),
   });
-  const contextResolver = new ContextResolver();
+  // Memória do projeto no contexto MÍNIMO de cada tarefa. A busca existia e,
+  // dentro de um run, ninguém a chamava: só a CLI e o benchmark. A única
+  // recuperação durante a execução era padrão de falha, então o agente
+  // trabalhava sem nada do que o projeto já tinha aprendido. Entra por tarefa,
+  // com teto próprio, e o `stateDir` é o mesmo do resto do estado.
+  // Um store por RUN, não por nó: `MemoryStore` carrega o estado do disco no
+  // construtor, e instanciá-lo dentro do callback pagaria essa leitura em cada
+  // tarefa do grafo para responder a mesma pergunta.
+  const knowledgeStore = new MemoryStore({ baseDir: opts.stateDir ?? baseDir });
+  const contextResolver = new ContextResolver({
+    knowledge: (query, limit) => knowledgeStore.search(query, limit).map((e) => ({ title: e.title, content: e.content })),
+  });
 
   const llmProducer = createLLMProducer({
     objective: opts.task,

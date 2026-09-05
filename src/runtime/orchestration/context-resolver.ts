@@ -54,6 +54,16 @@ export interface ResolvedContext {
   correction?: string;
   /** A tarefa pode pedir decomposição em vez de entregar (ver `subgraph.ts`). */
   decomposable?: boolean;
+  /**
+   * Conhecimento do projeto relevante a ESTA tarefa, vindo da memória
+   * semântica/episódica (`MemoryStore.search`).
+   *
+   * A busca da memória existia e, dentro de um run, ninguém a chamava: só a
+   * CLI e o benchmark. A única recuperação durante a execução era padrão de
+   * falha. Aqui ela entra por tarefa e com teto próprio — o oposto de injetar
+   * a memória inteira, que é o que a arquitetura proíbe.
+   */
+  knowledge?: Array<{ title: string; excerpt: string }>;
 }
 
 export interface ResolveContextOptions {
@@ -68,10 +78,31 @@ export interface ResolveOptions {
   maxCharsPerArtifact?: number;
   /** Teto total de chars de upstream no contexto. */
   maxTotalChars?: number;
+  /**
+   * Busca na memória do projeto, injetada por quem monta o runtime
+   * (`MemoryStore.search`). Ausente: o contexto é o de sempre.
+   *
+   * Recebe a consulta e o limite; devolve título e trecho. O Resolver não
+   * conhece o `MemoryStore` de propósito — a interface estreita é o que
+   * permite um teste passar uma função literal, e o que impede este módulo de
+   * virar dependente do formato de armazenamento da memória.
+   */
+  knowledge?: (query: string, limit: number) => Array<{ title: string; content: string }>;
+  /** Teto de chars do bloco de conhecimento. */
+  maxKnowledgeChars?: number;
 }
 
 const DEFAULT_PER_ARTIFACT = 1200;
 const DEFAULT_TOTAL = 4000;
+/**
+ * Entradas de memória por tarefa, e teto de chars do bloco.
+ *
+ * Duas e 600 chars: o conhecimento entra para lembrar o agente do que este
+ * projeto já sabe, não para virar um segundo prompt. Um teto generoso aqui
+ * desfaria a economia que o resto deste arquivo existe para produzir.
+ */
+const MAX_KNOWLEDGE_ENTRIES = 2;
+const DEFAULT_KNOWLEDGE_CHARS = 600;
 
 function toText(content: unknown): string {
   if (typeof content === 'string') return content;
@@ -151,6 +182,12 @@ export class ContextResolver {
       });
     }
 
+    // Conhecimento do projeto: buscado pelo objetivo DESTA tarefa, com teto
+    // próprio. Numa rodada de correção fica de fora — o nó já recebeu o que
+    // precisava na primeira tentativa e o que falta é a correção, não mais
+    // contexto de fundo.
+    const knowledge = opts.correction ? [] : this.lookupKnowledge(contract.objective);
+
     return {
       objective: contract.objective,
       constraints: contract.constraints,
@@ -159,9 +196,38 @@ export class ContextResolver {
       upstream,
       upstreamChars: used,
       upstreamCharsFull: full,
+      ...(knowledge.length > 0 ? { knowledge } : {}),
       ...(opts.correction ? { correction: opts.correction } : {}),
       ...(opts.decomposable ? { decomposable: true } : {}),
     };
+  }
+
+  /**
+   * Conhecimento relevante à tarefa, dentro do teto.
+   *
+   * Nunca lança: memória ilegível não pode derrubar a execução de um nó. Sem
+   * busca injetada, devolve vazio e o contexto é exatamente o de antes.
+   */
+  private lookupKnowledge(objective: string): Array<{ title: string; excerpt: string }> {
+    if (!this.opts.knowledge) return [];
+    let hits: Array<{ title: string; content: string }>;
+    try {
+      hits = this.opts.knowledge(objective, MAX_KNOWLEDGE_ENTRIES);
+    } catch {
+      return [];
+    }
+    const ceiling = this.opts.maxKnowledgeChars ?? DEFAULT_KNOWLEDGE_CHARS;
+    const out: Array<{ title: string; excerpt: string }> = [];
+    let spent = 0;
+    for (const hit of hits.slice(0, MAX_KNOWLEDGE_ENTRIES)) {
+      const room = ceiling - spent;
+      if (room <= 80) break;
+      const excerpt = hit.content.trim().slice(0, room);
+      if (excerpt.length === 0) continue;
+      spent += excerpt.length;
+      out.push({ title: hit.title, excerpt });
+    }
+    return out;
   }
 
   /** Renderiza o contexto resolvido como bloco de prompt (parte volátil). */
@@ -179,6 +245,12 @@ export class ContextResolver {
     }
     if (ctx.decomposable) {
       out += DECOMPOSITION_PROTOCOL;
+    }
+    if (ctx.knowledge && ctx.knowledge.length > 0) {
+      out += `\n## O QUE ESTE PROJETO JÁ SABE (memória, trecho relevante)\n`;
+      for (const k of ctx.knowledge) {
+        out += `\n### ${k.title}\n${k.excerpt}\n`;
+      }
     }
     if (ctx.upstream.length > 0) {
       const heading = ctx.correction ? 'SUA ENTREGA ANTERIOR (a corrigir)' : 'INSUMOS (saídas das tarefas anteriores)';

@@ -432,6 +432,7 @@ export class Orchestrator {
         alternatives: routed.candidates,
         reason: routed.reasons.join('; '),
         runId: trace.runId,
+        objective: this.opts.task,
       });
     }
 
@@ -464,7 +465,14 @@ export class Orchestrator {
         estimate: this.opts.plan.estimate,
       })();
       for (const decision of this.opts.plan.decisions) {
-        decisions.record({ kind: 'planning', chosen: this.opts.plan.mode, alternatives: [], reason: decision, runId: trace.runId });
+        decisions.record({
+          kind: 'planning',
+          chosen: this.opts.plan.mode,
+          alternatives: [],
+          reason: decision,
+          runId: trace.runId,
+          objective: this.opts.task,
+        });
       }
       conversation.record({
         from: 'commander',
@@ -516,6 +524,9 @@ export class Orchestrator {
           alternatives: agentScore.map((c) => ({ option: c.candidate, score: c.finalScore, reason: c.reasons.join('; ') })),
           reason: best.reasons.join('; '),
           runId: trace.runId,
+          // O objetivo é o que torna esta decisão recuperável depois: sem ele o
+          // journal sabe O QUE foi escolhido e nunca PARA QUE.
+          objective: this.opts.task,
         });
       }
       if (this.opts.verbose) {
@@ -954,6 +965,24 @@ export class Orchestrator {
     const status = exhaustedLimit && finalEvaluation.verdict === 'FAIL'
       ? ('HUMAN_REQUIRED' as const)
       : finalEvaluation.verdict;
+
+    // Resultado carimbado nas decisões DESTE run. Sem isto o journal registra
+    // escolhas e nunca as consequências delas, e uma escolha sem consequência
+    // conhecida é log, não memória: não há como um planejamento futuro
+    // aprender que aquela escolha, para aquele objetivo, não deu certo.
+    const verifiedResults = Array.from(this.verifications.values());
+    decisions.recordOutcome(trace.runId, {
+      status,
+      score: finalEvaluation.score,
+      ...(verifiedResults.length > 0
+        ? {
+            verified: {
+              passed: verifiedResults.filter((v) => v.status === 'VERIFIED').length,
+              total: verifiedResults.length,
+            },
+          }
+        : {}),
+    });
 
     return {
       trace: finalTrace,
@@ -1626,6 +1655,30 @@ export class Orchestrator {
       const recurrent = memory.recurrentTrajectories().find((t) => t.signature === trajectory.signature);
       if (!recurrent) return;
 
+      // A camada SEMÂNTICA passa a receber escrita do runtime, com a mesma
+      // barra de recorrência da síntese de skill: três execuções verificadas.
+      //
+      // Ela era lida (`listEntries`, `search`) e nunca escrita: o arquivo só
+      // mudava quando uma pessoa o editava, e o que o runtime gravava
+      // (`addLearning`) vive numa lista plana que a busca não alcança. Na
+      // prática, a memória semântica do projeto não aprendia nada com a
+      // execução. A escrita é idempotente pelo título, então rodar o mesmo
+      // objetivo de novo não duplica.
+      //
+      // O que entra é o CONHECIMENTO (que caminho resolve esta classe de
+      // objetivo, com que evidência), não o procedimento passo a passo, que é
+      // o que a skill sintetizada logo abaixo carrega.
+      memory.appendKnowledge({
+        category: 'semantic',
+        title: `Caminho verificado para: ${clipTitle(this.opts.task)}`,
+        body:
+          `Observado em ${recurrent.occurrences} execuções verificadas.\n\n` +
+          `Sequência: ${recurrent.steps.join(' -> ')}\n` +
+          `Domínios: ${this.opts.plan?.classification.domains.join(', ') || 'não classificado'}\n` +
+          `Modo: ${this.opts.plan?.mode ?? 'legado'}`,
+        source: `trajectory:${recurrent.signature.slice(0, 12)}`,
+      });
+
       const name = skillNameFor(recurrent);
       const generated = new SkillFactory(resolver).generate({
         gap: `procedimento recorrente: ${recurrent.steps.join(' | ')}`,
@@ -2150,6 +2203,12 @@ export class ToolApprovalRequired extends Error {
     super(message);
     this.name = 'ToolApprovalRequired';
   }
+}
+
+/** Título de entrada de memória: uma linha, sem quebra, com teto. */
+function clipTitle(text: string, max = 80): string {
+  const flat = String(text ?? '').replace(/\s+/g, ' ').trim();
+  return flat.length <= max ? flat : `${flat.slice(0, max - 1)}…`;
 }
 
 function isToolNode(node: GraphNode, contract?: TaskContract): boolean {

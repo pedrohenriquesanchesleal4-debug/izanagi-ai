@@ -293,6 +293,16 @@ export interface CommanderInput {
 export interface PlanningMemory {
   findRelevantFailures(query: string): Array<{ pattern: string; occurrences: number; confidence: number }>;
   /**
+   * Decisões de runs ANTERIORES sobre objetivos semelhantes, já com resultado
+   * conhecido (`DecisionJournal.findRelevant`). Opcional: um `PlanningMemory`
+   * de teste, ou um store sem journal, continua válido sem ela.
+   *
+   * O journal era write-only: gravado no planejamento, lido só por `izanagi
+   * explain`. Log de auditoria para humano é útil e não é retrieval — nada no
+   * runtime consultava a própria escolha anterior.
+   */
+  pastDecisions?(objective: string, kind: string): Array<{ chosen: string; outcomeStatus: string; relevance: number }>;
+  /**
    * Com `domain`, o recorte daquele domínio; sem ele, o agregado do agente.
    * `undefined` significa ausência de histórico, não histórico ruim.
    */
@@ -301,6 +311,14 @@ export interface PlanningMemory {
 
 /** Runs mínimos antes de confiar na taxa de sucesso de um agente. */
 const MIN_RUNS_FOR_TRUST = 3;
+/**
+ * Falhas em objetivo semelhante antes de um agente sair da disputa.
+ *
+ * Duas, e sem nenhum sucesso no meio. Uma só transformaria em política o que
+ * pode ter sido um provider fora do ar; contar com sucessos no meio queimaria
+ * um agente que às vezes fecha o objetivo.
+ */
+const MIN_BURNED_FAILURES = 2;
 /** Abaixo desta taxa, o agente sai da disputa (havendo alternativa). */
 const MIN_SUCCESS_RATE = 0.4;
 /** Skills carregadas por tarefa. O prompt já corta em 4; 3 dá folga. */
@@ -390,6 +408,12 @@ export class Commander {
     // Recuperação SELETIVA: só os padrões de falha que casam com este objetivo.
     // Injetar a memória inteira no planejamento é o que a arquitetura proíbe.
     const knownFailures = input.memory?.findRelevantFailures(input.objective) ?? [];
+    // Decisão passada sobre objetivo semelhante, com o resultado que ela deu.
+    // Não duplica `unreliableAgents`, que mede o agente no agregado ou por
+    // domínio: aqui a pergunta é outra, e mais estreita — "escolher ESTE agente
+    // para ESTE problema já deu errado antes?". Um agente pode ir bem em
+    // backend e mal justamente neste objetivo, e o agregado não vê isso.
+    const burned = this.burnedByObjective(input);
     const unreliable = this.unreliableAgents(input, classification.domains[0]);
     const decided = decideMode(classification, input.mode, { knownFailures: knownFailures.length });
     const decisions: string[] = [
@@ -402,6 +426,12 @@ export class Commander {
         `memória consultada: ${knownFailures.length} padrão(ões) de falha relevante(s)` +
           (knownFailures.length > 0 ? ` (${knownFailures.slice(0, 3).map((f) => f.pattern).join(', ')})` : '') +
           (unreliable.length > 0 ? `; ${unreliable.length} agente(s) despriorizado(s) por histórico: ${unreliable.join(', ')}` : ''),
+      );
+    }
+    for (const b of burned) {
+      decisions.push(
+        `Decision Journal: "${b.agent}" já foi escolhido para um objetivo semelhante (${Math.round(b.relevance * 100)}% de termos em comum) ` +
+          `e o run terminou ${b.outcomeStatus}: sai da disputa desta vez`,
       );
     }
 
@@ -665,10 +695,21 @@ export class Commander {
     // aresta e não a transferência de informação.
     const grounded = input.survey && mode !== 'direct' ? withSurveyAtHead(planned) : planned;
 
+    // Agente queimado NESTE objetivo é trocado também nos nós que vieram do
+    // template do workflow. Sem isto a exclusão valeria só onde o Commander
+    // escolhe por capacidade (`pickAgent`), e um template de auditoria
+    // continuaria escalando o mesmo agente que já falhou duas vezes neste
+    // objetivo — a decisão apareceria registrada e não mudaria nada, que é a
+    // família de defeito que este runtime existe para não repetir.
+    //
+    // É o mesmo movimento do Plano B do `replan` (trocar o agente), feito
+    // ANTES em vez de depois da falha, porque a falha já é conhecida.
+    const swapped = this.swapBurnedAgents(grounded, input);
+
     // Skills POR TAREFA: cada nó carrega o que o próprio objetivo pede, não a
     // chain do agente para o run inteiro. Sem o resolver injetado, o
     // comportamento anterior (chain do run) permanece intacto.
-    const nodes = grounded.map((node) => this.withTaskSkills(node, input));
+    const nodes = swapped.map((node) => this.withTaskSkills(node, input));
     const contracts = nodes.map((node) => this.contractFor(node, input, classification, mode));
     const withContracts = nodes.map((node, i) => attachContract(node, contracts[i]));
 
@@ -865,13 +906,74 @@ export class Commander {
    * há amostra suficiente naquele domínio o agregado global entra como sinal —
    * é menos preciso, mas é o único disponível enquanto o histórico é curto.
    */
+  /**
+   * Agentes que já foram escolhidos para um objetivo semelhante e cujo run NÃO
+   * fechou.
+   *
+   * Um resultado só não basta: `FAIL` acontece por motivos que não são do
+   * agente (teto estourado, provider fora do ar), e queimar um agente por um
+   * incidente transformaria ruído em política. A barra é a mesma da memória:
+   * recorrência.
+   */
+  /**
+   * Memoizado por objeto de input: `plan()` e `pickAgent` consultam o mesmo
+   * histórico, e ler o journal do disco uma vez por nó do grafo seria pagar
+   * I/O por uma resposta que não muda durante o planejamento.
+   */
+  private readonly burnedCache = new WeakMap<CommanderInput, Array<{ agent: string; outcomeStatus: string; relevance: number }>>();
+
+  private burnedByObjective(input: CommanderInput): Array<{ agent: string; outcomeStatus: string; relevance: number }> {
+    const cached = this.burnedCache.get(input);
+    if (cached) return cached;
+    const computed = this.computeBurned(input);
+    this.burnedCache.set(input, computed);
+    return computed;
+  }
+
+  private computeBurned(input: CommanderInput): Array<{ agent: string; outcomeStatus: string; relevance: number }> {
+    if (!input.memory?.pastDecisions) return [];
+    let past: Array<{ chosen: string; outcomeStatus: string; relevance: number }>;
+    try {
+      past = input.memory.pastDecisions(input.objective, 'agent-routing');
+    } catch {
+      // Journal ilegível não derruba o planejamento: planejar sem histórico é
+      // o comportamento de sempre.
+      return [];
+    }
+    const byAgent = new Map<string, { falhas: number; total: number; relevance: number; status: string }>();
+    for (const d of past) {
+      const entry = byAgent.get(d.chosen) ?? { falhas: 0, total: 0, relevance: 0, status: d.outcomeStatus };
+      entry.total++;
+      if (d.outcomeStatus !== 'PASS' && d.outcomeStatus !== 'PASS_WITH_WARNINGS') {
+        entry.falhas++;
+        entry.status = d.outcomeStatus;
+        entry.relevance = Math.max(entry.relevance, d.relevance);
+      }
+      byAgent.set(d.chosen, entry);
+    }
+    const out: Array<{ agent: string; outcomeStatus: string; relevance: number }> = [];
+    for (const [agent, e] of byAgent) {
+      // Duas falhas, e nenhum sucesso: um agente que às vezes fecha o objetivo
+      // não é um agente queimado nele.
+      if (e.falhas >= MIN_BURNED_FAILURES && e.falhas === e.total) {
+        out.push({ agent, outcomeStatus: e.status, relevance: e.relevance });
+      }
+    }
+    return out;
+  }
+
   private unreliableAgents(input: CommanderInput, domain?: string): string[] {
     if (!input.memory || !input.capabilities) return [];
-    return input.capabilities.ids().filter((id) => {
+    // Queimado no objetivo entra junto: `pickAgent` chama este método, e uma
+    // exclusão que só existisse em `plan()` seria registrada na decisão e
+    // ignorada na escolha — que é a família de defeito que este runtime existe
+    // para não repetir.
+    const burned = this.burnedByObjective(input).map((b) => b.agent);
+    return [...new Set([...burned, ...input.capabilities.ids().filter((id) => {
       const scoped = domain ? input.memory!.agentStats(id, domain) : undefined;
       const stats = scoped && scoped.runs >= MIN_RUNS_FOR_TRUST ? scoped : input.memory!.agentStats(id);
       return Boolean(stats && stats.runs >= MIN_RUNS_FOR_TRUST && stats.successes / stats.runs < MIN_SUCCESS_RATE);
-    });
+    })])];
   }
 
   /**
@@ -879,6 +981,26 @@ export class Commander {
    * Nós determinísticos (gate, evaluator, validator) não carregam skill: não
    * há prompt para elas ocuparem.
    */
+  /**
+   * Troca o agente dos nós cujo agente já falhou neste objetivo, quando existe
+   * alternativa. Sem alternativa, o nó fica como está: melhor um agente com
+   * histórico ruim que nenhum agente, e o motivo já está nas decisões do plano.
+   */
+  private swapBurnedAgents(nodes: GraphNode[], input: CommanderInput): GraphNode[] {
+    if (!input.capabilities) return nodes;
+    const burned = this.burnedByObjective(input).map((b) => b.agent);
+    if (burned.length === 0) return nodes;
+    let changed = false;
+    const out = nodes.map((node) => {
+      if (!node.agent || !burned.includes(node.agent)) return node;
+      const alternative = input.capabilities!.bestFor(input.objective, { exclude: burned })?.id;
+      if (!alternative || alternative === node.agent) return node;
+      changed = true;
+      return { ...node, agent: alternative };
+    });
+    return changed ? out : nodes;
+  }
+
   private withTaskSkills(node: GraphNode, input: CommanderInput): GraphNode {
     if (!input.resolveSkills) return node;
     if (node.kind === 'gate' || node.kind === 'evaluator' || node.kind === 'validator') return node;

@@ -436,6 +436,59 @@ export class MemoryStore {
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
+  /**
+   * Acrescenta conhecimento REUTILIZÁVEL à camada semântica.
+   *
+   * Esta camada era lida (`listEntries`, `search`) e nunca escrita pelo
+   * runtime: `.agents/memoria/semantica.md` só mudava quando uma pessoa o
+   * editava. O que o runtime gravava era `addLearning`, numa lista plana que a
+   * busca não alcança. Na prática, a memória semântica do projeto não
+   * aprendia nada com a execução.
+   *
+   * Duas regras, e as duas existem para a camada não virar depósito:
+   *
+   *  - só entra o que tem TÍTULO estável, e um título que já está no arquivo
+   *    não entra de novo. Sem isso, cada run acrescentaria uma variação do que
+   *    já estava lá e a busca passaria a devolver dez cópias do mesmo fato;
+   *  - o corpo tem teto. Conhecimento reutilizável é curto por natureza: o
+   *    detalhe da execução mora no trace e no artefato, que têm store próprio.
+   *
+   * Devolve `false` quando não gravou (título repetido ou entrada vazia), para
+   * que quem chamou possa dizer "não aprendi nada novo" em vez de presumir.
+   */
+  appendKnowledge(input: { category?: MemoryCategory; title: string; body: string; source?: string }): boolean {
+    const category = input.category ?? 'semantic';
+    const title = input.title.trim();
+    const body = input.body.trim().slice(0, MAX_KNOWLEDGE_CHARS);
+    if (title.length === 0 || body.length === 0) return false;
+
+    const file = path.join(this.memoryDir, this.entryFile(category));
+    let existing = '';
+    try {
+      if (fs.existsSync(file)) existing = fs.readFileSync(file, 'utf-8');
+    } catch {
+      return false;
+    }
+    // Idempotência pelo título: rodar o mesmo objetivo de novo não duplica.
+    if (existing.includes(`### ${title}`)) return false;
+
+    const entry =
+      `\n### ${title}\n` +
+      `<!-- registrado pelo runtime em ${nowIso()}${input.source ? ` · origem: ${input.source}` : ''} -->\n` +
+      `${body}\n`;
+    try {
+      fs.mkdirSync(this.memoryDir, { recursive: true });
+      if (existing.length === 0) {
+        fs.writeFileSync(file, `# Memória ${category}\n${entry}`, 'utf-8');
+      } else {
+        fs.appendFileSync(file, entry, 'utf-8');
+      }
+    } catch {
+      return false;
+    }
+    return true;
+  }
+
   /* ==================== LEARNINGS ==================== */
 
   addLearning(text: string, source: string, confidence = 0.8): void {
@@ -457,6 +510,15 @@ export class MemoryStore {
 
 /** Chars de uma entrada de memória expostos por padrão (preview, não busca). */
 const MEMORY_PREVIEW_CHARS = 4000;
+/**
+ * Teto do corpo de uma entrada de conhecimento gravada pelo runtime.
+ *
+ * Curto de propósito: conhecimento reutilizável é curto por natureza, e o
+ * detalhe da execução já mora no trace e no artefato, que têm store próprio e
+ * limites próprios. Um teto generoso aqui transformaria a camada semântica num
+ * segundo content store, sem nenhuma das garantias do primeiro.
+ */
+const MAX_KNOWLEDGE_CHARS = 1200;
 /** Janela devolvida em volta da ocorrência encontrada pela busca. */
 const MEMORY_EXCERPT_CHARS = 800;
 
