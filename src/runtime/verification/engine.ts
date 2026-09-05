@@ -320,7 +320,13 @@ export class VerificationEngine {
       score,
       checks,
       evidence,
-      unmet: [...failed, ...unknown].map((c) => c.description),
+      // Reprovado e não-comprovado são coisas diferentes, e a lista os
+      // misturava: um critério semântico sem juiz aparecia lado a lado com um
+      // check que de fato falhou, e quem lesse a linha da CLI (ou a restrição
+      // que o replanejamento deriva daqui) trataria "não medi" como "está
+      // errado". A marca vem no texto porque `unmet` é string por contrato:
+      // mudar o tipo quebraria o checkpoint gravado e o payload do webhook.
+      unmet: [...failed.map((c) => c.description), ...unknown.map((c) => `${c.description} [sem evidência]`)],
       reason,
       judgeTokens,
       ...(judgeModel ? { judgeModel } : {}),

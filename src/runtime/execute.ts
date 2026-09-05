@@ -23,6 +23,7 @@ import { createModelJudge } from './verification/judge.js';
 import type { SemanticJudge } from './verification/engine.js';
 import type { TrustTier } from './security/policy.js';
 import { contractOf } from './contracts/task-contract.js';
+import { parseAcceptance } from './contracts/acceptance.js';
 import type { AgentRole, ExecutionMode, TaskPriority } from './contracts/task-contract.js';
 import type { ExecuteCtx } from './orchestrator.js';
 import type { ExecutionGraph, GraphNode, ModelSpec, RoutingContext, RoutingHints } from './types.js';
@@ -58,6 +59,16 @@ export interface PlanningInput {
   output?: string;
   /** Levanta a forma do projeto num nó de tool na cabeça do grafo (`--survey`). */
   survey?: boolean;
+  /**
+   * Critérios de aceite do usuário, em texto (`--acceptance`, ou
+   * `IzanagiRunOptions.acceptance`). Parseados por `parseAcceptance`: prefixo
+   * conhecido vira check determinístico, prosa vira critério semântico.
+   *
+   * Entrada recusada não é descartada em silêncio: sai em
+   * `PlanningOutput.acceptanceIssues`, para quem chamou poder dizer ao usuário
+   * que o critério que ele escreveu não está sendo cobrado.
+   */
+  acceptance?: string[];
   /**
    * Raiz do estado (`.izanagi/state`) consultado no planejamento. Default:
    * `baseDir`. Ver `OrchestratorOptions.stateDir` para o porquê da separação.
@@ -141,6 +152,11 @@ export interface PlanningOutput {
   replan: (input: { graph: ExecutionGraph; failure: ReplanFailure }) => ReplanResult | null;
   /** Trust tier por agente, derivado da origem do arquivo no disco. */
   trustTierOf: (agentId: string) => TrustTier | undefined;
+  /**
+   * Critérios de aceite do usuário que NÃO entraram no plano, com o motivo.
+   * Ausente quando todos entraram.
+   */
+  acceptanceIssues?: string[];
 }
 
 /**
@@ -188,6 +204,11 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
     ...(memory ? { memory } : {}),
   };
 
+  // Parseado antes do plano: um critério malformado precisa chegar a quem
+  // chamou mesmo quando o Commander está desligado (`--no-commander`), senão a
+  // recusa depende de um caminho que o usuário pode não estar usando.
+  const parsedAcceptance = parseAcceptance(input.acceptance ?? []);
+
   const plan = input.noCommander
     ? undefined
     : commander.plan({
@@ -204,11 +225,13 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
           : {}),
         ...(input.output ? { output: input.output } : {}),
         ...(input.survey ? { survey: true } : {}),
+        ...(parsedAcceptance.criteria.length > 0 ? { acceptance: parsedAcceptance.criteria } : {}),
         estimateCostUsd: (role, tokens) => router.estimateCostForRole(role, tokens),
       });
 
   return {
     ...(plan ? { plan } : {}),
+    ...(parsedAcceptance.issues.length > 0 ? { acceptanceIssues: parsedAcceptance.issues } : {}),
     replan: ({ graph, failure }) => commander.replan({ graph }, failure, commanderInput),
     trustTierOf: (agentId: string) => capabilities.get(agentId)?.trustTier,
     router,

@@ -41,6 +41,7 @@ import { ModelRouter } from '../model/router.js';
 import { detectDomains, type Domain } from './domains.js';
 import { DELIVER_NODE_ID, MATERIALIZATION_CONSTRAINT, MATERIALIZE_NODE_ID, deliverNode, materializeNode } from './delivery.js';
 import { SURVEY_NODE_ID, surveyNode, withSurveyAtHead } from './grounding.js';
+import { applyAcceptance } from '../contracts/acceptance.js';
 
 export type { Domain } from './domains.js';
 
@@ -261,6 +262,16 @@ export interface CommanderInput {
    * dobrar o grafo para levantar o terreno.
    */
   survey?: boolean;
+  /**
+   * Critérios de aceite fornecidos pelo USUÁRIO, já parseados
+   * (`contracts/acceptance.ts`). Entram nos contratos das tarefas terminais de
+   * produto, junto com os que o Commander deriva do schema.
+   *
+   * Os dois conjuntos respondem perguntas diferentes e por isso convivem: os
+   * gerados perguntam "o artefato tem a forma certa?", estes perguntam "é isto
+   * que foi pedido?". Sem este campo só a primeira pergunta era feita.
+   */
+  acceptance?: AcceptanceCriterion[];
 }
 
 /**
@@ -687,10 +698,21 @@ export class Commander {
       contracts.push(contract);
     }
 
+    // Critérios do usuário por último: incidem sobre os contratos JÁ montados,
+    // então a escolha das tarefas terminais enxerga o grafo final (com
+    // materialização e entrega), e não um estado intermediário dele.
+    const finalContracts = input.acceptance && input.acceptance.length > 0
+      ? applyAcceptance(contracts, input.acceptance)
+      : contracts;
+    const finalNodes = finalContracts === contracts
+      ? withContracts
+      : withContracts.map((node, i) => attachContract(node, finalContracts[i]));
+    contracts.splice(0, contracts.length, ...finalContracts);
+
     const graph = this.builder.build({
       id: `graph-${crypto.randomBytes(3).toString('hex')}`,
       task: input.objective,
-      nodes: withContracts,
+      nodes: finalNodes,
       budget: {
         maxAttempts: mode === 'autonomous' ? 3 : mode === 'orchestrated' ? 2 : 1,
         maxTokens: input.maxTokens ?? budgetForMode(mode, classification.complexity),

@@ -63,6 +63,21 @@ export interface IzanagiRunOptions {
    */
   allowedTools?: string[];
   /**
+   * Critérios de aceite do OBJETIVO, em texto. Cada linha vira um critério do
+   * contrato das tarefas terminais de produto:
+   *
+   * - prosa (`"o endpoint aceita ?page e ?limit"`) vira critério SEMÂNTICO, que
+   *   precisa de juiz e sem juiz fica `UNVERIFIED` (não medido, não reprovado);
+   * - com prefixo conhecido (`"contains: paginação"`, `"file-exists: docs/api.md"`,
+   *   `"matches: limit=\\d+"`, `"not-contains: TODO"`, `"min-size: 500"`,
+   *   `"json-field: total"`, `"references-exist"`) vira critério
+   *   DETERMINÍSTICO, decidido sem modelo.
+   *
+   * Sem isto, todo critério do run era derivado do SCHEMA do artefato: o plano
+   * verificava a forma da entrega, nunca o que foi pedido.
+   */
+  acceptance?: string[];
+  /**
    * Cancelamento cooperativo do run. Abortar interrompe o grafo no próximo
    * batch e cancela a requisição em voo; o checkpoint do último batch
    * concluído fica em disco, e `izanagi resume <run-id>` retoma dali.
@@ -195,9 +210,16 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     availableProviders: providers,
     ...(outputDir ? { output: outputDir } : {}),
     ...(options.survey ?? looksLikeProject(workspaceDir) ? { survey: true } : {}),
+    ...(options.acceptance ? { acceptance: options.acceptance } : {}),
     ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });
+  // Critério que o runtime NÃO vai cobrar não desaparece: quem chama o SDK
+  // programaticamente precisa poder recusar o run em vez de receber um
+  // `VERIFIED` que não mediu o que foi pedido.
+  if (planning.acceptanceIssues) {
+    throw new Error(`izanagi.run: critério de aceite inválido — ${planning.acceptanceIssues.join(' | ')}`);
+  }
 
   // Cache de resposta é estado: segue `stateDir` como trace, artefato e memória.
   const cache = new ResponseCache({
@@ -315,7 +337,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
  * nem gastar token. Útil para mostrar ao usuário o que vai acontecer (e quanto
  * vai custar) antes de autorizar.
  */
-export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 'mode' | 'model' | 'agent' | 'skillChain' | 'budget' | 'local' | 'client'>): CommanderPlan | undefined {
+export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 'mode' | 'model' | 'agent' | 'skillChain' | 'budget' | 'local' | 'client' | 'acceptance'>): CommanderPlan | undefined {
   const baseDir = options.baseDir ?? process.cwd();
   const client = options.client ?? new LLMClient();
   const all = client.configuredProviders();
@@ -328,6 +350,7 @@ export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 
     ...(options.budget?.maxTokens !== undefined ? { maxTokens: options.budget.maxTokens } : {}),
     ...(options.budget?.maxCost !== undefined ? { maxCostUsd: options.budget.maxCost } : {}),
     ...(options.model ? { model: options.model } : {}),
+    ...(options.acceptance ? { acceptance: options.acceptance } : {}),
     availableProviders: providers,
   }).plan;
 }

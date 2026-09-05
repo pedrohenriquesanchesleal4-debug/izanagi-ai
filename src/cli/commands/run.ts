@@ -59,6 +59,19 @@ interface RunArgs {
   noSurvey?: boolean;
   /** Endpoint POST avisado no fim do run (`--notify-webhook=<url>`). */
   notifyWebhook?: string;
+  /**
+   * Critérios de aceite do usuário (`--acceptance "..."`, repetível).
+   *
+   * Sem isto, todo critério do run era gerado a partir do SCHEMA do artefato:
+   * o plano verificava a forma da entrega e nunca o que foi pedido.
+   */
+  acceptance?: string[];
+  /**
+   * Allowlist de tools do run (`--allow-tool fs.read --allow-tool fs.write`).
+   * Existia no Orchestrator, no SDK e no caso de benchmark; a CLI não tinha por
+   * onde declarar. Ausente, vale a permissão do contrato de cada nó.
+   */
+  allowedTools?: string[];
 }
 
 export function parseRunArgs(args: string[]): RunArgs {
@@ -78,6 +91,8 @@ export function parseRunArgs(args: string[]): RunArgs {
   let noJudge = false;
   let json = false;
   let notifyWebhook: string | undefined;
+  const acceptance: string[] = [];
+  const allowedTools: string[] = [];
   let output: string | undefined;
   let survey = false;
   let noSurvey = false;
@@ -146,6 +161,15 @@ export function parseRunArgs(args: string[]): RunArgs {
       const read = readValue(arg, '--notify-webhook', args[i + 1]);
       if (read.consumed) i++;
       if (read.value) notifyWebhook = read.value;
+    } else if (arg === '--acceptance' || arg.startsWith('--acceptance=')) {
+      const read = readValue(arg, '--acceptance', args[i + 1]);
+      if (read.consumed) i++;
+      if (read.value) acceptance.push(read.value);
+    } else if (arg === '--allow-tool' || arg.startsWith('--allow-tool=')) {
+      const read = readValue(arg, '--allow-tool', args[i + 1]);
+      if (read.consumed) i++;
+      // Aceita `--allow-tool fs.read,fs.write` e a forma repetida.
+      if (read.value) allowedTools.push(...read.value.split(',').map((t) => t.trim()).filter(Boolean));
     } else if (arg === '--survey') {
       survey = true;
     } else if (arg === '--no-survey') {
@@ -187,6 +211,8 @@ export function parseRunArgs(args: string[]): RunArgs {
     noJudge,
     json,
     ...(notifyWebhook ? { notifyWebhook } : {}),
+    ...(acceptance.length > 0 ? { acceptance } : {}),
+    ...(allowedTools.length > 0 ? { allowedTools } : {}),
     ...(output ? { output } : {}),
     ...(survey ? { survey } : {}),
     ...(noSurvey ? { noSurvey } : {}),
@@ -530,6 +556,8 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     // um projeto (sem manifesto reconhecido) não há o que levantar, então não
     // se paga o nó. `--survey` força, `--no-survey` desliga.
     survey: parsed.noSurvey ? false : parsed.survey || looksLikeProject(cwd),
+    ...(parsed.acceptance ? { acceptance: parsed.acceptance } : {}),
+    ...(parsed.allowedTools ? { allowedTools: parsed.allowedTools } : {}),
     stateDir,
     explicitAgent: Boolean(agentId),
   });
@@ -681,6 +709,10 @@ export async function runRuntime(
     output?: string;
     /** Levanta a forma do projeto antes de decidir (nó de tool na cabeça do grafo). */
     survey?: boolean;
+    /** Critérios de aceite do usuário, em texto (`--acceptance`). */
+    acceptance?: string[];
+    /** Allowlist de tools do run (`--allow-tool`). */
+    allowedTools?: string[];
     /** Raiz do estado (`.izanagi/state`). Default: `baseDir`. */
     stateDir?: string;
   },
@@ -721,11 +753,26 @@ export async function runRuntime(
     availableProviders: llmProviders,
     ...(opts.output ? { output: opts.output } : {}),
     ...(opts.survey ? { survey: true } : {}),
+    ...(opts.acceptance ? { acceptance: opts.acceptance } : {}),
     ...(opts.stateDir ? { stateDir: opts.stateDir } : {}),
     // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
     noCommander: Boolean(opts.noCommander || opts.resumeRunId),
   });
   const plan = planning.plan;
+
+  // Critério recusado é dito em voz alta. Descartar em silêncio faria o run
+  // terminar VERIFIED sem ter medido o que a pessoa pediu para medir, que é
+  // exatamente a confusão que os critérios de aceite existem para evitar.
+  if (planning.acceptanceIssues) {
+    console.log('  \x1b[33m⚠ Critério de aceite recusado (NÃO será cobrado):\x1b[0m');
+    for (const issue of planning.acceptanceIssues) console.log(`    \x1b[90m•\x1b[0m ${issue}`);
+    console.log('    \x1b[90mformas aceitas: prosa (vira critério semântico, exige juiz) ou');
+    console.log('    contains: / not-contains: / matches: / min-size: / file-exists: / json-field: / references-exist\x1b[0m');
+  }
+  if (opts.acceptance && opts.acceptance.length > 0 && plan) {
+    const cobrados = plan.contracts.filter((c) => c.acceptance.some((a) => a.id.startsWith('user:')));
+    console.log(`  \x1b[35m▸ Aceite do usuário:\x1b[0m ${opts.acceptance.length} critério(s) em ${cobrados.length} tarefa(s) terminal(is): ${cobrados.map((c) => c.id).join(', ') || 'nenhuma'}`);
+  }
 
   if (plan) {
     const estimate = plan.estimate;
@@ -820,6 +867,9 @@ export async function runRuntime(
     // `file-exists` resolvem. `baseDir` continua sendo a raiz do framework.
     workspaceDir: process.cwd(),
     ...(opts.stateDir ? { stateDir: opts.stateDir } : {}),
+    // Allowlist do run: a tool fora da lista é recusada ANTES de a política
+    // opinar. Existia no Orchestrator desde a v3.19.0 e não tinha flag.
+    ...(opts.allowedTools ? { allowedTools: opts.allowedTools } : {}),
     command: 'run',
     task: opts.task,
     category: opts.category,
