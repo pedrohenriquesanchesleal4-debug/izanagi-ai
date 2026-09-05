@@ -31,11 +31,36 @@ export function benchmarkReportsDir(stateDir: string): string {
 export interface BenchmarkRunOptions {
   baseDir: string;
   suite?: string;
-  /** Executa os validators de cada caso. */
+  /**
+   * Executa os validators de cada caso (default: o do construtor, `true`).
+   *
+   * Antes este campo era lido por ninguém: os validators rodavam sempre, e
+   * tanto o parametro do construtor quanto este eram decoracao. Desligar agora
+   * desliga, e o resultado registra que rodou sem validators, porque um score
+   * medido sobre menos critérios não é comparável a um medido sobre todos.
+   */
   runValidators?: boolean;
+  /**
+   * Checagens que ESTE caminho de medição não consegue medir.
+   *
+   * Existe por causa do modo output: o producer daquele modo deriva o output do
+   * próprio caso, então perguntar "o artefato esperado apareceu?" é circular, e
+   * a resposta saía sempre "não apareceu nenhum". O comando reportava
+   * `0/11 passaram` desde sempre, em toda versão, e o número dizia respeito à
+   * forma do producer, não ao framework.
+   *
+   * Checagem declarada aqui sai da nota e aparece em `BenchmarkResult.unmeasured`.
+   */
+  unmeasured?: Array<'expectedArtifacts' | 'validators'>;
 }
 
 export class BenchmarkRunner {
+  /**
+   * @param evaluator Preservado por compatibilidade de assinatura. A nota de um
+   *   caso é determinística (artefatos esperados + validators) e não passa pela
+   *   `EvaluationEngine`: quem usa a engine é `izanagi eval`.
+   * @param runValidators Default de `BenchmarkRunOptions.runValidators`.
+   */
   constructor(
     private readonly evaluator = new EvaluationEngine(),
     private readonly runValidators = true,
@@ -45,15 +70,42 @@ export class BenchmarkRunner {
    * Executa um único caso contra um output produzido.
    * O output pode ser: diretório (verifica arquivos), string, ou objeto.
    */
-  runCase(c: BenchmarkCase, output: unknown, opts: { durationMs?: number; tokensUsed?: number; execution?: ExecutionEvidence } = {}): BenchmarkResult {
+  runCase(
+    c: BenchmarkCase,
+    output: unknown,
+    opts: {
+      durationMs?: number;
+      tokensUsed?: number;
+      execution?: ExecutionEvidence;
+      /** Teto aplicado pela execução real deste caso. */
+      budgetApplied?: { maxTokens?: number; maxCostUsd?: number };
+      /** Sobrepõe o default do runner para este caso. */
+      runValidators?: boolean;
+      /**
+       * Diretório onde a execução real gravou. Presente, a checagem de
+       * artefato é feita contra os ARQUIVOS que existem ali, e não contra as
+       * chaves do objeto de output: um run é medido pelo que escreveu.
+       */
+      filesRoot?: string;
+      /** Checagens que este caminho não mede (ver `BenchmarkRunOptions`). */
+      unmeasured?: Array<'expectedArtifacts' | 'validators'>;
+    } = {},
+  ): BenchmarkResult {
     const started = Date.now();
     const artifactsFound: string[] = [];
     const artifactsMissing: string[] = [];
     const validatorFailures: string[] = [];
+    const unmeasured = opts.unmeasured ?? [];
+    const measuresArtifacts = !unmeasured.includes('expectedArtifacts');
 
-    // Artefatos esperados: arquivos no diretório de output
-    for (const expected of c.expectedArtifacts) {
-      if (isFsPath(output)) {
+    // Artefatos esperados: arquivos no diretório onde o run gravou (quando a
+    // execução informou um), senão no output.
+    const filesRoot = opts.filesRoot && fs.existsSync(opts.filesRoot) ? opts.filesRoot : undefined;
+    for (const expected of measuresArtifacts ? c.expectedArtifacts : []) {
+      if (filesRoot) {
+        if (fs.existsSync(path.join(filesRoot, expected))) artifactsFound.push(expected);
+        else artifactsMissing.push(expected);
+      } else if (isFsPath(output)) {
         const full = path.join(String(output), expected);
         if (fs.existsSync(full)) artifactsFound.push(expected);
         else artifactsMissing.push(expected);
@@ -72,8 +124,15 @@ export class BenchmarkRunner {
     }
 
     // Validators (check simples em texto)
-    const text = typeof output === 'string' ? output : JSON.stringify(output ?? {});
-    for (const v of c.validators ?? []) {
+    const runValidators = (opts.runValidators ?? this.runValidators) && !unmeasured.includes('validators');
+    const validators = runValidators ? (c.validators ?? []) : [];
+    // O texto do validator é o CONTEÚDO do que a execução gravou quando existe
+    // uma raiz de arquivos. Antes era `String(output)`, que num output de
+    // diretório é o caminho: `has-owasp` media se a palavra "owasp" estava no
+    // nome da pasta temporária. O validator passava ou reprovava por uma
+    // propriedade do diretório de trabalho, nunca pelo relatório escrito nele.
+    const text = validatorText(output, filesRoot, artifactsFound);
+    for (const v of validators) {
       let pass = true;
       try {
         pass = Boolean(safeEvaluate(v.check, { text }));
@@ -83,23 +142,49 @@ export class BenchmarkRunner {
       if (!pass) validatorFailures.push(`${v.name}: ${v.message}`);
     }
 
-    const artifactRatio = c.expectedArtifacts.length > 0 ? artifactsFound.length / c.expectedArtifacts.length : 1;
-    const metrics: Record<string, number> = {};
+    // Score: TODOS os critérios do caso, não só os artefatos.
+    //
+    // Antes era só a razão de artefatos, e validator não entrava na nota. Um
+    // caso cujos arquivos apareceram e cujos validators reprovaram TODOS saía
+    // com `score: 1.00, passed: false`, e a média da suíte dizia 1.00 com zero
+    // caso aprovado. Pior: `compareBaselines` rankeia por `avgScore`, então o
+    // baseline que produziu os nomes de arquivo certos e o conteúdo errado
+    // vencia o que acertou o conteúdo e errou um nome.
+    const checks = (measuresArtifacts ? c.expectedArtifacts.length : 0) + validators.length;
+    const checksPassed = artifactsFound.length + (validators.length - validatorFailures.length);
+    // Sem critério não há nota. `0/0` valia 1 aqui, e isso aprovava um caso
+    // que não conferiu nada (a carga do registry agora recusa esse caso, e
+    // isto é a segunda barreira, para o caso construído em memória).
+    const score = checks > 0 ? checksPassed / checks : 0;
 
-    // Mapeia métricas do caso: métricas de qualidade derivam da razão de
-    // artefatos encontrados (proxy honesto do output); latency/uso são reais.
-    for (const m of c.metrics) {
-      metrics[m] = artifactRatio;
+    const metrics: Record<string, number> = {};
+    // Métrica que este caminho MEDE: a razão de artefatos esperados que
+    // apareceram. Ausente quando o caso não espera artefato nenhum, porque
+    // `0/0` não é 100% de validade.
+    //
+    // Antes, toda métrica declarada pelo caso recebia essa mesma razão. O
+    // relatório salvo mostrava `correctness`, `security` e `architecture` com o
+    // mesmo número, e quem o lesse veria três medidas independentes que
+    // concordam onde havia uma medida repetida três vezes. As que exigem julgar
+    // conteúdo saem em `metricsNotMeasured`: pedidas, não medidas.
+    const measured = new Set<string>();
+    if (measuresArtifacts && c.expectedArtifacts.length > 0) {
+      metrics.artifactValidity = artifactsFound.length / c.expectedArtifacts.length;
+      measured.add('artifactValidity');
     }
-    metrics.artifactValidity = artifactRatio;
 
     const durationMs = opts.durationMs ?? Date.now() - started;
-    if (c.metrics.includes('latency')) metrics.latency = durationMs;
+    if (c.metrics.includes('latency')) {
+      metrics.latency = durationMs;
+      measured.add('latency');
+    }
+    const metricsNotMeasured = c.metrics.filter((m) => !measured.has(m));
+
     const result: BenchmarkResult = {
       caseId: c.id,
       domain: c.domain,
-      passed: artifactsMissing.length === 0 && validatorFailures.length === 0,
-      score: Math.round(artifactRatio * 100) / 100,
+      passed: checks > 0 && artifactsMissing.length === 0 && validatorFailures.length === 0,
+      score: Math.round(score * 100) / 100,
       artifactsFound,
       artifactsMissing,
       validatorFailures,
@@ -107,6 +192,9 @@ export class BenchmarkRunner {
       durationMs,
       tokensUsed: opts.tokensUsed ?? opts.execution?.tokensUsed,
       ...(opts.execution ? { execution: opts.execution } : {}),
+      ...(metricsNotMeasured.length > 0 ? { metricsNotMeasured } : {}),
+      ...(opts.budgetApplied ? { budgetApplied: opts.budgetApplied } : {}),
+      ...(unmeasured.length > 0 ? { unmeasured: [...unmeasured] } : {}),
     };
     return result;
   }
@@ -129,7 +217,15 @@ export class BenchmarkRunner {
         // relatório pode ter casos com e sem execução.
         const withEvidence = isProducedWithEvidence(produced);
         const output = withEvidence ? produced.output : produced;
-        results.push(this.runCase(c, output, withEvidence ? { execution: produced.execution } : {}));
+        results.push(
+          this.runCase(c, output, {
+            ...(withEvidence ? { execution: produced.execution } : {}),
+            ...(withEvidence && produced.budgetApplied ? { budgetApplied: produced.budgetApplied } : {}),
+            ...(withEvidence && produced.filesRoot ? { filesRoot: produced.filesRoot } : {}),
+            ...(opts.runValidators !== undefined ? { runValidators: opts.runValidators } : {}),
+            ...(opts.unmeasured ? { unmeasured: opts.unmeasured } : {}),
+          }),
+        );
       } catch (err) {
         results.push({
           caseId: c.id,
@@ -280,6 +376,30 @@ export function listBenchmarkReports(baseDir: string): BenchmarkReport[] {
   return reports.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
+/**
+ * Texto contra o qual os validators de um caso rodam.
+ *
+ * Ordem: conteúdo dos artefatos que a execução gravou (quando há raiz de
+ * arquivos), senão o output como veio. Arquivo ilegível é omitido em vez de
+ * derrubar a medição: um validator que não conseguiu ler o arquivo reprova por
+ * ausência de evidência, que é o comportamento correto, e não por exceção.
+ */
+function validatorText(output: unknown, filesRoot: string | undefined, artifactsFound: string[]): string {
+  const root = filesRoot ?? (isFsPath(output) ? String(output) : undefined);
+  if (root) {
+    const parts: string[] = [];
+    for (const rel of artifactsFound) {
+      try {
+        parts.push(fs.readFileSync(path.join(root, rel), 'utf-8'));
+      } catch {
+        // arquivo sumiu entre a checagem e a leitura, ou é binário
+      }
+    }
+    if (parts.length > 0) return parts.join('\n');
+  }
+  return typeof output === 'string' ? output : JSON.stringify(output ?? {});
+}
+
 function isFsPath(v: unknown): boolean {
   return typeof v === 'string' && (v.includes('\\') || v.includes('/')) && fs.existsSync(v);
 }
@@ -294,7 +414,14 @@ function readFrameworkVersion(baseDir: string): string {
 }
 
 /** Producer que devolve output + evidência de execução real (Arena). */
-function isProducedWithEvidence(value: unknown): value is { output: unknown; execution: ExecutionEvidence } {
+function isProducedWithEvidence(
+  value: unknown,
+): value is {
+  output: unknown;
+  execution: ExecutionEvidence;
+  budgetApplied?: { maxTokens?: number; maxCostUsd?: number };
+  filesRoot?: string;
+} {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as { output?: unknown; execution?: { verificationRate?: unknown } };
   return 'output' in v && typeof v.execution === 'object' && v.execution !== null && 'verificationRate' in v.execution;

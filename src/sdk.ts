@@ -39,8 +39,19 @@ import type { VerificationResult } from './runtime/verification/engine.js';
 export interface IzanagiRunOptions {
   /** O que precisa ser resolvido. */
   objective: string;
-  /** Raiz do projeto (default: diretório atual). */
+  /** Raiz de onde os ASSETS do framework são lidos: agentes e skills (default: diretório atual). */
   baseDir?: string;
+  /**
+   * Projeto de TRABALHO: o que o survey lê, onde a entrega grava, e a raiz
+   * contra a qual `output` é validado. Default: `baseDir`.
+   *
+   * Separado porque `baseDir` responde outra pergunta ("de onde leio agentes e
+   * skills?"). Rodando de dentro do projeto as duas coincidem, que é o caso
+   * comum e o motivo de terem sido a mesma coisa até aqui; um chamador que lê
+   * assets de uma instalação do framework e trabalha em outro diretório
+   * gravaria a entrega dentro da instalação.
+   */
+  workspaceDir?: string;
   mode?: ExecutionMode;
   budget?: { maxTokens?: number; maxCost?: number; maxTimeMs?: number; maxToolCalls?: number; maxAgents?: number; maxRetries?: number };
   /** Fixa o mesmo modelo em todos os papéis. */
@@ -158,6 +169,7 @@ function resolveEventName(selector: IzanagiEventSelector): string {
  */
 export function run(options: IzanagiRunOptions): IzanagiRunHandle {
   const baseDir = options.baseDir ?? process.cwd();
+  const workspaceDir = options.workspaceDir ?? baseDir;
   const client = options.client ?? new LLMClient();
   const allProviders = client.configuredProviders();
   const providers = options.local ? allProviders.filter((p) => LOCAL_PROVIDERS.includes(p)) : allProviders;
@@ -166,7 +178,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
   // motivo, em vez de um run inteiro que termina sem gravar nada.
   let outputDir: string | undefined;
   if (options.output) {
-    const check = validateOutputDir(baseDir, options.output);
+    const check = validateOutputDir(workspaceDir, options.output);
     if (!check.ok) throw new Error(`izanagi.run: output inválido — ${check.error}`);
     outputDir = check.rel;
   }
@@ -182,7 +194,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(options.model ? { model: options.model } : {}),
     availableProviders: providers,
     ...(outputDir ? { output: outputDir } : {}),
-    ...(options.survey ?? looksLikeProject(baseDir) ? { survey: true } : {}),
+    ...(options.survey ?? looksLikeProject(workspaceDir) ? { survey: true } : {}),
     ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });
@@ -218,10 +230,10 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
 
   const orchestrator = new Orchestrator({
     baseDir,
-    // No SDK, `baseDir` já É a raiz do projeto de quem chamou (default cwd):
-    // declarar isso explicitamente evita que a sandbox de tool caia no cwd do
-    // processo hospedeiro, que pode ser outro.
-    workspaceDir: baseDir,
+    // Declarado sempre: sem isso a sandbox de tool cairia no cwd do processo
+    // hospedeiro, que pode ser outro. Default `baseDir`, que é o caso comum de
+    // quem chama o SDK de dentro do próprio projeto.
+    workspaceDir,
     ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     command: 'sdk',
     task: options.objective,

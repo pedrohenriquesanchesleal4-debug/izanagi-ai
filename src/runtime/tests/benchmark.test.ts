@@ -83,7 +83,30 @@ test('benchmark: runCase com output de diretório verifica artefatos', () => {
   const result = runner.runCase(cases[0], out, { durationMs: 5 });
   assert.deepEqual(result.artifactsFound, ['docs/security-report.md']);
   assert.deepEqual(result.artifactsMissing, []);
+  // O arquivo apareceu e o CONTEÚDO dele é medido: cita OWASP e não tem stub,
+  // mas não classifica severidade. 3 de 4 critérios. Esta linha esperava 1,
+  // porque a nota era só a razão de artefatos e os validators liam o CAMINHO
+  // do diretório em vez do relatório escrito nele.
+  assert.equal(result.score, 0.75);
+  assert.deepEqual(result.validatorFailures, ['has-severity: deve classificar severidade']);
+  assert.equal(result.passed, false, 'artefato presente com conteúdo incompleto não é caso aprovado');
+});
+
+test('benchmark: validator de output de diretório lê o arquivo, não o caminho', () => {
+  const dir = tmpDir();
+  const out = path.join(dir, 'out');
+  fs.mkdirSync(path.join(out, 'docs'), { recursive: true });
+  fs.writeFileSync(
+    path.join(out, 'docs', 'security-report.md'),
+    '# Auditoria OWASP\n\nSQL injection: severidade critical. Remediação: prepared statements.',
+    'utf-8',
+  );
+  const reg = new BenchmarkRegistry();
+  const cases = reg.load(dir).filter((c) => c.id === 'sec-owasp-scan');
+  const result = new BenchmarkRunner().runCase(cases[0], out, { durationMs: 5 });
+  assert.deepEqual(result.validatorFailures, []);
   assert.equal(result.score, 1);
+  assert.equal(result.passed, true);
 });
 
 test('benchmark: compare detecta regressões', async () => {

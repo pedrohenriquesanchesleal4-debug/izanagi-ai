@@ -182,9 +182,12 @@ test('judge: token do julgamento entra na conta do run, na fase de avaliação',
 
   const result = await orchestrator.run();
   assert.equal(result.verification?.[0]?.result.status, 'VERIFIED', 'com juiz, o critério semântico fecha');
-  // O trace conta entrada + saída estimada: 400 de produção viram 640, e o
-  // julgamento acrescenta exatamente os 120 que o juiz declarou.
-  assert.equal(result.trace.tokens?.total, 760, 'os 120 tokens do juiz precisam aparecer na conta do run');
+  // O trace conta o TOTAL do provider dividido em entrada e saída: 400 de
+  // produção continuam 400, e o julgamento acrescenta exatamente os 120 que o
+  // juiz declarou. Esta linha dizia 760 (400 tratado como se fosse só entrada,
+  // mais 60% de saída inventada em cima) e por isso o trace do run saía 60%
+  // acima do que a telemetria do mesmo run cobrava.
+  assert.equal(result.trace.tokens?.total, 520, 'os 120 tokens do juiz precisam aparecer na conta do run');
   const evaluationPhase = result.trace.budget?.evaluation;
   assert.ok(evaluationPhase && evaluationPhase.spent >= 120, `julgamento deveria ser cobrado da fase evaluation, veio ${JSON.stringify(evaluationPhase)}`);
   fs.rmSync(baseDir, { recursive: true, force: true });
@@ -207,6 +210,37 @@ test('judge: sem juiz, o mesmo run termina sem evidência conclusiva e sem gasto
 
   const result = await orchestrator.run();
   assert.equal(result.verification?.[0]?.result.status, 'UNVERIFIED');
-  assert.equal(result.trace.tokens?.total, 640, 'sem juiz, nada além da produção é cobrado');
+  assert.equal(result.trace.tokens?.total, 400, 'sem juiz, nada além da produção é cobrado');
+  fs.rmSync(baseDir, { recursive: true, force: true });
+});
+
+test('telemetria: o total do trace é o mesmo total que o orçamento cobrou', async () => {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-tokens-'));
+  const orchestrator = new Orchestrator({
+    baseDir,
+    command: 'test',
+    task: 'implementar autenticacao',
+    category: 'implementation',
+    primaryAgent: 'senior-engineer',
+    skillChain: [],
+    plan: planWithSemanticCriterion(),
+    judge: () => ({ pass: true, message: 'ok', tokens: 120, model: 'juiz-barato' }),
+    produce: () => ({ content: LONG, kind: 'raw', tokens: 400 }),
+  });
+  orchestrator.setMemory(new MemoryStore({ baseDir }));
+  orchestrator.setStore(new TraceStore({ baseDir }));
+
+  const result = await orchestrator.run();
+  // Este é o invariante, e não o número: o trace é o que a CLI imprime, o que
+  // `izanagi trace` mostra, o que o webhook envia e o que a Arena soma; a
+  // telemetria é o que `izanagi budget` mostra e o que se compara com a fatura.
+  // Enquanto o trace tratava o total do provider como se fosse só a entrada e
+  // inventava 60% de saída em cima, os dois divergiam em 60% no mesmo run.
+  assert.equal(
+    result.trace.tokens?.total,
+    result.telemetry?.totalTokens,
+    `trace ${result.trace.tokens?.total} e telemetria ${result.telemetry?.totalTokens} contam o mesmo run`,
+  );
+  assert.equal(result.trace.tokens?.total, (result.trace.tokens?.input ?? 0) + (result.trace.tokens?.output ?? 0));
   fs.rmSync(baseDir, { recursive: true, force: true });
 });

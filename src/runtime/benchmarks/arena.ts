@@ -42,6 +42,17 @@ export interface GroundednessEvidence {
 export interface ExecutionEvidence {
   /** Veredito final do run. */
   status: string;
+  /**
+   * Run sem provider configurado: o grafo, a verificação e o healing rodaram de
+   * verdade, o CONTEÚDO dos artefatos foi simulado.
+   *
+   * Está aqui porque muda o que o relatório pode afirmar. Verificação e
+   * recuperação continuam medindo o runtime; qualquer medida sobre conteúdo
+   * (artefato esperado, fundamentação) mede o simulador. Sem este campo, um
+   * relatório headless e um relatório com provider real ficam indistinguíveis
+   * depois de salvos.
+   */
+  headless?: boolean;
   /** Modo escolhido pelo Commander (ausente no caminho legado). */
   mode?: string;
   /** Tarefas com veredito de verificação. */
@@ -67,6 +78,8 @@ export interface ExecutionEvidence {
 export interface RunLikeResult {
   status: string;
   mode?: string;
+  /** true quando nenhum provider estava configurado (artefatos simulados). */
+  headless?: boolean;
   healing: Array<{ kind: string; nodeId?: string }>;
   graph?: { nodes: Array<{ id: string; status?: string; attempts?: number }> };
   verification?: Array<{ nodeId: string; result: { status: string } }>;
@@ -97,6 +110,7 @@ export function evidenceFromRun(result: RunLikeResult, workspaceDir?: string): E
   return {
     status: result.status,
     ...(result.mode ? { mode: result.mode } : {}),
+    ...(result.headless !== undefined ? { headless: result.headless } : {}),
     verifiedTasks: verified,
     totalVerifiedTasks: verification.length,
     verificationRate: verification.length > 0 ? round(verified / verification.length) : null,

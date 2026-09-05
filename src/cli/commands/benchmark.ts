@@ -4,9 +4,9 @@
 
 import fs from 'fs';
 import path from 'path';
-import { BenchmarkRegistry } from '../../runtime/benchmarks/registry.js';
+import { BenchmarkRegistry, type BenchmarkLoadIssue } from '../../runtime/benchmarks/registry.js';
 import { BenchmarkRunner, benchmarkReportsDir } from '../../runtime/benchmarks/runner.js';
-import type { BenchmarkReport } from '../../runtime/types.js';
+import type { BenchmarkCase, BenchmarkReport } from '../../runtime/types.js';
 import { runTokenBenchmark, formatTokenBenchmark } from '../../runtime/benchmarks/token-benchmark.js';
 import { evidenceFromRun, formatExecutionSummary } from '../../runtime/benchmarks/arena.js';
 import {
@@ -33,7 +33,12 @@ export async function benchmarkCommand(baseDir: string, args: string[], stateDir
   }
   if (sub === 'run') {
     const domain = args.slice(1).find((a) => !a.startsWith('-'));
-    await benchmarkRun(baseDir, domain, { execute: args.includes('--execute') }, stateDir);
+    await benchmarkRun(
+      baseDir,
+      domain,
+      { execute: args.includes('--execute'), compare: args.includes('--compare') },
+      stateDir,
+    );
     return;
   }
   if (sub === 'compare') {
@@ -86,20 +91,49 @@ function benchmarkList(baseDir: string): void {
   console.log('Executar: \x1b[33mizanagi benchmark run [domain]\x1b[0m\n');
 }
 
-async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?: boolean } = {}, stateDir = baseDir): Promise<void> {
+async function benchmarkRun(
+  baseDir: string,
+  domain?: string,
+  flags: { execute?: boolean; compare?: boolean } = {},
+  stateDir = baseDir,
+): Promise<void> {
   const registry = new BenchmarkRegistry();
-  const cases = registry.filterByDomain(registry.load(baseDir), domain);
+  const issues: BenchmarkLoadIssue[] = [];
+  const cases = registry.filterByDomain(registry.load(baseDir, issues), domain);
   if (cases.length === 0) {
     console.error(`\x1b[31mNenhum caso de benchmark para domínio "${domain ?? 'all'}".\x1b[0m\n`);
     process.exit(1);
   }
 
+  if (flags.compare && !flags.execute) {
+    console.error('\x1b[31m--compare exige --execute:\x1b[0m sem execução real os dois lados produzem o MESMO');
+    console.error('output derivado do caso, e a comparação sairia empatada por construção.\n');
+    process.exit(1);
+  }
+
   const runner = new BenchmarkRunner();
-  console.log(`\n\x1b[35m=== Benchmark Run${domain ? `: ${domain}` : ''} (${cases.length} casos)${flags.execute ? ' — execução real' : ''} ===\x1b[0m\n`);
+  console.log(`\n\x1b[35m=== Benchmark Run${domain ? `: ${domain}` : ''} (${cases.length} casos)${flags.execute ? ' · execução real' : ''} ===\x1b[0m\n`);
+
+  // Caso recusado na carga aparece. Antes desaparecia num catch vazio, e a
+  // suíte rodava menor sem dizer que rodou menor.
+  if (issues.length > 0) {
+    console.log(`  \x1b[33m${issues.length} caso(s)/arquivo(s) recusado(s) na carga:\x1b[0m`);
+    for (const i of issues) {
+      console.log(`    \x1b[90m•\x1b[0m ${i.id ? `\x1b[1m${i.id}\x1b[0m ` : ''}${i.reason} \x1b[90m(${i.file})\x1b[0m`);
+    }
+    console.log('');
+  }
 
   if (!flags.execute) {
     console.log('  \x1b[90mModo output: mede se o artefato esperado apareceu. NÃO mede verificação,');
-    console.log('  recuperação nem custo — para isso, use --execute.\x1b[0m\n');
+    console.log('  recuperação nem custo: para isso, use --execute.\x1b[0m\n');
+  }
+
+  const withBudget = cases.filter((c) => c.budget).length;
+  if (flags.execute) {
+    console.log(`  \x1b[90mOrçamento declarado: ${withBudget}/${cases.length} casos. Caso sem teto roda sob a`);
+    console.log('  estimativa do plano, e o relatório registra a ausência: dois relatórios só são');
+    console.log('  comparáveis nos casos onde o teto foi o mesmo.\x1b[0m\n');
   }
 
   // Producer sem --execute: deriva o output dos requisitos do caso. Os
@@ -119,20 +153,47 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
   // provider configurado a execução é headless, e isso continua sendo uma
   // execução real do runtime: o grafo roda, a verificação roda, o healing roda.
   // O que não é real ali é o conteúdo dos artefatos, e o relatório diz isso.
-  const executed = async (c: (typeof cases)[number]) => {
+  const executed = (opts: { noCommander?: boolean } = {}) => async (c: (typeof cases)[number]) => {
     // O caso declara o teto sob o qual deve ser resolvido, o modo e as tools
     // autorizadas. Antes disto, `--execute` rodava todo caso sem orçamento,
     // sem modo e sem restrição: "budget" e "allowed tools" da base oficial
     // eram observados no relatório e nunca impostos na execução.
+    //
+    // O teto é o do CASO, não o do dia: sem isso cada execução roda sob a
+    // estimativa que o planejador fez naquele momento, e o relatório de hoje
+    // não é comparável ao de ontem.
+    //
+    // Projeto de trabalho por caso, sob a raiz de ESTADO: cada caso escreve num
+    // diretório só dele, e nenhum deles escreve no projeto de quem rodou o
+    // comando nem na instalação do framework.
+    //
+    // Sem destino de saída o grafo não tem nó de entrega, nada é gravado, e a
+    // checagem de artefato do caso ficava comparando caminhos de arquivo com
+    // IDS DE NÓ do run: nenhum caso podia passar, em nenhuma versão, e o
+    // `0/N passaram` do relatório era uma propriedade da forma do producer.
+    const workDir = path.join(benchmarkReportsDir(stateDir), 'work', c.id);
+    fs.rmSync(workDir, { recursive: true, force: true });
+    fs.mkdirSync(workDir, { recursive: true });
     const result = await runObjective({
       baseDir,
       stateDir,
+      workspaceDir: workDir,
       objective: c.task,
+      output: '.',
       ...(c.budget ? { budget: c.budget } : {}),
       ...(c.mode ? { mode: c.mode } : {}),
       ...(c.allowedTools ? { allowedTools: c.allowedTools } : {}),
+      ...(opts.noCommander ? { noCommander: true } : {}),
     });
+    // Onde o run gravou de fato: a raiz da materialização, senão o diretório
+    // da entrega. É contra esses arquivos que o caso é medido.
+    const receipt = Object.values(result.artifacts).find((a) => a.kind === 'materialization')?.content as
+      | { dir?: string }
+      | undefined;
+    const filesRoot = receipt?.dir ?? (result.deliveredTo ? path.dirname(result.deliveredTo) : workDir);
     return {
+      ...(c.budget ? { budgetApplied: c.budget } : {}),
+      ...(filesRoot ? { filesRoot } : {}),
       output: {
         ...outputOnly(c),
         ...Object.fromEntries(Object.entries(result.artifacts).map(([id, a]) => [id, a.content])),
@@ -140,6 +201,9 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
       execution: evidenceFromRun({
         status: result.status,
         ...(result.mode ? { mode: result.mode } : {}),
+        // Registrado no relatório: verificação e recuperação medem o runtime
+        // nos dois casos, mas conteúdo de artefato headless é do simulador.
+        headless: result.headless,
         healing: result.healing,
         // O grafo executado vive no trace: o resultado do SDK não o repete.
         ...(result.trace.graph ? { graph: result.trace.graph } : {}),
@@ -160,10 +224,26 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
     };
   };
 
+  // --compare: a MESMA suíte pelos dois caminhos de planejamento, com o mesmo
+  // teto por caso. Fecha a comparação "runtime antigo x runtime novo" no nível
+  // de EXECUÇÃO (`izanagi benchmark tokens` compara PLANO, que é outra coisa) e
+  // dá caller a `runBaselines`/`compareBaselines`, que existiam testados e sem
+  // ninguém chamando.
+  if (flags.compare) {
+    await benchmarkCompareRuntimes(runner, cases, executed, { baseDir: stateDir, suite: `${domain ?? 'all'}:compare` }, stateDir);
+    return;
+  }
+
   const report = await runner.runSuite(
     cases,
-    flags.execute ? executed : outputOnly,
-    { baseDir: stateDir, suite: `${domain ?? 'all'}${flags.execute ? ':executed' : ''}` },
+    flags.execute ? executed() : outputOnly,
+    {
+      baseDir: stateDir,
+      suite: `${domain ?? 'all'}${flags.execute ? ':executed' : ''}`,
+      // Modo output: o producer deriva o output do próprio caso, então a
+      // checagem de artefato é circular e sai da nota, declarada.
+      ...(flags.execute ? {} : { unmeasured: ['expectedArtifacts' as const] }),
+    },
   );
 
   for (const r of report.results) {
@@ -175,13 +255,106 @@ async function benchmarkRun(baseDir: string, domain?: string, flags: { execute?:
     if (r.validatorFailures.length > 0) {
       r.validatorFailures.slice(0, 3).forEach((v) => console.log(`    \x1b[90m•\x1b[0m ${v}`));
     }
+    if (r.unmeasured && r.unmeasured.length > 0) {
+      console.log(`    \x1b[90mNão medido neste caminho:\x1b[0m ${r.unmeasured.join(', ')}`);
+    }
+    if (r.metricsNotMeasured && r.metricsNotMeasured.length > 0) {
+      console.log(`    \x1b[90mMétricas pedidas e não medidas:\x1b[0m ${r.metricsNotMeasured.join(', ')}`);
+    }
   }
 
   const s = report.summary;
   console.log(`\n\x1b[1mSummary:\x1b[0m ${s.passed}/${s.total} passaram | score médio ${s.avgScore} | ${s.totalDurationMs}ms`);
   console.log(`\x1b[1mArena:\x1b[0m ${formatExecutionSummary(report.execution ?? null)}`);
+  // Um relatório headless e um com provider real ficam indistinguíveis depois
+  // de salvos se ninguém disser qual é qual.
+  if (report.results.some((r) => r.execution?.headless)) {
+    console.log('\x1b[90mExecução headless (sem provider): grafo, verificação e healing são reais; o');
+    console.log('CONTEÚDO dos artefatos é simulado, então artefato esperado mede o simulador.\x1b[0m');
+  }
   console.log(`\x1b[90mRelatório salvo em ${path.join(benchmarkReportsDir(stateDir), `${report.id}.json`)}\x1b[0m`);
   console.log(`\x1b[90mComparar versões: \x1b[0mizanagi benchmark compare <anterior> ${report.id}\n`);
+}
+
+/**
+ * `izanagi benchmark run --execute --compare`: a mesma suíte pelos dois
+ * caminhos de planejamento, com o mesmo teto por caso.
+ *
+ * A pergunta que isso responde é a da seção 38 do roadmap ("Old Runtime vs New
+ * Runtime") sobre EXECUÇÃO: `izanagi benchmark tokens` compara plano, que é
+ * teto declarado, e nunca deve dividir campo com consumo medido.
+ *
+ * O lado legado é `--no-commander`: planejamento por categoria, sem Commander,
+ * que é literalmente o runtime anterior à rearquitetura e continua no código.
+ */
+async function benchmarkCompareRuntimes(
+  runner: BenchmarkRunner,
+  cases: BenchmarkCase[],
+  executed: (opts?: { noCommander?: boolean }) => (c: BenchmarkCase) => Promise<unknown>,
+  opts: { baseDir: string; suite: string },
+  stateDir: string,
+): Promise<void> {
+  const reports = await runner.runBaselines(
+    cases,
+    { commander: executed(), legado: executed({ noCommander: true }) },
+    opts,
+  );
+  const cmp = runner.compareBaselines(reports);
+
+  console.log('\x1b[1mRanking:\x1b[0m');
+  for (const r of cmp.ranking) {
+    console.log(`  ${r.baseline.padEnd(10)} score médio ${r.avgScore} | ${r.passed}/${r.total} passaram`);
+  }
+
+  console.log('\n\x1b[1mPor caso:\x1b[0m');
+  for (const row of cmp.byCase) {
+    const scores = cmp.baselines.map((b) => `${b} ${row.scores[b]}`).join(' | ');
+    // Empate não elege vencedor, e a linha diz "empate" em vez de omitir.
+    console.log(`  ${row.caseId.padEnd(22)} ${scores}  \x1b[90m${row.winner ? `melhor: ${row.winner}` : 'empate'}\x1b[0m`);
+  }
+
+  console.log('\n\x1b[1mExecução medida:\x1b[0m');
+  for (const b of cmp.baselines) {
+    console.log(`  ${b.padEnd(10)} ${formatExecutionSummary(reports[b].execution ?? null)}`);
+  }
+
+  const novo = reports.commander.execution ?? null;
+  const velho = reports.legado.execution ?? null;
+  if (novo && velho) {
+    console.log('\n\x1b[1mDelta (commander frente ao legado):\x1b[0m');
+    console.log(`  tokens        ${signed(novo.tokensUsed - velho.tokensUsed)} (${velho.tokensUsed} -> ${novo.tokensUsed})`);
+    console.log(`  custo         ${signedUsd(novo.costUsd - velho.costUsd)} ($${velho.costUsd.toFixed(4)} -> $${novo.costUsd.toFixed(4)})`);
+    console.log(`  retries       ${signed(novo.retries - velho.retries)} (${velho.retries} -> ${novo.retries})`);
+    console.log(`  duração       ${signed(novo.durationMs - velho.durationMs)}ms (${velho.durationMs} -> ${novo.durationMs})`);
+    // Taxa ausente permanece ausente: sem verificação nos dois lados não existe
+    // delta de verificação, e imprimir 0 pontos seria inventar paridade.
+    console.log(`  verificação   ${deltaRate(velho.verificationRate, novo.verificationRate)}`);
+    console.log(`  recuperação   ${deltaRate(velho.recoveryRate, novo.recoveryRate)}`);
+  } else {
+    console.log('\n  \x1b[90mSem evidência de execução nos dois lados: nenhum delta calculado.\x1b[0m');
+  }
+
+  const dir = benchmarkReportsDir(stateDir);
+  console.log(`\n\x1b[90mRelatórios salvos em ${dir}:\x1b[0m`);
+  for (const b of cmp.baselines) console.log(`  \x1b[90m${b}: ${reports[b].id}.json\x1b[0m`);
+  console.log('');
+}
+
+function signed(n: number): string {
+  return n > 0 ? `+${n}` : String(n);
+}
+
+function signedUsd(n: number): string {
+  return `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n).toFixed(4)}`;
+}
+
+/** Delta entre duas taxas em [0,1]. Ausência de qualquer lado sai como `n/a`. */
+function deltaRate(before: number | null, after: number | null): string {
+  if (before === null || after === null) {
+    return `n/a (antes ${before === null ? 'n/a' : `${Math.round(before * 100)}%`}, depois ${after === null ? 'n/a' : `${Math.round(after * 100)}%`})`;
+  }
+  const pp = Math.round((after - before) * 100);
+  return `${pp > 0 ? '+' : ''}${pp}pp (${Math.round(before * 100)}% -> ${Math.round(after * 100)}%)`;
 }
 
 function loadReport(baseDir: string, id: string): Record<string, unknown> | null {

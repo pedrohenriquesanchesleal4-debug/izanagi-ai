@@ -1280,7 +1280,6 @@ export class Orchestrator {
         this.opts.signal,
       );
       if (result.tokens) {
-        ctx.trace.addTokens(result.tokens, Math.round(result.tokens * 0.6));
         this.tokensUsed += result.tokens;
         // Retry consome a fase recovery, não execution
         const phase = node.attempts && node.attempts > 1 ? 'recovery' : 'execution';
@@ -1288,6 +1287,17 @@ export class Orchestrator {
         // e ainda aplica os tetos de custo e tempo.
         const modelId = result.model ?? ctx.model;
         const inputTokens = Math.round(result.tokens * 0.7);
+        // O trace recebe o MESMO total que o orçamento cobra, dividido pela
+        // mesma razão. Antes recebia `(total, total * 0.6)`, e `addTokens` soma
+        // os dois: o trace do run inteiro saía 60% acima do que a telemetria do
+        // mesmo run registrava, porque `result.tokens` é o total do provider
+        // (`usage.total_tokens`, `input+output`, `totalTokenCount`) e a linha
+        // tratava esse total como se fosse só a entrada. É o número que a CLI
+        // imprime no fim do run, que `izanagi trace` mostra, que o dashboard
+        // exibe, que o webhook envia e que a Arena soma. Duas linhas abaixo, o
+        // custo já usava o valor como total; o juiz semântico, no mesmo
+        // arquivo, sempre passou um split que fecha com o total.
+        ctx.trace.addTokens(inputTokens, result.tokens - inputTokens);
         const costUsd = this.opts.costOf ? this.opts.costOf(modelId, inputTokens, result.tokens - inputTokens) : 0;
         const spend = ctx.execBudget
           ? ctx.execBudget.spend({ phase, tokens: result.tokens, costUsd, model: modelId })

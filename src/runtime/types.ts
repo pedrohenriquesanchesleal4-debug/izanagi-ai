@@ -539,6 +539,30 @@ export interface BenchmarkResult {
    * verificação nem recuperação.
    */
   execution?: import('./benchmarks/arena.js').ExecutionEvidence;
+  /**
+   * Métricas que o caso PEDIU e que este caminho de medição não produz.
+   *
+   * O caminho de output mede duas coisas de verdade: a razão de artefatos
+   * esperados que apareceram e a latência. `correctness`, `security`,
+   * `architecture` e as demais exigem julgar o CONTEÚDO, e antes esta lista não
+   * existia porque todas recebiam o mesmo número da razão de artefatos: o
+   * relatório salvo mostrava cinco medidas independentes que eram uma medida
+   * repetida cinco vezes.
+   */
+  metricsNotMeasured?: MetricName[];
+  /**
+   * Teto efetivamente aplicado nesta execução. Ausente quando o caso não
+   * declarou orçamento, e a ausência é o que torna dois relatórios
+   * comparáveis ou não.
+   */
+  budgetApplied?: { maxTokens?: number; maxCostUsd?: number };
+  /**
+   * Checagens que o caminho de medição não mediu, e que por isso ficaram fora
+   * da nota. Presente é informação: um score de 1.00 com
+   * `unmeasured: ['expectedArtifacts']` diz que os validators passaram e que
+   * ninguém conferiu arquivo nenhum.
+   */
+  unmeasured?: string[];
 }
 
 export interface BenchmarkReport {
