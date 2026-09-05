@@ -1,6 +1,6 @@
 # IZANAGI AI: Operating Rules
 
-> Version 3.19.0
+> Version 3.20.0
 
 ---
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-> Versão atual: **3.19.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
+> Versão atual: **3.20.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
 > Legenda: ✅ Done · 🔧 In progress · 📋 Planned · 💡 Future idea
 > Histórico linha-a-linha de cada release em `CHANGELOG.md`: este arquivo resume por fase, não duplica o changelog.
 
@@ -465,6 +465,67 @@ defeitos que este runtime existe para combater.
 
 Testes: **764, 763 passando** (69 novos). Cada teto novo tem teste que mede o
 teto, não a contagem.
+
+## Fase 15: A evidência que ninguém produzia (v3.20.0) ✅
+
+Os catorze itens que a Fase 14 deixou abertos, fechados com implementação,
+teste e medição. O padrão que eles compartilhavam é o irmão do da fase
+anterior: lá era **um limite declarado que nada aplica**; aqui é **uma
+evidência declarada que ninguém produz**.
+
+Quatro exemplos do mesmo defeito, em lugares diferentes do runtime:
+
+- a métrica `testResults` da avaliação vinha de um artefato `test-results` que
+  um AGENTE escreveu — o runtime afirmava "testes passando" a partir de um
+  texto produzido pelo mesmo processo que deveria estar sendo testado;
+- todo critério de aceite era derivado do SCHEMA do artefato, então
+  "adicionar paginação em GET /users" não produzia nenhum critério sobre
+  paginação, e não havia por onde o usuário fornecer um;
+- a camada semântica da memória era lida e nunca escrita pelo runtime, e o
+  Decision Journal era escrito e nunca consultado: uma memória que não aprende
+  e um registro que não lembra;
+- das 106 skills, ZERO declaravam `triggers` ou `capabilities`, então o
+  ranking escolhia entre 106 descrições soltas com dois arrays sempre vazios
+  no haystack.
+
+### O que entrou
+
+| Capacidade | O que mudou na execução |
+|---|---|
+| `--verify-tests` | Nó `verify-tests` roda o comando de teste do PROJETO e o check `exit-zero` decide pelo exit code do processo. O comando vem do manifesto, o binário de uma allowlist fixa, `spawn` com `shell: false`, e nenhum campo de entrada carrega comando |
+| `--acceptance` | O critério do usuário entra nos contratos das tarefas terminais. Prefixo conhecido vira determinístico; prosa vira semântico. Entrada malformada é recusada em voz alta |
+| `--min-quality` | Os modos até o sugerido viram candidatos, cada um estimado pelo mesmo caminho de roteamento, e vence o mais barato que atinge o piso de VERIFICAÇÃO |
+| `--reuse-artifacts` | Artefato de run anterior com a mesma pergunta entra no lugar da chamada e passa pela verificação inteira. A invalidação vem declarada antes do cache |
+| `--allow-tool` | A allowlist que existia no Orchestrator, no SDK e no caso de benchmark ganhou flag |
+| `HUMAN_REQUIRED` | Teto esgotado deixa de se confundir com falha por bug. A avaliação continua `FAIL`: ela mede a entrega, o status carrega o fato do processo |
+| Decision Journal | Decisão leva o objetivo, o fim do run carimba o veredito, e o planejamento consulta por semelhança de objetivo. Agente queimado no mesmo objetivo sai da disputa |
+| Memória semântica | `appendKnowledge` escreve conhecimento reutilizável com barra de recorrência, e `search()` passa a ser consultado por tarefa pelo Context Resolver |
+| Linhagem e checksum | Travessia completa dos dois lados, comparação por conteúdo, `checksum` sha256 e `metadata` livre com teto |
+| `EXTERNAL-TOOL-001` | Tool registrada em runtime exige aprovação humana, e `requiresApproval` virou pausa por `izanagi approve` em vez de campo que ninguém lia |
+| Oito dimensões | `benchmark run --execute --compare` mede tokens, custo, latência, model calls, agent calls, retries, sucesso e verificação nos DOIS caminhos |
+| Metadado de skill | As 22 mais acionadas pelas chains declaram `triggers` e `capabilities`, com gate que quebra se o campo esvaziar em massa |
+
+### Compatibilidade
+
+As quatro capacidades novas são **opt-in**. Sem elas, o plano, o grafo e o
+veredito são byte a byte os de antes, e há teste que mede isso. A única adição
+ao tipo do resultado é o valor `HUMAN_REQUIRED`; o exit code da CLI não mudou.
+
+### O que esta fase deliberadamente NÃO fechou
+
+Nada da lista de gaps ficou aberto. O que continua registrado como **escolha,
+não dívida**, está em [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md), e
+três limitações dali só deixam de ser limitações contra um provider real:
+grounding medido contra a ausência dele, a Arena com números de execução real,
+e o critique loop exercitado por um modelo de verdade.
+
+Duas limitações novas entraram na mesma lista, e as duas são de MEDIÇÃO, não de
+implementação: o nó de teste mede a suíte do projeto e não o efeito da entrega
+(quando o `--output` cai fora da árvore testada), e o piso de `--min-quality`
+mede o quanto o plano se compromete a verificar, nunca a qualidade do que vai
+ser entregue.
+
+Testes: **837, 837 passando** (73 novos nesta fase).
 
 ## Critérios de aceite das próximas fases
 

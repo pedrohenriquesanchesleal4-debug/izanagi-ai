@@ -4,6 +4,63 @@
 
 ---
 
+## [3.20.0]: 2026-09-05
+
+### Rodada de fechamento dos catorze itens abertos (2026-09-05)
+
+A auditoria de 2026-09-04 fechou doze tetos sem caller e deixou **catorze itens
+abertos**, cada um com critério de pronto escrito no `RUNTIME-PENDING.md`. Esta
+rodada fecha os catorze. O padrão que eles compartilhavam continua sendo o mesmo
+que o `HANDOFF.md` diz combater, agora numa segunda forma: não é o limite
+declarado que nada aplica, é a **evidência declarada que ninguém produz** —
+métrica de teste vinda de um texto que um agente escreveu, critério de aceite
+que fala da forma e nunca do pedido, memória que se escreve e não se lê, journal
+que se lê e não se consulta.
+
+### Added
+- **`project.test` e o check `exit-zero`: a métrica de teste passa a vir de um exit code.** A camada determinística tinha oito checks e nenhum executava nada; `testResults` vinha de um artefato `test-results` que um AGENTE escreveu, ou seja, do mesmo processo que deveria estar sendo testado. Com `--verify-tests`, o nó `verify-tests` roda o comando de teste do PROJETO no fim do grafo e `passed` é `exitCode === 0`, decidido pelo sistema operacional. **Isto não afrouxa o isolamento do `code.execute`:** a diferença é a fonte do comando. No `code.execute` o código vem do modelo, e por isso roda sem subprocesso, sem env herdado e sem rede confiável; aqui o comando vem do manifesto do projeto, o binário sai de uma allowlist fixa do runtime, o `spawn` é `shell: false` (sem expansão, sem `&&`, sem pipe) e nenhum campo de entrada carrega comando. Opt-in porque executa um processo do projeto com o ambiente herdado: a mesma confiança de digitar `npm test`.
+- **`--acceptance`: o critério do usuário passa a ser cobrado.** Todo critério era derivado do SCHEMA do artefato, então "adicionar paginação em GET /users" não produzia nenhum critério sobre paginação, e não existia flag, campo de SDK ou input para fornecer um. Prefixo conhecido (`contains:`, `not-contains:`, `matches:`, `min-size:`, `file-exists:`, `json-field:`, `references-exist`) vira check determinístico; prosa vira critério semântico, que precisa de juiz e sem juiz fica `UNVERIFIED`. O default é semântico de propósito: transformar uma frase em `contains` da frase inteira reprovaria toda entrega correta escrita com outras palavras, e um check inventado é pior que nenhum porque parece evidência.
+- **`--min-quality`: estratégias comparadas contra um piso.** Não existiam candidatos nem piso configurável (`minQuality`/`qualityFloor` tinham zero ocorrências no código), então "respeitando a qualidade mínima configurada" não tinha o que respeitar. Agora os modos até o sugerido viram candidatos, cada um estimado pelo mesmo caminho de roteamento da execução, e vence o mais barato que atinge o piso. Piso inalcançável **não sobe o modo em silêncio**: o plano segue no modo sugerido e declara que não cumpriu, porque subir seria o orçamento decidindo escopo.
+- **`--reuse-artifacts`: reuso de artefato entre runs.** `readContent` só era chamado por `izanagi explain`; um segundo run do mesmo objetivo refazia tudo. A parte que importa é a invalidação, e ela vem declarada antes do cache: a chave cobre tipo, objetivo, restrições, critérios, agente, papel, checksums dos insumos EM ORDEM e a impressão do projeto; run sem survey é chave DIFERENTE de run com survey; o prazo (7 dias) expira o que a chave não consegue ver. O artefato reaproveitado entra no lugar da CHAMADA e passa pela verificação inteira: o que se economiza é a chamada, não a prova.
+- **`--allow-tool` e `--verify-tests` na CLI.** A allowlist de tools existia no Orchestrator, no SDK e no caso de benchmark, e `izanagi run` não tinha flag para ela.
+- **`HUMAN_REQUIRED`: teto esgotado deixa de se confundir com falha por bug.** Cada abort por teto marca qual (`attempts`/`time`/`tokens`/`cost`) e o status do run muda. O veredito da AVALIAÇÃO continua `FAIL`, porque ela mede a entrega e a entrega não fechou: os dois campos convivem por medirem coisas diferentes. O exit code segue 1, não 2 — o 2 significa "retomável por `izanagi approve`", e um orçamento estourado não é.
+- **`ArtifactRegistry.lineage()` e `.compare()`.** As arestas de dependência estavam gravadas desde sempre e a leitura parava no primeiro vizinho; num grafo de sete nós, um salto nunca responde "de onde veio isto?". A travessia é em largura, com marca de visitado (ciclo termina em vez de girar), e `compare()` diz o que MUDOU entre versões, não só quanto o score caiu.
+- **`ArtifactRecord.checksum` (sha256 completo) e `.metadata` livre.** `hash` continua sha1 truncado em 12 hex porque é o que os registros gravados carregam: 48 bits bastam para "é o mesmo artefato de novo?", não para "este arquivo é exatamente o que eu gravei". `metadata` tem teto de 4KB e é recusado INTEIRO quando estoura.
+- **`EXTERNAL-TOOL-001`: tool registrada em runtime exige aprovação humana.** O default-allow da `PolicyEngine` permanece, com o motivo escrito (a `ToolRegistry` já nega o que o contrato não concedeu, a allowlist já nega o que não foi declarado, e se a política também fosse portão de concessão haveria três lugares decidindo a mesma coisa). O caso em que "não previsto" era perigoso ganhou regra própria. E `PolicyDecision.requiresApproval`, que existia e ninguém lia, virou pausa por `izanagi approve` em vez de falha que o healing retentaria contra uma porta fechada.
+- **`ExecutionEvidence.modelCalls` / `.agentCalls` / `.successRate` e `benchmark run --execute --compare`.** A comparação antigo vs novo cobria três dimensões e só sobre o PLANO. Chamadas contam por TENTATIVA, porque é o que a fatura conta, e nó reaproveitado não conta — é justamente a diferença que a comparação precisa enxergar.
+- **`triggers` e `capabilities` declarados nas 22 skills mais acionadas.** Das 106 skills, ZERO declaravam qualquer um dos dois: o haystack de `rankSkills` incluía dois arrays sempre vazios e o ranking escolhia entre 106 descrições soltas. Escritos à mão: derivar dos títulos de seção produziria "Identidade" e "Processo" como capacidade, e derivar da description colocaria as mesmas palavras duas vezes.
+- **`MemoryStore.appendKnowledge`.** A camada semântica era lida e nunca escrita pelo runtime: `.agents/memoria/semantica.md` só mudava quando uma pessoa o editava, e o que o runtime gravava (`addLearning`) vive numa lista plana que a busca não alcança.
+
+### Changed
+- **O Decision Journal deixa de ser write-only.** Cada decisão leva o objetivo do run; o fim do run carimba o veredito (`recordOutcome`, que não reescreve o que já foi carimbado); o planejamento consulta por semelhança de objetivo (`findRelevant`, só decisões com resultado conhecido). Um agente escolhido duas vezes para um objetivo semelhante, com os dois runs sem fechar e nenhum sucesso no meio, sai da disputa — e a troca vale também nos nós vindos do template do workflow. Duas falhas e não uma: um incidente pode ter sido provider fora do ar.
+- **`MemoryStore.search()` passa a ser consultado DURANTE o run.** Era chamado só pela CLI e pelo benchmark; dentro de um run, a única recuperação era padrão de falha. Agora o Context Resolver busca pelo objetivo de cada tarefa, com teto de 2 entradas e 600 chars, e um store por run. Numa rodada de correção o bloco fica de fora: o que falta ali é a correção, não mais contexto.
+- **`maxCost` vira limite do Healer.** `HealingInput` tinha tempo, tokens e tentativas; o custo só agia por `ExecutionBudget.spend`, ou seja DEPOIS de a chamada acontecer. Curar é decidir gastar mais uma chamada, e essa decisão passa a consultar o dinheiro antes.
+- **A nota de um caso de benchmark passa a incluir os validators.** Era só a razão de artefatos: um caso cujos arquivos apareceram e cujos validators reprovaram TODOS saía com `score: 1.00, passed: false`, e `compareBaselines` rankeia por `avgScore` — o baseline que acertou os nomes de arquivo e errou o conteúdo vencia o que acertou o conteúdo.
+
+### Fixed
+- **O total de tokens do trace saía 60% acima da telemetria do MESMO run.** `addTokens(result.tokens, result.tokens * 0.6)` soma os dois argumentos, e `result.tokens` é o total do provider (`input + output`), não a entrada. É o número que a CLI imprime, que `izanagi trace` mostra, que o dashboard exibe, que o webhook envia e que a Arena soma. Teste novo trava o invariante: trace e telemetria contam o mesmo run.
+- **Validators de um caso de benchmark liam o CAMINHO, não o arquivo.** Num output de diretório, `has-owasp` media se a palavra "owasp" estava no nome da pasta temporária: o validator passava ou reprovava por uma propriedade do diretório de trabalho.
+- **O registry de benchmark aceitava caso pela metade num `catch` vazio.** Um JSON sem `expectedArtifacts` chegava ao runner, estourava dentro do `try` da suíte, e o relatório culpava a execução por um defeito da definição. Caso recusado agora diz o motivo e o arquivo.
+- **Toda métrica declarada por um caso recebia a mesma razão de artefatos.** O relatório salvo mostrava `correctness`, `security` e `architecture` com o mesmo número: três medidas independentes que eram uma medida repetida três vezes. O que não é medido sai em `metricsNotMeasured`.
+- **A varredura anti-stub reprovava a evidência de uma suíte VERDE.** O runner de testes do Node imprime `ℹ todo 0` no resumo, e o artefato `test-run` de uma suíte 100% verde era reprovado por "stub detectado: TODO". A varredura pressupõe texto autoral; schema de saída capturada agora a desliga.
+- **`unmet` misturava reprovado com não-comprovado.** Um critério semântico sem juiz aparecia lado a lado com um check que de fato falhou, e quem lesse a linha (ou a restrição que o replanejamento deriva dali) trataria "não medi" como "está errado". Agora o não-comprovado vem marcado `[sem evidência]`.
+- **Dois objetos git vazios impediam o push.** `src/cli/commands/benchmark.ts` e `src/runtime/types.ts` tinham blobs truncados a zero byte no object store local, referenciados por oito dos nove commits da rodada. Reconstruídos byte a byte a partir dos blobs vizinhos legíveis, com o hash conferido antes de gravar: `git fsck` limpo, e nenhum commit reescrito.
+
+### Compatibility
+- Nenhuma breaking change. As quatro capacidades novas são **opt-in** (`--verify-tests`, `--acceptance`, `--min-quality`, `--reuse-artifacts`): sem elas, o plano, o grafo e o veredito são byte a byte os de antes, e há teste que mede isso.
+- `OrchestrationResult.status` e `IzanagiRunResult.status` ganharam o valor `HUMAN_REQUIRED`. Quem faz `switch` exaustivo sobre o status precisa tratá-lo; quem compara com `'PASS'` não muda. O exit code da CLI é o mesmo de antes.
+- `PlanEstimate.quality` é campo novo e obrigatório no tipo. Quem constrói um `PlanEstimate` à mão (fixtures de teste) precisa declará-lo; quem consome o que o `Commander.estimate` devolve não muda.
+- `ArtifactSchema.capturedOutput`, `ArtifactRecord.checksum`, `.metadata` e `.reuseKey` são opcionais: registro escrito por versão anterior continua legível.
+
+### Verificação
+- **837 testes, 837 passando** (medido em 2026-09-05, Linux). O vermelho conhecido de Windows (`polyglot: bin Rust presente com --version barato`) é anterior e independente.
+- `izanagi run "documentar a funcao de soma" --output docs --verify-tests --mode orchestrated` num projeto de fixture: suíte verde → `PASS`, 7/7 VERIFIED, `testResults=1`, score 1.00; suíte vermelha → `BLOCKED`, 6/7 VERIFIED, `testResults=0`, regressão nomeando `npm test --silent` com exit 1.
+- `izanagi run "..." --reuse-artifacts` duas vezes: run 1 gasta 900 tokens com cache 0/3; run 2 gasta **0 tokens** com cache 3/3, e continua `PASS` com 4/4 VERIFIED.
+- `izanagi run "..." --min-quality`: piso 0.4 escolhe `autonomous` ($0.0011, o único que atinge); piso 0.3 escolhe `assisted` ($0.0000, mesmo piso atingido por menos).
+- `izanagi benchmark run security --execute --compare`: tokens -300 (1500 → 1200), model calls -1 (5 → 4), agent calls -1 (3 → 2), latência +50ms, verificação n/a → 100%, sucesso 100% nos dois.
+
+---
+
 ## [3.19.0]: 2026-09-04
 
 > **A 3.18.0 nunca chegou ao npm.** Ela foi para o GitHub e o `npm publish` não

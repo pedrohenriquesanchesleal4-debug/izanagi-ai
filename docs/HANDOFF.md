@@ -1,12 +1,14 @@
-# Handoff: rearquitetura do runtime (v3.13.0 → v3.18.0)
+# Handoff: rearquitetura do runtime (v3.13.0 → v3.20.0)
 
 > Escrito em 2026-09-02. Documento de passagem: o que mudou, onde cada coisa vive, o que foi decidido e por quê, o que sobrou. Feito para quem abrir o repositório sem ter acompanhado a sessão.
 >
 > Regra deste arquivo, herdada do `RUNTIME-PENDING.md`: **só entra o que é verificável no código**. Onde há número, ele foi medido. Onde não há, está dito que não há.
 
-> **Rodada de 2026-09-04, depois deste documento.** Uma auditoria dos 49 itens de Definition of Done da especificação de evolução do runtime encontrou **doze tetos, campos e caminhos que existiam no código, eram plumbados de ponta a ponta e não tinham caller nenhum** — a mesma família que a seção 3 abaixo cataloga, sobrevivendo em campos diferentes. Os doze foram fechados; quinze itens continuam abertos, cada um com critério de pronto. O que mudou está na Fase 14 do [`ROADMAP.md`](../ROADMAP.md) e no `CHANGELOG.md`; o que sobrou está em [`RUNTIME-PENDING.md`](RUNTIME-PENDING.md), que **deixou de afirmar "nenhum item aberto"**.
+> **Rodada de 2026-09-04, depois deste documento.** Uma auditoria dos 49 itens de Definition of Done da especificação de evolução do runtime encontrou **doze tetos, campos e caminhos que existiam no código, eram plumbados de ponta a ponta e não tinham caller nenhum** — a mesma família que a seção 3 abaixo cataloga, sobrevivendo em campos diferentes. Os doze foram fechados; catorze itens continuaram abertos, cada um com critério de pronto.
 >
-> Três afirmações deste documento não se sustentavam e estão corrigidas na leitura abaixo: a contagem de testes, "dois nós de tool" (são três) e a implicação de que `budgetLimits` honrava retries (o teto era morto).
+> **Rodada de 2026-09-05 (v3.20.0): os catorze foram fechados.** O padrão que eles compartilhavam é o irmão do da rodada anterior: lá era um limite declarado que nada aplica, aqui é **uma evidência declarada que ninguém produz**. A métrica de teste vinha de um artefato que um AGENTE escreveu; todo critério de aceite falava da FORMA do artefato e nenhum do que foi pedido; a camada semântica da memória era lida e nunca escrita, e o Decision Journal escrito e nunca consultado; das 106 skills, zero declaravam o metadado pelo qual são encontradas. O que mudou está na Fase 15 do [`ROADMAP.md`](../ROADMAP.md) e no `CHANGELOG.md`; a lista de gaps em [`RUNTIME-PENDING.md`](RUNTIME-PENDING.md) está vazia hoje, e o arquivo diz o que sustenta essa afirmação.
+>
+> Três afirmações deste documento não se sustentavam e estão corrigidas na leitura abaixo: a contagem de testes, "dois nós de tool" (são três, e com `--verify-tests` são quatro) e a implicação de que `budgetLimits` honrava retries (o teto era morto).
 
 ---
 
@@ -33,7 +35,15 @@ A v3.13.0 entregou as peças da rearquitetura (Commander, Task Contracts, roteam
 | Uso agendado | Impossível | `--json` + exit code + webhook |
 | Conhecimento do projeto | Nenhum: o agente escrevia sobre um repositório que nunca viu | Nó `survey` na cabeça do grafo, determinístico e com corte declarado |
 | Resultado do run | Ficava em `.izanagi/state/`, invisível para o projeto | Nó `deliver` grava no projeto, e a verificação confere o arquivo escrito |
-| Caminho seguro de tool | Existia, testado, sem ninguém passando por ele | Três nós de tool gerados pelo planejamento (`survey`, `materialize`, `deliver`), em todo run comum |
+| Caminho seguro de tool | Existia, testado, sem ninguém passando por ele | Três nós de tool gerados pelo planejamento (`survey`, `materialize`, `deliver`), em todo run comum; um quarto (`verify-tests`) com `--verify-tests` |
+| Métrica de teste | Vinha de um artefato que um AGENTE escreveu | Vem do exit code do comando de teste do projeto (`--verify-tests`) |
+| Critério de aceite | Só a FORMA do artefato, derivada do schema | `--acceptance`: o que o usuário pediu, cobrado nas tarefas terminais |
+| Escolha de estratégia | Descer a escada de modo quando o custo estoura | `--min-quality`: candidatos comparados, vence o mais barato que atinge o piso |
+| Segundo run do mesmo objetivo | Refazia tudo | `--reuse-artifacts`: a chamada é evitada, a verificação não |
+| Teto esgotado | Terminava `FAIL`, igual a falha por bug | `HUMAN_REQUIRED`, com o teto nomeado |
+| Decision Journal | Escrito e nunca consultado | Consultado no planejamento por semelhança de objetivo, com o resultado carimbado |
+| Memória semântica | Lida e nunca escrita pelo runtime | Escrita com barra de recorrência, e consultada por tarefa no contexto mínimo |
+| Metadado de skill | 106 descrições soltas, dois arrays vazios no ranking | 22 skills declaram `triggers` e `capabilities`, com gate |
 
 ### Fluxo hoje
 
@@ -182,13 +192,30 @@ izanagi run "..." --mode autonomous          (headless, sem API key)
 izanagi run "..." --json
   JSON único no stdout · stderr vazio · exit 0
 
+izanagi run "documentar a funcao de soma" --output docs --verify-tests --mode orchestrated
+  suite verde:    PASS, 7/7 VERIFIED, testResults=1, score 1.00
+  suite vermelha: BLOCKED, 6/7 VERIFIED, testResults=0
+                  regressao nomeia "npm test --silent" com exit 1
+
+izanagi run "documentar a API de usuarios" --reuse-artifacts   (duas vezes)
+  run 1: 900 tokens, cache 0/3, PASS 4/4 VERIFIED
+  run 2:   0 tokens, cache 3/3, PASS 4/4 VERIFIED
+
+izanagi run "auditar a seguranca da API de pagamentos" --min-quality --mode autonomous
+  piso 0.4 -> autonomous ($0.0011): unico que atinge
+  piso 0.3 -> assisted   ($0.0000): mesmo piso atingido, custo menor
+
+izanagi benchmark run security --execute --compare
+  tokens -300 (1500 -> 1200) · model calls -1 (5 -> 4) · agent calls -1 (3 -> 2)
+  latencia +50ms · verificacao n/a -> 100% · sucesso 100% nos dois
+
 izanagi run "adicionar paginacao em GET /users" --output docs   (projeto Node de fixture)
   grafo: [survey] -> [execute] -> [verify] -> [evaluation] -> [deliver]
   5/5 VERIFIED · survey detectou name/version/scripts reais e a stack por contagem
   entrega gravada e conferida por file-exists sobre o arquivo que a tool escreveu
 ```
 
-Testes: **764, 763 passando** (medido em 2026-09-04, no Windows). O único vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda no Windows, passa no Linux. É anterior a esta rodada e independente dela. Zero testes marcados como skip, e nenhum condicional de plataforma: o número é o mesmo nos dois sistemas.
+Testes: **837, 837 passando** (medido em 2026-09-05, no Linux). O vermelho conhecido no Windows é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda lá, passa no Linux. É anterior a esta rodada e independente dela. Zero testes marcados como skip, e nenhum condicional de plataforma: o número é o mesmo nos dois sistemas.
 
 > Este parágrafo já dizia **674** quando o medido era 682, e depois **695** quando a rodada de 2026-09-04 levou o número a 764. As duas correções são do mesmo tipo: drift contra a regra do próprio arquivo ("só entra o que é verificável no código"). Desde 2026-09-04 o banner de versão dos documentos de raiz tem gate de teste (`doc-version-freshness.test.ts`); a contagem de testes, não: quem edita esta linha ainda precisa medir.
 
@@ -263,14 +290,20 @@ Para quem pegar o repositório e quiser confirmar que está tudo de pé:
 ```bash
 npm ci
 npm run build
-node --test "dist/runtime/tests/*.test.js"     # 764 testes (todos verdes no Linux; 1 vermelho conhecido no Windows: polyglot)
+node --test "dist/runtime/tests/*.test.js"     # 837 testes (todos verdes no Linux; 1 vermelho conhecido no Windows: polyglot)
 
 izanagi benchmark memory                        # medição de busca e compressão
 izanagi models                                  # catálogo, com a IDADE da tabela de preços de cada provider
 izanagi run "auditar a segurança da API" --mode orchestrated --json
 echo $?                                         # 0 concluiu · 1 falhou · 2 aguarda aprovação
-izanagi explain <run-id> --conversation         # quem falou com quem
+izanagi explain <run-id> --conversation         # quem falou com quem, e a linhagem de cada artefato
 izanagi budget <run-id>                         # para onde foi o orçamento
+
+izanagi run "..." --acceptance "contains: paginação"   # critério do usuário, cobrado
+izanagi run "..." --verify-tests                       # a métrica de teste vem do exit code
+izanagi run "..." --min-quality 0.3                    # a estratégia mais barata que atinge o piso
+izanagi run "..." --reuse-artifacts                    # a chamada é evitada, a verificação não
+izanagi benchmark run <domain> --execute --compare     # oito dimensões, dois caminhos
 ```
 
 ---

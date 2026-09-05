@@ -1,6 +1,6 @@
 # Izanagi AI — Target Architecture
 
-> Version: 3.19.0
+> Version: 3.20.0
 > Status: Legacy runtime implemented; polyglot topology growing alongside it (Strangler Fig, ADR-001)
 > Source of Truth: This document drives implementation · Canonical polyglot IPC contracts & ADRs: docs/POLYGLOT.md
 

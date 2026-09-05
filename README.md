@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.19.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
+> **v3.20.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
 **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -32,6 +32,10 @@ izanagi run "Converta 10 dólares para reais"                  # modo direct: 1 
 izanagi run "Criar uma landing page de um SaaS de analytics"  # modo composto, com verificação
 izanagi run "..." --mode autonomous --max-cost 0.50           # teto de custo respeitado no plano
 izanagi run "adicionar paginação em GET /users" --output docs # lê o projeto e entrega o arquivo
+izanagi run "..." --acceptance "o endpoint aceita ?page e ?limit"  # o que o usuário pediu, cobrado
+izanagi run "..." --output src --verify-tests                # a métrica de teste vem do exit code do projeto
+izanagi run "..." --min-quality 0.3                          # a estratégia mais barata que atinge o piso
+izanagi run "..." --reuse-artifacts                          # segundo run da mesma pergunta não repaga a chamada
 
 # 3. Observabilidade, custo e auditoria
 izanagi trace            # spans, healing, graph, avaliação
@@ -66,7 +70,7 @@ Cada tarefa recebe o modelo do seu papel, não o modelo do run: `commander` (tie
 
 ### Verificação por evidência
 
-Nenhuma tarefa termina porque o agente disse que terminou. Cada contrato carrega critérios de aceite derivados do schema real do artefato, e a Verification Engine devolve `VERIFIED`, `FAILED` ou `UNVERIFIED`. Critério semântico é julgado por um modelo barato (papel `worker`, artefato resumido); com `--no-judge`, ou sem provider, ele **nunca vira aprovação**: fica `UNVERIFIED`, e o run reporta isso. Juiz que não conseguiu decidir também não reprova.
+Nenhuma tarefa termina porque o agente disse que terminou. Cada contrato carrega critérios de aceite derivados do schema real do artefato **e os que o usuário declarou** (`--acceptance`), e a Verification Engine devolve `VERIFIED`, `FAILED` ou `UNVERIFIED`. Com `--verify-tests`, um dos critérios é o **exit code** do comando de teste do projeto: a única camada do runtime que decide por execução, e não por leitura de texto. Critério semântico é julgado por um modelo barato (papel `worker`, artefato resumido); com `--no-judge`, ou sem provider, ele **nunca vira aprovação**: fica `UNVERIFIED`, e o run reporta isso. Juiz que não conseguiu decidir também não reprova.
 
 Com `--prompt-only`, apenas compila `izanagi-prompt.md` para colar manualmente em outra ferramenta, sem executar nada. Nós de aprovação (`human-in-the-loop`) pausam a execução até `izanagi approve <run-id>`.
 
@@ -165,7 +169,7 @@ CLI legado (`izanagi`, publicada no npm):
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local` (só providers locais, e serializa o pool: GPU única não ganha com paralelismo), `--max-concurrency N` (teto de tarefas em voo), `--cache`, `--output <dir>` (grava a entrega no projeto), `--survey` / `--no-survey` (força ou desliga o levantamento do projeto antes de decidir). **Ctrl-C cancela o run** em vez de matar o processo: o batch em voo é abortado, o progresso já gravado fica no checkpoint e `izanagi resume <run-id>` retoma dali, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
+| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local` (só providers locais, e serializa o pool: GPU única não ganha com paralelismo), `--max-concurrency N` (teto de tarefas em voo), `--cache`, `--output <dir>` (grava a entrega no projeto), `--survey` / `--no-survey` (força ou desliga o levantamento do projeto antes de decidir), `--acceptance "<critério>"` (repetível: o que a ENTREGA precisa cumprir, além do schema), `--verify-tests` (roda o comando de teste do projeto no fim do grafo e a métrica de teste passa a vir do exit code), `--min-quality 0..1` (compara estratégias e escolhe a mais barata que atinge o piso de VERIFICAÇÃO), `--reuse-artifacts` (reaproveita artefato de run anterior com a mesma pergunta), `--allow-tool <id>` (allowlist de tools do run). **Ctrl-C cancela o run** em vez de matar o processo: o batch em voo é abortado, o progresso já gravado fica no checkpoint e `izanagi resume <run-id>` retoma dali, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
 | `izanagi models [--json]` | Catálogo de modelos, providers configurados e qual modelo cada papel (commander/specialist/worker) receberia agora, com custo por 10k tokens. |
 | `izanagi budget [run-id] [--json]` | Para onde foi o orçamento daquele run: tokens por fase, custo estimado, cache local e do provider, contexto poupado, escaladas, degradação e verificação por tarefa. |
 | `izanagi chat` | REPL interativo da CLI. |
