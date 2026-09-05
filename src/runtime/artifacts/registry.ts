@@ -66,6 +66,16 @@ export interface ArtifactRecord {
    * segundo content store, sem nenhuma das garantias do primeiro.
    */
   metadata?: Record<string, unknown>;
+  /**
+   * Chave de REUSO: identifica os insumos que produziram este artefato.
+   *
+   * Dois nós com a mesma chave receberam exatamente a mesma pergunta, no mesmo
+   * estado de projeto, com os mesmos insumos a montante. Ver `reuseKey()` para
+   * o que entra e, principalmente, para a política de invalidação — sem ela
+   * isto vira um cache que devolve resposta velha com cara de nova, que é pior
+   * que não ter cache nenhum.
+   */
+  reuseKey?: string;
 }
 
 const ARTIFACTS_FILE_REL = path.join('.izanagi', 'state', 'artifacts.json');
@@ -143,6 +153,8 @@ export class ArtifactRegistry {
     content?: unknown;
     /** Metadado livre do produtor. Recusado inteiro acima de `MAX_METADATA_BYTES`. */
     metadata?: Record<string, unknown>;
+    /** Chave de reuso (`reuseKey`). Ausente: o artefato não é reutilizável. */
+    reuseKey?: string;
   }): ArtifactRecord {
     const id = `${input.producer.runId}:${input.producer.nodeId}`;
     const previousVersions = this.records.filter((r) => r.id === id);
@@ -161,6 +173,7 @@ export class ArtifactRegistry {
       dependencies: input.dependencies ?? [],
       ...(input.content !== undefined ? { checksum: checksumOf(input.content) } : {}),
       ...(acceptMetadata(input.metadata) ?? {}),
+      ...(input.reuseKey ? { reuseKey: input.reuseKey } : {}),
     };
 
     if (this.persistContent && input.content !== undefined) {
@@ -264,6 +277,36 @@ export class ArtifactRegistry {
   /** Artefatos produzidos por um run, na ordem em que foram registrados. */
   forRun(runId: string): ArtifactRecord[] {
     return this.records.filter((r) => r.producer.runId === runId);
+  }
+
+  /**
+   * Artefato de um run ANTERIOR que respondeu exatamente à mesma pergunta.
+   *
+   * Três condições, e cada uma é uma parte da política de invalidação:
+   *
+   *  - `reuseKey` idêntica: mesmos insumos, mesmo estado de projeto declarado,
+   *    mesmo contrato (ver `reuseKey()`);
+   *  - o artefato foi VÁLIDO. Reaproveitar o que não passou na validação
+   *    economizaria a chamada e importaria o defeito;
+   *  - dentro do prazo. Um artefato correto há seis meses descreve um projeto
+   *    que provavelmente não existe mais, e a chave não tem como perceber isso
+   *    sozinha: o prazo é o que impede o cache de envelhecer em silêncio.
+   *
+   * Devolve o registro MAIS RECENTE que satisfaz as três, com o conteúdo já
+   * lido — sem conteúdo em disco não há reuso, só metadado.
+   */
+  findReusable(key: string, opts: { maxAgeMs: number; now?: number }): { record: ArtifactRecord; content: string } | null {
+    const now = opts.now ?? Date.now();
+    for (let i = this.records.length - 1; i >= 0; i--) {
+      const record = this.records[i];
+      if (record.reuseKey !== key || !record.valid) continue;
+      const age = now - Date.parse(record.createdAt);
+      if (!Number.isFinite(age) || age < 0 || age > opts.maxAgeMs) continue;
+      const content = this.readContent(record.id, record.version);
+      if (content === null) continue;
+      return { record, content };
+    }
+    return null;
   }
 
   /** Quem consome (depende de) um artefato — rastreabilidade a jusante. */
@@ -373,6 +416,65 @@ export class ArtifactRegistry {
   }
 }
 
+
+/**
+ * Prazo padrão de reuso de artefato entre runs.
+ *
+ * Sete dias. O número é uma escolha, e o motivo dela é que a chave de reuso
+ * NÃO consegue enxergar tudo que importa: ela cobre o contrato, os insumos a
+ * montante e o levantamento do projeto quando existe, e não cobre o que mudou
+ * no mundo fora disso (uma dependência atualizada, um requisito que virou
+ * outro). O prazo é o único mecanismo que expira o que a chave não vê.
+ */
+export const DEFAULT_REUSE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Chave de reuso de um artefato: o que precisa ser idêntico para a resposta
+ * anterior ainda ser a resposta.
+ *
+ * Entra tudo que muda a PERGUNTA:
+ *
+ *   kind        : o tipo de artefato pedido
+ *   objective   : o objetivo do contrato daquela tarefa
+ *   constraints : as restrições, que mudam o que é aceitável
+ *   acceptance  : os critérios pelos quais a saída será cobrada
+ *   agent/role  : quem responde, porque a resposta depende de quem responde
+ *   upstream    : os checksums dos artefatos consumidos, EM ORDEM
+ *   project     : impressão do projeto (checksum do survey), quando houve
+ *
+ * O que NÃO entra: o runId, o horário, o modelo escolhido. Os dois primeiros
+ * fariam toda chave ser única e o reuso nunca aconteceria; o modelo fica de
+ * fora porque a pergunta é a mesma, e trocar de modelo não invalida uma
+ * resposta que passou pela mesma verificação.
+ *
+ * O que a chave NÃO consegue ver está coberto pelo prazo
+ * (`DEFAULT_REUSE_MAX_AGE_MS`), e um run sem survey não declara estado de
+ * projeto nenhum: por isso o campo entra como `sem-survey`, que é uma chave
+ * DIFERENTE de qualquer run que tenha levantado o projeto. Reaproveitar entre
+ * os dois seria assumir que o projeto não importava.
+ */
+export function reuseKey(input: {
+  kind: string;
+  objective: string;
+  constraints: string[];
+  acceptance: string[];
+  agent?: string;
+  role?: string;
+  upstreamChecksums: string[];
+  projectFingerprint?: string;
+}): string {
+  const material = [
+    `kind:${input.kind}`,
+    `objective:${input.objective.trim()}`,
+    `constraints:${input.constraints.join('|')}`,
+    `acceptance:${input.acceptance.join('|')}`,
+    `agent:${input.agent ?? 'nenhum'}`,
+    `role:${input.role ?? 'nenhum'}`,
+    `upstream:${input.upstreamChecksums.join('|')}`,
+    `project:${input.projectFingerprint ?? 'sem-survey'}`,
+  ].join('\n');
+  return crypto.createHash('sha256').update(material, 'utf-8').digest('hex');
+}
 
 /**
  * Checksum do conteúdo: sha256 completo.

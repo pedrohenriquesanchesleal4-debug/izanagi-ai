@@ -116,6 +116,18 @@ export interface IzanagiRunOptions {
   local?: boolean;
   /** Cache local de respostas. */
   cache?: boolean;
+  /**
+   * Reaproveita artefato de run ANTERIOR quando a pergunta foi exatamente a
+   * mesma: mesmo contrato, mesmos insumos a montante (por checksum), mesmo
+   * estado de projeto declarado, dentro do prazo.
+   *
+   * Opt-in, como o cache de resposta, e pelo mesmo motivo: reuso é a
+   * otimização que, quando erra, erra em silêncio. O artefato reaproveitado
+   * passa pela verificação inteira — o que se economiza é a chamada, não a
+   * prova. Nó de tool nunca é reaproveitado: reusar um "escreveu" significa
+   * não escrever.
+   */
+  reuseArtifacts?: boolean;
   /** Agente explícito; sem isso o Capability Registry escolhe. */
   agent?: string;
   skillChain?: string[];
@@ -308,6 +320,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     availableProviders: providers,
     ...(planning.plan ? { plan: planning.plan } : {}),
     ...(options.allowedTools ? { allowedTools: options.allowedTools } : {}),
+    ...(options.reuseArtifacts ? { reuseArtifacts: true } : {}),
     ...(options.signal ? { signal: options.signal } : {}),
     budgetLimits: {
       ...(options.budget?.maxCost !== undefined ? { maxCostUsd: options.budget.maxCost } : {}),

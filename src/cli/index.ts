@@ -220,6 +220,7 @@ function showHelp(): void {
                           (--acceptance "<critério>" repetível: o que a ENTREGA precisa cumprir; --allow-tool <id> restringe as tools do run)
                           (--verify-tests roda o comando de teste do PROJETO no fim do grafo: a métrica de teste passa a vir do exit code)
                           (--min-quality 0..1 compara estratégias e escolhe a mais barata que atinge o piso de VERIFICAÇÃO)
+                          (--reuse-artifacts reaproveita artefato de run anterior com a MESMA pergunta e os mesmos insumos)
                           (--prompt-only só compila izanagi-prompt.md, sem executar)
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).

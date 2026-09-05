@@ -46,6 +46,11 @@ interface RunArgs {
   local: boolean;
   /** Liga o cache local de respostas (`--cache`). */
   cache: boolean;
+  /**
+   * Reaproveita artefato de run anterior quando a pergunta foi exatamente a
+   * mesma (`--reuse-artifacts`). Opt-in, como `--cache`.
+   */
+  reuseArtifacts: boolean;
   /** Desliga o Commander e volta ao planejamento por categoria (`--no-commander`). */
   noCommander: boolean;
   /** Desliga o juiz semântico (`--no-judge`): critério semântico volta a ficar UNVERIFIED. */
@@ -102,6 +107,7 @@ export function parseRunArgs(args: string[]): RunArgs {
   let minQuality: number | undefined;
   let local = false;
   let cache = false;
+  let reuseArtifacts = false;
   let noCommander = false;
   let noJudge = false;
   let verifyTests = false;
@@ -173,6 +179,8 @@ export function parseRunArgs(args: string[]): RunArgs {
       local = true;
     } else if (arg === '--cache') {
       cache = true;
+    } else if (arg === '--reuse-artifacts') {
+      reuseArtifacts = true;
     } else if (arg === '--no-commander') {
       noCommander = true;
     } else if (arg === '--no-judge') {
@@ -232,6 +240,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     ...(minQuality !== undefined ? { minQuality } : {}),
     local,
     cache,
+    reuseArtifacts,
     noCommander,
     noJudge,
     verifyTests,
@@ -572,6 +581,7 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     ...(parsed.maxConcurrency !== undefined ? { maxConcurrency: parsed.maxConcurrency } : {}),
     local: parsed.local,
     cache: parsed.cache,
+    reuseArtifacts: parsed.reuseArtifacts,
     noCommander: parsed.noCommander,
     noJudge: parsed.noJudge,
     json: parsed.json,
@@ -725,6 +735,8 @@ export async function runRuntime(
     local?: boolean;
     /** Cache local de respostas (`--cache`). */
     cache?: boolean;
+    /** Reaproveita artefato de run anterior (`--reuse-artifacts`). */
+    reuseArtifacts?: boolean;
     /** Volta ao planejamento por categoria (`--no-commander`). */
     noCommander?: boolean;
     /** Desliga o juiz semântico (`--no-judge`). Sem juiz, critério semântico fica UNVERIFIED. */
@@ -925,6 +937,7 @@ export async function runRuntime(
     // Allowlist do run: a tool fora da lista é recusada ANTES de a política
     // opinar. Existia no Orchestrator desde a v3.19.0 e não tinha flag.
     ...(opts.allowedTools ? { allowedTools: opts.allowedTools } : {}),
+    ...(opts.reuseArtifacts ? { reuseArtifacts: true } : {}),
     command: 'run',
     task: opts.task,
     category: opts.category,

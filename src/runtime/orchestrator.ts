@@ -35,7 +35,7 @@ import { ModelRouter } from './model/router.js';
 import { validateArtifact, hashContent } from './contracts/artifacts.js';
 import { PhaseTokenBudget, defaultWeights, type PhaseId } from './token/budget.js';
 import { CheckpointStore, checkpointProgress, type CheckpointData } from './recovery/checkpoint.js';
-import { ArtifactRegistry } from './artifacts/registry.js';
+import { ArtifactRegistry, DEFAULT_REUSE_MAX_AGE_MS, reuseKey } from './artifacts/registry.js';
 import { DecisionJournal } from './memory/decisions.js';
 import { ApprovalStore } from './recovery/approvals.js';
 import type { CommanderPlan, ReplanFailure, ReplanResult } from './orchestration/commander.js';
@@ -131,6 +131,21 @@ export interface OrchestratorOptions {
    * diferença importa porque é a forma de declarar "este run não usa tool".
    */
   allowedTools?: string[];
+  /**
+   * Reaproveita artefato de run ANTERIOR quando a pergunta foi exatamente a
+   * mesma (`artifacts/registry.ts`: `reuseKey` + `findReusable`).
+   *
+   * Opt-in, como o cache de resposta, e pelo mesmo motivo: reuso é a
+   * otimização que, quando erra, erra em silêncio e devolve resposta velha com
+   * cara de nova. A política de invalidação está declarada em `reuseKey()` e o
+   * prazo em `DEFAULT_REUSE_MAX_AGE_MS`.
+   *
+   * Nó de tool NUNCA é reaproveitado: `fs.write` e `project.test` têm efeito
+   * colateral, e reusar um "escreveu" significa não escrever.
+   */
+  reuseArtifacts?: boolean;
+  /** Prazo do reuso. Default: `DEFAULT_REUSE_MAX_AGE_MS` (7 dias). */
+  reuseMaxAgeMs?: number;
   /**
    * Cancelamento cooperativo do run. Conferido no topo de cada batch e
    * repassado ao `produce()` por `ExecuteCtx.signal`, que o cliente de modelo
@@ -1324,6 +1339,12 @@ export class Orchestrator {
         return { status: 'error', nodeId: node.id, agent: node.agent, error: node.error };
       }
 
+      // Reuso entre runs: a mesma pergunta, no mesmo estado de projeto, com os
+      // mesmos insumos, já foi respondida e a resposta passou na validação.
+      // Devolvê-la custa zero token e a verificação roda igual sobre ela — o
+      // que se economiza é a chamada, não a prova.
+      const reused = this.tryReuse(node, contract, ctx);
+
       // A2A: a tarefa é despachada como MENSAGEM tipada, com referência aos
       // artefatos de entrada. O conteúdo dos insumos não entra aqui — já está
       // no contexto mínimo, e duplicá-lo no log seria uma segunda cópia do run.
@@ -1350,9 +1371,17 @@ export class Orchestrator {
       let result = await withDeadline(
         // `produce` pode ser síncrono (producer headless, teste): `resolve`
         // normaliza sem mudar o contrato de quem implementa.
-        async () => (isToolNode(node, contract)
-          ? this.executeTool(node, contract, ctx, graph)
-          : this.opts.produce(node, ctx)),
+        //
+        // Artefato reaproveitado entra AQUI, no lugar da chamada, e segue o
+        // caminho inteiro a jusante: validação, registro, verificação, A2A.
+        // Devolvê-lo por um atalho pularia a verificação, e um nó que termina
+        // sem veredito é exatamente o que este runtime recusa — o que o reuso
+        // economiza é a chamada, não a prova.
+        async () => (reused
+          ? { content: reused.content, kind: node.outputs?.[0] ?? 'raw', tokens: 0, model: `reuse:${reused.from}` }
+          : isToolNode(node, contract)
+            ? this.executeTool(node, contract, ctx, graph)
+            : this.opts.produce(node, ctx)),
         deadlineMs,
         node.id,
         this.opts.signal,
@@ -1427,6 +1456,12 @@ export class Orchestrator {
         // Conteúdo vai para o content store: sem isso o artefato morre com o
         // processo e `izanagi explain` só consegue mostrar metadado.
         content: result.content,
+        // Chave de reuso gravada SEMPRE, mesmo com o reuso desligado: ela
+        // descreve os insumos que produziram este artefato, e gravá-la só
+        // quando o reuso está ligado faria o primeiro run com `--reuse` não
+        // ter nada para reaproveitar dos runs anteriores. Nó de tool não
+        // recebe chave: efeito colateral não se reaproveita.
+        ...(contract && !isToolNode(node, contract) ? { reuseKey: this.reuseKeyFor(node, contract, ctx) } : {}),
       });
 
       // Sem contrato (caminho legado), a validação de schema é o portão. Com
@@ -1613,6 +1648,108 @@ export class Orchestrator {
       closeSpan(false, node.error);
       return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
     }
+  }
+
+  /**
+   * Artefato de run anterior que responde exatamente esta tarefa, ou null.
+   *
+   * Nunca lança: reuso é otimização, e uma falha aqui não pode derrubar um nó
+   * que teria executado normalmente.
+   */
+  private tryReuse(
+    node: GraphNode,
+    contract: TaskContract | undefined,
+    ctx: ExecuteCtx,
+  ): { content: unknown; from: string } | null {
+    if (!this.opts.reuseArtifacts || !contract) return null;
+    // Tool tem efeito colateral: reusar um "escreveu" significa não escrever.
+    if (isToolNode(node, contract)) return null;
+    // Retentativa não reaproveita: a tentativa anterior falhou justamente com
+    // a resposta que estaria no cache, e devolvê-la seria repetir o erro de
+    // graça em vez de custar caro.
+    if ((node.attempts ?? 1) > 1) return null;
+
+    try {
+      const key = this.reuseKeyFor(node, contract, ctx);
+      const hit = ctx.artifactRegistry.findReusable(key, {
+        maxAgeMs: this.opts.reuseMaxAgeMs ?? DEFAULT_REUSE_MAX_AGE_MS,
+      });
+      if (!hit) {
+        ctx.execBudget?.recordCacheMiss();
+        return null;
+      }
+
+      const kind = node.outputs?.[0] ?? 'raw';
+      const parsed = parseReused(hit.content);
+      // Duas conferências antes de aceitar, e as duas existem porque o
+      // registro é de OUTRO run:
+      //
+      //  - o tipo gravado é o tipo que este nó promete. A chave já inclui o
+      //    tipo declarado pelo nó, mas o que foi GRAVADO é o que o produtor
+      //    devolveu, e os dois podem divergir. Reaproveitar um artefato de
+      //    outro tipo entregaria a este nó algo que ele não prometeu;
+      //  - o conteúdo ainda passa no schema. O schema pode ter mudado entre a
+      //    gravação e agora, e nesse caso o artefato antigo não serve mais.
+      if (hit.record.kind !== kind || !validateArtifact(kind as never, parsed).valid) {
+        ctx.execBudget?.recordCacheMiss();
+        return null;
+      }
+
+      // Economia contada onde a telemetria já conta cache: o teto de saída da
+      // tarefa é o melhor limite superior disponível do que a chamada custaria.
+      ctx.execBudget?.recordCacheHit(contract.budget.maxTokens);
+      node.metadata = { ...node.metadata, reusedFrom: hit.record.id };
+      ctx.trace.span(`reuse:${node.id}`, 'decision', {
+        from: hit.record.id,
+        ageMs: Date.now() - Date.parse(hit.record.createdAt),
+        savedTokens: contract.budget.maxTokens,
+      })();
+      ctx.conversation.record({
+        from: 'artifact-store',
+        to: node.agent ?? node.id,
+        type: 'evidence',
+        taskId: node.id,
+        summary: `artefato reaproveitado de ${hit.record.id}: mesma pergunta, mesmos insumos, dentro do prazo`,
+        artifactRefs: [hit.record.id],
+      });
+      return { content: parsed, from: hit.record.id };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Chave de reuso desta tarefa. Ver `reuseKey()` para a política. */
+  private reuseKeyFor(node: GraphNode, contract: TaskContract, ctx: ExecuteCtx): string {
+    const fingerprint = this.projectFingerprint(ctx);
+    return reuseKey({
+      kind: node.outputs?.[0] ?? 'raw',
+      objective: contract.objective,
+      constraints: contract.constraints,
+      acceptance: contract.acceptance.map((a) => a.id),
+      ...(node.agent ? { agent: node.agent } : {}),
+      role: contract.role,
+      upstreamChecksums: (contract.inputs.length > 0 ? contract.inputs : contract.dependencies).map(
+        (dep) => ctx.artifactRegistry.get(`${ctx.runId}:${dep}`)?.checksum ?? `sem-checksum:${dep}`,
+      ),
+      ...(fingerprint ? { projectFingerprint: fingerprint } : {}),
+    });
+  }
+
+  /**
+   * Impressão do estado do projeto neste run: o checksum do artefato de
+   * survey, quando houve um.
+   *
+   * Sem survey o run não declarou nada sobre o projeto, e a chave registra
+   * isso como `sem-survey` — que é uma chave DIFERENTE. Reaproveitar entre um
+   * run que leu o projeto e um que não leu seria assumir que o projeto não
+   * importava para a resposta.
+   */
+  private projectFingerprint(ctx: ExecuteCtx): string | undefined {
+    for (const [nodeId, artifact] of ctx.artifacts) {
+      if (artifact.kind !== 'project-survey') continue;
+      return ctx.artifactRegistry.get(`${ctx.runId}:${nodeId}`)?.checksum;
+    }
+    return undefined;
   }
 
   /**
@@ -2202,6 +2339,21 @@ export class ToolApprovalRequired extends Error {
   constructor(readonly toolId: string, message: string) {
     super(message);
     this.name = 'ToolApprovalRequired';
+  }
+}
+
+/**
+ * Conteúdo de artefato lido do content store: JSON quando era objeto, texto
+ * quando era texto. O store grava a serialização, e devolver sempre string
+ * faria um artefato estruturado voltar como texto e reprovar no schema.
+ */
+function parseReused(content: string): unknown {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return content;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return content;
   }
 }
 
