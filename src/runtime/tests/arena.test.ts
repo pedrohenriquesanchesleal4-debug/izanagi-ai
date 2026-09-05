@@ -96,7 +96,7 @@ test('arena: o agregado soma totais, não faz média de médias', () => {
     failures: 0,
     recovered: 0,
     retries: 0,
-    healingActions: 0,
+    healingActions: 0, modelCalls: 1, agentCalls: 1, successRate: 1,
     tokensUsed: 5000,
     costUsd: 0.05,
     durationMs: 3000,
@@ -218,7 +218,7 @@ test('arena: o resumo diz "n/a" quando não houve referência, nunca 0%', () => 
       failures: 0,
       recovered: 0,
       retries: 0,
-      healingActions: 0,
+      healingActions: 0, modelCalls: 1, agentCalls: 1, successRate: 1,
       tokensUsed: 100,
       costUsd: 0,
       durationMs: 10,
@@ -239,7 +239,7 @@ test('arena: fundamentação agregada soma sobre os TOTAIS de vários casos', ()
     failures: 0,
     recovered: 0,
     retries: 0,
-    healingActions: 0,
+    healingActions: 0, modelCalls: 1, agentCalls: 1, successRate: 1,
     tokensUsed: 10,
     costUsd: 0,
     durationMs: 1,
@@ -252,4 +252,52 @@ test('arena: fundamentação agregada soma sobre os TOTAIS de vários casos', ()
   assert.equal(summary?.groundedness?.grounded, 9);
   assert.equal(summary?.groundedness?.rate, 0.75);
   assert.match(formatExecutionSummary(summary), /fundamentação 75% \(9\/12\)/);
+});
+
+test('arena: as oito dimensões saem da evidência, e a ausente sai ausente', async () => {
+  const { evidenceFromRun } = await import('../benchmarks/arena.js');
+  const evidencia = evidenceFromRun({
+    status: 'PASS',
+    healing: [],
+    graph: {
+      nodes: [
+        // Duas tentativas: a fatura conta duas chamadas, não um nó.
+        { id: 'execute', kind: 'agent', status: 'succeeded', attempts: 2 },
+        // Reaproveitado: a chamada foi EVITADA, e é isso que a comparação
+        // entre caminhos precisa enxergar.
+        { id: 'review', kind: 'agent', status: 'succeeded', attempts: 1, metadata: { reusedFrom: 'r0:review' } },
+        // Tool não chama modelo.
+        { id: 'deliver', kind: 'tool', status: 'succeeded', attempts: 1 },
+        // Pulado por early stopping: não é sucesso nem falha.
+        { id: 'critic', kind: 'agent', status: 'skipped' },
+        { id: 'extra', kind: 'agent', status: 'failed', attempts: 1 },
+      ],
+    },
+    verification: [{ nodeId: 'execute', result: { status: 'VERIFIED' } }],
+    telemetry: { estimatedCostUsd: 0.02, agentsUsed: 3 },
+    trace: { durationMs: 120, tokens: { total: 900 } },
+  });
+
+  assert.equal(evidencia.modelCalls, 3, 'duas tentativas de execute + uma de extra; review e deliver não chamam');
+  assert.equal(evidencia.agentCalls, 3);
+  assert.equal(evidencia.successRate, 0.75, '3 de 4 executados; o pulado fica de fora da conta');
+  assert.equal(evidencia.verificationRate, 1);
+  // `execute` falhou uma vez e terminou succeeded (curou); `extra` terminou
+  // failed. Duas falhas, um conserto.
+  assert.equal(evidencia.recoveryRate, 0.5);
+  assert.equal(evidencia.tokensUsed, 900);
+  assert.equal(evidencia.costUsd, 0.02);
+  assert.equal(evidencia.durationMs, 120);
+});
+
+test('arena: sem nó executado, a taxa de sucesso é ausente, nunca 0%', async () => {
+  const { evidenceFromRun } = await import('../benchmarks/arena.js');
+  const vazio = evidenceFromRun({
+    status: 'UNKNOWN',
+    healing: [],
+    graph: { nodes: [{ id: 'a', kind: 'agent', status: 'skipped' }] },
+    trace: { durationMs: 1 },
+  });
+  assert.equal(vazio.successRate, null);
+  assert.equal(vazio.modelCalls, 0);
 });

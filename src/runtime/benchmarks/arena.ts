@@ -70,6 +70,23 @@ export interface ExecutionEvidence {
   tokensUsed: number;
   costUsd: number;
   durationMs: number;
+  /**
+   * Chamadas de modelo: uma por TENTATIVA de nó que chama modelo.
+   *
+   * Contada por tentativa e não por nó porque é isso que a fatura conta: um nó
+   * que precisou de três tentativas custou três chamadas. Nó de tool não entra
+   * (não chama modelo) e nó reaproveitado também não (a chamada foi evitada,
+   * que é exatamente o que a comparação precisa enxergar).
+   */
+  modelCalls: number;
+  /** Agentes DISTINTOS acionados. Um agente reusado em cinco nós conta uma vez. */
+  agentCalls: number;
+  /**
+   * Fração de nós do grafo que terminaram `succeeded`, sobre os que foram
+   * executados. `skipped` fica de fora: early stopping e corte por orçamento
+   * são decisões do runtime, não sucessos nem falhas.
+   */
+  successRate: number | null;
   /** Fundamentação dos artefatos. Ausente quando não havia projeto para conferir. */
   groundedness?: GroundednessEvidence;
 }
@@ -78,12 +95,14 @@ export interface ExecutionEvidence {
 export interface RunLikeResult {
   status: string;
   mode?: string;
+  /** Agentes distintos acionados, do Token Economy Engine. */
+  agentsUsed?: number;
   /** true quando nenhum provider estava configurado (artefatos simulados). */
   headless?: boolean;
   healing: Array<{ kind: string; nodeId?: string }>;
-  graph?: { nodes: Array<{ id: string; status?: string; attempts?: number }> };
+  graph?: { nodes: Array<{ id: string; status?: string; attempts?: number; kind?: string; metadata?: Record<string, unknown> }> };
   verification?: Array<{ nodeId: string; result: { status: string } }>;
-  telemetry?: { estimatedCostUsd?: number };
+  telemetry?: { estimatedCostUsd?: number; agentsUsed?: number };
   trace: { durationMs: number; tokens?: { total: number } };
   /** Artefatos produzidos, por id de tarefa. Necessário para medir fundamentação. */
   artifacts?: Record<string, { kind: string; content: unknown }>;
@@ -107,12 +126,25 @@ export function evidenceFromRun(result: RunLikeResult, workspaceDir?: string): E
   const recovered = attempted.filter((n) => n.status === 'succeeded').length;
   const retries = nodes.reduce((acc, n) => acc + Math.max(0, (n.attempts ?? 0) - 1), 0);
 
+  // Chamadas de modelo: uma por tentativa de nó que chama modelo. Nó de tool e
+  // nó reaproveitado não chamam, e é justamente a diferença que a comparação
+  // entre caminhos precisa enxergar.
+  const modelCalls = nodes
+    .filter((n) => n.metadata?.reusedFrom === undefined && n.kind !== 'tool')
+    .reduce((acc, n) => acc + Math.max(0, n.attempts ?? 0), 0);
+
+  const executed = nodes.filter((n) => n.status !== 'skipped' && n.status !== 'pending');
+  const succeeded = executed.filter((n) => n.status === 'succeeded').length;
+
   return {
     status: result.status,
     ...(result.mode ? { mode: result.mode } : {}),
     ...(result.headless !== undefined ? { headless: result.headless } : {}),
     verifiedTasks: verified,
     totalVerifiedTasks: verification.length,
+    modelCalls,
+    agentCalls: result.telemetry?.agentsUsed ?? result.agentsUsed ?? 0,
+    successRate: executed.length > 0 ? round(succeeded / executed.length) : null,
     verificationRate: verification.length > 0 ? round(verified / verification.length) : null,
     recoveryRate: failures > 0 ? round(recovered / failures) : null,
     failures,
@@ -175,6 +207,23 @@ export interface ExecutionSummary {
   tokensUsed: number;
   costUsd: number;
   durationMs: number;
+  /**
+   * Chamadas de modelo: uma por TENTATIVA de nó que chama modelo.
+   *
+   * Contada por tentativa e não por nó porque é isso que a fatura conta: um nó
+   * que precisou de três tentativas custou três chamadas. Nó de tool não entra
+   * (não chama modelo) e nó reaproveitado também não (a chamada foi evitada,
+   * que é exatamente o que a comparação precisa enxergar).
+   */
+  modelCalls: number;
+  /** Agentes DISTINTOS acionados. Um agente reusado em cinco nós conta uma vez. */
+  agentCalls: number;
+  /**
+   * Fração de nós do grafo que terminaram `succeeded`, sobre os que foram
+   * executados. `skipped` fica de fora: early stopping e corte por orçamento
+   * são decisões do runtime, não sucessos nem falhas.
+   */
+  successRate: number | null;
   /** Fundamentação somada. `null` quando nenhum artefato citou caminho. */
   groundedness: GroundednessEvidence | null;
 }
@@ -205,6 +254,15 @@ export function aggregateExecution(evidence: ExecutionEvidence[]): ExecutionSumm
           }
         : null,
     recoveryRate: totalFailures > 0 ? round(totalRecovered / totalFailures) : null,
+    modelCalls: evidence.reduce((a, e) => a + e.modelCalls, 0),
+    // Agentes distintos são somados por CASO, não deduplicados entre casos:
+    // cada caso é uma execução independente, e um agente acionado em dois
+    // casos foi acionado duas vezes.
+    agentCalls: evidence.reduce((a, e) => a + e.agentCalls, 0),
+    successRate: (() => {
+      const medidos = evidence.filter((e) => e.successRate !== null);
+      return medidos.length > 0 ? round(medidos.reduce((a, e) => a + (e.successRate ?? 0), 0) / medidos.length) : null;
+    })(),
     retries: evidence.reduce((a, e) => a + e.retries, 0),
     healingActions: evidence.reduce((a, e) => a + e.healingActions, 0),
     tokensUsed: evidence.reduce((a, e) => a + e.tokensUsed, 0),
@@ -223,6 +281,9 @@ export function formatExecutionSummary(summary: ExecutionSummary | null): string
     // que não citou caminho não errou sobre caminho nenhum.
     `fundamentação ${summary.groundedness ? `${Math.round((summary.groundedness.rate ?? 0) * 100)}% (${summary.groundedness.grounded}/${summary.groundedness.references})` : 'n/a'}`,
     `recuperação ${pct(summary.recoveryRate)}`,
+    `sucesso ${pct(summary.successRate)}`,
+    `chamadas ${summary.modelCalls}`,
+    `agentes ${summary.agentCalls}`,
     `retries ${summary.retries}`,
     `healing ${summary.healingActions}`,
     `tokens ${summary.tokensUsed}`,

@@ -321,15 +321,23 @@ async function benchmarkCompareRuntimes(
   const novo = reports.commander.execution ?? null;
   const velho = reports.legado.execution ?? null;
   if (novo && velho) {
-    console.log('\n\x1b[1mDelta (commander frente ao legado):\x1b[0m');
+    // As OITO dimensões, medidas nos dois caminhos sob o mesmo provider e sob
+    // o mesmo teto por caso. Antes a comparação antigo-vs-novo cobria três
+    // (tokens, model calls e custo de catálogo) e só sobre o PLANO: latência,
+    // agent calls, retries, taxa de sucesso e taxa de verificação não tinham
+    // nem campo onde morar.
+    console.log('\n\x1b[1mDelta (commander frente ao legado), oito dimensões:\x1b[0m');
     console.log(`  tokens        ${signed(novo.tokensUsed - velho.tokensUsed)} (${velho.tokensUsed} -> ${novo.tokensUsed})`);
     console.log(`  custo         ${signedUsd(novo.costUsd - velho.costUsd)} ($${velho.costUsd.toFixed(4)} -> $${novo.costUsd.toFixed(4)})`);
+    console.log(`  latência      ${signed(novo.durationMs - velho.durationMs)}ms (${velho.durationMs} -> ${novo.durationMs})`);
+    console.log(`  model calls   ${signed(novo.modelCalls - velho.modelCalls)} (${velho.modelCalls} -> ${novo.modelCalls})`);
+    console.log(`  agent calls   ${signed(novo.agentCalls - velho.agentCalls)} (${velho.agentCalls} -> ${novo.agentCalls})`);
     console.log(`  retries       ${signed(novo.retries - velho.retries)} (${velho.retries} -> ${novo.retries})`);
-    console.log(`  duração       ${signed(novo.durationMs - velho.durationMs)}ms (${velho.durationMs} -> ${novo.durationMs})`);
     // Taxa ausente permanece ausente: sem verificação nos dois lados não existe
     // delta de verificação, e imprimir 0 pontos seria inventar paridade.
+    console.log(`  sucesso       ${deltaRate(velho.successRate, novo.successRate)}`);
     console.log(`  verificação   ${deltaRate(velho.verificationRate, novo.verificationRate)}`);
-    console.log(`  recuperação   ${deltaRate(velho.recoveryRate, novo.recoveryRate)}`);
+    console.log(`  \x1b[90mrecuperação   ${deltaRate(velho.recoveryRate, novo.recoveryRate)} (nona: só existe quando houve falha)\x1b[0m`);
   } else {
     console.log('\n  \x1b[90mSem evidência de execução nos dois lados: nenhum delta calculado.\x1b[0m');
   }
