@@ -141,7 +141,12 @@ export interface IzanagiRunResult {
   runId: string;
   /** Caminho absoluto do arquivo entregue, quando `output` foi pedido e a gravação passou. */
   deliveredTo?: string;
-  status: 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'UNKNOWN';
+  /**
+   * `HUMAN_REQUIRED`: o run esgotou um teto DECLARADO (tentativas, tempo,
+   * tokens ou custo) e parou por isso. Não é `FAIL` por bug e não é `BLOCKED`
+   * (que é retomável por aprovação): a decisão seguinte é sobre o teto.
+   */
+  status: 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'HUMAN_REQUIRED' | 'UNKNOWN';
   score: number;
   mode?: ExecutionMode;
   /** Plano do Commander (ausente com `noCommander`). */

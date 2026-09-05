@@ -2,14 +2,18 @@
  * Self-Healing — classificação de falhas e pipeline de recuperação.
  *
  * Failure → Classification → Local Repair | Replan | Handoff | Skill
- * Replacement | Abort. Com limites rígidos (maxAttempts, maxTokens, maxTime)
+ * Replacement | Abort. Com limites rígidos (tentativas, tokens, tempo e custo)
  * para impedir loops infinitos.
+ *
+ * Teto esgotado NÃO é o mesmo que falha irrecuperável, e o `abort` marca qual
+ * dos dois foi: um run que gastou tudo que lhe foi autorizado terminou onde
+ * alguém disse que ele terminaria, e a decisão seguinte é de uma pessoa.
  *
  * Consome a Failure Memory: antes de classificar, busca padrões conhecidos
  * (symptoms) para guiar a solução e registrar aprendizado.
  */
 
-import type { FailureCategory, FailureKind, HealingAction, HealingActionKind } from '../types.js';
+import type { ExhaustedLimit, FailureCategory, FailureKind, HealingAction, HealingActionKind } from '../types.js';
 import type { MemoryStore } from '../memory/store.js';
 
 export interface HealingInput {
@@ -23,6 +27,16 @@ export interface HealingInput {
   maxTimeMs: number;
   tokensUsed: number;
   maxTokens: number;
+  /**
+   * Custo já gasto no run, em USD, e o teto declarado.
+   *
+   * Existiam tempo, tokens e tentativas; custo não. O teto de custo só agia por
+   * `ExecutionBudget.spend`, ou seja DEPOIS de a chamada acontecer: a decisão
+   * de curar (que é a decisão de gastar mais uma chamada) não consultava o
+   * dinheiro. Ausentes, o comportamento é o de antes.
+   */
+  costUsd?: number;
+  maxCostUsd?: number;
   graphFailed?: boolean;
   memory: MemoryStore;
 }
@@ -148,15 +162,33 @@ export class Healer {
     const category = categorizeFailure(kind, input.error);
     const id = `heal-${Date.now().toString(36)}-${input.nodeId}`;
 
-    // 1. Hard limits — nunca loops infinitos
+    // 1. Hard limits — nunca loops infinitos.
+    //
+    // Os quatro marcam `exhausted`: um run que ESGOTOU o limite declarado é
+    // outra coisa que um run que falhou por bug, e quem lê o resultado precisa
+    // conseguir distinguir. É o que faz o veredito virar `HUMAN_REQUIRED` em
+    // vez de `FAIL` — a decisão passou a ser de uma pessoa (subir o teto,
+    // mudar o objetivo, desistir), não do runtime.
     if (input.attempt >= input.maxAttempts) {
-      return this.abort(id, kind, `máximo de tentativas (${input.maxAttempts}) atingido`, input);
+      return this.abort(id, kind, `máximo de tentativas (${input.maxAttempts}) atingido`, input, 'attempts');
     }
     if (input.elapsedMs > input.maxTimeMs) {
-      return this.abort(id, kind, `tempo máximo (${Math.round(input.maxTimeMs / 1000)}s) excedido`, input);
+      return this.abort(id, kind, `tempo máximo (${Math.round(input.maxTimeMs / 1000)}s) excedido`, input, 'time');
     }
     if (input.tokensUsed > input.maxTokens) {
-      return this.abort(id, kind, `orçamento de tokens (${input.maxTokens}) excedido`, input);
+      return this.abort(id, kind, `orçamento de tokens (${input.maxTokens}) excedido`, input, 'tokens');
+    }
+    // Custo ANTES de decidir curar: curar é decidir gastar mais uma chamada, e
+    // essa decisão precisa consultar o dinheiro. `spend()` age depois da
+    // chamada, o que é tarde demais para não fazê-la.
+    if (input.maxCostUsd !== undefined && (input.costUsd ?? 0) >= input.maxCostUsd) {
+      return this.abort(
+        id,
+        kind,
+        `teto de custo ($${input.maxCostUsd.toFixed(4)}) atingido: $${(input.costUsd ?? 0).toFixed(4)} já gastos`,
+        input,
+        'cost',
+      );
     }
 
     // 1b. Não-recuperável por natureza: permissão negada, teto de run estourado,
@@ -300,7 +332,13 @@ export class Healer {
     return this.abort(id, kind, `falha não-recuperável (${kind}) sem estratégia de cura`, input);
   }
 
-  private abort(id: string, kind: FailureKind, reason: string, input: HealingInput): HealingDecision {
+  private abort(
+    id: string,
+    kind: FailureKind,
+    reason: string,
+    input: HealingInput,
+    exhausted?: ExhaustedLimit,
+  ): HealingDecision {
     return {
       action: {
         id,
@@ -310,6 +348,7 @@ export class Healer {
         message: reason,
         nodeId: input.nodeId,
         createdAt: new Date().toISOString(),
+        ...(exhausted ? { exhausted } : {}),
       },
       abortReason: reason,
     };

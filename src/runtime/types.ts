@@ -435,7 +435,21 @@ export interface HealingAction {
   newGraphId?: string;
   matchedPattern?: string;
   createdAt: string;
+  /**
+   * Limite DECLARADO que foi esgotado, quando o abort veio de um teto e não de
+   * uma falha irrecuperável.
+   *
+   * A distinção que este campo carrega: um run que esgotou o orçamento não
+   * falhou por bug, ele chegou onde alguém disse que ele poderia chegar. Os
+   * dois terminavam iguais (`abort` + veredito `FAIL`), e a diferença é
+   * justamente o que decide o que fazer a seguir — subir o teto e retomar, ou
+   * investigar. É o que promove o veredito do run a `HUMAN_REQUIRED`.
+   */
+  exhausted?: ExhaustedLimit;
 }
+
+/** Teto do runtime que um run pode esgotar. */
+export type ExhaustedLimit = 'attempts' | 'time' | 'tokens' | 'cost';
 
 /* ============================ MODEL ROUTING ============================ */
 

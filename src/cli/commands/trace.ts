@@ -94,6 +94,8 @@ function verdictColor(v: string): string {
     case 'PASS':
       return '\x1b[32m';
     case 'PASS_WITH_WARNINGS':
+    // Teto declarado esgotado não é falha por bug: amarelo, como o aviso.
+    case 'HUMAN_REQUIRED':
       return '\x1b[33m';
     case 'FAIL':
     case 'BLOCKED':

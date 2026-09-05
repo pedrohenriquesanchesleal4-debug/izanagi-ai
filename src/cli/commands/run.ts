@@ -967,8 +967,18 @@ export async function runRuntime(
 
   // Relatório final
   const verdict = result.evaluation;
-  const color = result.status === 'PASS' ? '\x1b[32m' : result.status === 'PASS_WITH_WARNINGS' ? '\x1b[33m' : result.status === 'FAIL' || result.status === 'BLOCKED' ? '\x1b[31m' : '\x1b[90m';
+  // `HUMAN_REQUIRED` sai em amarelo, não vermelho: o run não quebrou, ele
+  // chegou ao teto que alguém declarou. Pintar de vermelho faria "gastou o que
+  // eu autorizei" parecer o mesmo que "falhou por bug".
+  const color = result.status === 'PASS' ? '\x1b[32m' : result.status === 'PASS_WITH_WARNINGS' || result.status === 'HUMAN_REQUIRED' ? '\x1b[33m' : result.status === 'FAIL' || result.status === 'BLOCKED' ? '\x1b[31m' : '\x1b[90m';
   console.log(`\n\x1b[1mRuntime result:\x1b[0m ${color}${result.status}\x1b[0m (score ${verdict?.score ?? '—'})`);
+  const esgotado = result.healing.find((h) => h.exhausted);
+  if (esgotado) {
+    const rotulo = { attempts: 'tentativas', time: 'tempo', tokens: 'tokens', cost: 'custo' }[esgotado.exhausted!];
+    console.log(`  \x1b[33m⏹\x1b[0m Teto de \x1b[1m${rotulo}\x1b[0m esgotado: ${esgotado.message}`);
+    console.log(`    \x1b[90mO run parou onde foi autorizado a parar. A decisão seguinte é sua: subir o teto`);
+    console.log(`    (--budget / --max-cost) e rodar de novo, reduzir o objetivo, ou investigar a causa.\x1b[0m`);
+  }
   console.log(`  \x1b[90mGraph:\x1b[0m ${result.graph.nodes.length} nós, ${result.graph.parallelBatches.length} etapas (${result.graph.parallelBatches.map((b) => `[${b.join(', ')}]`).join(' → ')})`);
   console.log(`  \x1b[90mHealing:\x1b[0m ${result.healing.length === 0 ? 'nenhuma ação necessária' : result.healing.map((h) => h.kind).join(', ')}`);
   if (result.verification && result.verification.length > 0) {

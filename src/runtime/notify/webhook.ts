@@ -176,6 +176,14 @@ export function buildNotification(result: NotifiableRun): RunNotification {
  *   1 — trabalho falhou
  *   2 — pausado aguardando decisão humana (não é falha, e não deve alertar
  *       como falha: alguém precisa aprovar, não consertar)
+ *
+ * `HUMAN_REQUIRED` sai como 1 de propósito. É um run que não entregou, e para
+ * um agendador isso é o mesmo evento operacional que uma falha: alguém precisa
+ * olhar. O 2 continua significando "retomável por `izanagi approve`", e um run
+ * que esgotou o teto não é: mudar isso faria o agendador tratar um orçamento
+ * estourado como uma aprovação pendente que nunca vai chegar. A diferença
+ * viaja no campo `status` do payload, que é onde ela pode ser lida sem
+ * ambiguidade.
  */
 export function exitCodeFor(result: { status: string; pendingApproval?: unknown }): number {
   if (result.pendingApproval) return 2;

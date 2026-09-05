@@ -245,7 +245,14 @@ export interface OrchestrationResult {
   graph: ExecutionGraph;
   evaluation?: EvaluationReport;
   healing: HealingAction[];
-  status: 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'UNKNOWN';
+  /**
+   * `HUMAN_REQUIRED` não é um veredito de qualidade: é o run que esgotou um
+   * teto DECLARADO (tentativas, tempo, tokens ou custo) e parou por isso. O
+   * `evaluation.verdict` do mesmo run continua `FAIL`, porque a entrega não
+   * fechou; o que muda é o que fazer a seguir. Diferente de `BLOCKED`, não é
+   * retomável por `izanagi approve`: exige uma decisão sobre o teto.
+   */
+  status: 'PASS' | 'PASS_WITH_WARNINGS' | 'FAIL' | 'BLOCKED' | 'HUMAN_REQUIRED' | 'UNKNOWN';
   score: number;
   /**
    * Execução pausada aguardando decisão humana (`izanagi approve`/`reject`) —
@@ -644,6 +651,9 @@ export class Orchestrator {
           message: 'orçamento de tokens da fase recovery esgotado — abortando',
           nodeId: failure.nodeId,
           createdAt: new Date().toISOString(),
+          // Teto declarado, como os do `Healer`: o run parou onde foi
+          // autorizado a parar, e o veredito precisa dizer isso.
+          exhausted: 'tokens',
         };
         healing.push(abortHeal);
         trace.span(`healing:${abortHeal.kind}`, 'healing', { failureKind: abortHeal.failureKind, message: abortHeal.message })(false, abortHeal.message);
@@ -667,6 +677,12 @@ export class Orchestrator {
         maxTimeMs: workingGraph.budget.maxTimeMs,
         tokensUsed: tokensUsed(),
         maxTokens: workingGraph.budget.maxTokens,
+        // Custo já gasto e teto declarado: curar é decidir gastar mais uma
+        // chamada, e essa decisão passa a consultar o dinheiro ANTES. O
+        // `ExecutionBudget.spend` age depois da chamada, que é tarde demais
+        // para não fazê-la.
+        costUsd: execBudget.telemetry().estimatedCostUsd,
+        ...(execBudget.limits.maxCostUsd !== undefined ? { maxCostUsd: execBudget.limits.maxCostUsd } : {}),
         memory,
       });
       healing.push(decision.action);
@@ -925,13 +941,27 @@ export class Orchestrator {
       }
     }
 
+    // Teto esgotado vira `HUMAN_REQUIRED`, não `FAIL`.
+    //
+    // Os dois terminavam idênticos, e são decisões diferentes de quem lê: um
+    // run que estourou o orçamento chegou exatamente onde foi autorizado a
+    // chegar, e o passo seguinte é subir o teto ou desistir; um run que falhou
+    // por bug pede investigação. O veredito da AVALIAÇÃO continua `FAIL`,
+    // porque ela mede a qualidade da entrega e a entrega não fechou: o que o
+    // status carrega é o fato do processo, e os dois campos convivem no mesmo
+    // resultado justamente por medirem coisas diferentes.
+    const exhaustedLimit = healing.find((h) => h.exhausted);
+    const status = exhaustedLimit && finalEvaluation.verdict === 'FAIL'
+      ? ('HUMAN_REQUIRED' as const)
+      : finalEvaluation.verdict;
+
     return {
       trace: finalTrace,
       traceFile: file,
       graph: workingGraph,
       evaluation: finalEvaluation,
       healing,
-      status: finalEvaluation.verdict,
+      status,
       score: finalEvaluation.score,
       ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
       telemetry,
