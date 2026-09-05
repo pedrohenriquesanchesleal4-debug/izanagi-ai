@@ -158,6 +158,7 @@ function planWithSemanticCriterion(): CommanderPlan {
       parallelStages: 1,
       maxTokens: 2000,
       byRole: { commander: { tasks: 0, tokens: 0 }, specialist: { tasks: 1, tokens: 2000 }, worker: { tasks: 0, tokens: 0 } },
+      quality: 0.5,
     },
     decisions: [],
     issues: [],

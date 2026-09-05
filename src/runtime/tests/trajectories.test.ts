@@ -146,7 +146,7 @@ function planoSimples(): CommanderPlan {
     runObjective: 'auditar', mode: 'orchestrated', modeReason: 'teste',
     classification: { complexity: 3, domains: ['security'], category: 'security_audit', reasoning: 'medium', risk: 0.8, reasons: [] },
     graph, contracts: [],
-    estimate: { nodes: 2, parallelStages: 2, maxTokens: 2000, byRole: { commander: { tasks: 0, tokens: 0 }, specialist: { tasks: 2, tokens: 2000 }, worker: { tasks: 0, tokens: 0 } } },
+    estimate: { nodes: 2, parallelStages: 2, maxTokens: 2000, byRole: { commander: { tasks: 0, tokens: 0 }, specialist: { tasks: 2, tokens: 2000 }, worker: { tasks: 0, tokens: 0 } }, quality: 0.5 },
     decisions: [], issues: [],
   };
 }

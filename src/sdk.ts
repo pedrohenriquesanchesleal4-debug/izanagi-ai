@@ -90,6 +90,19 @@ export interface IzanagiRunOptions {
    */
   verifyTests?: boolean;
   /**
+   * Piso de força de VERIFICAÇÃO do plano, em [0,1].
+   *
+   * Declarado, o Commander compara os modos possíveis e escolhe o mais barato
+   * que ainda atinge o piso, registrando a comparação no plano
+   * (`plan.candidates`) e nas decisões. Ausente, nada muda.
+   *
+   * O piso é sobre EVIDÊNCIA (quantos critérios obrigatórios por tarefa,
+   * política estrita, revisão independente), não sobre a qualidade da entrega:
+   * um plano com mais critérios não produz trabalho melhor, produz mais prova
+   * sobre o trabalho.
+   */
+  minQuality?: number;
+  /**
    * Cancelamento cooperativo do run. Abortar interrompe o grafo no próximo
    * batch e cancela a requisição em voo; o checkpoint do último batch
    * concluído fica em disco, e `izanagi resume <run-id>` retoma dali.
@@ -229,6 +242,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(options.survey ?? looksLikeProject(workspaceDir) ? { survey: true } : {}),
     ...(options.acceptance ? { acceptance: options.acceptance } : {}),
     ...(options.verifyTests ? { verifyTests: true } : {}),
+    ...(options.minQuality !== undefined ? { minQuality: options.minQuality } : {}),
     ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });

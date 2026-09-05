@@ -79,6 +79,7 @@ function toolPlan(contract: TaskContract, agent?: string): CommanderPlan {
       parallelStages: 1,
       maxTokens: 0,
       byRole: { commander: { tasks: 0, tokens: 0 }, specialist: { tasks: 0, tokens: 0 }, worker: { tasks: 1, tokens: 0 } },
+      quality: 0.5,
     },
     decisions: [],
     issues: [],

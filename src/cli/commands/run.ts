@@ -74,6 +74,11 @@ interface RunArgs {
    */
   allowedTools?: string[];
   /**
+   * Piso de força de verificação do plano em [0,1] (`--min-quality`).
+   * Declarado, o Commander escolhe a estratégia mais barata que o atinge.
+   */
+  minQuality?: number;
+  /**
    * Roda o comando de teste do projeto no fim do run (`--verify-tests`).
    *
    * Opt-in porque executa um processo do PROJETO (o `scripts.test` do
@@ -94,6 +99,7 @@ export function parseRunArgs(args: string[]): RunArgs {
   let maxCost: number | undefined;
   let model: string | undefined;
   let maxConcurrency: number | undefined;
+  let minQuality: number | undefined;
   let local = false;
   let cache = false;
   let noCommander = false;
@@ -148,6 +154,12 @@ export function parseRunArgs(args: string[]): RunArgs {
       if (read.consumed) i++;
       const n = Number(read.value);
       if (Number.isFinite(n) && n >= 0) maxCost = n;
+    } else if (arg === '--min-quality' || arg.startsWith('--min-quality=')) {
+      const read = readValue(arg, '--min-quality', args[i + 1]);
+      if (read.consumed) i++;
+      const n = Number(read.value);
+      if (Number.isFinite(n) && n >= 0 && n <= 1) minQuality = n;
+      else if (read.value) console.error(`\x1b[33mAviso:\x1b[0m --min-quality "${read.value}" fora de [0,1]: ignorado.`);
     } else if (arg === '--max-concurrency' || arg.startsWith('--max-concurrency=')) {
       const read = readValue(arg, '--max-concurrency', args[i + 1]);
       if (read.consumed) i++;
@@ -217,6 +229,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     ...(maxCost !== undefined ? { maxCost } : {}),
     ...(model ? { model } : {}),
     ...(maxConcurrency !== undefined ? { maxConcurrency } : {}),
+    ...(minQuality !== undefined ? { minQuality } : {}),
     local,
     cache,
     noCommander,
@@ -572,6 +585,7 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     ...(parsed.acceptance ? { acceptance: parsed.acceptance } : {}),
     ...(parsed.allowedTools ? { allowedTools: parsed.allowedTools } : {}),
     ...(parsed.verifyTests ? { verifyTests: true } : {}),
+    ...(parsed.minQuality !== undefined ? { minQuality: parsed.minQuality } : {}),
     stateDir,
     explicitAgent: Boolean(agentId),
   });
@@ -725,6 +739,8 @@ export async function runRuntime(
     survey?: boolean;
     /** Critérios de aceite do usuário, em texto (`--acceptance`). */
     acceptance?: string[];
+    /** Piso de força de verificação do plano (`--min-quality`). */
+    minQuality?: number;
     /** Roda o comando de teste do projeto no fim do grafo (`--verify-tests`). */
     verifyTests?: boolean;
     /** Allowlist de tools do run (`--allow-tool`). */
@@ -771,6 +787,7 @@ export async function runRuntime(
     ...(opts.survey ? { survey: true } : {}),
     ...(opts.acceptance ? { acceptance: opts.acceptance } : {}),
     ...(opts.verifyTests ? { verifyTests: true } : {}),
+    ...(opts.minQuality !== undefined ? { minQuality: opts.minQuality } : {}),
     ...(opts.stateDir ? { stateDir: opts.stateDir } : {}),
     // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
     noCommander: Boolean(opts.noCommander || opts.resumeRunId),
@@ -796,6 +813,16 @@ export async function runRuntime(
     console.log(`  \x1b[35m▸ Commander:\x1b[0m modo \x1b[1m${plan.mode}\x1b[0m — ${plan.modeReason}`);
     console.log(`    \x1b[90mcomplexidade ${plan.classification.complexity}/5 · domínios: ${plan.classification.domains.join(', ') || 'nenhum'} · ${estimate.nodes} tarefa(s)\x1b[0m`);
     console.log(`    \x1b[90mteto: ${estimate.maxTokens} tokens${estimate.maxCostUsd !== undefined ? ` · $${estimate.maxCostUsd.toFixed(4)}` : ''} (commander ${estimate.byRole.commander.tasks} · specialist ${estimate.byRole.specialist.tasks} · worker ${estimate.byRole.worker.tasks})\x1b[0m`);
+    // Estratégias comparadas: presente só quando houve piso declarado. Sem
+    // piso não houve comparação, e imprimir uma lista de um item daria à
+    // escolha uma aparência de deliberação que não aconteceu.
+    if (plan.candidates) {
+      console.log('    \x1b[90mestratégias comparadas (verificação · custo · veredito):\x1b[0m');
+      for (const c of plan.candidates) {
+        const custo = c.estimate.maxCostUsd !== undefined ? `$${c.estimate.maxCostUsd.toFixed(4)}` : `${c.estimate.maxTokens} tk`;
+        console.log(`      \x1b[90m•\x1b[0m ${c.mode.padEnd(13)} ${String(c.estimate.quality).padEnd(5)} ${custo.padEnd(10)} ${c.verdict}`);
+      }
+    }
     if (plan.issues.length > 0) {
       console.log(`    \x1b[33m⚠ contratos com pendência:\x1b[0m ${plan.issues.slice(0, 3).join('; ')}`);
     }

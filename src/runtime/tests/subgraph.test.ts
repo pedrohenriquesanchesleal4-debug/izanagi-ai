@@ -83,6 +83,7 @@ function planWith(decomposable: boolean): CommanderPlan {
       parallelStages: 1,
       maxTokens: 3000,
       byRole: { commander: { tasks: 1, tokens: 3000 }, specialist: { tasks: 0, tokens: 0 }, worker: { tasks: 0, tokens: 0 } },
+      quality: 0.5,
     },
     decisions: [],
     issues: [],

@@ -76,6 +76,12 @@ export interface PlanningInput {
    */
   verifyTests?: boolean;
   /**
+   * Piso de força de verificação do plano em [0,1] (`--min-quality`).
+   * Declarado, o Commander compara estratégias e escolhe a mais barata que o
+   * atinge. Ausente, o plano é o de sempre.
+   */
+  minQuality?: number;
+  /**
    * Raiz do estado (`.izanagi/state`) consultado no planejamento. Default:
    * `baseDir`. Ver `OrchestratorOptions.stateDir` para o porquê da separação.
    */
@@ -255,6 +261,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(input.survey ? { survey: true } : {}),
         ...(parsedAcceptance.criteria.length > 0 ? { acceptance: parsedAcceptance.criteria } : {}),
         ...(input.verifyTests ? { verifyTests: true } : {}),
+        ...(input.minQuality !== undefined ? { minQuality: input.minQuality } : {}),
         estimateCostUsd: (role, tokens) => router.estimateCostForRole(role, tokens),
       });
 

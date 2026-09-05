@@ -233,6 +233,7 @@ test('replan: o Orchestrator usa o Plano B do Commander quando o healing pede re
         parallelStages: 3,
         maxTokens: 6000,
         byRole: { commander: { tasks: 0, tokens: 0 }, specialist: { tasks: 3, tokens: 6000 }, worker: { tasks: 0, tokens: 0 } },
+      quality: 0.5,
       },
       decisions: [],
       issues: [],

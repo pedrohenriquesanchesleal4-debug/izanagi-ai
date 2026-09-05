@@ -256,6 +256,17 @@ export interface CommanderInput {
    */
   output?: string;
   /**
+   * Piso de força de verificação em [0,1] (`--min-quality`).
+   *
+   * Declarado, o Commander compara os modos possíveis e escolhe o MAIS BARATO
+   * que ainda atinge o piso — em vez de simplesmente executar o modo que a
+   * classificação sugeriu. Ausente, nada muda: o plano é o de sempre, e o
+   * único ajuste continua sendo a degradação por teto de custo.
+   *
+   * O piso é sobre EVIDÊNCIA, não sobre resultado: ver `planQuality`.
+   */
+  minQuality?: number;
+  /**
    * Lê o projeto antes de decidir (`--survey`). Acrescenta um nó de tool na
    * CABEÇA do grafo que levanta stack, manifestos e árvore de forma
    * determinística, e o resultado entra no contexto mínimo das tarefas raiz.
@@ -343,6 +354,79 @@ export interface PlanEstimate {
   /** Custo em USD no pior caso (todos os tetos gastos). Ausente sem estimador. */
   maxCostUsd?: number;
   byRole: Record<AgentRole, { tasks: number; tokens: number }>;
+  /**
+   * Força de VERIFICAÇÃO do plano em [0,1] (ver `planQuality`).
+   *
+   * Não é uma previsão da qualidade da entrega, e chamar isso de "qualidade"
+   * sem esta frase seria vender previsão onde há contagem: mede quanta
+   * evidência o plano se compromete a produzir sobre o próprio trabalho.
+   */
+  quality: number;
+}
+
+/**
+ * Um plano candidato, para a escolha entre estratégias.
+ *
+ * A especificação pede que, havendo estratégia equivalente mais barata, ela
+ * seja preferida "respeitando a qualidade mínima configurada". Até aqui não
+ * havia nem candidatos nem piso: o único ajuste era descer a escada de modo
+ * quando o custo estourava, e isso é redução de ESCOPO (menos nós, menos
+ * verificação), não uma estratégia equivalente mais barata.
+ */
+export interface PlanCandidate {
+  mode: ExecutionMode;
+  estimate: PlanEstimate;
+  /** Por que este candidato foi aceito ou recusado. */
+  verdict: string;
+}
+
+/**
+ * Força de verificação de um plano, em [0,1].
+ *
+ * Mede os COMPROMISSOS que o plano assume sobre verificar o próprio trabalho.
+ * Cinco propriedades observáveis do conjunto de contratos, com peso declarado
+ * aqui e nenhuma delas derivada de execução:
+ *
+ *   0.25  política estrita: exige TODOS os critérios, inclusive os opcionais
+ *   0.25  revisão independente: existe nó que produz `critique`
+ *   0.15  avaliação independente: existe nó que produz `evaluation`
+ *   0.15  algum critério SEMÂNTICO: há pergunta que schema nenhum responde
+ *   0.20  fração de tarefas com critério que NÃO veio do schema do artefato
+ *
+ * A primeira versão desta função media critérios por tarefa, e a média tinha um
+ * incentivo perverso: acrescentar um nó pouco verificado ABAIXAVA a nota de um
+ * plano que verifica mais no total, então um piso de qualidade empurraria para
+ * grafos menores. Pior, a contagem de critérios é função da riqueza do SCHEMA
+ * do artefato (um nó `raw` tem um critério, um `security-report` tem seis), e
+ * isso é propriedade do tipo de saída, não do rigor do plano. As cinco
+ * propriedades acima são monótonas no que importa: um plano que se compromete
+ * com mais verificação nunca pontua menos.
+ *
+ * O que esta nota NÃO é: previsão de que a entrega será melhor. Um plano com
+ * mais verificação não produz trabalho melhor — produz mais evidência sobre o
+ * trabalho, que é outra coisa, e é a única das duas que se pode garantir antes
+ * de executar.
+ */
+export function planQuality(contracts: TaskContract[]): number {
+  const tasks = contracts.filter((c) => !c.tool);
+  if (tasks.length === 0) return 0;
+  const strict = tasks.some((c) => c.verification.requireAllCriteria) ? 1 : 0;
+  const reviewed = contracts.some((c) => c.expectedOutput.kind === 'critique') ? 1 : 0;
+  const evaluated = contracts.some((c) => c.expectedOutput.kind === 'evaluation') ? 1 : 0;
+  const semantic = contracts.some((c) => c.acceptance.some((a) => a.kind === 'semantic')) ? 1 : 0;
+  // Critério que não veio do schema: aceite do usuário, groundedness,
+  // existência de arquivo, exit code. São os que falam do OBJETIVO ou de uma
+  // execução, e não da forma do artefato.
+  const beyondSchema =
+    tasks.filter((c) => c.acceptance.some((a) => isBeyondSchema(a))).length / tasks.length;
+  return Math.round((0.25 * strict + 0.25 * reviewed + 0.15 * evaluated + 0.15 * semantic + 0.2 * beyondSchema) * 100) / 100;
+}
+
+/** Critério que fala do objetivo ou de uma execução, não da forma do artefato. */
+function isBeyondSchema(criterion: AcceptanceCriterion): boolean {
+  if (criterion.kind !== 'deterministic') return criterion.kind === 'evidence';
+  const kind = criterion.check?.kind;
+  return kind === 'references-exist' || kind === 'file-exists' || kind === 'exit-zero' || criterion.id.startsWith('user:');
 }
 
 export interface CommanderPlan {
@@ -357,6 +441,14 @@ export interface CommanderPlan {
   decisions: string[];
   /** Problemas nos contratos gerados. Vazio em plano saudável. */
   issues: string[];
+  /**
+   * Estratégias comparadas antes da escolha, com o veredito de cada uma.
+   *
+   * Presente só quando houve comparação (piso de qualidade declarado): sem
+   * piso não há o que comparar contra, e uma lista de um item só daria à
+   * escolha uma aparência de deliberação que não houve.
+   */
+  candidates?: PlanCandidate[];
 }
 
 const MODE_LADDER: ExecutionMode[] = ['direct', 'assisted', 'orchestrated', 'autonomous'];
@@ -387,6 +479,11 @@ export interface ReplanResult {
    * senão "replanejou" vira sinônimo de "tentou de novo".
    */
   changes: string[];
+}
+
+/** Custo de um plano em texto: dólares quando há estimador, tokens quando não. */
+function describeCost(estimate: PlanEstimate): string {
+  return estimate.maxCostUsd !== undefined ? `$${estimate.maxCostUsd.toFixed(4)}` : `${estimate.maxTokens} tokens`;
 }
 
 /** Teto de caracteres da causa da falha levada ao replanejamento. */
@@ -439,6 +536,62 @@ export class Commander {
     let plan = this.buildForMode(mode, input, classification);
     let estimate = this.estimate(plan.contracts, input.estimateCostUsd);
 
+    // Escolha entre ESTRATÉGIAS, quando existe piso de qualidade declarado.
+    //
+    // Sem piso não há o que comparar contra, e a escolha continua sendo o modo
+    // que a classificação sugeriu — o comportamento de sempre. Com piso, os
+    // modos até o sugerido viram candidatos, cada um estimado pelo MESMO
+    // caminho de roteamento da execução, e vence o mais barato que ainda
+    // atinge o piso. Nenhum candidato acima do sugerido: subir o modo é
+    // aumentar escopo, e escopo é decisão da classificação, não do orçamento.
+    let candidates: PlanCandidate[] | undefined;
+    /** Modo escolhido pelo piso de verificação, quando houve piso. */
+    let chosenByFloor: ExecutionMode | undefined;
+    if (input.minQuality !== undefined) {
+      const floor = Math.max(0, Math.min(1, input.minQuality));
+      const ladder = MODE_LADDER.slice(0, MODE_LADDER.indexOf(decided.mode) + 1);
+      const built = ladder.map((m) => {
+        const candidate = m === decided.mode ? plan : this.buildForMode(m, input, classification);
+        return { mode: m, plan: candidate, estimate: this.estimate(candidate.contracts, input.estimateCostUsd) };
+      });
+      const cost = (e: PlanEstimate) => e.maxCostUsd ?? e.maxTokens;
+      const eligible = built.filter((c) => c.estimate.quality >= floor).sort((a, b) => cost(a.estimate) - cost(b.estimate));
+      const winner = eligible[0];
+      candidates = built.map((c) => ({
+        mode: c.mode,
+        estimate: c.estimate,
+        verdict:
+          c.estimate.quality < floor
+            ? `recusado: verificação ${c.estimate.quality} abaixo do piso ${floor}`
+            : c === winner
+              ? 'escolhido: mais barato entre os que atingem o piso'
+              : `descartado: atinge o piso e custa mais que "${winner?.mode}"`,
+      }));
+      if (winner) {
+        if (winner.mode !== mode) {
+          decisions.push(
+            `piso de verificação ${floor}: "${winner.mode}" atinge ${winner.estimate.quality} por ${describeCost(winner.estimate)}, ` +
+              `contra ${estimate.quality} por ${describeCost(estimate)} de "${mode}": estratégia trocada`,
+          );
+          mode = winner.mode;
+          plan = winner.plan;
+          estimate = winner.estimate;
+          chosenByFloor = winner.mode;
+        } else {
+          decisions.push(`piso de verificação ${floor}: "${mode}" é o mais barato que o atinge (verificação ${estimate.quality})`);
+        }
+      } else {
+        // Nenhum candidato atinge o piso: o plano segue no modo sugerido, e o
+        // fato é REGISTRADO. Subir o modo para tentar alcançar o piso seria o
+        // orçamento decidindo escopo, e calar seria entregar um plano que não
+        // cumpre o que foi pedido sem dizer.
+        decisions.push(
+          `piso de verificação ${floor} NÃO alcançado por nenhum modo até "${decided.mode}" ` +
+            `(melhor: ${Math.max(...built.map((c) => c.estimate.quality))}): plano segue em "${mode}", piso não cumprido`,
+        );
+      }
+    }
+
     // Cost-aware planning: degrada o modo enquanto a estimativa estourar o teto
     // e ainda houver degrau abaixo. Modo forçado pelo usuário não degrada.
     const ceiling = input.maxCostUsd;
@@ -464,13 +617,23 @@ export class Commander {
     return {
       runObjective: input.objective,
       mode,
-      modeReason: mode === decided.mode ? decided.reason : `degradado por teto de custo (origem: ${decided.mode})`,
+      modeReason:
+        mode === decided.mode
+          ? decided.reason
+          : chosenByFloor === mode
+            // Escolhido pelo piso e degradado depois são motivos diferentes, e
+            // dizer "degradado por teto de custo" numa escolha que o teto não
+            // tomou é a mesma desonestidade de qualquer outro número que não
+            // aconteceu.
+            ? `estratégia mais barata que atinge o piso de verificação (origem: ${decided.mode})`
+            : `degradado por teto de custo (origem: ${chosenByFloor ?? decided.mode})`,
       classification,
       graph: plan.graph,
       contracts: plan.contracts,
       estimate,
       decisions,
       issues,
+      ...(candidates ? { candidates } : {}),
     };
   }
 
@@ -1088,6 +1251,7 @@ export class Commander {
       maxTokens,
       ...(maxCostUsd !== undefined ? { maxCostUsd } : {}),
       byRole,
+      quality: planQuality(contracts),
     };
   }
 }
