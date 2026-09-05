@@ -1550,6 +1550,35 @@ export class Orchestrator {
       }
       return { status: 'ok', nodeId: node.id };
     } catch (err) {
+      // Tool que a política manda submeter a uma pessoa: pausa por aprovação,
+      // não falha. É o mesmo caminho de um nó `kind: 'approval'` — pendente
+      // não consome tentativa, e `izanagi approve` retoma. Tratar isso como
+      // falha faria o healing retentar uma porta que continuará fechada até
+      // alguém decidir.
+      if (err instanceof ToolApprovalRequired) {
+        const record = ctx.approvals.get(ctx.runId, node.id) ?? ctx.approvals.request(ctx.runId, node.id, err.message);
+        if (record.decision === 'approved') {
+          // Aprovado: a política continua negando, e é essa a diferença entre
+          // aprovar a AÇÃO e afrouxar a regra. Quem aprovou precisa conceder o
+          // acesso onde ele mora (trust tier do agente, permissão do
+          // contrato), e o nó falha dizendo isso em vez de executar por cima
+          // de uma decisão de política que ninguém mudou.
+          node.status = 'failed';
+          node.error = `aprovação registrada, mas a política continua negando "${node.id}": ${err.message}`;
+          closeSpan(false, node.error);
+          return { status: 'error', nodeId: node.id, agent: node.agent, error: node.error };
+        }
+        if (record.decision === 'rejected') {
+          node.status = 'failed';
+          node.error = `tool de "${node.id}" rejeitada: ${record.reason ?? 'sem motivo informado'}`;
+          closeSpan(false, node.error);
+          return { status: 'error', nodeId: node.id, agent: node.agent, error: node.error };
+        }
+        node.status = 'pending';
+        node.attempts = Math.max(0, (node.attempts ?? 1) - 1);
+        closeSpan(false, 'aguardando aprovação humana para executar a tool');
+        return { status: 'blocked_approval', nodeId: node.id, context: err.message };
+      }
       node.status = 'failed';
       node.error = err instanceof Error ? err.message : String(err);
       closeSpan(false, node.error);
@@ -1823,6 +1852,13 @@ export class Orchestrator {
     });
 
     if (!outcome.ok) {
+      // Bloqueio destravável por pessoa não é o mesmo que "não": vira uma
+      // pausa por aprovação, pelo MESMO caminho que um nó `kind: 'approval'`
+      // usa (`izanagi approve` / `izanagi reject`), em vez de uma falha que o
+      // healing tentaria curar retentando uma porta que continuará fechada.
+      if (outcome.requiresApproval) {
+        throw new ToolApprovalRequired(spec.id, outcome.error ?? 'política exige aprovação humana');
+      }
       throw new Error(`tool "${spec.id}" recusada ou falhou: ${outcome.error ?? 'motivo não informado'}`);
     }
     return {
@@ -2102,6 +2138,20 @@ function agentIds(baseDir: string): string[] {
  * seguiam pelo producer normal — quebrar isso seria mudar o comportamento de
  * plano que já roda.
  */
+/**
+ * A política bloqueou a tool E disse que uma pessoa pode destravar.
+ *
+ * Classe própria porque o caminho de erro do nó precisa distinguir isto de uma
+ * falha comum sem casar mensagem por regex: um "não" definitivo vai para o
+ * healing, um bloqueio destravável vai para `izanagi approve`.
+ */
+export class ToolApprovalRequired extends Error {
+  constructor(readonly toolId: string, message: string) {
+    super(message);
+    this.name = 'ToolApprovalRequired';
+  }
+}
+
 function isToolNode(node: GraphNode, contract?: TaskContract): boolean {
   const spec = contract?.tool ?? (node.metadata?.tool as { id?: string } | undefined);
   return Boolean(spec?.id);

@@ -51,6 +51,16 @@ export interface ToolResult {
   result?: unknown;
   error?: string;
   durationMs: number;
+  /**
+   * A política bloqueou MAS a ação pode prosseguir com decisão humana
+   * explícita. Distinto de `ok: false` puro, que é um "não" definitivo.
+   *
+   * Existia em `PolicyDecision.requiresApproval` desde sempre, e `execute` só
+   * olhava `allowed`: uma tool que a política mandava submeter à aprovação
+   * humana era simplesmente recusada, e não havia caminho de tool para o
+   * `izanagi approve` que o resto do runtime já tinha.
+   */
+  requiresApproval?: boolean;
 }
 
 function ensureInside(baseDir: string, target: string, allowedDirs?: string[]): string {
@@ -266,6 +276,8 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
 
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolDefinition>();
+  /** Ids que entraram por `register()`, e cujo código o runtime nunca viu. */
+  private readonly registered = new Set<string>();
   private readonly policy: PolicyEngine;
 
   constructor(policy: PolicyEngine = new PolicyEngine()) {
@@ -273,10 +285,18 @@ export class ToolRegistry {
     this.policy = policy;
   }
 
-  /** Registra uma tool externa (MCP/plugin). */
+  /**
+   * Registra uma tool externa (MCP/plugin).
+   *
+   * O id fica marcado como `registered`: a política precisa saber que o
+   * runtime nunca viu o código desta tool, e o default de "nenhuma regra casou
+   * então permite" não vale para ela. Registrar por cima de uma builtin
+   * também marca — a substituição é o caso em que a origem mais importa.
+   */
   register(def: ToolDefinition): void {
     if (!def.id || !def.requiredPermission) throw new Error('ToolRegistry: tool com id/permissão inválidos');
     this.tools.set(def.id, def);
+    this.registered.add(def.id);
   }
 
   /** Discover: lista tools compatíveis com as permissões concedidas. */
@@ -308,12 +328,17 @@ export class ToolRegistry {
         permission: tool.requiredPermission,
         trustTier: ctx.trustTier,
         target: toolId,
+        toolOrigin: this.registered.has(toolId) ? 'registered' : 'builtin',
       });
       if (!decision.allowed) {
         return {
           ok: false,
           error: `policy negou "${toolId}" (${decision.ruleId}): ${decision.reason}`,
           durationMs: Date.now() - start,
+          // Bloqueio que uma pessoa pode destravar é diferente de um "não"
+          // definitivo, e quem chamou precisa poder distinguir para oferecer o
+          // caminho de aprovação em vez de reportar falha.
+          ...(decision.requiresApproval ? { requiresApproval: true } : {}),
         };
       }
       const inputIssues = tool.validateInput(input);

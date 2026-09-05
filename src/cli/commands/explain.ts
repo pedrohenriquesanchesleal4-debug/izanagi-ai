@@ -118,6 +118,30 @@ export function explainCommand(baseDir: string, args: string[]): void {
       if (a.dependencies.length > 0) {
         console.log(`        \x1b[90mconsumiu:\x1b[0m ${a.dependencies.map((d) => d.split(':')[1] ?? d).join(', ')}`);
       }
+      // Linhagem COMPLETA, não um salto: num grafo de sete nós, "de quem este
+      // depende" só responde "de onde veio isto?" quando a cadeia tem tamanho
+      // um. As arestas já estavam gravadas; faltava percorrê-las.
+      const { ancestors, descendants } = registry.lineage(a.id);
+      const indiretos = ancestors.filter((r) => !a.dependencies.includes(r.id));
+      if (indiretos.length > 0) {
+        console.log(`        \x1b[90mlinhagem (indireta):\x1b[0m ${indiretos.map((r) => shortId(r.id)).join(' <- ')}`);
+      }
+      if (descendants.length > 0) {
+        console.log(`        \x1b[90malimentou:\x1b[0m ${descendants.map((r) => shortId(r.id)).join(', ')}`);
+      }
+      // Versão nova existe porque houve retry ou replan: o que MUDOU entre as
+      // duas é a pergunta de quem lê, e o score sozinho não responde.
+      if (a.version > 1) {
+        const diff = registry.compare(a.id, a.version - 1, a.version);
+        const partes: string[] = [];
+        if (diff.identical === true) partes.push('conteúdo idêntico ao da versão anterior');
+        else if (diff.changed) partes.push(`+${diff.changed.added}/-${diff.changed.removed} linha(s)`);
+        else partes.push('conteúdo não comparável (não persistido nas duas versões)');
+        if (diff.scoreDelta !== undefined && diff.scoreDelta !== 0) {
+          partes.push(`score ${diff.scoreDelta > 0 ? '+' : ''}${diff.scoreDelta}`);
+        }
+        console.log(`        \x1b[90mv${a.version - 1} -> v${a.version}:\x1b[0m ${partes.join(' · ')}`);
+      }
       if (showArtifacts) {
         const content = registry.readContent(a.id, a.version);
         if (content === null) {
@@ -142,4 +166,9 @@ export function explainCommand(baseDir: string, args: string[]): void {
   }
 
   console.log('');
+}
+
+/** `runId:nodeId` -> `nodeId`: o runId já é o do comando, e repeti-lo é ruído. */
+function shortId(id: string): string {
+  return id.split(':')[1] ?? id;
 }

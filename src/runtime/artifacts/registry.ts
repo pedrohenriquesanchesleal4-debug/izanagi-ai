@@ -12,6 +12,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { sanitizeText } from '../text/unicode-hygiene.js';
 
 export interface ArtifactProducer {
@@ -45,6 +46,26 @@ export interface ArtifactRecord {
   originalSize?: number;
   /** true quando o conteúdo gravado foi cortado para caber no teto. */
   truncated?: boolean;
+  /**
+   * Checksum COMPLETO do conteúdo (sha256 hex).
+   *
+   * `hash` continua sendo sha1 truncado em 12 hex (48 bits) porque é o que os
+   * registros gravados carregam e o que a detecção de duplicação usa. 48 bits
+   * são suficientes para "é o mesmo artefato de novo?" num run; não são para
+   * "este arquivo é exatamente o que eu gravei", que é a pergunta de um
+   * checksum. Ausente em registro escrito por versão anterior.
+   */
+  checksum?: string;
+  /**
+   * Metadado livre de quem produziu o artefato.
+   *
+   * Existe porque todo campo do registro é previsto por este arquivo, e quem
+   * produz um artefato não tinha onde anexar contexto que o registro não
+   * previsse. Tem teto (`MAX_METADATA_BYTES`) e é recusado inteiro quando
+   * estoura: metadado é para contexto, e um campo livre sem teto vira o
+   * segundo content store, sem nenhuma das garantias do primeiro.
+   */
+  metadata?: Record<string, unknown>;
 }
 
 const ARTIFACTS_FILE_REL = path.join('.izanagi', 'state', 'artifacts.json');
@@ -56,6 +77,13 @@ const CONTENT_DIR_REL = path.join('.izanagi', 'state', 'artifacts');
  * modo que ninguém leia um conteúdo cortado achando que é o inteiro.
  */
 export const DEFAULT_MAX_CONTENT_BYTES = 512 * 1024;
+
+/**
+ * Teto do metadado livre por artefato. Pequeno de propósito: o índice inteiro
+ * é lido e reescrito a cada registro, então metadado grande custa em TODO
+ * registro seguinte, não só no seu.
+ */
+export const MAX_METADATA_BYTES = 4 * 1024;
 
 export class ArtifactRegistry {
   private readonly file: string;
@@ -113,6 +141,8 @@ export class ArtifactRegistry {
     dependencies?: string[];
     /** Conteúdo produzido. Quando presente e o content store está ligado, é gravado em disco. */
     content?: unknown;
+    /** Metadado livre do produtor. Recusado inteiro acima de `MAX_METADATA_BYTES`. */
+    metadata?: Record<string, unknown>;
   }): ArtifactRecord {
     const id = `${input.producer.runId}:${input.producer.nodeId}`;
     const previousVersions = this.records.filter((r) => r.id === id);
@@ -129,6 +159,8 @@ export class ArtifactRegistry {
       valid: input.valid,
       score: input.score,
       dependencies: input.dependencies ?? [],
+      ...(input.content !== undefined ? { checksum: checksumOf(input.content) } : {}),
+      ...(acceptMetadata(input.metadata) ?? {}),
     };
 
     if (this.persistContent && input.content !== undefined) {
@@ -240,6 +272,90 @@ export class ArtifactRegistry {
   }
 
   /**
+   * Linhagem COMPLETA de um artefato: tudo que entrou nele e tudo que saiu
+   * dele, atravessando o grafo até o fim.
+   *
+   * `dependencies` e `consumers` respondem um salto: "de quem este depende" e
+   * "quem depende deste". Um salto responde "de onde veio isto?" apenas quando
+   * a cadeia tem tamanho um, e num grafo de sete nós ela nunca tem. As arestas
+   * já estavam gravadas desde sempre; o que faltava era percorrê-las.
+   *
+   * Travessia em largura com marca de visitado: um ciclo (que o
+   * `ExecutionGraphBuilder` recusa no plano, mas que um registro escrito à mão
+   * ou uma decomposição externa pode produzir) termina em vez de girar.
+   *
+   * A ordem é por distância: os primeiros da lista são os vizinhos diretos.
+   */
+  lineage(id: string): { ancestors: ArtifactRecord[]; descendants: ArtifactRecord[] } {
+    return {
+      ancestors: this.walk(id, (current) => this.get(current)?.dependencies ?? []),
+      descendants: this.walk(id, (current) => this.consumers(current).map((r) => r.id)),
+    };
+  }
+
+  private walk(start: string, next: (id: string) => string[]): ArtifactRecord[] {
+    const seen = new Set<string>([start]);
+    const out: ArtifactRecord[] = [];
+    let frontier = next(start).filter((n) => !seen.has(n));
+    while (frontier.length > 0) {
+      const nextFrontier: string[] = [];
+      for (const nodeId of frontier) {
+        if (seen.has(nodeId)) continue;
+        seen.add(nodeId);
+        const record = this.get(nodeId);
+        // Dependência declarada sem registro correspondente (nó que não chegou
+        // a produzir) some da linhagem em vez de virar um buraco: quem lê a
+        // linhagem quer os artefatos que existem.
+        if (record) out.push(record);
+        for (const n of next(nodeId)) if (!seen.has(n)) nextFrontier.push(n);
+      }
+      frontier = nextFrontier;
+    }
+    return out;
+  }
+
+  /**
+   * Compara duas versões de um artefato pelo CONTEÚDO, não só pelo score.
+   *
+   * `detectRegression` responde "piorou?" com dois números. Esta responde "o
+   * que mudou?", que é a pergunta de quem vai decidir o que fazer com a
+   * regressão. Sem conteúdo persistido nas duas pontas, `changed` fica
+   * `undefined`: "não deu para comparar" nunca vira "não mudou".
+   *
+   * O diff é por LINHA e conta, não reconstrói o texto: um diff completo dentro
+   * do índice seria o content store de novo, com outro nome.
+   */
+  compare(id: string, versionA: number, versionB: number): {
+    a?: ArtifactRecord;
+    b?: ArtifactRecord;
+    scoreDelta?: number;
+    sizeDelta?: number;
+    /** Conteúdo idêntico byte a byte, por checksum. `undefined` sem checksum nos dois. */
+    identical?: boolean;
+    /** Linhas acrescentadas e removidas. `undefined` sem conteúdo nos dois. */
+    changed?: { added: number; removed: number };
+  } {
+    const versions = this.history(id);
+    const a = versions.find((r) => r.version === versionA);
+    const b = versions.find((r) => r.version === versionB);
+    if (!a || !b) return { ...(a ? { a } : {}), ...(b ? { b } : {}) };
+
+    const identical = a.checksum && b.checksum ? a.checksum === b.checksum : undefined;
+    const textA = this.readContent(id, versionA);
+    const textB = this.readContent(id, versionB);
+    const changed = textA !== null && textB !== null ? lineDelta(textA, textB) : undefined;
+
+    return {
+      a,
+      b,
+      scoreDelta: Math.round((b.score - a.score) * 1000) / 1000,
+      sizeDelta: b.size - a.size,
+      ...(identical !== undefined ? { identical } : {}),
+      ...(changed ? { changed } : {}),
+    };
+  }
+
+  /**
    * Regression Protection — compara a última versão registrada de um artefato
    * com a anterior (replan/retry após healing). Regressão = versão nova
    * inválida onde a anterior era válida, ou queda crítica de score (>= 0.3)
@@ -257,6 +373,46 @@ export class ArtifactRegistry {
   }
 }
 
+
+/**
+ * Checksum do conteúdo: sha256 completo.
+ *
+ * Sobre o MESMO texto que o content store grava (serialização tolerante), para
+ * que o checksum descreva o que está no disco e não uma representação
+ * paralela do mesmo objeto.
+ */
+function checksumOf(content: unknown): string {
+  const text = typeof content === 'string' ? content : safeStringify(content);
+  return crypto.createHash('sha256').update(sanitizeText(text).text, 'utf-8').digest('hex');
+}
+
+/**
+ * Metadado livre, dentro do teto. Acima dele o campo é recusado INTEIRO e o
+ * registro fica sem metadado: gravar a metade que coube produziria um metadado
+ * que parece completo e não é.
+ */
+function acceptMetadata(metadata?: Record<string, unknown>): { metadata: Record<string, unknown> } | undefined {
+  if (!metadata || Object.keys(metadata).length === 0) return undefined;
+  const encoded = safeStringify(metadata);
+  if (Buffer.byteLength(encoded, 'utf-8') > MAX_METADATA_BYTES) return undefined;
+  return { metadata };
+}
+
+/** Linhas acrescentadas e removidas entre dois textos, por multiconjunto. */
+function lineDelta(a: string, b: string): { added: number; removed: number } {
+  const count = (text: string): Map<string, number> => {
+    const map = new Map<string, number>();
+    for (const line of text.split('\n')) map.set(line, (map.get(line) ?? 0) + 1);
+    return map;
+  };
+  const left = count(a);
+  const right = count(b);
+  let added = 0;
+  let removed = 0;
+  for (const [line, n] of right) added += Math.max(0, n - (left.get(line) ?? 0));
+  for (const [line, n] of left) removed += Math.max(0, n - (right.get(line) ?? 0));
+  return { added, removed };
+}
 
 /** Serialização tolerante: conteúdo circular vira texto em vez de derrubar o run. */
 function safeStringify(content: unknown): string {
