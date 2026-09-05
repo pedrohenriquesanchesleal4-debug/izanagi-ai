@@ -1,6 +1,18 @@
 ---
 name: web-perf-seo
 description: "Otimiza Core Web Vitals (LCP, CLS, INP), assets, cache e SEO on-page (meta tags, structured data) com metas de Lighthouse. Use ao criar páginas, otimizar performance ou auditar SEO."
+triggers:
+  - "página lenta ou com Core Web Vitals ruins"
+  - "preparar site para indexação"
+  - "reduzir bundle ou tempo de carregamento"
+  - "auditar LCP, CLS ou INP"
+capabilities:
+  - "core-web-vitals"
+  - "lcp-optimization"
+  - "cls-optimization"
+  - "bundle-analysis"
+  - "structured-data"
+  - "meta-tags"
 ---
 
 # Web Performance & SEO — Manual Operacional

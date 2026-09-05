@@ -1,6 +1,17 @@
 ---
 name: design-directions
 description: "Apresenta 3-5 direções de design distintas e bespoke por nicho (paleta, tipografia, layout e motion signature) antes de qualquer código visual. Use ao iniciar um site, landing, dashboard ou produto visual novo."
+triggers:
+  - "iniciar site, landing, dashboard ou produto visual novo"
+  - "escolher identidade visual antes de escrever código"
+  - "fugir do visual genérico de IA"
+  - "apresentar opções de direção ao cliente"
+capabilities:
+  - "art-direction"
+  - "palette-selection"
+  - "type-pairing"
+  - "motion-signature"
+  - "niche-research"
 ---
 
 # Design Directions (Style Selector por Indústria)

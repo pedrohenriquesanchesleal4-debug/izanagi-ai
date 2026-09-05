@@ -1,6 +1,16 @@
 ---
 name: memoria-projeto
 description: "Mantém memória persistente do projeto entre sessões (decisões, padrões, erros resolvidos). Use no início de uma tarefa para ler o histórico e no final para registrar o que foi aprendido."
+triggers:
+  - "começar uma tarefa num projeto já iniciado"
+  - "registrar decisão ou aprendizado ao fim de um ciclo"
+  - "recuperar por que uma escolha foi feita"
+  - "evitar repetir um erro já resolvido"
+capabilities:
+  - "project-memory"
+  - "decision-log"
+  - "learning-capture"
+  - "context-recall"
 ---
 
 # Memória do projeto

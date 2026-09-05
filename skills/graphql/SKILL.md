@@ -1,6 +1,17 @@
 ---
 name: graphql
 description: "Padrões de schema, resolvers, Apollo Client/Server, DataLoader, caching e segurança em GraphQL. Use ao implementar ou revisar APIs GraphQL."
+triggers:
+  - "implementar ou revisar API GraphQL"
+  - "resolver problema N+1 em resolvers"
+  - "desenhar schema GraphQL"
+  - "configurar cache de cliente"
+capabilities:
+  - "schema-design"
+  - "resolvers"
+  - "dataloader"
+  - "apollo"
+  - "query-security"
 ---
 
 # Skill GraphQL — Izanagi

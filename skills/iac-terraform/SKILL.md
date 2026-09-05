@@ -1,6 +1,16 @@
 ---
 name: iac-terraform
 description: "Padrões de Infrastructure as Code com Terraform/OpenTofu: módulos, remote state, workspaces e provisionamento multi-cloud. Use ao criar ou revisar infraestrutura como código."
+triggers:
+  - "criar ou revisar infraestrutura como código"
+  - "organizar módulos Terraform"
+  - "configurar remote state ou workspaces"
+capabilities:
+  - "terraform"
+  - "opentofu"
+  - "iac-modules"
+  - "remote-state"
+  - "multi-cloud"
 ---
 
 # Skill IaC & Terraform — Izanagi

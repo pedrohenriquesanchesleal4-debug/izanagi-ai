@@ -1,6 +1,17 @@
 ---
 name: observability-expert
 description: "Instrumentação com OpenTelemetry, logs estruturados e correlação por trace_id/span_id para achar causa raiz em microsserviços. Use ao instrumentar sistemas distribuídos ou debugar produção."
+triggers:
+  - "instrumentar sistema distribuído"
+  - "achar causa raiz em produção"
+  - "correlacionar logs por trace"
+  - "definir o que medir antes de um incidente"
+capabilities:
+  - "opentelemetry"
+  - "distributed-tracing"
+  - "structured-logging"
+  - "trace-correlation"
+  - "slo-definition"
 ---
 
 # Observability Expert (Tracing Distribuído e Logs Estruturados)

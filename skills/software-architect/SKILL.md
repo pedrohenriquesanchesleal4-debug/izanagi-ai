@@ -1,6 +1,18 @@
 ---
 name: software-architect
 description: "Use antes de escrever código em projetos novos, features complexas ou refactors: define padrão de arquitetura, componentes, riscos e plano de implementação."
+triggers:
+  - "decidir estrutura de um sistema"
+  - "escrever ADR"
+  - "escolher entre monolito, modular ou microsserviços"
+  - "definir fronteiras de módulo e contrato entre camadas"
+capabilities:
+  - "clean-architecture"
+  - "ddd"
+  - "cqrs"
+  - "hexagonal"
+  - "adr-writing"
+  - "tradeoff-analysis"
 ---
 
 # Skill: Software Architect

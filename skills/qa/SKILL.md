@@ -1,6 +1,20 @@
 ---
 name: qa
 description: "Use para auditar código antes de merge/deploy: TypeScript estrito, React, performance, acessibilidade WCAG, responsividade, segurança, SEO e pirâmide de testes."
+triggers:
+  - "revisar código antes de merge ou deploy"
+  - "escrever ou revisar teste unitário, de integração ou E2E"
+  - "avaliar cobertura de teste"
+  - "auditar acessibilidade WCAG de um componente"
+  - "investigar regressão que passou pela suíte"
+capabilities:
+  - "test-pyramid"
+  - "unit-testing"
+  - "integration-testing"
+  - "e2e-playwright"
+  - "accessibility-audit"
+  - "typescript-strict"
+  - "coverage-analysis"
 ---
 
 # Quality Assurance — Manual Operacional

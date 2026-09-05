@@ -1,6 +1,15 @@
 ---
 name: parallel-agents
 description: "Orquestra agentes em paralelo (fan-out/swarm): decompõe tarefas complexas em frentes independentes e agrega resultados por artefatos em disco. Use em pedidos complexos ou multi-domínio."
+triggers:
+  - "pedido cobre dois ou mais domínios independentes"
+  - "decompor tarefa complexa em frentes paralelas"
+  - "agregar resultado de vários agentes"
+capabilities:
+  - "fan-out"
+  - "swarm-orchestration"
+  - "result-aggregation"
+  - "domain-decomposition"
 ---
 
 # Parallel Agents (Fan-Out & Swarm Orchestration)

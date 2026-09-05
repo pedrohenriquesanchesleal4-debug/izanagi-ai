@@ -1,6 +1,16 @@
 ---
 name: webgl-3d
 description: "Cenas 3D no navegador com Three.js/React Three Fiber, shaders GLSL, partículas, GLTF e scroll-driven 3D, com budget de performance. Use quando o pedido envolver 3D, WebGL, shader ou experiência imersiva."
+triggers:
+  - "cena 3D no navegador"
+  - "shader customizado"
+  - "objeto que reage ao mouse ou ao scroll em 3D"
+capabilities:
+  - "threejs"
+  - "webgl"
+  - "shaders"
+  - "r3f"
+  - "3d-performance"
 ---
 
 > **Ver também**: `core/skill-composer.md` — chain `webgl_experience` já resolve quando combinar esta skill com `animation-web` (scrollytelling) e `motion-design` (timing/easing).

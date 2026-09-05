@@ -1,6 +1,16 @@
 ---
 name: anti-ai-slop
 description: "Detecta e corrige design 'cara de IA' (Inter default, gradiente roxo-azul, hero + 3 cards, glassmorphism genérico) com tipografia, cor e layout intencionais. Use ao revisar qualquer UI antes de entregar."
+triggers:
+  - "revisar UI antes de entregar"
+  - "a interface parece genérica ou "cara de IA""
+  - "auditar tipografia, cor e layout por intenção"
+  - "substituir hero + três cards por algo específico do nicho"
+capabilities:
+  - "slop-detection"
+  - "bespoke-identity"
+  - "typography-intent"
+  - "layout-critique"
 ---
 
 # Anti AI-Slop (Zero "Cara de IA")

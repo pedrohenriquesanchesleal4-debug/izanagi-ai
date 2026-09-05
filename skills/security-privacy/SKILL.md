@@ -1,6 +1,17 @@
 ---
 name: security-privacy
 description: "Use ao implementar autenticação, autorização, validação de input ou revisar código quanto a segurança: OWASP Top 10, LGPD/GDPR e hardening de APIs."
+triggers:
+  - "o diff toca autenticação, segredo ou dado pessoal"
+  - "conformidade LGPD ou GDPR"
+  - "revisar armazenamento de dado sensível"
+capabilities:
+  - "lgpd"
+  - "gdpr"
+  - "secure-coding"
+  - "data-minimization"
+  - "encryption-at-rest"
+  - "consent-management"
 ---
 
 # Security & Privacy — Manual Operacional

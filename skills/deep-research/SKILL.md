@@ -1,6 +1,15 @@
 ---
 name: deep-research
 description: "Pesquisa multi-fonte na web: plano de busca, execução de queries, síntese e relatório com fontes citadas e nível de confiança. Use antes de decidir stack, referências visuais, preços ou concorrentes."
+triggers:
+  - "a decisão depende de informação externa"
+  - "comparar stack, preço ou concorrente"
+  - "buscar referência real antes de propor"
+capabilities:
+  - "multi-source-search"
+  - "source-citation"
+  - "evidence-synthesis"
+  - "confidence-rating"
 ---
 
 # Deep Research — Pesquisa Multi-Fonte com Síntese

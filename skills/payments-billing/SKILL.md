@@ -1,6 +1,17 @@
 ---
 name: payments-billing
 description: "Integração de pagamentos e cobrança recorrente (Stripe/Paddle/Mercado Pago): checkout, assinaturas, webhooks com verificação de assinatura, idempotência e reconciliação de estado. Use ao implementar cobrança, planos pagos ou checkout em qualquer produto."
+triggers:
+  - "implementar checkout, cobrança ou assinatura"
+  - "tratar webhook de pagamento"
+  - "garantir idempotência de cobrança"
+  - "liberar acesso após pagamento"
+capabilities:
+  - "stripe"
+  - "webhook-idempotency"
+  - "subscription-lifecycle"
+  - "dunning"
+  - "pci-scope"
 ---
 
 # Skill Payments & Billing — Izanagi

@@ -1,6 +1,16 @@
 ---
 name: tdd
 description: "Test-Driven Development com Iron Law: escreva o teste antes, veja falhar, código mínimo, refatore. Use em toda feature, bugfix ou refatoração antes de escrever código de implementação."
+triggers:
+  - "implementar feature nova"
+  - "corrigir bug com regressão"
+  - "refatorar código com comportamento a preservar"
+  - "antes de escrever qualquer código de produção"
+capabilities:
+  - "red-green-refactor"
+  - "failing-test-first"
+  - "regression-test"
+  - "test-design"
 ---
 
 # TDD — Test-Driven Development (Iron Law)

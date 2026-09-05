@@ -1,6 +1,15 @@
 ---
 name: logging-expert
 description: "Define logging estruturado em JSON com contexto, sem vazar dados sensíveis, e o que registrar em cada nível (info/warning/error/critical). Use ao implementar ou revisar logging de uma aplicação."
+triggers:
+  - "implementar ou revisar logging"
+  - "decidir o que registrar em cada nível"
+  - "evitar vazamento de dado sensível em log"
+capabilities:
+  - "structured-logging"
+  - "log-levels"
+  - "pii-redaction"
+  - "log-context"
 ---
 
 # Skill: Logging Expert
