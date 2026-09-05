@@ -146,6 +146,21 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     required: ['dir', 'candidates', 'written'],
     minSize: 20,
   },
+  /**
+   * Resultado da execução do comando de teste do projeto (`project.test`).
+   *
+   * `passed` NÃO é campo obrigatório de propósito: ele é ausente quando o
+   * comando não chegou a rodar, e exigi-lo forçaria o "não medi" a virar
+   * `false`, que se lê como "os testes falharam". `exitCode` e `command` são
+   * obrigatórios porque sem eles o artefato não diz o que foi executado nem
+   * como terminou, e um relatório de teste que não diz isso não é evidência.
+   */
+  'test-run': {
+    kind: 'test-run',
+    required: ['command', 'runner', 'exitCode'],
+    minSize: 20,
+    capturedOutput: true,
+  },
   raw: {
     kind: 'raw',
     required: [],
@@ -246,7 +261,9 @@ export function validateArtifact(kind: ArtifactKind, content: unknown): Validati
   for (const f of schema.forbidden ?? []) {
     if (text.includes(f)) issues.push(`conteúdo proibido detectado: "${f}"`);
   }
-  if ((schema.forbidden?.length ?? 0) === 0) {
+  // A varredura anti-stub pressupõe texto AUTORAL. Num artefato que é saída
+  // capturada de um processo, ela mede o vocabulário do programa que rodou.
+  if ((schema.forbidden?.length ?? 0) === 0 && !schema.capturedOutput) {
     for (const p of STUB_PATTERNS) {
       if (p.test(text)) {
         issues.push(`stub/lazy-code detectado: padrão "${p.source}"`);

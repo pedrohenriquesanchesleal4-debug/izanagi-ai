@@ -12,6 +12,7 @@ import { PolicyEngine, type PolicyEnvironment, type TrustTier } from '../securit
 import { sanitizeText } from '../text/unicode-hygiene.js';
 import { runInSandbox, sandboxAvailability, DEFAULT_TIMEOUT_MS } from './code-sandbox.js';
 import { surveyProject } from './project-survey.js';
+import { runProjectTests } from './project-test.js';
 import { parseFileManifest, validateManifest } from './file-manifest.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
@@ -217,6 +218,32 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
       // documento entregue, que o usuário pode compartilhar, e o caminho
       // absoluto da máquina dele não tem por que viajar junto.
       return { dir, candidates: accepted.length, written };
+    },
+  },
+  'project.test': {
+    id: 'project.test',
+    description: 'Executa o comando de teste DO PROJETO (npm test / cargo test / go test / pytest) e devolve o exit code',
+    // `shell` de propósito, e pelo mesmo motivo do `code.execute`: a
+    // PolicyEngine nega essa permissão a trust tier `generated` e `community`.
+    // A diferença é a fonte do comando (o manifesto do projeto, nunca um
+    // modelo), e é por isso que o caminho é opt-in em `izanagi run`.
+    requiredPermission: 'shell',
+    validateInput: (input) => {
+      const i = (input ?? {}) as { dir?: unknown; timeoutMs?: unknown };
+      const issues: string[] = [];
+      if (i.dir !== undefined && typeof i.dir !== 'string') issues.push('campo "dir" deve ser string quando presente');
+      if (i.timeoutMs !== undefined && (typeof i.timeoutMs !== 'number' || i.timeoutMs <= 0)) {
+        issues.push('campo "timeoutMs" deve ser um número positivo');
+      }
+      // Nenhum campo de comando: a ausência é a garantia. Um input que
+      // carregasse `command` faria desta tool um shell arbitrário com outro
+      // nome, e é exatamente o que a arquitetura recusa.
+      return issues;
+    },
+    execute: async (input, ctx) => {
+      const i = (input ?? {}) as { dir?: string; timeoutMs?: number };
+      const dir = ensureInside(ctx.baseDir, i.dir ?? '.', ctx.allowedDirs);
+      return await runProjectTests({ dir, ...(i.timeoutMs ? { timeoutMs: i.timeoutMs } : {}) });
     },
   },
   'fs.ls': {

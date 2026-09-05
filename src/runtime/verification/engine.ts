@@ -183,6 +183,22 @@ export function runCheck(
         ? { outcome: 'pass' }
         : { outcome: 'fail', message: check.message ?? `campo obrigatório ausente: "${check.field}"` };
     }
+    case 'exit-zero': {
+      // O artefato é o resultado da tool, então o campo é lido do OBJETO. Ler
+      // do texto serializado seria adivinhar por regex o número que o processo
+      // já devolveu.
+      if (typeof ctx.content !== 'object' || ctx.content === null) {
+        return { outcome: 'unknown', message: 'sem resultado de execução: exit code não verificável' };
+      }
+      const result = ctx.content as { exitCode?: unknown; timedOut?: unknown; error?: unknown };
+      if (result.exitCode === undefined || result.exitCode === null) {
+        const detail = typeof result.error === 'string' ? result.error : result.timedOut === true ? 'tempo esgotado' : 'sem exit code';
+        return { outcome: 'unknown', message: `o comando não chegou a terminar: ${detail}` };
+      }
+      return result.exitCode === 0
+        ? { outcome: 'pass' }
+        : { outcome: 'fail', message: check.message ?? `o comando terminou com exit code ${String(result.exitCode)}` };
+    }
     case 'file-exists': {
       if (!ctx.baseDir) return { outcome: 'unknown', message: 'sem baseDir: existência de arquivo não verificável' };
       const target = path.resolve(ctx.baseDir, check.path);

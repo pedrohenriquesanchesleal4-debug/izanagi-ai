@@ -149,7 +149,7 @@ function checkFor(prefix: Prefix, value: string, original: string): ParseOne {
  * A lista espelha `orchestration/delivery.ts` de propósito: as duas respondem
  * à mesma pergunta ("isto é entrega ou é rastro?").
  */
-const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace', 'project-survey', 'materialization', 'delivery']);
+const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace', 'project-survey', 'materialization', 'delivery', 'test-run']);
 
 /**
  * A quais contratos os critérios do usuário se aplicam.

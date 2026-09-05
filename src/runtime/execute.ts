@@ -70,6 +70,11 @@ export interface PlanningInput {
    */
   acceptance?: string[];
   /**
+   * Roda o comando de teste do projeto no fim do grafo (`--verify-tests`).
+   * Opt-in: executa um processo do projeto com o ambiente herdado.
+   */
+  verifyTests?: boolean;
+  /**
    * Raiz do estado (`.izanagi/state`) consultado no planejamento. Default:
    * `baseDir`. Ver `OrchestratorOptions.stateDir` para o porquê da separação.
    */
@@ -226,6 +231,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(input.output ? { output: input.output } : {}),
         ...(input.survey ? { survey: true } : {}),
         ...(parsedAcceptance.criteria.length > 0 ? { acceptance: parsedAcceptance.criteria } : {}),
+        ...(input.verifyTests ? { verifyTests: true } : {}),
         estimateCostUsd: (role, tokens) => router.estimateCostForRole(role, tokens),
       });
 

@@ -78,6 +78,17 @@ export interface IzanagiRunOptions {
    */
   acceptance?: string[];
   /**
+   * Roda o comando de teste do projeto no fim do grafo, como um nó de tool com
+   * permissão `shell`, e a métrica `testResults` da avaliação passa a vir do
+   * EXIT CODE em vez de um artefato que um agente escreveu.
+   *
+   * Opt-in: executa um processo do projeto (o `scripts.test` do manifesto, ou
+   * o runner da linguagem detectada) com o ambiente herdado. Nenhum campo de
+   * entrada carrega um comando — o binário sai de uma allowlist do runtime e o
+   * que ele roda é o que o dono do projeto configurou.
+   */
+  verifyTests?: boolean;
+  /**
    * Cancelamento cooperativo do run. Abortar interrompe o grafo no próximo
    * batch e cancela a requisição em voo; o checkpoint do último batch
    * concluído fica em disco, e `izanagi resume <run-id>` retoma dali.
@@ -211,6 +222,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(outputDir ? { output: outputDir } : {}),
     ...(options.survey ?? looksLikeProject(workspaceDir) ? { survey: true } : {}),
     ...(options.acceptance ? { acceptance: options.acceptance } : {}),
+    ...(options.verifyTests ? { verifyTests: true } : {}),
     ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     ...(options.noCommander ? { noCommander: true } : {}),
   });

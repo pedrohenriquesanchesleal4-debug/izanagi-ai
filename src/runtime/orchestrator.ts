@@ -766,8 +766,21 @@ export class Orchestrator {
           : {}),
       };
     });
+    // Testes: o EXIT CODE de `project.test` vence o artefato que um agente
+    // escreveu. Enquanto `test-run` não existia, "os testes passaram" era o que
+    // um `test-results` produzido pelo mesmo processo sob teste afirmava, e
+    // nada no runtime executava teste nenhum. Com o nó ligado
+    // (`--verify-tests`), a métrica vem do sistema operacional; sem ele, o
+    // caminho antigo continua, agora declarado como derivado de artefato.
+    const testRun = Array.from(ctx.artifacts.values()).find((a) => a.kind === 'test-run');
+    const testRunContent = testRun?.content as { passed?: boolean; exitCode?: number | null; command?: string } | undefined;
+    const executedTests = testRunContent?.passed;
     const testResults = Array.from(ctx.artifacts.values()).find((a) => a.kind === 'test-results');
-    const testsFailed = testResults ? (testResults.content as { failed?: number }).failed ?? 0 : 0;
+    const testsFailed = executedTests !== undefined
+      ? (executedTests ? 0 : 1)
+      : testResults
+        ? (testResults.content as { failed?: number }).failed ?? 0
+        : 0;
     const scoredArtifacts = Array.from(ctx.artifacts.values()).filter((a) => a.valid);
 
     // Quando há Verification Engine em jogo, a correctness deixa de ser um
@@ -794,7 +807,13 @@ export class Orchestrator {
       },
       tests: { passed: testsFailed > 0 ? 0 : 1, failed: testsFailed },
       regressions: [
-        ...(testsFailed > 0 ? [`${testsFailed} teste(s) falhando (test-results)`] : []),
+        ...(testsFailed > 0
+          ? [
+              executedTests !== undefined
+                ? `suíte do projeto reprovada: "${testRunContent?.command ?? 'comando desconhecido'}" terminou com exit ${String(testRunContent?.exitCode)}`
+                : `${testsFailed} teste(s) falhando (derivado do artefato test-results, NÃO de execução)`,
+            ]
+          : []),
         ...unverified.map((v) => `verificação não conclusiva: ${v.reason}`),
         // Nó que terminou em falha SEM produzir artefato era invisível para a
         // avaliação: `correctness` é a média das verificações registradas e

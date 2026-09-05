@@ -29,8 +29,11 @@ import type { AcceptanceCriterion, TaskContract } from '../contracts/task-contra
  * `project-survey` e `materialization` entram aqui porque são, respectivamente,
  * o que o run leu antes de trabalhar e o comprovante do que ele gravou —
  * úteis para auditar a execução, e não a entrega que alguém pediu.
+ * `test-run` entra pelo mesmo motivo: o exit code da suíte é evidência sobre a
+ * execução, e despejar o stdout de um test runner dentro do documento entregue
+ * afogaria a entrega no log.
  */
-const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace', 'project-survey', 'materialization']);
+const PROCESS_KINDS = new Set(['evaluation', 'critique', 'trace', 'project-survey', 'materialization', 'test-run']);
 
 /** Teto por artefato no documento entregue, com o corte declarado no próprio texto. */
 export const MAX_SECTION_CHARS = 128 * 1024;

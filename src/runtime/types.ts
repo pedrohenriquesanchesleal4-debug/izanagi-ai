@@ -99,6 +99,7 @@ export type ArtifactKind =
   | 'delivery'
   | 'project-survey'
   | 'materialization'
+  | 'test-run'
   | 'raw';
 
 export interface ArtifactRef {
@@ -143,6 +144,17 @@ export interface ArtifactSchema {
    * simulação divergirem em silêncio é exatamente o bug que isto evita.
    */
   simulationHint?: string;
+  /**
+   * Conteúdo CAPTURADO de uma execução, não escrito por um agente.
+   *
+   * Desliga a varredura anti-stub (`TODO`, `FIXME`, `placeholder`...), que
+   * pressupõe texto autoral. O caso que revelou isso: a saída do runner de
+   * testes do Node imprime `ℹ todo 0` no resumo, e o artefato `test-run` de uma
+   * suíte 100% VERDE era reprovado por "stub detectado". A varredura estava
+   * medindo o vocabulário de um relatório de execução, e o efeito era reprovar
+   * a evidência justamente quando ela era boa.
+   */
+  capturedOutput?: boolean;
 }
 
 /* ============================ EXECUTION GRAPH ============================ */

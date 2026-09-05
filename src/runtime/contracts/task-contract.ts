@@ -68,7 +68,18 @@ export type DeterministicCheck =
    * diretório real. Sem referência nenhuma no texto o check fica UNKNOWN —
    * ausência de sinal não é aprovação.
    */
-  | { kind: 'references-exist'; minRatio?: number; message?: string };
+  | { kind: 'references-exist'; minRatio?: number; message?: string }
+  /**
+   * O comando terminou com exit code 0.
+   *
+   * Existe para o único caso em que o runtime tem um exit code de verdade para
+   * conferir: o artefato `test-run` da tool `project.test`. É o primeiro check
+   * determinístico que fala de uma EXECUÇÃO e não do texto de um artefato, e a
+   * regra é a mais estrita da lista: exit code ausente é `unknown` (não medi),
+   * nunca `pass`. Um check de execução que aprova por ausência de evidência
+   * seria pior que a métrica derivada de artefato que ele veio substituir.
+   */
+  | { kind: 'exit-zero'; message?: string };
 
 export interface AcceptanceCriterion {
   id: string;

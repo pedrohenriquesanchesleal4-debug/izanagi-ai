@@ -72,6 +72,14 @@ interface RunArgs {
    * onde declarar. Ausente, vale a permissão do contrato de cada nó.
    */
   allowedTools?: string[];
+  /**
+   * Roda o comando de teste do projeto no fim do run (`--verify-tests`).
+   *
+   * Opt-in porque executa um processo do PROJETO (o `scripts.test` do
+   * manifesto, ou o runner da linguagem detectada) com o ambiente herdado: a
+   * mesma confiança de digitar `npm test`, e por isso decisão de quem roda.
+   */
+  verifyTests: boolean;
 }
 
 export function parseRunArgs(args: string[]): RunArgs {
@@ -89,6 +97,7 @@ export function parseRunArgs(args: string[]): RunArgs {
   let cache = false;
   let noCommander = false;
   let noJudge = false;
+  let verifyTests = false;
   let json = false;
   let notifyWebhook: string | undefined;
   const acceptance: string[] = [];
@@ -155,6 +164,8 @@ export function parseRunArgs(args: string[]): RunArgs {
       noCommander = true;
     } else if (arg === '--no-judge') {
       noJudge = true;
+    } else if (arg === '--verify-tests') {
+      verifyTests = true;
     } else if (arg === '--json') {
       json = true;
     } else if (arg === '--notify-webhook' || arg.startsWith('--notify-webhook=')) {
@@ -209,6 +220,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     cache,
     noCommander,
     noJudge,
+    verifyTests,
     json,
     ...(notifyWebhook ? { notifyWebhook } : {}),
     ...(acceptance.length > 0 ? { acceptance } : {}),
@@ -558,6 +570,7 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     survey: parsed.noSurvey ? false : parsed.survey || looksLikeProject(cwd),
     ...(parsed.acceptance ? { acceptance: parsed.acceptance } : {}),
     ...(parsed.allowedTools ? { allowedTools: parsed.allowedTools } : {}),
+    ...(parsed.verifyTests ? { verifyTests: true } : {}),
     stateDir,
     explicitAgent: Boolean(agentId),
   });
@@ -711,6 +724,8 @@ export async function runRuntime(
     survey?: boolean;
     /** Critérios de aceite do usuário, em texto (`--acceptance`). */
     acceptance?: string[];
+    /** Roda o comando de teste do projeto no fim do grafo (`--verify-tests`). */
+    verifyTests?: boolean;
     /** Allowlist de tools do run (`--allow-tool`). */
     allowedTools?: string[];
     /** Raiz do estado (`.izanagi/state`). Default: `baseDir`. */
@@ -754,6 +769,7 @@ export async function runRuntime(
     ...(opts.output ? { output: opts.output } : {}),
     ...(opts.survey ? { survey: true } : {}),
     ...(opts.acceptance ? { acceptance: opts.acceptance } : {}),
+    ...(opts.verifyTests ? { verifyTests: true } : {}),
     ...(opts.stateDir ? { stateDir: opts.stateDir } : {}),
     // Resume reusa o grafo do checkpoint: replanejar aqui desfaria a retomada.
     noCommander: Boolean(opts.noCommander || opts.resumeRunId),

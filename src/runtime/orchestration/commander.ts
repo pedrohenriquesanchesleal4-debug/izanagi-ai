@@ -42,6 +42,7 @@ import { detectDomains, type Domain } from './domains.js';
 import { DELIVER_NODE_ID, MATERIALIZATION_CONSTRAINT, MATERIALIZE_NODE_ID, deliverNode, materializeNode } from './delivery.js';
 import { SURVEY_NODE_ID, surveyNode, withSurveyAtHead } from './grounding.js';
 import { applyAcceptance } from '../contracts/acceptance.js';
+import { testGateNode } from './test-gate.js';
 
 export type { Domain } from './domains.js';
 
@@ -272,6 +273,16 @@ export interface CommanderInput {
    * que foi pedido?". Sem este campo só a primeira pergunta era feita.
    */
   acceptance?: AcceptanceCriterion[];
+  /**
+   * Roda o comando de teste do projeto no fim do grafo (`--verify-tests`).
+   *
+   * Opt-in porque executa um processo do projeto (o `scripts.test` do
+   * manifesto, ou o runner da linguagem detectada) com o ambiente herdado. É a
+   * mesma confiança de digitar `npm test`, e por isso é uma decisão de quem
+   * roda, nunca um default. Ignorado em modo `direct`: uma resposta de uma
+   * chamada não escreve arquivo nenhum, então não há o que a suíte meça.
+   */
+  verifyTests?: boolean;
 }
 
 /**
@@ -694,6 +705,15 @@ export class Commander {
         objective: input.objective,
         dependencies: withContracts.map((n) => n.id),
       });
+      withContracts.push(attachContract(node, contract));
+      contracts.push(contract);
+    }
+
+    // Teste do projeto DEPOIS da materialização e da entrega: quando o
+    // `--output` cai dentro da árvore que a suíte cobre, o que roda é o projeto
+    // COM o que o run escreveu. Antes mediria o projeto sem a entrega.
+    if (input.verifyTests && mode !== 'direct') {
+      const { node, contract } = testGateNode({ dependencies: withContracts.map((n) => n.id) });
       withContracts.push(attachContract(node, contract));
       contracts.push(contract);
     }
