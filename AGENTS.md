@@ -1,6 +1,6 @@
 # AGENTS.md: Izanagi AI Framework Reference
 
-> Version 3.20.0
+> Version 3.21.0
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
 > Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi (Smart Auto-Detection & Selective Generation)
 
@@ -8,7 +8,7 @@
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas (catálogo v2 em `.skills/` convivendo com o legado `skills/`), **Skill Composer** (16 composições de skills encadeadas por domínio), **22 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`) e uma **topologia poliglota** (Rust · Go · Python · TS — seção 3). Este repositório É o framework (não um app que o usa).
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas (catálogo v2 em `.skills/` convivendo com o legado `skills/`), **Skill Composer** (16 composições de skills encadeadas por domínio), **22 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`) e uma **topologia poliglota** (Rust · Go · Python · TS).<!-- izanagi:source-only --> A topologia está detalhada na seção 3. Este repositório É o framework (não um app que o usa).<!-- /izanagi:source-only -->
 
 ---
 
@@ -73,7 +73,7 @@ Coexistência **Strangler Fig** (ADR-001): o legado npm (`src/`, CLI `izanagi`) 
 # Legado npm (raiz)
 npm install          # instala deps
 npm run build        # tsc && node dist/scripts/generate-manifest.js
-npm test             # build + node --test dist/runtime/tests/*.test.js (764 testes)
+npm test             # build + node --test dist/runtime/tests/*.test.js (849 testes)
 npm run verify       # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor       # node bin/izanagi.js doctor [--deep]: auditoria de integridade
 npm run bump:patch   # npm version patch --no-git-tag-version (também minor/major)
@@ -97,7 +97,7 @@ node packages/skill-migrator/cli.mjs --dry-run          # valida migração skil
 **Gotchas críticos:**
 - `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js`: **rode `npm run build` antes de qualquer comando CLI local** (`doctor`, `polyglot status`, `export`...), senão roda código obsoleto ou quebra. O mesmo vale para `packages/*/dist`: rode o build do package antes de consumir SDK/CLI-next.
 - `doctor`: instalação completa do usuário = `.agents/agents/` contendo agentes em **JSON** (formato distribuído); os YAMLs derivados do repo-fonte não caracterizam instalação.
-- Há test runner real (`node:test`, 764 testes em `src/runtime/tests/`). Verificação = `npm test` + `npm run verify` + `npm run doctor` + suítes poliglotas da seção 3.
+- Há test runner real (`node:test`, 849 testes em `src/runtime/tests/`, 848 verdes no Windows: o vermelho `polyglot` depende de shebang). Verificação = `npm test` + `npm run verify` + `npm run doctor` + suítes poliglotas da seção 3.
 - Padrão de commit do repo: `chore: bump to vX.Y.Z` para bumps e `feat:`/`fix:`/`docs:` descritivos em PT-BR para mudanças.
 
 ---

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode } from './exporters.js';
+import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, GENERATED_MARKER } from './exporters.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,7 +23,12 @@ export const PACKS: PackDefinition[] = [
     id: 'core',
     label: 'Core',
     description: 'Engines (Decision, Context, Reflection...) + SYSTEM.md / RULES.md / AGENTS.md',
-    files: ['core', 'SYSTEM.md', 'RULES.md', 'AGENTS.md', 'CHANGELOG.md', 'ROADMAP.md'],
+    // `references` entra aqui porque o runtime as LÊ de `<baseDir>/references/`
+    // (`cli/commands/run.ts` injeta as curadas no prompt, `cli/blueprint.ts`
+    // também). Sem elas no pack, `baseDir` de projeto inicializado é `.agents/`
+    // e a injeção nunca encontrava arquivo nenhum: o diretório viajava no
+    // tarball e não era instalado em lugar nenhum.
+    files: ['core', 'SYSTEM.md', 'RULES.md', 'AGENTS.md', 'CHANGELOG.md', 'ROADMAP.md', 'references'],
     default: true
   },
   {
@@ -177,6 +182,159 @@ export function resolveStateRoot(cwd: string): string {
 }
 
 /**
+ * Documentos que várias CLIs leem NATIVAMENTE da raiz do projeto: o opencode via
+ * `opencode.json`, o Codex e o Copilot via `AGENTS.md`. É por isso que o init os
+ * espelha para fora de `.agents/`, e é por isso que o conteúdo importa.
+ */
+const ROOT_DOCS = ['AGENTS.md', 'SYSTEM.md', 'RULES.md'] as const;
+
+/**
+ * Seções do `AGENTS.md` da fonte que valem em QUALQUER projeto.
+ *
+ * As omitidas (3 Arquitetura Poliglota, 4 Comandos de Desenvolvimento, 5 Estrutura
+ * do Framework, 9 Release Flow) descrevem o repositório do framework: `src/`,
+ * `crates/`, `packages/`, `cargo test --workspace`, `npm run build`. Num projeto
+ * que só consome o pacote, nenhuma delas tem referente.
+ */
+const CONSUMER_SECTIONS = [1, 2, 6, 7, 8];
+
+/** Versão real do pacote instalado. */
+function packageVersion(packageDir: string): string {
+  try {
+    return (JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8')) as { version?: string }).version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+/**
+ * O diretório é o checkout do repositório-fonte do Izanagi?
+ *
+ * Existe para um caso em que a correção seria pior que o bug: rodar `izanagi init`
+ * dentro do próprio checkout. Ali a cópia literal dos documentos de raiz está
+ * CERTA (eles descrevem esse projeto), e escrever a versão de consumidor apagaria
+ * as seções 3/4/5/9, que são justamente a documentação de desenvolvimento do repo.
+ */
+export function isFrameworkRepo(root: string): boolean {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')) as { name?: string };
+    return pkg.name === 'izanagi-ai';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * O `AGENTS.md` com a forma do projeto CONSUMIDOR.
+ *
+ * Deriva da fonte por SELEÇÃO de seções, nunca por prosa reescrita: uma segunda
+ * cópia do mesmo texto é uma cópia para divergir da primeira, que é exatamente o
+ * defeito que esta função conserta. O que se acrescenta é só o que a fonte não
+ * pode saber: que este projeto consome o framework em vez de desenvolvê-lo, e
+ * quais comandos existem aqui.
+ */
+export function buildConsumerAgentsDoc(packageDir: string): string {
+  const source = fs.readFileSync(path.join(packageDir, 'AGENTS.md'), 'utf-8');
+
+  // Corta em cada `## <n>. ` de primeiro nível. O `## ` com dois hashes é o que
+  // separa as seções; os `# ` de uma linha só dentro dos blocos de código (`#
+  // Legado npm (raiz)`) não casam e continuam onde estão.
+  const parts = stripSourceOnly(source).split(/^(?=## \d+\. )/m);
+  const head = (parts[0] ?? '').trimEnd();
+  const kept = parts
+    .slice(1)
+    .filter((s) => CONSUMER_SECTIONS.includes(Number(/^## (\d+)\./.exec(s)?.[1])))
+    // A seção da fonte termina com o `---` que a separa da seguinte. Aqui ela é
+    // a última: manter o traço deixaria dois seguidos antes do rodapé.
+    .map((s) => s.trimEnd().replace(/\n+---$/, ''));
+
+  return [
+    head,
+    consumerShapeSection(packageVersion(packageDir)),
+    ...kept,
+    '---',
+    `> ${GENERATED_MARKER}: \`izanagi init\`. Seções 3, 4, 5 e 9 da fonte foram omitidas de propósito: descrevem o repositório do framework, não este projeto. A referência canônica completa está em \`.agents/AGENTS.md\`.`,
+    '',
+  ].join('\n\n');
+}
+
+/**
+ * Remove os trechos que a fonte declara como válidos SÓ no repositório dela.
+ *
+ * Existe porque seção universal pode conter frase que não é: a seção 1 afirmava
+ * "Este repositório É o framework (não um app que o usa)" e apontava para a
+ * seção 3, que a versão de consumidor não tem. Uma afirmação falsa dentro de uma
+ * seção correta é pior que a seção inteira ausente, porque contradiz o que o
+ * documento diz três parágrafos acima.
+ *
+ * O mecanismo é declarativo de propósito: quem escreve a fonte marca o trecho, e
+ * o builder obedece. Adivinhar por heurística de frase ("contém 'repositório'")
+ * removeria prosa correta e deixaria passar a errada.
+ */
+function stripSourceOnly(markdown: string): string {
+  return markdown.replace(/<!--\s*izanagi:source-only\s*-->[\s\S]*?<!--\s*\/izanagi:source-only\s*-->/g, '');
+}
+
+/** O que a fonte não pode saber sobre o projeto de destino. */
+function consumerShapeSection(version: string): string {
+  return `## 0. A forma deste projeto
+
+Este projeto **consome** o Izanagi AI (\`izanagi-ai@${version}\`) como dependência npm: ele não é o repositório do framework. Build, lint e testes, se existirem, são deste projeto: o Izanagi não define nenhum deles.
+
+Comandos do framework que funcionam aqui:
+
+\`\`\`bash
+npx izanagi doctor                 # valida a instalação do framework neste projeto
+npx izanagi list                   # agentes e skills disponíveis
+npx izanagi skill search <termo>   # busca na biblioteca de skills
+npx izanagi agent inspect <slug>   # contrato de um agente
+npx izanagi export --cli <claude|codex|cursor|copilot|kimi|opencode>
+npx izanagi run "<objetivo>"       # executa o runtime sobre um objetivo
+\`\`\`
+
+Os assets do framework (agentes, skills, engines) vivem em \`.agents/\`, e é de lá que todo comando os lê. Regra que precisa valer para todas as CLIs muda em \`.agents/\` e depois num \`izanagi export\`, nunca direto num adapter gerado.`;
+}
+
+/**
+ * Espelha os documentos de raiz, sem afirmar sobre o projeto o que é do framework.
+ *
+ * Duas regras, e as duas vieram de defeito medido:
+ *
+ * 1. `AGENTS.md` da raiz é a versão de consumidor. A cópia literal mandava rodar
+ *    `cargo test --workspace` num projeto sem Rust, e o caminho era automático
+ *    (`postinstall` chama `installToProject` em todo `npm install`).
+ * 2. Arquivo já existente SEM o marcador é de quem o escreveu, e não é tocado. O
+ *    `copyFileSync` anterior destruía um `AGENTS.md` autoral sem uma linha de aviso.
+ */
+function writeRootDocs(destinationRoot: string, packageDir: string): { written: string[]; kept: string[] } {
+  if (isFrameworkRepo(destinationRoot)) return { written: [], kept: [] };
+
+  const written: string[] = [];
+  const kept: string[] = [];
+
+  for (const doc of ROOT_DOCS) {
+    const srcPath = path.join(packageDir, doc);
+    if (!fs.existsSync(srcPath)) continue;
+
+    const dest = path.join(destinationRoot, doc);
+    if (fs.existsSync(dest) && !fs.readFileSync(dest, 'utf-8').includes(GENERATED_MARKER)) {
+      kept.push(doc);
+      continue;
+    }
+
+    const body =
+      doc === 'AGENTS.md'
+        ? buildConsumerAgentsDoc(packageDir)
+        : `${fs.readFileSync(srcPath, 'utf-8').trimEnd()}\n\n---\n\n> ${GENERATED_MARKER}: \`izanagi init\`. Cópia fiel de \`${doc}\` do framework, que descreve o RUNTIME e vale em qualquer projeto.\n`;
+
+    fs.writeFileSync(dest, body, 'utf-8');
+    written.push(doc);
+  }
+
+  return { written, kept };
+}
+
+/**
  * Instala os packs selecionados do Izanagi AI na pasta `.agents` do projeto do usuário.
  */
 export function installToProject(targetDir: string, selectedPackIds: string[], cliTarget?: string): void {
@@ -207,15 +365,22 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
       const destPath = path.join(targetAgentsFolder, item);
       if (fs.existsSync(srcPath)) {
         copyRecursiveSync(srcPath, destPath);
-        // Se for arquivo raiz core, copia também para a raiz do projeto para o opencode ler nativamente
-        if (['AGENTS.md', 'SYSTEM.md', 'RULES.md'].includes(item)) {
-          copyRecursiveSync(srcPath, path.join(destinationRoot, item));
-        }
         copiedItems++;
       }
     }
 
     console.log(`  \x1b[32m✔\x1b[0m Pack \x1b[1m${pack.label}\x1b[0m (${copied} items) — ${pack.description}`);
+  }
+
+  // O espelho de `.agents/` é cópia fiel; o da RAIZ descreve o projeto de
+  // destino. Separado do loop acima porque é outra pergunta, e confundir as
+  // duas é o que fazia o consumidor receber a autodescrição do framework.
+  const rootDocs = writeRootDocs(destinationRoot, packageDir);
+  for (const doc of rootDocs.written) {
+    console.log(`  \x1b[32m✔\x1b[0m ${doc} na raiz${doc === 'AGENTS.md' ? ' (forma deste projeto; a referência completa fica em .agents/)' : ''}`);
+  }
+  for (const doc of rootDocs.kept) {
+    console.log(`  \x1b[33m•\x1b[0m ${doc} já existe e não foi gerado pelo Izanagi — mantido como está`);
   }
 
   // Configuração local (.izanagi/izanagi.config.json)
@@ -224,7 +389,9 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
 
   const config = {
     framework: 'Izanagi AI',
-    version: '2.1.0',
+    // Estava `'2.1.0'` fixo, com o framework em 3.20.x: o arquivo de
+    // configuração de todo projeto afirmava dezoito minors de diferença.
+    version: packageVersion(packageDir),
     defaultAgent: 'senior-engineer',
     skillsDir: '.agents/skills',
     autoCompression: true,

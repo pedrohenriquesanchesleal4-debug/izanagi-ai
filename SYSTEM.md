@@ -1,6 +1,6 @@
 # IZANAGI AI: System Foundation
 
-> Version 3.20.0
+> Version 3.21.0
 > Codename: "The Architect's Mind"
 
 ---

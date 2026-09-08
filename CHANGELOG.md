@@ -4,6 +4,31 @@
 
 ---
 
+## [3.21.0]: 2026-09-08
+
+### Fixed
+- **`izanagi init` entregava a autodescrição do framework como se descrevesse o projeto de destino.** `installer.ts` copiava `AGENTS.md`, `SYSTEM.md` e `RULES.md` LITERALMENTE do pacote para a raiz do projeto do consumidor, e esses três são os documentos de desenvolvimento do repositório-fonte: o `AGENTS.md` manda rodar `cargo test --workspace`, `npm run build` e `(cd packages/sdk && npm test)`, e descreve a árvore `src/`/`crates/`/`packages/`. Num projeto que só instala o pacote nada disso tem referente, e a instância de IA seguinte lê comandos que não rodam e procura pastas que não estão lá. O caminho era automático: `postinstall` chama `installToProject` com todos os packs em todo `npm install izanagi-ai`, então o documento errado não dependia de ninguém digitar `izanagi init`. Encontrado rodando `/init` do Claude Code num workspace consumidor.
+- **A raiz do projeto passa a receber um `AGENTS.md` com a forma DELE.** `buildConsumerAgentsDoc()` deriva da fonte por SELEÇÃO de seções (1, 2, 6, 7, 8 valem em qualquer projeto) e omite as que descrevem o repo-fonte (3 Arquitetura Poliglota, 4 Comandos de Desenvolvimento, 5 Estrutura do Framework, 9 Release Flow), acrescentando só o que a fonte não pode saber: que este projeto consome o framework, e quais comandos existem aqui (`npx izanagi doctor|list|skill search|agent inspect|export|run`). Derivar em vez de reescrever é deliberado: prosa duplicada é prosa para divergir, que é o defeito que a correção fecha. O espelho fiel continua em `.agents/`, que é onde `resolveFrameworkRoot` o procura.
+- **Seção universal podia carregar afirmação que só vale no repo-fonte.** A seção 1 dizia "Este repositório É o framework (não um app que o usa)" e apontava para a seção 3, ausente na versão de consumidor: uma frase falsa dentro de uma seção correta, contradizendo o próprio documento três parágrafos acima. O mecanismo é declarativo (`<!-- izanagi:source-only -->` na fonte, removido pelo builder) porque heurística de frase removeria prosa correta e deixaria passar a errada.
+- **`init` destruía documento de raiz escrito à mão.** O `copyFileSync` sobrescrevia `AGENTS.md`/`SYSTEM.md`/`RULES.md` existentes sem uma linha de aviso. Agora arquivo sem o `GENERATED_MARKER` é de quem o escreveu e não é tocado (a CLI diz que manteve); arquivo com o marcador é regenerado, que é a mesma regra que o `izanagi export` já seguia.
+- **Rodar `init` dentro do próprio checkout do framework não toca mais os documentos de raiz.** `isFrameworkRepo()` reconhece o repo-fonte pelo nome no `package.json`. Sem isso a correção seria pior que o bug: a versão de consumidor apagaria as seções 3/4/5/9, que ali descrevem o projeto de verdade.
+- **`references/` ia no tarball e não era instalado em lugar nenhum.** `cli/commands/run.ts` monta `<baseDir>/references/` e injeta as referências curadas no prompt, e `cli/blueprint.ts` faz o mesmo. Com `.agents/` como `baseDir` de projeto inicializado e nenhum pack copiando o diretório, a injeção existia e nunca encontrava arquivo nenhum, em projeto nenhum. Entrou no pack `core`.
+- **`.izanagi/izanagi.config.json` declarava `version: '2.1.0'` fixo no código**, com o framework em 3.20.x: dezoito minors de diferença, num arquivo de configuração de todo projeto. Passa a ler a versão real do pacote. Número que se reporta é número que aconteceu, inclusive quando o número é a versão.
+- **`AGENTS.md` afirmava "764 testes" em dois lugares.** O medido é 849. O arquivo é justamente um dos que iam verbatim para a raiz de todo consumidor: o drift que o `HANDOFF.md` combate estava sendo empacotado e distribuído.
+
+### Added
+- `isFrameworkRepo(root)` e `buildConsumerAgentsDoc(packageDir)` exportados de `installer.ts`.
+
+### Verificação
+- **849 testes, 848 passando** (medido em 2026-09-08, no **Windows**; 11 novos em `installer-consumer-docs.test.ts`). O vermelho segue sendo só `polyglot`, que depende de shebang.
+- `node dist/scripts/verify-build.js`: instalação em sandbox com os 12 packs, `AGENTS.md` da raiz gerado na forma do consumidor.
+- Consumidor de verdade (`package.json` sem relação com o framework, todos os packs, como o `postinstall` faz): `izanagi doctor` sai **PASSED, 0 erros, 0 warnings**, e o `AGENTS.md` gerado tem zero ocorrência de `cargo test`, `packages/sdk` ou "Este repositório É o framework", e zero vazamento do marcador `source-only`.
+
+### Compatibility
+- Nenhuma breaking change de API. Muda o CONTEÚDO do `AGENTS.md` que o `init` escreve na raiz de um projeto consumidor, e passa a preservar os três documentos de raiz quando escritos à mão. Quem versionou o `AGENTS.md` gerado verá um diff na próxima execução de `init`/`postinstall`.
+
+---
+
 ## [3.20.1]: 2026-09-08
 
 ### Fixed
