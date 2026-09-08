@@ -55,8 +55,40 @@ export interface TestRunner {
   /** Binário e argumentos. Nada aqui vem de input. */
   command: string;
   args: string[];
+  /**
+   * O que é passado ao `spawn`, quando difere do rótulo acima. Existe por causa
+   * do `npm` no Windows: ver `resolveNpmCli`. Ausente = `command`/`args`.
+   */
+  execFile?: string;
+  execArgs?: string[];
   /** Por que este runner foi escolhido (aparece no artefato). */
   reason: string;
+}
+
+/**
+ * O entrypoint JS do npm, para ser executado pelo `node` que já está rodando.
+ *
+ * No Windows `npm` é um shim `.cmd`, e desde o CVE-2024-27980 o Node RECUSA
+ * lançar `.cmd`/`.bat` sem `shell: true` (`spawn EINVAL`). As duas saídas
+ * óbvias custam a garantia deste arquivo: `shell: true` e `cmd.exe /c` põem um
+ * interpretador de comandos no caminho, justamente o que `shell: false`
+ * remove. Esta terceira não: o binário passa a ser `process.execPath`, o
+ * mesmo node que executa o runtime, e o npm entra como argumento de arquivo.
+ * Sem shell, e com o binário mais confiável disponível.
+ *
+ * Os dois layouts cobrem instalação oficial no Windows (npm ao lado do node) e
+ * em Unix (`../lib/node_modules`, que é o que nvm e o tarball usam). Se nenhum
+ * resolver, o chamador fica com o binário `npm` do PATH: em Unix o shim tem
+ * shebang e executa; no Windows o EINVAL é reportado como erro, e "não medi"
+ * continua sendo ausência de `passed`, nunca reprovação.
+ */
+export function resolveNpmCli(): string | undefined {
+  const base = path.dirname(process.execPath);
+  const candidates = [
+    path.join(base, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(base, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  ];
+  return candidates.find((c) => fs.existsSync(c));
 }
 
 export interface DetectResult {
@@ -96,11 +128,16 @@ export function detectTestRunner(dir: string): DetectResult {
     if (/no test specified/i.test(test)) {
       return { reason: '"scripts.test" é o placeholder do npm init (nenhum teste configurado)' };
     }
+    const args = ['test', '--silent'];
+    const cli = resolveNpmCli();
     return {
       runner: {
         id: 'npm',
-        command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
-        args: ['test', '--silent'],
+        // O rótulo é o comando que uma pessoa digitaria, e é o que vai para o
+        // artefato: `node .../npm-cli.js test` diria como, não o quê.
+        command: process.platform === 'win32' && !cli ? 'npm.cmd' : 'npm',
+        args,
+        ...(cli ? { execFile: process.execPath, execArgs: [cli, ...args] } : {}),
         reason: `package.json declara "scripts.test": ${clip(test, 120)}`,
       },
     };
@@ -181,7 +218,7 @@ export async function runProjectTests(opts: {
   return await new Promise<TestRunResult>((resolve) => {
     let child: ReturnType<typeof spawn>;
     try {
-      child = spawn(runner.command, runner.args, {
+      child = spawn(runner.execFile ?? runner.command, runner.execArgs ?? runner.args, {
         cwd: opts.dir,
         env: process.env,
         // `shell: false` é a garantia: sem shell não há expansão, não há `&&`,

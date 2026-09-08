@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { detectTestRunner, runProjectTests } from '../tools/project-test.js';
+import { detectTestRunner, resolveNpmCli, runProjectTests } from '../tools/project-test.js';
 import { ToolRegistry } from '../tools/registry.js';
 import { runCheck } from '../verification/engine.js';
 import { Commander } from '../orchestration/commander.js';
@@ -53,6 +53,31 @@ test('project.test: detecta o runner pelo manifesto, e recusa o placeholder do n
   assert.equal(detectTestRunner(py).runner?.id, 'pytest');
 
   for (const d of [comTeste, placeholder, semNada, rust, go, py]) fs.rmSync(d, { recursive: true, force: true });
+});
+
+test('project.test: o que vai ao spawn nunca é um `.cmd`, e o rótulo continua sendo o comando', () => {
+  // Este teste existe por um vermelho medido: no Windows, `spawn('npm.cmd',
+  // …, { shell: false })` sai `EINVAL` desde o CVE-2024-27980, e os dois
+  // testes de exit code deste arquivo falhavam LÁ enquanto passavam no Linux.
+  // O que ele protege é a saída escolhida: o binário é o `node` que já está
+  // rodando, não um interpretador de comandos.
+  const cli = resolveNpmCli();
+  if (!cli) return; // sem npm ao lado do node não há o que afirmar sobre o par
+
+  const dir = tmpProject({ 'package.json': JSON.stringify({ scripts: { test: 'node -e "0"' } }) });
+  const runner = detectTestRunner(dir).runner;
+  if (!runner) throw new Error('o manifesto declara scripts.test: o runner precisa existir');
+
+  assert.equal(runner.execFile, process.execPath, 'quem executa é o node do runtime');
+  assert.equal(runner.execArgs?.[0], cli);
+  const spawned = [runner.execFile, ...(runner.execArgs ?? [])].join(' ');
+  assert.doesNotMatch(spawned, /\.cmd\b/i, 'um `.cmd` no spawn sem shell é o EINVAL de volta');
+
+  // O rótulo é para quem lê o artefato, e não muda de plataforma para
+  // plataforma: `node …/npm-cli.js test` diria COMO, não O QUÊ.
+  assert.equal(`${runner.command} ${runner.args.join(' ')}`, 'npm test --silent');
+
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('project.test: o exit code vem do processo, aprovando E reprovando', async () => {

@@ -135,6 +135,7 @@ Nenhum destes foi procurado: todos apareceram escrevendo o teste da feature ao l
 | **O cache guardava resposta reprovada** | Na retentativa ela não voltava (a correção muda a chave), mas o run seguinte com o mesmo objetivo recomeçava do que já se sabia ruim, deterministicamente |
 | **Groundedness reprovava documento correto** | Resolver referência só contra a raiz do repo dava 0 de 17 caminhos fundamentados no `docs/HANDOFF.md` deste projeto: ele cita `runtime/x.ts`, que existe em `src/runtime/x.ts` |
 | **Replan apagaria o contrato de um nó de tool** | `contractFor` por cima de contrato de tool removeria `tool` e `permissions`: o nó viraria chamada de modelo com o mesmo id, e a "correção" seria a regressão |
+| **`project.test` não executava nada no Windows** | `spawn('npm.cmd', …, { shell: false })` sai `EINVAL`: desde o CVE-2024-27980 o Node recusa lançar `.cmd`/`.bat` sem shell. O `try/catch` transformava isso em `error` com `passed` ausente, então o item 1 da v3.20.0 (a métrica de teste vinda de um exit code) degradava para "não medi" em toda máquina Windows, sem reprovar nada e sem dizer que não mediu. Os dois testes de exit code do arquivo falhavam LÁ e passavam no Linux, e a v3.20.0 foi medida só no Linux: é assim que a mesma rodada que fechou a evidência circular publicou uma evidência que não é produzida. Conserto sem custo de garantia: o binário passa a ser `process.execPath` e o npm entra como argumento de arquivo (`resolveNpmCli`), então `shell: false` continua literal. As duas saídas óbvias (`shell: true`, `cmd.exe /c`) recolocariam um interpretador de comandos no caminho |
 
 ---
 
@@ -196,6 +197,10 @@ izanagi run "documentar a funcao de soma" --output docs --verify-tests --mode or
   suite verde:    PASS, 7/7 VERIFIED, testResults=1, score 1.00
   suite vermelha: BLOCKED, 6/7 VERIFIED, testResults=0
                   regressao nomeia "npm test --silent" com exit 1
+  (reproduzido no WINDOWS em 2026-09-08, depois do conserto do spawn EINVAL:
+   antes disso o no verify-tests nao executava nada nessa plataforma, e estes
+   dois numeros eram verdadeiros so no Linux. O span node:verify-tests leva
+   ~390ms nos dois casos, que e a suite do projeto rodando de verdade.)
 
 izanagi run "documentar a API de usuarios" --reuse-artifacts   (duas vezes)
   run 1: 900 tokens, cache 0/3, PASS 4/4 VERIFIED
@@ -215,9 +220,9 @@ izanagi run "adicionar paginacao em GET /users" --output docs   (projeto Node de
   entrega gravada e conferida por file-exists sobre o arquivo que a tool escreveu
 ```
 
-Testes: **837, 837 passando** (medido em 2026-09-05, no Linux). O vermelho conhecido no Windows é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda lá, passa no Linux. É anterior a esta rodada e independente dela. Zero testes marcados como skip, e nenhum condicional de plataforma: o número é o mesmo nos dois sistemas.
+Testes: **838, 837 passando** (medido em 2026-09-08, no Windows). O único vermelho é `polyglot: bin Rust presente com --version barato`, que escreve um binário falso com shebang bash e tenta executá-lo: não roda no Windows, passa no Linux. É anterior à rearquitetura e independente dela, e continua aberto porque consertá-lo exigiria um condicional de plataforma: Windows não honra shebang e não executa arquivo sem extensão conhecida, então a fixture teria de ser outra coisa em cada sistema, e o número deixaria de ser o mesmo nos dois. Zero testes marcados como skip.
 
-> Este parágrafo já dizia **674** quando o medido era 682, e depois **695** quando a rodada de 2026-09-04 levou o número a 764. As duas correções são do mesmo tipo: drift contra a regra do próprio arquivo ("só entra o que é verificável no código"). Desde 2026-09-04 o banner de versão dos documentos de raiz tem gate de teste (`doc-version-freshness.test.ts`); a contagem de testes, não: quem edita esta linha ainda precisa medir.
+> Este parágrafo já dizia **674** quando o medido era 682, depois **695** quando a rodada de 2026-09-04 levou o número a 764, e depois **"837, 837 passando"** com dois vermelhos de `project.test` no Windows que a medição no Linux não podia ver. As três correções são do mesmo tipo: drift contra a regra do próprio arquivo ("só entra o que é verificável no código"). A terceira acrescenta uma lição sobre a própria regra: **"verificável" inclui ONDE se verificou.** Um número medido num sistema e reportado sem o sistema é uma afirmação mais forte do que a medição sustenta. Desde 2026-09-04 o banner de versão dos documentos de raiz tem gate de teste (`doc-version-freshness.test.ts`); a contagem de testes, não: quem edita esta linha ainda precisa medir, e dizer onde mediu.
 
 ---
 
@@ -290,7 +295,7 @@ Para quem pegar o repositório e quiser confirmar que está tudo de pé:
 ```bash
 npm ci
 npm run build
-node --test "dist/runtime/tests/*.test.js"     # 837 testes (todos verdes no Linux; 1 vermelho conhecido no Windows: polyglot)
+node --test "dist/runtime/tests/*.test.js"     # 838 testes (837 verdes no Windows; o vermelho é polyglot, que passa no Linux)
 
 izanagi benchmark memory                        # medição de busca e compressão
 izanagi models                                  # catálogo, com a IDADE da tabela de preços de cada provider

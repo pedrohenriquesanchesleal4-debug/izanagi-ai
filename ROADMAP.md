@@ -525,7 +525,11 @@ implementação: o nó de teste mede a suíte do projeto e não o efeito da entr
 mede o quanto o plano se compromete a verificar, nunca a qualidade do que vai
 ser entregue.
 
-Testes: **837, 837 passando** (73 novos nesta fase).
+Testes: **838, 837 passando** (74 novos nesta fase; medido no Windows, onde o
+único vermelho é `polyglot`, que passa no Linux). A fase foi publicada dizendo
+"837, 837 passando" a partir de uma medição só no Linux: dois testes de
+`project.test` falhavam no Windows, e o motivo virou linha na seção 3 do
+[`docs/HANDOFF.md`](docs/HANDOFF.md).
 
 ## Critérios de aceite das próximas fases
 

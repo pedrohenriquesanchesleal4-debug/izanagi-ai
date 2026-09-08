@@ -4,6 +4,22 @@
 
 ---
 
+## [3.20.1]: 2026-09-08
+
+### Fixed
+- **`project.test` não executava nada no Windows, e a v3.20.0 foi publicada assim.** `spawn('npm.cmd', …, { shell: false })` sai `EINVAL`: desde o CVE-2024-27980 o Node recusa lançar `.cmd`/`.bat` sem shell. O `try/catch` do arquivo transformava o throw em `error` com `passed` ausente, o que é o comportamento correto para "não medi". O efeito, porém, era o item 1 da v3.20.0 (a métrica de teste vinda de um exit code) degradar para "não medi" em toda máquina Windows. Os dois testes de exit code de `project-test.test.ts` falhavam lá e passavam no Linux, e a Verificação da v3.20.0 afirmava "837, 837 passando" a partir de uma medição feita só no Linux, listando um único vermelho conhecido de Windows quando eram três.
+- **O conserto não custa a garantia do arquivo.** As duas saídas óbvias (`shell: true` e `cmd.exe /d /s /c`) recolocariam um interpretador de comandos no caminho, que é exatamente o que `shell: false` remove. A escolhida é outra: `resolveNpmCli()` acha o entrypoint JS do npm (ao lado do `node` no Windows, em `../lib/node_modules` em Unix) e o `spawn` passa a ser `process.execPath` com o npm como argumento de arquivo: sem shell, e com o binário mais confiável disponível, que é o mesmo node que executa o runtime. Se nenhum layout resolver, o chamador fica com o binário `npm` do PATH e o `EINVAL` volta a ser reportado como erro: "não medi" continua sendo ausência de `passed`, nunca reprovação.
+- **`TestRunner` ganhou `execFile`/`execArgs`, e o rótulo continua sendo o comando.** O que vai ao `spawn` e o que vai ao artefato deixaram de ser o mesmo par: `command`/`args` seguem `npm test --silent` nas duas plataformas, porque `node …/npm-cli.js test` diria COMO, não O QUÊ.
+
+### Verificação
+- **838 testes, 837 passando** (medido em 2026-09-08, no **Windows**). O único vermelho é `polyglot: bin Rust presente com --version barato`, anterior à rearquitetura: a fixture escreve um binário falso com shebang bash, e o Windows não honra shebang nem executa arquivo sem extensão conhecida. Continua aberto porque consertá-lo exigiria um condicional de plataforma, e o número deixaria de ser o mesmo nos dois sistemas.
+- O teste novo ("o que vai ao spawn nunca é um `.cmd`, e o rótulo continua sendo o comando") trava o motivo, não só o sintoma: afirma que o binário do `spawn` é `process.execPath` e que nenhum `.cmd` chega lá.
+
+### Compatibility
+- Nenhuma breaking change. `TestRunner.execFile` e `.execArgs` são opcionais, e `command`/`args` mantêm o valor de antes.
+
+---
+
 ## [3.20.0]: 2026-09-05
 
 ### Rodada de fechamento dos catorze itens abertos (2026-09-05)
@@ -53,7 +69,7 @@ que se lê e não se consulta.
 - `ArtifactSchema.capturedOutput`, `ArtifactRecord.checksum`, `.metadata` e `.reuseKey` são opcionais: registro escrito por versão anterior continua legível.
 
 ### Verificação
-- **837 testes, 837 passando** (medido em 2026-09-05, Linux). O vermelho conhecido de Windows (`polyglot: bin Rust presente com --version barato`) é anterior e independente.
+- **837 testes, 837 passando** (medido em 2026-09-05, Linux). O vermelho conhecido de Windows (`polyglot: bin Rust presente com --version barato`) é anterior e independente. **Esta linha estava errada, e a 3.20.1 diz por quê:** no Windows eram três vermelhos, não um, e os dois extras eram justamente os de `project.test`.
 - `izanagi run "documentar a funcao de soma" --output docs --verify-tests --mode orchestrated` num projeto de fixture: suíte verde → `PASS`, 7/7 VERIFIED, `testResults=1`, score 1.00; suíte vermelha → `BLOCKED`, 6/7 VERIFIED, `testResults=0`, regressão nomeando `npm test --silent` com exit 1.
 - `izanagi run "..." --reuse-artifacts` duas vezes: run 1 gasta 900 tokens com cache 0/3; run 2 gasta **0 tokens** com cache 3/3, e continua `PASS` com 4/4 VERIFIED.
 - `izanagi run "..." --min-quality`: piso 0.4 escolhe `autonomous` ($0.0011, o único que atinge); piso 0.3 escolhe `assisted` ($0.0000, mesmo piso atingido por menos).
