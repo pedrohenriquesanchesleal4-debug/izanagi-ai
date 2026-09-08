@@ -169,6 +169,21 @@ test('init: references/ é instalado, porque o runtime as injeta de lá', () => 
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('CLAUDE.md gerado: o ponteiro para o AGENTS.md da raiz não promete o que ele não tem', () => {
+  // O bullet "Fonte da verdade" dizia que o `AGENTS.md` da raiz servia "só para:
+  // comandos avançados de dev, estrutura completa de pastas, release flow" — as
+  // seções 3, 4, 5 e 9, que a versão de consumidor não tem. Ponteiro pendurado:
+  // a instância seguinte abriria o arquivo procurando o que não está lá.
+  const dir = tmpConsumer();
+  try {
+    initCore(dir);
+    installToProject(dir, ['core', 'agents', 'skills'], 'claude');
+    const claude = readRoot(dir, 'CLAUDE.md');
+    assert.doesNotMatch(claude, /`AGENTS\.md`: só para: comandos avançados de dev/);
+    assert.match(claude, /\.agents\/AGENTS\.md/, 'a referência completa precisa ter um endereço válido');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('buildConsumerAgentsDoc: seção universal não carrega afirmação que só vale no repo-fonte', () => {
   const doc = buildConsumerAgentsDoc(getPackageDir());
   // A seção 1 é universal e continha "Este repositório É o framework (não um app

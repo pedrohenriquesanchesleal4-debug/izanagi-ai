@@ -4,6 +4,17 @@
 
 ---
 
+## [3.21.1]: 2026-09-08
+
+### Fixed
+- **O `CLAUDE.md` gerado apontava para o que o `AGENTS.md` da raiz deixou de ter.** O bullet "Fonte da verdade" dizia que o `AGENTS.md` servia "só para: comandos avançados de dev, estrutura completa de pastas, release flow", e são exatamente as seções 3, 4, 5 e 9, que a v3.21.0 passou a omitir da versão de consumidor. Ponteiro pendurado criado pela própria correção: a instância de IA seguinte abriria o arquivo procurando o que não está lá. Agora o bullet separa os dois endereços — o `AGENTS.md` da raiz (catálogo de agentes e regras universais) e `.agents/AGENTS.md` (a referência completa do framework) — e diz que a segunda descreve o repositório do framework, não necessariamente o projeto. Só o exportador do Claude carregava essa frase; os outros cinco apontam para o `AGENTS.md` como referência canônica, o que continua verdade.
+- **Quatro adapters de skill em `.claude/skills/` estavam atrás da fonte** (`conversion-copywriting`, `economia-tokens`, `editorial-layout`, `payments-billing`): a `description` e seções inteiras existiam em `skills/<name>/SKILL.md` e não no adapter. Re-sincronizados pelo próprio `izanagi export --cli claude`.
+
+### Verificação
+- **850 testes, 849 passando** (medido em 2026-09-08, no Windows; 1 novo travando o ponteiro do `CLAUDE.md`). O vermelho segue sendo só `polyglot`.
+
+---
+
 ## [3.21.0]: 2026-09-08
 
 ### Fixed

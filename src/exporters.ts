@@ -419,9 +419,10 @@ Este projeto usa o **Izanagi AI Framework**: framework meta para engenharia de s
 
 Este arquivo já cobre agentes, skills e regras essenciais do dia a dia: não precisa ler mais nada de saída. Consulte sob demanda só quando a tarefa exigir o tópico específico:
 
-- \`AGENTS.md\`: só para: comandos avançados de dev, estrutura completa de pastas, release flow
+- \`AGENTS.md\` (raiz): catálogo de agentes e regras que valem em qualquer projeto
 - \`SYSTEM.md\`: só para: detalhes de engines internas, quality gates, arquitetura de memória
 - \`RULES.md\`: só para: regras operacionais que não estejam listadas abaixo
+- \`.agents/AGENTS.md\`: a referência COMPLETA do framework, com a topologia poliglota, os comandos de desenvolvimento, a estrutura de pastas e o release flow. Isso descreve o repositório do framework, não necessariamente este projeto: num projeto que só consome o pacote, \`npm run build\` e \`cargo test --workspace\` de lá não têm o que rodar. Os comandos deste projeto estão na seção 0 do \`AGENTS.md\` da raiz.
 
 ## Orquestrador (\`/agents\`)
 
