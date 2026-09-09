@@ -4,6 +4,18 @@
 
 ---
 
+## [3.22.1]: 2026-09-09
+
+### Fixed
+- **No Windows, o binário que o `cargo build` produz nunca era encontrado.** `checkRustBin` montava o caminho como `target/{release,debug}/<nome>`, e no Windows o cargo emite `<nome>.exe`: um binário que ESTAVA no disco era reportado como "não encontrado em target/{release,debug}". Agora a busca tenta os sufixos da plataforma (`''` e, no Windows, `.exe`), com o nome sem extensão sempre primeiro para não mudar nada em Linux/macOS, onde é o único nome que existe.
+- **No Windows, a venv do Python também nunca era encontrada.** `venvPythonPath` era `python-engine/.venv/bin/python` fixo, e `python -m venv` no Windows põe o interpretador em `.venv/Scripts/python.exe`. Dois componentes ficavam falsamente ausentes por causa do nome de uma pasta: a venv, e o `ast-analyzer` logo atrás dela ("venv ausente — impossível verificar import"). A lista de layouts é ordenada por plataforma e mantém `bin/python` no Windows, que existe em ambiente híbrido (MSYS/Git Bash).
+- **A suíte escondia três falhas atrás de uma.** Quatro testes de `polyglot` dependem de EXECUTAR um script com shebang (bin Rust que responde `--version`, interpretador de venv, e o caminho `--strict` que depende dos dois), e o Windows não executa shebang. Só um deles aparecia como falho: nos outros três a asserção estourava depois do fim do teste e chegava como `unhandledRejection`, então o relatório dizia "1 fail" no arquivo e nomeava apenas o quarto. Agora os quatro são `skip` com o motivo escrito, e a descoberta que importa em cada plataforma ganhou teste próprio: `.exe` do cargo e `.venv/Scripts/python.exe`, ambos verificando que o componente sai `ok` e que o detalhe do `ast-analyzer` deixa de culpar a venv.
+
+### Verificação
+- **899 testes, 895 passando, 0 falhando, 4 skipped** com motivo declarado (medido em 2026-09-09, no Windows). É a primeira rodada verde nesta plataforma: o `polyglot` era o único vermelho havia várias versões, e o motivo não era o Rust ausente, eram dois caminhos de arquivo que só valiam em POSIX.
+
+---
+
 ## [3.22.0]: 2026-09-09
 
 ### Added
@@ -51,7 +63,7 @@
 - **A AgentFactory grava em `<cwd>/agents/generated/`** um agente derivado do texto do objetivo. Rodando dentro do próprio checkout do framework, isso deixa lixo na árvore de agentes do repositório, que foi o que quebrou o teste de capacidades acima.
 
 ### Verificação
-- **897 testes, 896 passando** (medido em 2026-09-09, no Windows; 47 novos: detecção de binário, política de tools, argv, stdin, parse de fixtures REAIS capturadas do CLI v2.1.266, spawn de verdade contra um CLI falso, injeção de shell, exit code, timeout, cancelamento, profundidade, supressão em teste, chave de cache, piso de orçamento e as duas regressões corrigidas). O único vermelho segue sendo `polyglot`, que depende de binário Rust local.
+- **897 testes, 896 passando** (medido em 2026-09-09, no Windows; 47 novos: detecção de binário, política de tools, argv, stdin, parse de fixtures REAIS capturadas do CLI v2.1.266, spawn de verdade contra um CLI falso, injeção de shell, exit code, timeout, cancelamento, profundidade, supressão em teste, chave de cache, piso de orçamento e as duas regressões corrigidas). O único vermelho era `polyglot`, corrigido na 3.22.1 (não era o Rust ausente: eram dois caminhos de arquivo que só valiam em POSIX).
 
 ---
 

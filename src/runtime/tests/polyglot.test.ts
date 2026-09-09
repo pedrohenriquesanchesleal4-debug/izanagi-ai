@@ -116,7 +116,35 @@ function statusOf(rows: PolyglotRow[], component: string): PolyglotRow {
   return row;
 }
 
-test('polyglot: bin Rust presente com --version barato reporta a versão', async () => {
+/**
+ * Fixtures que precisam EXECUTAR um script com shebang (bin Rust que responde
+ * `--version`, interpretador de venv, e o caminho `--strict` que depende dos
+ * dois) só funcionam em POSIX: Windows não executa shebang, `spawnSync` sobre
+ * o arquivo falha e a sonda cai para o ramo de erro.
+ *
+ * Antes deste skip, três desses testes falhavam no Windows de forma INVISÍVEL:
+ * a asserção estourava depois do fim do teste e chegava como
+ * `unhandledRejection`, então o relatório mostrava "1 fail" no arquivo e
+ * nomeava só o quarto. Skip declarado com motivo é honesto; vermelho que
+ * esconde outros três não é.
+ *
+ * A fixture de bin com `--version` é um script com shebang, e Windows não
+ * executa shebang: `spawnSync` sobre ele falha e a sonda cai para "presente
+ * sem --version", que é o comportamento CORRETO do produto diante de um
+ * arquivo que não é executável. Testar o caminho de versão ali exigiria um
+ * `.exe` de verdade (um hard link para o `node.exe` falha com EPERM, e copiar
+ * 85MB por teste não é um teste barato) ou um `.cmd` via `shell: true`, que
+ * é justamente a superfície que a sonda não deve ter.
+ *
+ * Então o caminho de versão é verificado onde a fixture funciona, e o caminho
+ * que importa no Windows (achar o `.exe` que o cargo emite) ganhou teste
+ * próprio abaixo. Skip declarado com motivo, não vermelho tolerado.
+ */
+const POSIX_ONLY_FIXTURE = process.platform === 'win32'
+  ? 'fixture com shebang não é executável no Windows (a descoberta está coberta pelos testes de .exe e de .venv/Scripts)'
+  : false;
+
+test('polyglot: bin Rust presente com --version barato reporta a versão', { skip: POSIX_ONLY_FIXTURE }, async () => {
   const root = tmpRoot('izanagi-polyglot-ver-');
   try {
     addRustBinWithVersion(root, 'izanagi-core', '0.4.2');
@@ -126,6 +154,50 @@ test('polyglot: bin Rust presente com --version barato reporta a versão', async
     assert.match(text, /rust:izanagi-core/);
     assert.match(text, /0\.4\.2/);
     assert.match(text, /ok/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('polyglot: no Windows o binário .exe do cargo é encontrado (antes era reportado ausente)', {
+  skip: process.platform === 'win32' ? false : 'sufixo .exe só é procurado no Windows',
+}, async () => {
+  const root = tmpRoot('izanagi-polyglot-exe-');
+  try {
+    // Stub com o nome que o `cargo build` emite no Windows. Não precisa ser um
+    // PE válido: o que este teste cobra é a DESCOBERTA, e um arquivo que não
+    // executa tem que virar "presente, sem --version", nunca "ausente".
+    const dir = path.join(root, 'target', 'debug');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'izanagi-core.exe'), 'nao e um PE valido', 'utf8');
+
+    const out = await runPolyglot(['status', '--json'], root);
+    const row = statusOf(parseJsonRows(out.logs), 'rust:izanagi-core');
+    assert.equal(row.status, 'ok', `esperado ok, veio ${row.status}: ${row.detail}`);
+    assert.match(row.detail, /presente/);
+    assert.match(String(row.path), /izanagi-core\.exe$/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('polyglot: no Windows a venv em .venv/Scripts/python.exe é encontrada (antes: "venv ausente")', {
+  skip: process.platform === 'win32' ? false : 'layout Scripts/ só existe no Windows',
+}, async () => {
+  const root = tmpRoot('izanagi-polyglot-venvwin-');
+  try {
+    // `python -m venv` no Windows põe o interpretador aqui, não em bin/.
+    const dir = path.join(root, 'python-engine', '.venv', 'Scripts');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'python.exe'), 'stub', 'utf8');
+
+    const rows = parseJsonRows((await runPolyglot(['status', '--json'], root)).logs);
+    const venv = statusOf(rows, 'python:venv');
+    assert.equal(venv.status, 'ok', `esperado ok, veio ${venv.status}: ${venv.detail}`);
+    assert.match(String(venv.path), /Scripts/);
+
+    // O ast-analyzer deixa de ser "impossível verificar": a venv foi achada, e
+    // o stub não importa nada, então o resultado honesto é ausente COM motivo
+    // de import, não ausência de venv.
+    const analyzer = statusOf(rows, 'python:ast-analyzer');
+    assert.equal(analyzer.status, 'ausente');
+    assert.equal(/venv ausente/.test(analyzer.detail), false, `detail ainda culpa a venv: ${analyzer.detail}`);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -175,7 +247,7 @@ test('polyglot: env apontando para socket inexistente → ausente (sem crash)', 
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('polyglot: venv Python saudável → venv ok e ast_analyzer importável', () => {
+test('polyglot: venv Python saudável → venv ok e ast_analyzer importável', { skip: POSIX_ONLY_FIXTURE }, () => {
   const root = tmpRoot('izanagi-polyglot-py-');
   try {
     addFakeVenv(root, 'ok');
@@ -189,7 +261,7 @@ test('polyglot: venv Python saudável → venv ok e ast_analyzer importável', (
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('polyglot: venv presente mas import falha → ast-analyzer ausente com stderr resumido', () => {
+test('polyglot: venv presente mas import falha → ast-analyzer ausente com stderr resumido', { skip: POSIX_ONLY_FIXTURE }, () => {
   const root = tmpRoot('izanagi-polyglot-py2-');
   try {
     addFakeVenv(root, 'import-fail');
@@ -254,7 +326,7 @@ test('polyglot: modo --json cobre exatamente os 7 componentes com schema estáve
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('polyglot: --strict sai 1 quando algo ausente e 0 quando tudo ok', () => {
+test('polyglot: --strict sai 1 quando algo ausente e 0 quando tudo ok', { skip: POSIX_ONLY_FIXTURE }, () => {
   const empty = tmpRoot('izanagi-polyglot-s1-');
   const full = tmpRoot('izanagi-polyglot-s2-');
   try {

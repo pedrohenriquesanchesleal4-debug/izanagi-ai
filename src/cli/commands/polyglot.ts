@@ -85,12 +85,25 @@ function probeBinaryVersion(binPath: string): string | null {
   return firstLine;
 }
 
+/**
+ * Sufixos de nome de executável a tentar, na ordem.
+ *
+ * No Windows o `cargo build` emite `izanagi-core.exe`, e a busca só olhava o
+ * nome sem extensão: um binário que ESTAVA em `target/debug` era reportado
+ * como "não encontrado em target/{release,debug}". O caminho sem extensão
+ * continua primeiro para não mudar nada no Linux/macOS, onde é o único nome
+ * que cargo produz.
+ */
+export const RUST_BIN_SUFFIXES = process.platform === 'win32' ? ['', '.exe'] : [''];
+
 function checkRustBin(ctx: CheckContext, binName: string): PolyglotRow {
   const component = `rust:${binName}`;
   // Prefere release (artefato de grau produção); cai para debug (build dev corrente).
   for (const variant of ['release', 'debug'] as const) {
-    const binPath = path.join(ctx.root, 'target', variant, binName);
-    if (!isFile(binPath)) continue;
+    const binPath = RUST_BIN_SUFFIXES
+      .map((suffix) => path.join(ctx.root, 'target', variant, binName + suffix))
+      .find((candidate) => isFile(candidate));
+    if (binPath === undefined) continue;
     const version = probeBinaryVersion(binPath);
     const detail = version !== null
       ? `binário ${variant}; versão: ${version}`
@@ -119,21 +132,48 @@ function checkGoOrchestrator(): PolyglotRow {
   return { component: 'go:orchestrator', status: 'ausente', detail, path: null };
 }
 
-function venvPythonPath(root: string): string {
-  return path.join(root, 'python-engine', '.venv', 'bin', 'python');
+/**
+ * Layouts de venv, na ordem de tentativa.
+ *
+ * `python -m venv` põe o interpretador em `Scripts/python.exe` no Windows e em
+ * `bin/python` no resto. A checagem olhava só o segundo, então num Windows com
+ * a venv criada e funcionando o comando reportava "venv ausente" e, por
+ * consequência, "impossível verificar import" do `ast_analyzer`: dois
+ * componentes falsamente ausentes por causa do nome de uma pasta.
+ *
+ * `bin/python` continua na lista no Windows (e primeiro no POSIX) porque
+ * existe em layouts híbridos (MSYS/Git Bash) e porque tirar o caminho antigo
+ * mudaria o comportamento de quem já o tem.
+ */
+const VENV_PYTHON_RELATIVE = process.platform === 'win32'
+  ? [['Scripts', 'python.exe'], ['bin', 'python.exe'], ['bin', 'python']]
+  : [['bin', 'python'], ['bin', 'python3']];
+
+/** Descrição dos caminhos procurados, para a mensagem de ausência. */
+const VENV_PYTHON_HINT = VENV_PYTHON_RELATIVE
+  .map((parts) => `python-engine/.venv/${parts.join('/')}`)
+  .join(' ou ');
+
+/** Caminho do interpretador da venv, ou `null` quando nenhum layout existe. */
+function venvPythonPath(root: string): string | null {
+  for (const parts of VENV_PYTHON_RELATIVE) {
+    const candidate = path.join(root, 'python-engine', '.venv', ...parts);
+    if (isFile(candidate)) return candidate;
+  }
+  return null;
 }
 
 function checkPythonVenv(ctx: CheckContext): PolyglotRow {
   const pyPath = venvPythonPath(ctx.root);
-  if (isFile(pyPath)) {
+  if (pyPath !== null) {
     return { component: 'python:venv', status: 'ok', detail: 'venv Python presente', path: pyPath };
   }
-  return { component: 'python:venv', status: 'ausente', detail: 'venv ausente (python-engine/.venv/bin/python)', path: null };
+  return { component: 'python:venv', status: 'ausente', detail: `venv ausente (${VENV_PYTHON_HINT})`, path: null };
 }
 
 function checkAstAnalyzer(ctx: CheckContext): PolyglotRow {
   const pyPath = venvPythonPath(ctx.root);
-  if (!isFile(pyPath)) {
+  if (pyPath === null) {
     return {
       component: 'python:ast-analyzer',
       status: 'ausente',

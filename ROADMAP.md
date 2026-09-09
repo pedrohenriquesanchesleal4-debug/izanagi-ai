@@ -603,8 +603,13 @@ intervalo de linhas que terminava antes da entrada nova. Grounding real não é
 grounding completo, e é por isso que a Verification Engine e os critérios de
 aceite continuam sendo o que decide se um artefato passa.
 
-Testes: **897, 896 passando** (47 novos nesta fase; medido no Windows, onde o
-único vermelho segue sendo `polyglot`).
+Testes: **899, 895 passando, 0 falhando, 4 skipped** com motivo (49 novos nesta
+fase). Primeira rodada verde no Windows: o `polyglot` era o único vermelho
+havia várias versões, e a v3.22.1 mostrou que o motivo não era o Rust ausente,
+eram dois caminhos de arquivo que só valiam em POSIX (`target/debug/<nome>` sem
+`.exe`, e `.venv/bin/python` em vez de `.venv/Scripts/python.exe`). Três outras
+falhas estavam escondidas atrás daquela: a asserção estourava depois do fim do
+teste e chegava como `unhandledRejection`.
 
 ## Critérios de aceite das próximas fases
 
