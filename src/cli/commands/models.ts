@@ -1,5 +1,5 @@
 import { ModelRouter, TIER_FOR_ROLE, catalogAgeDays, isCatalogStale, STALE_CATALOG_AFTER_DAYS } from '../../runtime/model/router.js';
-import { LLMClient } from '../../runtime/llm/client.js';
+import { LLMClient, agentCLIStatus } from '../../runtime/llm/client.js';
 import { AGENT_ROLES, type AgentRole } from '../../runtime/contracts/task-contract.js';
 import type { RoutingContext } from '../../runtime/types.js';
 
@@ -49,6 +49,13 @@ export function modelsCommand(baseDir: string, args: string[] = []): void {
   if (asJson) {
     console.log(JSON.stringify({
       configuredProviders: Array.from(configured),
+      keylessExecutors: agentCLIStatus().map((e) => ({
+        provider: e.provider,
+        label: e.label,
+        available: e.available,
+        path: e.path,
+        reason: e.reason,
+      })),
       usingFallbackCatalog: usable.length === 0,
       routing,
       catalog: catalog.map((p) => ({
@@ -69,8 +76,13 @@ export function modelsCommand(baseDir: string, args: string[] = []): void {
 
   console.log('\n\x1b[36m=== Izanagi Model Router ===\x1b[0m\n');
   console.log(`\x1b[1mProviders configurados:\x1b[0m ${configured.size > 0 ? Array.from(configured).join(', ') : '\x1b[33mnenhum (modo headless)\x1b[0m'}`);
+  for (const e of agentCLIStatus()) {
+    const state = e.available ? `\x1b[32mdisponível\x1b[0m (\x1b[90m${e.path}\x1b[0m)` : `\x1b[90m${e.reason}\x1b[0m`;
+    console.log(`\x1b[1mExecutor sem API key:\x1b[0m ${e.label} [${e.provider}] ${state}`);
+  }
   if (usable.length === 0 && configured.size === 0) {
     console.log('\x1b[90m  O roteamento abaixo usa o catálogo completo como referência; nada será executado sem provider configurado.\x1b[0m');
+    console.log('\x1b[90m  Caminho sem chave: instale/autentique o Claude Code CLI e o provider `claude-cli` aparece aqui sozinho.\x1b[0m');
   }
 
   console.log('\n\x1b[1mRoteamento por papel (inteligência assimétrica):\x1b[0m');

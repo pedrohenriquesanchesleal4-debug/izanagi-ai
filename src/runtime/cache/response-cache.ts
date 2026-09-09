@@ -20,7 +20,10 @@ import fs from 'fs';
 import path from 'path';
 
 /** Muda quando o formato da entrada muda: invalida tudo que é antigo. */
-const CACHE_SCHEMA = 'v1';
+// v2: `toolPolicy` entrou na chave. Entradas v1 não são invalidadas
+// "por precaução" — elas simplesmente não colidem mais, porque a chave
+// canônica mudou de forma.
+const CACHE_SCHEMA = 'v2';
 const CACHE_DIR_REL = path.join('.izanagi', 'state', 'cache', 'responses');
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_MAX_ENTRIES = 500;
@@ -32,6 +35,13 @@ export interface CacheKeyInput {
   messages: Array<{ role: string; content: string }>;
   maxTokens?: number;
   temperature?: number;
+  /**
+   * Política de tools do executor de processo, quando houver. Entra na chave
+   * porque muda o que a resposta pôde ver: a mesma pergunta respondida com
+   * leitura do repositório é outra resposta, e servir uma pela outra seria um
+   * hit que mente sobre a evidência que produziu o artefato.
+   */
+  toolPolicy?: string;
 }
 
 export interface CachedResponse {
@@ -61,6 +71,7 @@ export function cacheKey(input: CacheKeyInput): string {
     messages: input.messages.map((m) => [m.role, m.content]),
     maxTokens: input.maxTokens ?? null,
     temperature: input.temperature ?? null,
+    toolPolicy: input.toolPolicy ?? null,
   });
   return crypto.createHash('sha256').update(canonical).digest('hex');
 }

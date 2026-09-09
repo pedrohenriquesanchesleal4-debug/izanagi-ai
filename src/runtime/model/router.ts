@@ -80,6 +80,31 @@ export const DEFAULT_PROVIDERS: ModelProvider[] = [
       { id: 'local-model', tier: 'balanced', contextWindow: 32000, costPer1kInput: 0, costPer1kOutput: 0, avgLatencyMs: 1500, reasoning: 'medium' },
     ],
   },
+  /**
+   * `claude-cli`: execução pelo Claude Code CLI já instalado e autenticado na
+   * máquina (ver runtime/llm/agent-cli.ts). Sem API key, sem modelo local.
+   *
+   * Os três ids foram validados contra o CLI v2.1.266 (`--model` rejeita id
+   * desconhecido localmente, custo zero, com `[claude-code:unrecognized_model]`
+   * — os três abaixo passam).
+   *
+   * O preço é a MESMA tabela de lista do provider `anthropic`, e é isso que o
+   * CLI reporta em `total_cost_usd` (`costBasis: "list"`). Numa assinatura, o
+   * custo marginal por chamada é outro — mas o roteador precisa comparar
+   * estratégias com uma unidade comum, e o número que o executor devolve
+   * medido é o de lista. Quando a chamada retorna, o custo medido substitui a
+   * estimativa (CompletionResult.costUsd).
+   */
+  {
+    id: 'claude-cli',
+    name: 'Claude Code CLI (sem API key)',
+    pricingAsOf: '2026-09-03',
+    models: [
+      { id: 'claude-haiku-4-5', tier: 'fast', contextWindow: 200000, costPer1kInput: 0.001, costPer1kOutput: 0.005, avgLatencyMs: 2500, reasoning: 'low' },
+      { id: 'claude-sonnet-5', tier: 'balanced', contextWindow: 1000000, costPer1kInput: 0.002, costPer1kOutput: 0.01, avgLatencyMs: 4000, reasoning: 'medium' },
+      { id: 'claude-opus-5', tier: 'premium', contextWindow: 1000000, costPer1kInput: 0.005, costPer1kOutput: 0.025, avgLatencyMs: 6000, reasoning: 'high' },
+    ],
+  },
   // "openrouter" e "custom" ficam de fora do catálogo default de propósito: o custo real
   // varia por modelo roteado (OpenRouter) ou é desconhecido (endpoint próprio) — nenhum
   // número aqui seria verificável. Adicione o(s) modelo(s) reais em

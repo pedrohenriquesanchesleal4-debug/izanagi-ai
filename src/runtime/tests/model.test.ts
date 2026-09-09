@@ -23,14 +23,17 @@ test('router: tarefa complexa com risco alto usa premium', () => {
   assert.ok(r.reasons.some((x) => x.includes('risco')));
 });
 
-test('router: catálogo default tem 5 providers (3 cloud + 2 locais)', () => {
-  assert.equal(DEFAULT_PROVIDERS.length, 5);
+test('router: catálogo default tem 6 providers (3 cloud + 2 locais + 1 CLI de agente)', () => {
+  assert.equal(DEFAULT_PROVIDERS.length, 6);
   const ids = DEFAULT_PROVIDERS.map((p) => p.id);
   assert.ok(ids.includes('openai'));
   assert.ok(ids.includes('anthropic'));
   assert.ok(ids.includes('google'));
   assert.ok(ids.includes('ollama'));
   assert.ok(ids.includes('lmstudio'));
+  // Executor sem API key: sem entrada no catálogo, o router nunca teria
+  // modelo para escolher e o caminho zero-config não existiria de fato.
+  assert.ok(ids.includes('claude-cli'));
   const catalog = router.catalog();
   assert.ok(catalog.some((m) => m.id.includes('gpt-4o-mini')));
   assert.ok(catalog.some((m) => m.id.includes('claude')));

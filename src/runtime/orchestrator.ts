@@ -97,7 +97,13 @@ export interface OrchestratorOptions {
   primaryAgent: string;
   skillChain: string[];
   /** Producer de artefato de um nó: recebe o nó e devolve conteúdo/resultado. */
-  produce: (node: GraphNode, ctx: ExecuteCtx) => Promise<{ content: unknown; kind: string; tokens?: number; model?: string }> | { content: unknown; kind: string; tokens?: number; model?: string };
+  /**
+   * Executa um nó. `costUsd` é OPCIONAL e significa "custo medido pelo
+   * executor" (hoje só o CLI de agente reporta, em `total_cost_usd`).
+   * Presente, ele substitui a estimativa de `costOf` no orçamento: um
+   * número medido vale mais que a mesma conta feita por tabela de preço.
+   */
+  produce: (node: GraphNode, ctx: ExecuteCtx) => Promise<NodeProduction> | NodeProduction;
   /** Consumer de artefato validado (ex.: salvar em disco). */
   consume?: (node: GraphNode, artifact: { kind: string; content: unknown; valid: boolean }) => void;
   /**
@@ -202,6 +208,16 @@ export interface OrchestratorOptions {
    * tokens, mas o custo fica em 0 (não inventa preço de modelo desconhecido).
    */
   costOf?: (modelId: string, inputTokens: number, outputTokens: number) => number;
+}
+
+/** O que um producer devolve para um nó do grafo. */
+export interface NodeProduction {
+  content: unknown;
+  kind: string;
+  tokens?: number;
+  model?: string;
+  /** Custo REAL da chamada em USD, quando o executor mediu. */
+  costUsd?: number;
 }
 
 export interface ExecuteCtx {
@@ -1405,7 +1421,10 @@ export class Orchestrator {
         // custo já usava o valor como total; o juiz semântico, no mesmo
         // arquivo, sempre passou um split que fecha com o total.
         ctx.trace.addTokens(inputTokens, result.tokens - inputTokens);
-        const costUsd = this.opts.costOf ? this.opts.costOf(modelId, inputTokens, result.tokens - inputTokens) : 0;
+        // Custo medido pelo executor tem precedência sobre a estimativa por
+        // tabela: quando o subprocesso devolve `total_cost_usd`, o teto de
+        // `--max-cost` passa a ser cobrado sobre o que foi realmente gasto.
+        const costUsd = result.costUsd ?? (this.opts.costOf ? this.opts.costOf(modelId, inputTokens, result.tokens - inputTokens) : 0);
         const spend = ctx.execBudget
           ? ctx.execBudget.spend({ phase, tokens: result.tokens, costUsd, model: modelId })
           : { ok: ctx.budget.spend(phase, result.tokens), reason: `orçamento de tokens da fase ${phase} excedido` };
@@ -1948,7 +1967,7 @@ export class Orchestrator {
     contract: TaskContract | undefined,
     ctx: ExecuteCtx,
     graph: ExecutionGraph,
-  ): Promise<{ content: unknown; kind: string; tokens?: number; model?: string }> {
+  ): Promise<NodeProduction> {
     const spec = contract?.tool ?? (node.metadata?.tool as { id: string; input: unknown } | undefined);
     if (!spec?.id) {
       throw new Error(`nó "${node.id}" é de tool mas não declara qual tool executar (contract.tool.id)`);

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest, checkSkillLifecycle, checkNestedDuplicate } from '../checks.js';
+import { LLMClient, agentCLIStatus, AGENT_CLI_PROVIDERS } from '../../runtime/llm/client.js';
 
 /**
  * Decide a raiz do framework para auditoria.
@@ -145,6 +146,11 @@ export function doctorCommand(baseDir: string, args: string[] = [], stateDir = b
     }
   }
 
+  // Executor: a pergunta que decide se `izanagi run` faz trabalho de verdade
+  // ou simula. Vem antes do resumo de propósito — é o diagnóstico que o
+  // usuário mais precisa e o que antes ele só descobria vendo o run simular.
+  warnings += reportExecutors();
+
   if (deep) {
     const deepErrors = runDeepChecks(baseDir, stateDir);
     errors += deepErrors;
@@ -152,6 +158,43 @@ export function doctorCommand(baseDir: string, args: string[] = [], stateDir = b
 
   console.log(`\n\x1b[1mSummary:\x1b[0m ${errors === 0 ? '\x1b[32mPASSED\x1b[0m' : '\x1b[31mFAILED\x1b[0m'} (${errors} errors, ${warnings} warnings)\n`);
   return errors === 0;
+}
+
+/**
+ * Quem vai executar os nós do grafo. Três camadas, na ordem em que o runtime
+ * as prefere: API key configurada, modelo local em opt-in, CLI de agente já
+ * autenticado na máquina. Nenhuma das três, e o run simula (headless).
+ *
+ * Devolve o número de avisos (0 quando existe algum executor real).
+ */
+function reportExecutors(): number {
+  const client = new LLMClient();
+  const providers = client.configuredProviders();
+  const agentCli = agentCLIStatus();
+  const keyed = providers.filter((p) => !AGENT_CLI_PROVIDERS.includes(p));
+
+  console.log('\n\x1b[1m\x1b[36m-- Executor --\x1b[0m\n');
+
+  for (const status of agentCli) {
+    if (status.available) {
+      console.log(` \x1b[32m✔\x1b[0m ${status.label} (${status.provider}): ${status.path} \x1b[90m(sem API key)\x1b[0m`);
+    } else {
+      console.log(` \x1b[90m-\x1b[0m ${status.label} (${status.provider}): ${status.reason}`);
+    }
+  }
+
+  if (keyed.length > 0) {
+    console.log(` \x1b[32m✔\x1b[0m Providers por chave/opt-in: ${keyed.join(', ')}`);
+  }
+
+  if (providers.length === 0) {
+    console.log(' \x1b[33m⚠\x1b[0m Nenhum executor: `izanagi run` vai SIMULAR os nós (modo headless).');
+    console.log('   Saída mais curta: instale e autentique o Claude Code CLI (nenhuma API key necessária).');
+    return 1;
+  }
+
+  console.log(` \x1b[90mexecução real habilitada — providers utilizáveis: ${providers.join(', ')}\x1b[0m`);
+  return 0;
 }
 
 function runDeepChecks(baseDir: string, stateDir: string): number {

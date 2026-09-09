@@ -3,7 +3,15 @@ import path from 'path';
 import { findAgentFile, loadSkillResolver, resolveSkillPath, loadProjectConfig } from '../framework.js';
 import { buildBlueprintCtx } from '../blueprint.js';
 import { Orchestrator, type ExecuteCtx, type OrchestrationResult } from '../../runtime/orchestrator.js';
-import { LLMClient } from '../../runtime/llm/client.js';
+import {
+  LLMClient,
+  agentCLIStatus,
+  AGENT_CLI_PROVIDERS,
+  AGENT_CLI_OVERHEAD_TOKENS,
+  measuredTokensPerNode,
+  recommendedBudget,
+  toolPolicyFromEnv,
+} from '../../runtime/llm/client.js';
 import type { CompletionOptions, CompletionResult } from '../../runtime/llm/client.js';
 import { DYNAMIC_MARKER, estimateStaticTokens, MIN_CACHEABLE_TOKENS } from '../../runtime/llm/prompt-cache.js';
 import type { GraphNode } from '../../runtime/types.js';
@@ -55,6 +63,13 @@ interface RunArgs {
   noCommander: boolean;
   /** Desliga o juiz semântico (`--no-judge`): critério semântico volta a ficar UNVERIFIED. */
   noJudge: boolean;
+  /**
+   * Política de tools do EXECUTOR de processo (`--agent-tools none|read|write`).
+   * Não confundir com `--allow-tool`, que governa os nós de tool do grafo:
+   * aqui se decide se o subprocesso do agente pode LER o repositório ou
+   * ALTERAR arquivos. Ausente = `none` (nenhuma tool).
+   */
+  agentTools?: 'none' | 'read' | 'write';
   /** Saída única em JSON no stdout, para o agendador do SO consumir (`--json`). */
   json: boolean;
   /** Diretório onde o run grava a entrega (`--output <dir>`), relativo à raiz do projeto. */
@@ -111,6 +126,11 @@ export function parseRunArgs(args: string[]): RunArgs {
   let noCommander = false;
   let noJudge = false;
   let verifyTests = false;
+  /**
+   * Política de tools do executor de processo (`--agent-tools`).
+   * Ausente = o adapter decide pelo ambiente (default `none`).
+   */
+  let agentTools: 'none' | 'read' | 'write' | undefined;
   let json = false;
   let notifyWebhook: string | undefined;
   const acceptance: string[] = [];
@@ -185,6 +205,12 @@ export function parseRunArgs(args: string[]): RunArgs {
       noCommander = true;
     } else if (arg === '--no-judge') {
       noJudge = true;
+    } else if (arg === '--agent-tools' || arg.startsWith('--agent-tools=')) {
+      const read = readValue(arg, '--agent-tools', args[i + 1]);
+      if (read.consumed) i++;
+      const v = (read.value ?? '').trim().toLowerCase();
+      if (v === 'none' || v === 'read' || v === 'write') agentTools = v;
+      else if (v) console.error(`\x1b[33mAviso:\x1b[0m --agent-tools "${read.value}" inválido (none|read|write): ignorado.`);
     } else if (arg === '--verify-tests') {
       verifyTests = true;
     } else if (arg === '--json') {
@@ -244,6 +270,7 @@ export function parseRunArgs(args: string[]): RunArgs {
     noCommander,
     noJudge,
     verifyTests,
+    ...(agentTools ? { agentTools } : {}),
     json,
     ...(notifyWebhook ? { notifyWebhook } : {}),
     ...(acceptance.length > 0 ? { acceptance } : {}),
@@ -595,6 +622,7 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     ...(parsed.acceptance ? { acceptance: parsed.acceptance } : {}),
     ...(parsed.allowedTools ? { allowedTools: parsed.allowedTools } : {}),
     ...(parsed.verifyTests ? { verifyTests: true } : {}),
+    ...(parsed.agentTools ? { agentTools: parsed.agentTools } : {}),
     ...(parsed.minQuality !== undefined ? { minQuality: parsed.minQuality } : {}),
     stateDir,
     explicitAgent: Boolean(agentId),
@@ -757,6 +785,13 @@ export async function runRuntime(
     verifyTests?: boolean;
     /** Allowlist de tools do run (`--allow-tool`). */
     allowedTools?: string[];
+    /**
+     * Política de tools do EXECUTOR de processo (`--agent-tools`), diferente de
+     * `--allow-tool` (que governa os nós de tool do próprio grafo): aqui se
+     * decide se o subprocesso do agente pode ler o repositório (`read`) ou
+     * alterar arquivos (`write`). Default `none`: nenhuma tool.
+     */
+    agentTools?: 'none' | 'read' | 'write';
     /** Raiz do estado (`.izanagi/state`). Default: `baseDir`. */
     stateDir?: string;
   },
@@ -771,12 +806,35 @@ export async function runRuntime(
     console.log('    Providers remotos configurados foram ignorados de propósito — execução seguirá em modo headless.\n');
   }
   if (llmProviders.length === 0) {
-    console.log('  \x1b[33m⚠ Modo headless:\x1b[0m nenhuma API key encontrada (IZANAGI_OPENAI_API_KEY /');
-    console.log('    IZANAGI_ANTHROPIC_API_KEY / IZANAGI_GOOGLE_API_KEY / IZANAGI_OPENROUTER_API_KEY).');
-    console.log('    Modelo local? IZANAGI_OLLAMA_ENABLED=1 ou IZANAGI_LMSTUDIO_ENABLED=1 (sem API key).');
-    console.log('    Os nós do grafo serão simulados — defina uma chave/flag para execução real via LLM.\n');
+    console.log('  \x1b[33m⚠ Modo headless:\x1b[0m nenhum executor disponível — os nós do grafo serão SIMULADOS.');
+    // A saída mais curta vem primeiro porque é a que não pede chave nenhuma:
+    // quem só quer que o runtime execute não deveria ter que abrir a página de
+    // billing de um provider para descobrir isso.
+    for (const status of agentCLIStatus()) {
+      console.log(`    • ${status.label}: \x1b[33m${status.reason}\x1b[0m`);
+    }
+    console.log('    • Ou API key: IZANAGI_ANTHROPIC_API_KEY / IZANAGI_OPENAI_API_KEY / IZANAGI_GOOGLE_API_KEY / IZANAGI_OPENROUTER_API_KEY.');
+    console.log('    • Ou modelo local: IZANAGI_OLLAMA_ENABLED=1 ou IZANAGI_LMSTUDIO_ENABLED=1.\n');
   } else {
-    console.log(`  \x1b[32m✔ Execução real via LLM:\x1b[0m providers configurados: ${llmProviders.join(', ')}\n`);
+    const keyless = llmProviders.filter((p) => AGENT_CLI_PROVIDERS.includes(p));
+    const keyed = llmProviders.filter((p) => !AGENT_CLI_PROVIDERS.includes(p));
+    console.log(`  \x1b[32m✔ Execução real:\x1b[0m ${llmProviders.join(', ')}`);
+    if (keyless.length > 0) {
+      // A flag do run manda; sem flag, o ambiente decide (default `none`).
+      const policy = opts.agentTools ?? toolPolicyFromEnv();
+      console.log(`    \x1b[90mvia CLI de agente já autenticado (sem API key)${keyed.length > 0 ? ` + provider por chave: ${keyed.join(', ')}` : ''}\x1b[0m`);
+      console.log(`    \x1b[90mtools do executor: ${policy}${policy === 'none' ? ' (--agent-tools read liga leitura do repositório)' : ''}\x1b[0m`);
+      // O CLI hospedeiro cobra o system prompt dele em TODA chamada. Um
+      // `--budget` apertado estoura no primeiro nó, e a mensagem que o usuário
+      // veria ("orçamento da fase execution esgotado") não explica isso.
+      const piso = recommendedBudget(policy);
+      if (opts.budget !== undefined && opts.budget < piso) {
+        console.log(`    \x1b[33m⚠ --budget ${opts.budget} é baixo para este executor:\x1b[0m cada chamada carrega ~${AGENT_CLI_OVERHEAD_TOKENS} tokens`);
+        console.log(`      \x1b[90mde system prompt do próprio CLI, e um nó com tools=${policy} foi medido em ~${measuredTokensPerNode(policy)} tokens.`);
+        console.log(`      Piso recomendado: --budget ${piso} por nó de modelo.\x1b[0m`);
+      }
+    }
+    console.log('');
   }
 
   // Telemetria de tokens/cache (só faz sentido com provider real — headless não
@@ -868,6 +926,7 @@ export async function runRuntime(
     client: client as unknown as Parameters<typeof createLLMProducer>[0]['client'],
     cache,
     contextResolver,
+    ...(opts.agentTools ? { toolPolicy: opts.agentTools } : {}),
     buildSystemPrompt: (node, _ctx, minimalContext) =>
       buildNodePrompt(node, { task: opts.task, agent: opts.agent, skillChain: opts.skillChain }, baseDir, {
         noCacheFoundation: opts.noCacheFoundation,

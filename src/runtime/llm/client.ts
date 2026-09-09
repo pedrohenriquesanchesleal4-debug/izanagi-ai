@@ -23,8 +23,15 @@
  * (servidor local não está de pé) aparece como erro de rede real na primeira
  * chamada — não é um provider fake.
  *
- * Sem chave/servidor configurado, o framework continua 100% funcional em modo
- * headless (gera prompt) — o executor apenas informa que não está configurado.
+ * ZERO-CONFIG: além dos providers acima (que exigem chave ou servidor local),
+ * o cliente registra os CLIs de agente já instalados e autenticados na máquina
+ * (`claude` -> provider `claude-cli`, ver runtime/llm/agent-cli.ts). Detectado
+ * o binário no PATH, `izanagi run` executa trabalho de verdade sem nenhuma
+ * chave de API e sem modelo local. Desligue com IZANAGI_AGENT_CLI_DISABLED=1.
+ *
+ * Sem chave, sem servidor local e sem CLI de agente, o framework continua 100%
+ * funcional em modo headless (gera prompt) — o executor apenas informa que não
+ * está configurado.
  *
  * Cache-Aware Prompt Compression (CAPC): o system prompt pode carregar o
  * delimitador `<!-- IZANAGI:DYNAMIC -->` (ver runtime/llm/prompt-cache.ts).
@@ -36,9 +43,32 @@
 
 import { splitStaticDynamic, joinWithoutMarker, estimateTokens, estimateStaticTokens, MIN_CACHEABLE_TOKENS } from './prompt-cache.js';
 import { dietHistory } from './session-diet.js';
+import { defaultAgentCLIAdapters, AGENT_CLI_SPECS } from './agent-cli.js';
 
 /** Reexports públicos das utilidades de cache (mesma heurística, fonte única). */
 export { DYNAMIC_MARKER, MIN_CACHEABLE_TOKENS, splitStaticDynamic, joinWithoutMarker, estimateStaticTokens, isPromptCacheEligible } from './prompt-cache.js';
+
+/** Reexports públicos do executor sem chave (CLI de agente já autenticado na máquina). */
+export {
+  AgentCLIAdapter,
+  AGENT_CLI_PROVIDERS,
+  AGENT_CLI_OVERHEAD_TOKENS,
+  AGENT_CLI_TOKENS_PER_NODE,
+  AGENT_CLI_MIN_RECOMMENDED_BUDGET,
+  AGENT_CLI_MIN_BUDGET_WITH_TOOLS,
+  AGENT_CLI_TOKENS_PER_NODE_WITH_TOOLS,
+  measuredTokensPerNode,
+  recommendedBudget,
+  AGENT_CLI_SPECS,
+  agentCLIStatus,
+  claudeCLISpec,
+  defaultAgentCLIAdapters,
+  findExecutable,
+  toolPolicyFromEnv,
+  currentDepth,
+  type AgentCLISpec,
+  type AgentCLIToolPolicy,
+} from './agent-cli.js';
 
 /** Reexports públicos do AgentDiet (observation masking determinístico). */
 export { dietHistory, summarizeObservation, MIN_TURNS, RECENT_WINDOW, MAX_OBS_CHARS } from './session-diet.js';
@@ -68,6 +98,23 @@ export interface CompletionOptions {
    * deixava as requisicoes em voo ate o timeout delas.
    */
   signal?: AbortSignal;
+  /**
+   * Teto de custo desta chamada, em USD. Só tem efeito em providers que
+   * aceitam teto por chamada (hoje: os CLIs de agente, via `--max-budget-usd`).
+   * Providers HTTP ignoram: a API não expõe onde aplicar isso.
+   */
+  maxCostUsd?: number;
+  /**
+   * Política de tools do subprocesso, para providers de CLI de agente:
+   * `none` (default, nenhuma tool), `read` (leitura do repositório) ou
+   * `write` (leitura + escrita de arquivo). Ignorada por providers HTTP.
+   */
+  toolPolicy?: 'none' | 'read' | 'write';
+  /**
+   * Agente nativo do host que deve assumir a sessão (passthrough opcional
+   * para CLIs de agente, ex.: `--agent architect`). Ignorado por HTTP.
+   */
+  agent?: string;
 }
 
 /**
@@ -92,6 +139,13 @@ export interface CompletionResult {
    * Google `usageMetadata.cachedContentTokenCount`. Ausente = provider não reportou.
    */
   cachedTokens?: number;
+  /**
+   * Custo REAL desta chamada em USD, quando o provider o reporta (hoje: CLI de
+   * agente, campo `total_cost_usd`). Ausente = ninguém mediu, e o chamador
+   * deve continuar estimando por tabela de preço. Um número medido e um
+   * número estimado não podem ocupar o mesmo campo sem se confundirem.
+   */
+  costUsd?: number;
 }
 
 export interface ModelAdapter {
@@ -521,6 +575,13 @@ export class LLMClient {
       new OllamaAdapter(),
       new LMStudioAdapter(),
       new CustomOpenAICompatibleAdapter(),
+      // Executores sem chave: entram por ÚLTIMO na lista, mas não por
+      // desempate de qualidade — quem escolhe o modelo é o ModelRouter, por
+      // papel/custo. A ordem aqui só define a ordem de listagem em
+      // `configuredProviders()`, e um provider de API configurado
+      // explicitamente pelo usuário aparecer antes do fallback automático é a
+      // leitura correta de intenção.
+      ...defaultAgentCLIAdapters(),
     ],
   ) {
     this.adapters = new Map(adapters.map((a) => [a.provider, a]));
@@ -544,6 +605,11 @@ export class LLMClient {
     const adapter = this.adapters.get(provider);
     if (!adapter) throw new Error(`Provider "${provider}" não suportado (adapters: ${Array.from(this.adapters.keys()).join(', ')})`);
     if (!adapter.configured) {
+      // CLI de agente não tem chave para definir: o que falta é o binário (ou
+      // a profundidade estourou). Mandar o usuário "definir a chave de API" ali
+      // seria mandá-lo resolver um problema que ele não tem.
+      const spec = AGENT_CLI_SPECS[provider];
+      if (spec) throw new Error(`Provider "${provider}" não utilizável — ${spec.install}`);
       throw new Error(`Provider "${provider}" não configurado — defina ${ENV_KEYS[provider]?.apiKey.join(' ou ') ?? 'a chave de API'} no ambiente`);
     }
     // AgentDiet opt-in: sem diet, opts passa INTACTO (mesma referência — wire

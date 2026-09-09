@@ -253,6 +253,18 @@ export class ExecutionBudget {
     return this.costUsd;
   }
 
+  /**
+   * Custo que ainda cabe no run, em USD, ou `undefined` quando não há teto
+   * declarado. Existe para que um executor capaz de recusar por conta própria
+   * (o CLI de agente aceita `--max-budget-usd`) receba o teto REAL restante em
+   * vez de gastar primeiro e ser cobrado depois: o degrau mais confiável do
+   * Budget Controller é o que o processo executor também conhece.
+   */
+  get remainingUsd(): number | undefined {
+    if (this.limits.maxCostUsd === undefined) return undefined;
+    return Math.max(0, this.limits.maxCostUsd - this.costUsd);
+  }
+
   get elapsedMs(): number {
     return Date.now() - this.startedAt;
   }

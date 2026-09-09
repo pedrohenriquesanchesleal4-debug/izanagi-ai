@@ -114,6 +114,12 @@ export interface IzanagiRunOptions {
   signal?: AbortSignal;
   /** Só providers locais (Ollama / LM Studio / endpoint próprio). */
   local?: boolean;
+  /**
+   * Política de tools do executor de processo (CLI de agente já autenticado):
+   * `none` (default, nenhuma tool), `read` (leitura do repositório) ou `write`
+   * (leitura + escrita de arquivo). Providers HTTP ignoram.
+   */
+  agentTools?: 'none' | 'read' | 'write';
   /** Cache local de respostas. */
   cache?: boolean;
   /**
@@ -291,6 +297,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
         client,
         cache,
         contextResolver,
+        ...(options.agentTools ? { toolPolicy: options.agentTools } : {}),
         buildSystemPrompt: (node: GraphNode, _ctx: ExecuteCtx, minimalContext?: string) =>
           buildNodePrompt(node, { task: options.objective, agent: { name: agentId }, skillChain: options.skillChain ?? [] }, baseDir, {
             ...(minimalContext ? { context: minimalContext } : {}),

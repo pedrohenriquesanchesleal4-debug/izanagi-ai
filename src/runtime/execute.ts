@@ -29,7 +29,13 @@ import type { AgentRole, ExecutionMode, TaskPriority } from './contracts/task-co
 import type { ExecuteCtx } from './orchestrator.js';
 import type { ExecutionGraph, GraphNode, ModelSpec, RoutingContext, RoutingHints } from './types.js';
 
-/** Providers que rodam na própria máquina (usados por `--local`). */
+/**
+ * Providers que rodam na própria máquina (usados por `--local`).
+ *
+ * O CLI de agente (`claude-cli`) roda local como processo, mas fala com a API
+ * do provider dele: não entra aqui, senão `--local` (que existe para quem quer
+ * garantir que nada sai da máquina) passaria a mentir.
+ */
 export const LOCAL_PROVIDERS = ['ollama', 'lmstudio', 'custom'];
 
 export interface PlanningInput {
@@ -298,7 +304,14 @@ export interface ProducerLLMClient {
     maxTokens?: number;
     /** Cancelamento do run: o cliente combina com o próprio timeout HTTP. */
     signal?: AbortSignal;
-  }): Promise<{ text: string; tokens: number; model: string; provider: string; cachedTokens?: number }>;
+    /**
+     * Teto de custo desta chamada em USD (o que ainda cabe no run). Providers
+     * que sabem recusar por conta própria usam; os demais ignoram.
+     */
+    maxCostUsd?: number;
+    /** Política de tools do executor de processo (CLI de agente). */
+    toolPolicy?: 'none' | 'read' | 'write';
+  }): Promise<{ text: string; tokens: number; model: string; provider: string; cachedTokens?: number; costUsd?: number }>;
 }
 
 export interface ProducerOptions {
@@ -310,6 +323,12 @@ export interface ProducerOptions {
   buildSystemPrompt: (node: GraphNode, ctx: ExecuteCtx, minimalContext?: string) => string;
   /** Observador por nó: telemetria, log verboso, progresso. */
   onNode?: (info: { nodeId: string; role?: AgentRole; model: string; tokens: number; cachedTokens: number; fromCache: boolean }) => void;
+  /**
+   * Política de tools do executor de processo (CLI de agente): `none` (default
+   * do adapter), `read` (leitura do repositório, grounding real) ou `write`.
+   * Providers HTTP ignoram. Ausente, o adapter decide pelo ambiente.
+   */
+  toolPolicy?: 'none' | 'read' | 'write';
 }
 
 export type NodeProducer = (node: GraphNode, ctx: ExecuteCtx) => Promise<{ content: unknown; kind: string; tokens?: number; model?: string }>;
@@ -325,7 +344,10 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
     const system = opts.buildSystemPrompt(node, ctx, minimalContext);
     const messages = [{ role: 'user' as const, content: opts.objective }];
     const maxTokens = node.tokenBudget ?? 4000;
-    const key = { provider: ctx.provider, model: ctx.model, system, messages, maxTokens };
+    // A política de tools entra na CHAVE do cache: a mesma pergunta respondida
+    // com leitura do repositório não é a mesma resposta que sem leitura, e
+    // servir uma pela outra seria um hit de cache que mente.
+    const key = { provider: ctx.provider, model: ctx.model, system, messages, maxTokens, ...(opts.toolPolicy ? { toolPolicy: opts.toolPolicy } : {}) };
 
     const cached = opts.cache.get(key);
     if (cached) {
@@ -337,12 +359,17 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
 
     // O sinal do run desce até a requisição: sem ele, cancelar deixava a
     // chamada em voo consumindo cota de um run que ninguém mais espera.
+    // Teto de custo repassado ao executor: `remainingUsd` é o que ainda cabe no
+    // run AGORA. Sem `--max-cost` no run não existe teto, e o campo fica fora.
+    const remainingUsd = ctx.execBudget?.remainingUsd;
     const result = await opts.client.complete(ctx.provider, {
       model: ctx.model,
       system,
       messages,
       maxTokens,
       ...(ctx.signal ? { signal: ctx.signal } : {}),
+      ...(remainingUsd !== undefined ? { maxCostUsd: remainingUsd } : {}),
+      ...(opts.toolPolicy ? { toolPolicy: opts.toolPolicy } : {}),
     });
 
     // Só entra no cache a resposta que produz artefato VÁLIDO.
@@ -368,7 +395,14 @@ export function createLLMProducer(opts: ProducerOptions): NodeProducer {
       cachedTokens: result.cachedTokens ?? 0,
       fromCache: false,
     });
-    return { content: result.text, kind, tokens: result.tokens, model: result.model };
+    return {
+      content: result.text,
+      kind,
+      tokens: result.tokens,
+      model: result.model,
+      // Custo medido (quando o executor mede) sobe até o Budget Controller.
+      ...(result.costUsd !== undefined ? { costUsd: result.costUsd } : {}),
+    };
   };
 }
 
