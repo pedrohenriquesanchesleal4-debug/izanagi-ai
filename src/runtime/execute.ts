@@ -282,7 +282,17 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
     capabilities,
     routeRole: (role: AgentRole, node?: GraphNode, hints?: RoutingHints) => {
       try {
-        const routed = router.routeForRole(role, contextForNode(routingContext, node, hints));
+        // O agente do nó tem voz na escolha do modelo: os 22 core declaram
+        // `model` no próprio JSON, e até aqui esse campo era lido pelo registry
+        // e ignorado pelo roteamento. É o que faz "o orquestrador escolhe o
+        // modelo de cada agente que ele comanda" ser verdade inteira, em vez
+        // de "o papel escolhe e o agente não opina".
+        const hintedTier = ModelRouter.tierForHint(node?.agent ? capabilities.get(node.agent)?.modelHint : undefined);
+        const routed = router.routeForRole(
+          role,
+          contextForNode(routingContext, node, hints),
+          hintedTier,
+        );
         return { model: routed.model.id, provider: routed.provider };
       } catch {
         return undefined;

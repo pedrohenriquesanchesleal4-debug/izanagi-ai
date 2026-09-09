@@ -568,6 +568,15 @@ está completo" e "o framework funciona na máquina de quem instalou".
   `IZANAGI_AGENT_CLI_DEPTH+1` e no teto o adapter degrada para headless;
   dentro de test runner o executor fica desligado, para que `npm test` nunca
   gaste cota real de quem rodou.
+- **`izanagi export --cli claude --global`**: escopo pessoal em
+  `~/.claude/{agents,commands,skills}`, para que os 22 agentes e a biblioteca
+  de skills valem em todo projeto aberto (eram descobertos só por projeto, e
+  quem abria a CLI em outro diretório concluía que o framework não funciona).
+  Nunca escreve `~/CLAUDE.md`.
+- **O agente do nó opina no modelo**: os 22 core declaravam `model` no JSON e
+  o roteamento nunca lia o campo. Agora `agent-architect` sai em opus, um
+  specialist em sonnet e a avaliação em haiku, no MESMO grafo, com o Commander
+  determinístico decidindo isso sem gastar token.
 - **Higiene de repositório e de disco, tudo achado executando de verdade**: a
   verificação de build escrevia ~700 arquivos na raiz do repo (sandbox que só
   era limpo no caminho de sucesso), o espelho de assets em `.agents/` era
@@ -594,7 +603,7 @@ intervalo de linhas que terminava antes da entrada nova. Grounding real não é
 grounding completo, e é por isso que a Verification Engine e os critérios de
 aceite continuam sendo o que decide se um artefato passa.
 
-Testes: **891, 890 passando** (41 novos nesta fase; medido no Windows, onde o
+Testes: **897, 896 passando** (47 novos nesta fase; medido no Windows, onde o
 único vermelho segue sendo `polyglot`).
 
 ## Critérios de aceite das próximas fases

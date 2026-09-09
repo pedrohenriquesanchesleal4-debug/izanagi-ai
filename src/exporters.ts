@@ -529,20 +529,50 @@ ${agentList}
 `;
 }
 
-export function exportToClaude(baseDir: string): string[] {
+export interface ClaudeExportOptions {
+  /**
+   * Grava o `CLAUDE.md` na raiz do destino. Default `true`.
+   *
+   * `false` existe para a instalação de escopo pessoal (`izanagi export
+   * --global`, destino `~/`): ali o `CLAUDE.md` é o arquivo de memória do
+   * USUÁRIO, que passa a valer em todo projeto que ele abrir. Sobrescrevê-lo
+   * com a descrição de um framework seria injetar contexto do Izanagi em
+   * repositórios que nada têm a ver com ele. Agentes e skills de escopo
+   * pessoal são aditivos e ficam inertes até serem chamados; um documento de
+   * memória global, não.
+   */
+  rootDoc?: boolean;
+  /**
+   * De onde LER os agentes e as skills, quando isso não é o destino.
+   *
+   * Fonte e destino sempre foram o mesmo `baseDir`, e para o export por
+   * projeto isso é correto (o projeto tem `.agents/` ou é o repo-fonte). Para
+   * o escopo pessoal não é: o destino é `~/`, que não contém framework nenhum,
+   * e ler dali produziria zero agente e zero skill em silêncio, gravando um
+   * `.claude/` vazio que parece instalado.
+   *
+   * Ausente, mantém o comportamento antigo (fonte = destino).
+   */
+  sourceDir?: string;
+}
+
+export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}): string[] {
   const created: string[] = [];
-  const agents = loadIzanagiAgents(baseDir);
-  const skills = listAllSkillNames(baseDir)
-    .map((n) => readSkillSummary(baseDir, n))
+  const source = opts.sourceDir ?? baseDir;
+  const agents = loadIzanagiAgents(source);
+  const skills = listAllSkillNames(source)
+    .map((n) => readSkillSummary(source, n))
     .filter((s): s is SkillSummary => s !== null);
 
   // CLAUDE.md na raiz (fonte da verdade + regras essenciais inline)
-  const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(agents, skills));
-  if (main) created.push(main);
+  if (opts.rootDoc !== false) {
+    const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(agents, skills));
+    if (main) created.push(main);
+  }
 
   // subagents nativos em .claude/agents/<slug>.md: aparecem no Agent tool e são auto-selecionados
   for (const agent of agents) {
-    const rel = writeIfAbsent(baseDir, `.claude/agents/${agent.slug}.md`, claudeAgentTemplate(baseDir, agent));
+    const rel = writeIfAbsent(baseDir, `.claude/agents/${agent.slug}.md`, claudeAgentTemplate(source, agent));
     if (rel) created.push(rel);
   }
 

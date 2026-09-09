@@ -30,6 +30,7 @@ import {
   recommendedBudget,
 } from '../llm/client.js';
 import { cacheKey } from '../cache/response-cache.js';
+import { AgentCapabilityRegistry } from '../registry/capabilities.js';
 import { validateArtifact } from '../contracts/artifacts.js';
 import { surveyProject } from '../tools/project-survey.js';
 import { parseRunArgs } from '../../cli/commands/run.js';
@@ -139,6 +140,9 @@ process.stdin.on('end', () => {
 function liveEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return { ...process.env, IZANAGI_AGENT_CLI_IN_TESTS: '1', ...extra };
 }
+
+/** `dist/runtime/tests/x.test.js` -> raiz do repositório. */
+const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..', '..');
 
 const REQ: AgentCLIRequest = { model: 'claude-haiku-4-5', prompt: 'objetivo', toolPolicy: 'none' };
 
@@ -522,4 +526,78 @@ test('artifacts: texto AUTORAL com stub continua reprovado (a marca não é anis
   const report = validateArtifact('raw', 'function f() { /* TODO: implementar */ }');
   assert.equal(report.valid, false);
   assert.ok(report.issues.some((i) => i.includes('stub/lazy-code')));
+});
+
+/* ============================ MODELO POR AGENTE ============================ */
+
+test('router: o tier declarado pelo agente vence o default do papel', () => {
+  const provider = DEFAULT_PROVIDERS.find((p) => p.id === 'claude-cli');
+  assert.ok(provider);
+  const router = new ModelRouter([provider]);
+  const ctx = {
+    task: 'projetar um agente novo',
+    taskComplexity: 3 as const,
+    reasoningRequirement: 'medium' as const,
+    risk: 0.2,
+    tokenBudget: 16_000,
+    requiresTools: false,
+  };
+
+  // Sem hint, o papel decide: specialist -> balanced.
+  const semHint = router.routeForRole('specialist', ctx);
+  assert.equal(semHint.tier, 'balanced');
+
+  // `agent-architect` declara `opus` no JSON: o nó dele sobe para premium.
+  const comHint = router.routeForRole('specialist', ctx, ModelRouter.tierForHint('opus'));
+  assert.equal(comHint.tier, 'premium');
+  assert.ok(comHint.reasons.some((r) => r.includes('agente do nó pede tier')));
+
+  // E um agente que pede o modelo barato desce, mesmo em papel de specialist:
+  // é assimetria nos dois sentidos, não só escalada.
+  assert.equal(router.routeForRole('specialist', ctx, ModelRouter.tierForHint('haiku')).tier, 'fast');
+});
+
+test('router: pin do usuário vence o hint do agente (quem paga a conta decide)', () => {
+  const provider = DEFAULT_PROVIDERS.find((p) => p.id === 'claude-cli');
+  assert.ok(provider);
+  const router = new ModelRouter([provider]).withRolePolicy({ specialist: { model: 'claude-haiku-4-5' } });
+  const ctx = {
+    task: 'x',
+    taskComplexity: 3 as const,
+    reasoningRequirement: 'medium' as const,
+    risk: 0.2,
+    tokenBudget: 16_000,
+    requiresTools: false,
+  };
+  const routed = router.routeForRole('specialist', ctx, ModelRouter.tierForHint('opus'));
+  assert.equal(routed.model.id, 'claude-haiku-4-5');
+});
+
+test('router: hint desconhecido é ausência de hint, nunca um tier chutado', () => {
+  assert.equal(ModelRouter.tierForHint(undefined), undefined);
+  assert.equal(ModelRouter.tierForHint(''), undefined);
+  assert.equal(ModelRouter.tierForHint('gpt-5'), undefined);
+  assert.equal(ModelRouter.tierForHint('  OPUS '), 'premium');
+  assert.equal(ModelRouter.tierForHint('Sonnet'), 'balanced');
+  assert.equal(ModelRouter.tierForHint('haiku'), 'fast');
+});
+
+test('router: os 22 agentes core declaram um hint que o roteador entende', () => {
+  // Um hint que o roteador não entende é um campo decorativo: o agente pensa
+  // que pediu modelo e ninguém leu.
+  const registry = new AgentCapabilityRegistry({ baseDir: REPO_ROOT });
+  const core = new Set(
+    fs.readdirSync(path.join(REPO_ROOT, 'agents'))
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => f.replace(/-agent\.json$/, '')),
+  );
+  const agents = registry.list().filter((a) => core.has(a.id));
+  assert.ok(agents.length >= 22);
+  for (const a of agents) {
+    assert.ok(a.modelHint, `${a.id}: sem model declarado`);
+    assert.ok(
+      ModelRouter.tierForHint(a.modelHint),
+      `${a.id}: hint "${a.modelHint}" não mapeia para nenhum tier`,
+    );
+  }
 });

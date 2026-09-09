@@ -1,3 +1,4 @@
+import os from 'os';
 import path from 'path';
 import { exportAll, exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode } from '../../exporters.js';
 
@@ -7,11 +8,24 @@ type CliTarget = (typeof CLI_TARGETS)[number];
 interface ExportArgs {
   target: CliTarget;
   targetDir: string;
+  /**
+   * Instalação de escopo PESSOAL: destino `~/`, de onde o Claude Code lê
+   * `~/.claude/agents`, `~/.claude/commands` e `~/.claude/skills` em TODO
+   * projeto que o usuário abrir.
+   *
+   * Existe porque agente e skill são descobertos por PROJETO: abrir a CLI em
+   * outro diretório (ou num subdiretório) não encontra os 22 agentes nem a
+   * biblioteca de skills, e a conclusão natural de quem vê isso é que o
+   * framework não funciona. Com `--global`, funciona em qualquer lugar.
+   */
+  global: boolean;
 }
 
 function parseExportArgs(args: string[]): ExportArgs {
   let target: CliTarget = 'all';
   let targetDir = process.cwd();
+  let global = false;
+  let dirExplicit = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -27,10 +41,14 @@ function parseExportArgs(args: string[]): ExportArgs {
       const value = args[i + 1];
       if (value) {
         targetDir = value;
+        dirExplicit = true;
         i++;
       }
     } else if (arg.startsWith('--dir=')) {
       targetDir = arg.slice(6);
+      dirExplicit = true;
+    } else if (arg === '--global' || arg === '-g') {
+      global = true;
     } else if (arg === '--help' || arg === '-h') {
       showExportHelp();
       process.exit(0);
@@ -41,13 +59,29 @@ function parseExportArgs(args: string[]): ExportArgs {
     }
   }
 
+  if (global && dirExplicit) {
+    console.error('\x1b[31mError:\x1b[0m --global e --dir são destinos diferentes: escolha um.');
+    process.exit(1);
+  }
+
+  // Escopo pessoal só está DEFINIDO para o Claude Code, a única CLI aqui cujo
+  // diretório de configuração do usuário é lido em todo projeto. Fingir
+  // suporte para as outras criaria arquivos que nada leria.
+  if (global && target !== 'claude') {
+    console.error('\x1b[31mError:\x1b[0m --global existe só para --cli claude (~/.claude/{agents,commands,skills}).');
+    console.error('  As outras CLIs não definem diretório de configuração por usuário que valha em todo projeto.');
+    process.exit(1);
+  }
+
+  if (global) targetDir = os.homedir();
+
   if (!CLI_TARGETS.includes(target)) {
     console.error(`\x1b[31mError:\x1b[0m unknown CLI target "${target}".\nValid targets: ${CLI_TARGETS.join(', ')}\n`);
     showExportHelp();
     process.exit(1);
   }
 
-  return { target, targetDir: path.resolve(targetDir) };
+  return { target, targetDir: path.resolve(targetDir), global };
 }
 
 function showExportHelp(): void {
@@ -66,22 +100,32 @@ function showExportHelp(): void {
   \x1b[1mOptions:\x1b[0m
   \x1b[32m--cli, -c <target>\x1b[0m   Target CLI (default: all).
   \x1b[32m--dir, -d <path>\x1b[0m     Target directory (default: current directory).
+  \x1b[32m--global, -g\x1b[0m         Escopo pessoal: instala em ~/.claude/{agents,commands,skills}, e aí os 22
+                       agentes e a biblioteca de skills valem em TODO projeto que você abrir.
+                       Só para --cli claude, e nunca escreve ~/CLAUDE.md (esse arquivo é seu).
 
   \x1b[1mExamples:\x1b[0m
   izanagi export
   izanagi export --cli claude
   izanagi export --cli cursor --dir ./my-project
+  izanagi export --cli claude --global
 `);
 }
 
 export function exportCommand(args: string[]): void {
-  const { target, targetDir } = parseExportArgs(args);
+  const { target, targetDir, global: personalScope } = parseExportArgs(args);
 
   const exportFn =
     target === 'all'
       ? exportAll
       : target === 'claude'
-        ? exportToClaude
+        ? (dir: string) =>
+            exportToClaude(dir, {
+              rootDoc: !personalScope,
+              // Escopo pessoal grava em `~/`, que não contém framework: a fonte
+              // continua sendo o projeto/instalação de onde o comando foi chamado.
+              ...(personalScope ? { sourceDir: process.cwd() } : {}),
+            })
         : target === 'codex'
           ? exportToCodex
           : target === 'cursor'
@@ -93,7 +137,7 @@ export function exportCommand(args: string[]): void {
                 : exportToKimi;
 
   console.log(`\n\x1b[36m=== Exporting Izanagi AI adapters for ${target} ===\x1b[0m`);
-  console.log(`  \x1b[90mTarget directory:\x1b[0m ${targetDir}\n`);
+  console.log(`  \x1b[90mTarget directory:\x1b[0m ${targetDir}${personalScope ? ' \x1b[90m(escopo pessoal: vale em todo projeto)\x1b[0m' : ''}\n`);
 
   let created: string[];
   try {

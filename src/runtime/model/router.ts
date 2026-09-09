@@ -295,7 +295,36 @@ export class ModelRouter {
    * melhor modelo dentro do tier do papel; tier vazio no catálogo disponível
    * cai para o tier adjacente (nunca falha por catálogo restrito).
    */
-  routeForRole(role: AgentRole, ctx: RoutingContext): RoutedModel {
+  /**
+   * Tier pedido pelo AGENTE do nó, quando ele pede algum.
+   *
+   * Os 22 agentes core declaram `model` no próprio JSON (`sonnet`, `opus`) e
+   * até aqui NADA lia esse campo: o `AgentCapabilityRegistry` o expunha como
+   * `modelHint` e o roteamento decidia só pelo papel. Na prática, "o
+   * orquestrador escolhe o modelo de cada agente que ele comanda" era verdade
+   * pela metade: o papel escolhia, o agente não tinha voz.
+   *
+   * O hint é um TIER, não um id de modelo, e é isso que o mantém
+   * provider-agnostic: `opus` num catálogo sem premium continua caindo pelo
+   * `tierFallbackOrder` de sempre, e o mesmo agente roda no melhor modelo
+   * disponível seja Anthropic, OpenAI, local ou CLI de agente.
+   */
+  static tierForHint(hint: string | undefined): ModelTier | undefined {
+    if (!hint) return undefined;
+    const h = hint.trim().toLowerCase();
+    if (h === 'opus' || h === 'premium' || h === 'strong') return 'premium';
+    if (h === 'sonnet' || h === 'balanced' || h === 'medium') return 'balanced';
+    if (h === 'haiku' || h === 'fast' || h === 'cheap' || h === 'weak') return 'fast';
+    return undefined;
+  }
+
+  /**
+   * @param hintedTier Tier pedido pelo agente do nó (ver `tierForHint`).
+   *   Perde para um modelo FIXADO pelo usuário (config `roles` /
+   *   `IZANAGI_MODEL_*`), porque pin é decisão explícita de quem paga a conta,
+   *   e vence o default do papel, porque quem conhece a tarefa é o agente.
+   */
+  routeForRole(role: AgentRole, ctx: RoutingContext, hintedTier?: ModelTier): RoutedModel {
     const pinned = this.pinnedFor(role);
     if (pinned) {
       return {
@@ -308,8 +337,11 @@ export class ModelRouter {
       };
     }
 
-    const preferred = TIER_FOR_ROLE[role];
-    const reasons = [`papel "${role}" prefere tier "${preferred}"`];
+    const roleTier = TIER_FOR_ROLE[role];
+    const preferred = hintedTier ?? roleTier;
+    const reasons = hintedTier && hintedTier !== roleTier
+      ? [`agente do nó pede tier "${hintedTier}" (papel "${role}" pediria "${roleTier}")`]
+      : [`papel "${role}" prefere tier "${preferred}"`];
     for (const tier of tierFallbackOrder(preferred)) {
       const inTier = this.catalog().filter((m) => m.tier === tier);
       if (inTier.length === 0) continue;

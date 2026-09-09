@@ -46,6 +46,30 @@ izanagi run "Escreva a função validarCPF em TypeScript" --output out
 #     tools do executor: none (--agent-tools read liga leitura do repositório)
 ```
 
+### Os agentes valem em TODO projeto (escopo pessoal)
+
+Agente e skill são descobertos **por projeto**: abrir a CLI em outro diretório não encontra nenhum dos 22 agentes nem a biblioteca de skills, e a conclusão natural de quem vê isso é que o framework não funciona. Instale no escopo pessoal uma vez:
+
+```bash
+izanagi export --cli claude --global   # ~/.claude/{agents,commands,skills}
+```
+
+Nunca escreve `~/CLAUDE.md`: esse arquivo é a memória global de quem usa, e sobrescrevê-lo injetaria a descrição de um framework em todo repositório aberto. Agentes e skills são aditivos e ficam inertes até serem chamados.
+
+### O orquestrador escolhe o modelo de cada agente
+
+O Commander é **determinístico**: classificar, decidir o modo, gerar contratos e estimar custo não gasta um token. O gasto acontece só nos nós, e cada nó recebe o modelo do PAPEL dele, com o agente tendo voz:
+
+```
+izanagi run agent-architect --task "desenhar um agente novo"
+
+execute      agent-architect  commander   claude-opus-5     <- o agente declara `opus` no JSON dele
+verify       qa               specialist  claude-sonnet-5   <- papel specialist: tier balanced
+evaluation   -                worker      claude-haiku-4-5  <- tarefa pequena: tier fast
+```
+
+Precedência: `--model` / pin por papel (`IZANAGI_MODEL_SPECIALIST`, config `roles`) > tier declarado pelo agente > default do papel. O hint é um TIER, não um id: `opus` num catálogo sem premium cai para o melhor disponível, e o mesmo agente roda em Anthropic, OpenAI, modelo local ou CLI de agente sem mudar nada.
+
 ### Política de tools do executor
 
 O subprocesso roda **sem nenhuma tool por padrão** (`--restricted --tools ""`): nada de shell, nada de escrita, nenhum settings do projeto carregado. É o mais barato, o mais determinístico e o mais seguro.

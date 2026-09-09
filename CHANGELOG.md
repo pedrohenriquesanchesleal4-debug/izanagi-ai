@@ -15,6 +15,10 @@
 
 - **`--agent-tools none|read|write`** (e `IZANAGI_AGENT_CLI_TOOLS`): política de tools do EXECUTOR, distinta de `--allow-tool` (que governa os nós de tool do grafo). Default `none`: nenhuma tool, nenhum shell, nenhum settings do projeto carregado. `read` libera `Read/Grep/Glob` e dá grounding real no repositório; `write` acrescenta `Write/Edit`. `Bash` não entra em nenhuma das três, e `write` exige o valor literal, sendo o único ponto do adapter que autoriza alteração de arquivo. Exposto também no SDK (`agentTools`).
 
+- **`izanagi export --cli claude --global`: os agentes e skills passam a valer em TODO projeto.** Agente e skill são descobertos por PROJETO, então abrir a CLI em outro diretório (ou num subdiretório) não encontra nenhum dos 22 agentes nem a biblioteca de skills, e a conclusão natural de quem vê isso é que o framework não funciona. O escopo pessoal instala em `~/.claude/{agents,commands,skills}` e **nunca** escreve `~/CLAUDE.md`: esse arquivo é a memória global de quem usa, e sobrescrevê-lo injetaria a descrição de um framework em todo repositório aberto. Só existe para `--cli claude`, a única CLI aqui cujo diretório de usuário é lido em todo projeto: fingir suporte para as outras criaria arquivos que nada leria. Junto veio a separação entre FONTE e DESTINO no exportador (`ClaudeExportOptions.sourceDir`), que sempre foram o mesmo `baseDir` — sem isso, exportar para `~/` leria agentes de `~/agents`, não encontraria nada e gravaria um `.claude/` vazio que parece instalado.
+
+- **O agente do nó passa a ter voz no modelo que vai rodar.** Os 22 agentes core declaram `model` no próprio JSON (`sonnet` em 20 deles, `opus` em `agent-architect` e `skill-architect`), o `AgentCapabilityRegistry` já expunha isso como `modelHint` e o roteamento **nunca lia o campo**: "o orquestrador escolhe o modelo de cada agente que ele comanda" era verdade pela metade, porque o papel escolhia e o agente não opinava. `ModelRouter.tierForHint` traduz o hint para tier e `routeForRole` o aceita, com precedência: pin do usuário (`--model`, config `roles`, `IZANAGI_MODEL_*`) > hint do agente > default do papel. O hint é TIER e não id de modelo, e é isso que o mantém provider-agnostic. Num grafo real: `agent-architect` sai em `claude-opus-5`, o `qa` em `claude-sonnet-5`, a avaliação em `claude-haiku-4-5` — e o Commander que decidiu isso é determinístico, então a assimetria não custa token nenhum para ser calculada.
+
 - **Seção "Executor" no `izanagi doctor`** e linha de executor no `izanagi run`/`izanagi models`: qual dos três caminhos (chave, modelo local, CLI de agente) está disponível AGORA, com o motivo quando não está. Antes, "modo headless" era algo que se descobria vendo o run simular.
 
 ### Changed
@@ -47,7 +51,7 @@
 - **A AgentFactory grava em `<cwd>/agents/generated/`** um agente derivado do texto do objetivo. Rodando dentro do próprio checkout do framework, isso deixa lixo na árvore de agentes do repositório, que foi o que quebrou o teste de capacidades acima.
 
 ### Verificação
-- **891 testes, 890 passando** (medido em 2026-09-09, no Windows; 41 novos: detecção de binário, política de tools, argv, stdin, parse de fixtures REAIS capturadas do CLI v2.1.266, spawn de verdade contra um CLI falso, injeção de shell, exit code, timeout, cancelamento, profundidade, supressão em teste, chave de cache, piso de orçamento e as duas regressões corrigidas). O único vermelho segue sendo `polyglot`, que depende de binário Rust local.
+- **897 testes, 896 passando** (medido em 2026-09-09, no Windows; 47 novos: detecção de binário, política de tools, argv, stdin, parse de fixtures REAIS capturadas do CLI v2.1.266, spawn de verdade contra um CLI falso, injeção de shell, exit code, timeout, cancelamento, profundidade, supressão em teste, chave de cache, piso de orçamento e as duas regressões corrigidas). O único vermelho segue sendo `polyglot`, que depende de binário Rust local.
 
 ---
 

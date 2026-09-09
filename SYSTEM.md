@@ -294,7 +294,11 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 - `route(ctx)`: rota legada, um modelo para o run inteiro, por complexidade/custo/latência/histórico. Preservada sem mudança de assinatura.
 - `routeForRole(role, ctx)`: rota por PAPEL. Tier preferido por papel (commander→premium, specialist→balanced, worker→fast), com queda explícita para o tier adjacente quando o catálogo disponível não tem aquele tier. Pin por papel via `roles` na config ou `IZANAGI_MODEL_{COMMANDER,SPECIALIST,WORKER}` (env vence config). `escalateRole` sobe worker→specialist→commander e para no topo. `costUsd` e `estimateCostForRole` dão o custo real de catálogo (modelos self-hosted declaram 0, o que é fato, não estimativa).
 
+- Tier declarado pelo AGENTE do nó: os 22 agentes core declaram `model` no próprio JSON (`sonnet`, `opus`), o `AgentCapabilityRegistry` expõe como `modelHint` e `ModelRouter.tierForHint` o traduz para tier. Precedência: pin do usuário (`--model`, `roles`, `IZANAGI_MODEL_*`) > hint do agente > default do papel. O hint é TIER e não id de modelo, e é isso que o mantém provider-agnostic: `opus` num catálogo sem premium cai pelo `tierFallbackOrder` de sempre. Hint que o roteador não reconhece é ausência de hint, nunca um tier chutado.
+
 `izanagi models` mostra o catálogo, quais providers estão realmente configurados e qual modelo cada papel receberia agora, com custo por 10k tokens.
+
+Planejar não gasta token: o Commander é determinístico, então a assimetria custa o mínimo por construção. Num grafo real (`izanagi run agent-architect`), o nó do `agent-architect` sai em `claude-opus-5` (o agente pede premium), o `qa` em `claude-sonnet-5` (papel specialist) e a avaliação em `claude-haiku-4-5` (papel worker).
 
 ## Executor: quem roda os nós
 
