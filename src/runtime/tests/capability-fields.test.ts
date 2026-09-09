@@ -20,10 +20,27 @@ function tmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-cap-'));
 }
 
+/**
+ * Ids dos agentes CORE, lidos do diretório que os define. Não pode ser
+ * `registry.list()`: o registry também varre `agents/generated/`, onde a
+ * AgentFactory grava agentes criados em tempo de run — esses nascem sem
+ * `model`/`evaluation` por construção, e cobrá-los aqui faz o teste falhar por
+ * um run que alguém executou no repositório, não por uma regressão do core.
+ */
+function coreAgentIds(): Set<string> {
+  const dir = path.join(repoRoot, 'agents');
+  return new Set(
+    fs.readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => f.replace(/-agent\.json$/, '').replace(/\.json$/, '')),
+  );
+}
+
 test('capabilities: os 22 agentes core expõem modelHint, declaredPermissions e evaluation', () => {
   const registry = new AgentCapabilityRegistry({ baseDir: repoRoot });
-  const agents = registry.list();
-  assert.ok(agents.length >= 22, `esperado 22+ agentes, veio ${agents.length}`);
+  const core = coreAgentIds();
+  const agents = registry.list().filter((a) => core.has(a.id));
+  assert.ok(agents.length >= 22, `esperado 22+ agentes core, veio ${agents.length}`);
 
   for (const agent of agents) {
     // O campo é obrigatório na forma (array), e vazio quando o agente não pede

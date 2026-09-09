@@ -1,6 +1,6 @@
 {
   "name": "izanagi-ai",
-  "version": "3.21.1",
+  "version": "3.22.0",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -50,8 +50,8 @@
     "postinstall": "node bin/postinstall.js",
     "build:clean": "node dist/scripts/build-clean.js",
     "verify": "node dist/scripts/verify-build.js && node --test \"dist/runtime/tests/*.test.js\"",
-    "test": "npm run build && node --test \"dist/runtime/tests/*.test.js\"",
-    "test:only": "node --test \"dist/runtime/tests/*.test.js\"",
+    "test": "npm run build && node dist/scripts/clean-temp.js --quiet && node --test \"dist/runtime/tests/*.test.js\"",
+    "test:only": "node dist/scripts/clean-temp.js --quiet && node --test \"dist/runtime/tests/*.test.js\"",
     "release": "node dist/scripts/release.js",
     "release:patch": "node dist/scripts/release.js patch",
     "release:minor": "node dist/scripts/release.js minor",
@@ -63,7 +63,8 @@
     "prepublishOnly": "npm run build",
     "start": "node bin/izanagi.js",
     "doctor": "node bin/izanagi.js doctor",
-    "list": "node bin/izanagi.js list"
+    "list": "node bin/izanagi.js list",
+    "clean:temp": "node dist/scripts/clean-temp.js"
   },
   "keywords": [
     "izanagi",

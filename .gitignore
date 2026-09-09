@@ -42,3 +42,6 @@ __pycache__/
 .pytest_cache/
 # Cargo.lock da workspace raiz É commitado (crates produzem binários);
 # não adicionar ao ignore.
+
+# Sandbox de `npm run verify` quando a limpeza falhava (agora vive no TEMP do SO)
+tmp-sandbox-test/

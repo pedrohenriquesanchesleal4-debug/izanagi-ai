@@ -134,6 +134,13 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     kind: 'project-survey',
     required: ['root', 'stack', 'tree', 'truncated'],
     minSize: 40,
+    // Saída CAPTURADA do disco, não texto autoral: o survey carrega nomes de
+    // arquivo e as primeiras linhas do README do projeto varrido. Sem esta
+    // marca, a varredura anti-stub reprovava o levantamento de qualquer
+    // repositório que contivesse a palavra "TODO" em algum lugar — e o run
+    // abortava no primeiro nó com "artefato inválido (project-survey)",
+    // culpando o runtime pelo vocabulário do projeto do usuário.
+    capturedOutput: true,
   },
   /**
    * Comprovante de materialização devolvido por `project.materialize`.
@@ -145,6 +152,9 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     kind: 'materialization',
     required: ['dir', 'candidates', 'written'],
     minSize: 20,
+    // Mesmo motivo do survey: é um recibo com CAMINHOS de arquivo. Um projeto
+    // com `TODO.md` na lista de escritos não produz um recibo inválido.
+    capturedOutput: true,
   },
   /**
    * Resultado da execução do comando de teste do projeto (`project.test`).

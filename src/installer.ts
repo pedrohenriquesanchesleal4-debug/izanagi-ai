@@ -337,6 +337,9 @@ function writeRootDocs(destinationRoot: string, packageDir: string): { written: 
 /**
  * Instala os packs selecionados do Izanagi AI na pasta `.agents` do projeto do usuário.
  */
+const ESCAPE_CYAN = '\x1b[36m';
+const ESCAPE_RESET = '\x1b[0m';
+
 export function installToProject(targetDir: string, selectedPackIds: string[], cliTarget?: string): void {
   const destinationRoot = path.resolve(targetDir);
   const packageDir = getPackageDir();
@@ -347,6 +350,21 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
 
   if (!fs.existsSync(destinationRoot)) {
     fs.mkdirSync(destinationRoot, { recursive: true });
+  }
+
+  // Espelhar os assets DENTRO do próprio repo-fonte não tem referente: o
+  // framework já É os arquivos que seriam copiados, e a cópia nasce condenada a
+  // divergir (é de onde vinham as ~700 entradas de `.agents/` sem rastro no git,
+  // e o "por que existem duas pastas de agentes?" que ninguém conseguia
+  // responder). `writeRootDocs` já tinha essa guarda desde a v3.21.0; o espelho
+  // de assets ficou sem, e é o espelho que tem 700 arquivos.
+  //
+  // O que é tracked em `.agents/` no repo-fonte (os `*.yaml` derivados do
+  // ADR-005) continua vivo: esta função nunca os produziu.
+  if (isFrameworkRepo(destinationRoot)) {
+    console.log(`${ESCAPE_CYAN}[Izanagi AI]${ESCAPE_RESET} Repositório-fonte detectado em ${destinationRoot}: o espelho de assets em .agents/ não é criado (o framework já é esses arquivos).
+`);
+    return;
   }
 
   const targetAgentsFolder = path.join(destinationRoot, '.agents');
