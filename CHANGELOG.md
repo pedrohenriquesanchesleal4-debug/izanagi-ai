@@ -4,6 +4,53 @@
 
 ---
 
+## [3.22.0]: 2026-09-09
+
+### Added
+- **`izanagi run` executa sem API key e sem modelo local.** Novo executor `claude-cli` (`src/runtime/llm/agent-cli.ts`): `AgentCLIAdapter` implementa `ModelAdapter`, entra no `LLMClient` como qualquer provider e atravessa run/SDK/`models`/juiz semântico/arena sem que nenhum chamador mude. A diferença é que ele não fala HTTP: spawna um agente de codificação **já instalado e autenticado na máquina** (hoje o `claude`, Claude Code CLI) em modo print. Detecção por PATH sem shell e sem `which`/`where` (`findExecutable`, com PATHEXT no Windows, onde o binário é `claude.exe`). Zero configuração: se o binário está lá, o provider aparece.
+
+  O motivo de existir é de ALCANCE, não de arquitetura. O runtime já planejava, roteava por papel, verificava por evidência, curava e replanejava; sem chave configurada ele executava os nós com `createHeadlessProducer`, que SIMULA o artefato. Quem não quisesse colar uma chave nem subir um modelo local tinha um planejador, não um runtime.
+
+- **As flags do CLI hospedeiro viraram os controles do runtime.** Modelo do papel para `--model`; teto de custo restante do run para `--max-budget-usd`; política de tools para `--restricted` + `--tools`; escrita de arquivo em opt-in para `--permission-mode acceptEdits`; sem estado residual entre nós para `--no-session-persistence` e `--strict-mcp-config`; telemetria para `--output-format json` (`usage` + `total_cost_usd`). Os três ids de modelo do catálogo (`claude-haiku-4-5`, `claude-sonnet-5`, `claude-opus-5`) foram validados contra o CLI instalado, que rejeita id desconhecido localmente e de graça (`[claude-code:unrecognized_model]`).
+
+- **`--agent-tools none|read|write`** (e `IZANAGI_AGENT_CLI_TOOLS`): política de tools do EXECUTOR, distinta de `--allow-tool` (que governa os nós de tool do grafo). Default `none`: nenhuma tool, nenhum shell, nenhum settings do projeto carregado. `read` libera `Read/Grep/Glob` e dá grounding real no repositório; `write` acrescenta `Write/Edit`. `Bash` não entra em nenhuma das três, e `write` exige o valor literal, sendo o único ponto do adapter que autoriza alteração de arquivo. Exposto também no SDK (`agentTools`).
+
+- **Seção "Executor" no `izanagi doctor`** e linha de executor no `izanagi run`/`izanagi models`: qual dos três caminhos (chave, modelo local, CLI de agente) está disponível AGORA, com o motivo quando não está. Antes, "modo headless" era algo que se descobria vendo o run simular.
+
+### Changed
+- **Custo MEDIDO passa a vencer custo estimado.** `NodeProduction.costUsd` (novo campo opcional no retorno do producer) sobe o `total_cost_usd` reportado pelo executor até o Budget Controller, e `--max-cost` passa a ser cobrado sobre o gasto real em vez da tabela de preço do catálogo. Quando o executor não mede, o estimador de sempre continua valendo: um número medido e um número estimado não podem ocupar o mesmo campo sem se confundirem.
+- **`ExecutionBudget.remainingUsd`**: o teto que ainda cabe no run desce até o executor, que sabe recusar por conta própria (`--max-budget-usd`). O degrau mais confiável do Budget Controller é o que o processo executor também conhece.
+- **Chave do cache de resposta ganhou a política de tools** (esquema `v1` para `v2`). A mesma pergunta respondida com leitura do repositório não é a mesma resposta que sem leitura, e servir uma pela outra seria um hit que mente sobre a evidência que produziu o artefato.
+- **Catálogo default do router: 5 para 6 providers.** Sem entrada de catálogo o roteador nunca teria modelo a escolher, e "adapter disponível" sem "modelo disponível" seria uma cura que não cura nada.
+
+### Fixed
+- **O survey do projeto reprovava qualquer repositório que contivesse a palavra "TODO".** `project-survey` é saída CAPTURADA do disco (nomes de arquivo e primeiras linhas do README), e a varredura anti-stub media o vocabulário do projeto varrido em vez do texto do modelo: o run abortava no PRIMEIRO nó com `artefato inválido (project-survey)`, e o survey vem ligado por default em qualquer diretório com cara de projeto. `capturedOutput: true` nos schemas `project-survey` e `materialization` (um recibo de escrita com `out/TODO.md` na lista tinha o mesmo destino). A marca não é anistia geral: texto autoral com stub continua reprovado, e há teste para os dois lados.
+- **A verificação de build escrevia ~700 arquivos na raiz do repositório.** `verify-build` criava o sandbox em `<repo>/tmp-sandbox-test` e limpava na ÚLTIMA linha do try: qualquer erro antes disso, ou um `rmSync` que falhasse no Windows com arquivo em uso, deixava a instalação simulada inteira sem rastro no git. Era metade do "800 arquivos alterados" que aparecia no `git status`. Agora o sandbox nasce em `os.tmpdir()` e a limpeza roda nos dois caminhos: verificação de build não escreve na árvore que ela verifica.
+- **O espelho de assets em `.agents/` era criado dentro do próprio repo do framework.** `writeRootDocs` tinha a guarda `isFrameworkRepo` desde a v3.21.0; `installToProject` não, e é ele que copia agentes, skills e engines — ~700 arquivos duplicando o que o repositório já É, condenados a divergir do original (e a resposta para "por que existem duas pastas de agentes?" e "por que o `AGENTS.md` dentro de `.agents/` está desatualizado?"). O que é legitimamente rastreado ali (os `*.yaml` derivados do ADR-005) nunca veio desta função e segue intacto.
+- **3.517 diretórios temporários acumulados no TEMP do usuário.** Quase toda suíte cria o próprio `mkdtempSync` e nenhuma remove: `izanagi-mem` (384), `izanagi-tools` (264), `izanagi-dash` (240), `izanagi-artifacts` (240), `izanagi-approvals` (216)... Novo `scripts/clean-temp.ts` (`npm run clean:temp`) varre por PREFIXO conhecido, só no primeiro nível de `os.tmpdir()`, e roda dentro do `npm test` logo depois do build. A varredura vem ANTES do runner de propósito: `&&` não executa o comando seguinte quando a suíte falha, e `;` não existe no `cmd.exe` — um `posttest` pularia exatamente na rodada que mais deixou lixo. Com a limpeza na frente, o acúmulo fica limitado a uma rodada em vez de crescer sem fim. Um limpador que apaga o que não criou seria pior que o vazamento: cada prefixo termina em `-`, e há teste verificando que `izanagi-memorias-do-usuario` NÃO casa `izanagi-mem-`.
+- **O teste de capacidades cobrava dos agentes gerados o que só os core declaram.** `capability-fields.test.ts` varria também `agents/generated/`, onde a AgentFactory grava agentes criados em tempo de run; esses nascem sem `model`/`evaluation` por construção, então bastava alguém rodar `izanagi run` no repositório para o teste ficar vermelho por um motivo que não é regressão.
+
+### Security
+- **Nada de shell.** `spawn` com argv em array e `shell: false`: o objetivo do usuário entra como dado, nunca como texto interpretado por um shell. Há teste com metacaracteres de shell no objetivo verificando que o texto chega íntegro e nada é executado.
+- **Prompt por stdin, nunca por argv.** O system prompt de um nó com chain de skills passa de 30KB e o limite de linha de comando do Windows é 32.767 caracteres para o comando inteiro: por argv, o run quebraria justamente nos nós mais ricos. Vai em blocos delimitados (`izanagi:instructions`, `izanagi:task`), com `--append-system-prompt` carregando só o contrato curto que diz como tratá-los.
+- **Guarda de recursão.** Um `izanagi run` disparado de dentro de uma sessão do agente pode spawnar o agente (profundidade 0 para 1); o filho recebe `IZANAGI_AGENT_CLI_DEPTH+1` e no teto o adapter fica `configured: false`, degradando para headless com aviso em vez de estourar no meio do grafo. `killTree` mata a árvore do processo (no Windows `child.kill()` deixaria os netos vivos consumindo cota de um run já cancelado).
+- **Executor suprimido dentro de test runner.** `NODE_TEST_CONTEXT` presente desliga o adapter: sem isso, qualquer teste que chame a CLI em processo passaria a gastar cota real de quem rodou `npm test`. Medido: um teste de compatibilidade de flag saiu de milissegundos para 28 segundos de chamada de modelo. `IZANAGI_AGENT_CLI_IN_TESTS=1` libera, para quem quer justamente um teste de integração.
+- `IZANAGI_AGENT_CLI_DISABLED=1` desliga o executor por completo; nenhuma política usa `--dangerously-skip-permissions`, e há teste que verifica sua ausência no argv.
+
+### Medições
+- System prompt do próprio CLI hospedeiro: **20.848 para 4.095 tokens** de entrada com `--restricted --tools ""` (US$ 0,042 para US$ 0,005 na mesma pergunta). É o default do adapter.
+- Nó de specialist com chain de skills: **~18.000 tokens** com `tools=none`; **~68.000** com `tools=read` (47.390 in / 20.310 out, porque o agente faz várias voltas de tool antes de responder, ~3,8x). Daí o piso recomendado de `--budget`: 30.000 e 105.000, avisado pela CLI quando o teto declarado fica abaixo.
+- Run real de ponta a ponta sem nenhuma chave configurada: `izanagi run senior-engineer --task "validarCPF..." --output out` terminou **PASS, score 1**, 15.747 tokens, com `Tools: model:claude-cli` no trace e o arquivo entregue em disco contendo TypeScript executável.
+
+### Limitação conhecida (medida, não estimada)
+- **Grounding real não é grounding completo.** Com `--agent-tools read`, o executor leu o repositório de verdade (acertou `3.21.1`, a versão exata do `package.json`) e ainda assim afirmou 5 providers onde havia 6, citando "linhas 16-84" de um array que vai até a linha 112, com a entrada nova na linha 99. É comportamento de modelo, não do runtime, e é exatamente por isso que a Verification Engine e os critérios de aceite continuam sendo o que decide se um artefato passa.
+- **A AgentFactory grava em `<cwd>/agents/generated/`** um agente derivado do texto do objetivo. Rodando dentro do próprio checkout do framework, isso deixa lixo na árvore de agentes do repositório, que foi o que quebrou o teste de capacidades acima.
+
+### Verificação
+- **891 testes, 890 passando** (medido em 2026-09-09, no Windows; 41 novos: detecção de binário, política de tools, argv, stdin, parse de fixtures REAIS capturadas do CLI v2.1.266, spawn de verdade contra um CLI falso, injeção de shell, exit code, timeout, cancelamento, profundidade, supressão em teste, chave de cache, piso de orçamento e as duas regressões corrigidas). O único vermelho segue sendo `polyglot`, que depende de binário Rust local.
+
+---
+
 ## [3.21.1]: 2026-09-08
 
 ### Fixed

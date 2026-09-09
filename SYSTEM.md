@@ -1,6 +1,6 @@
 # IZANAGI AI: System Foundation
 
-> Version 3.21.0
+> Version 3.22.0
 > Codename: "The Architect's Mind"
 
 ---
@@ -82,7 +82,7 @@ User Input / Comando CLI
 | **Agent-to-Agent Protocol** (`protocol/messages.ts`) | Mensagens tipadas com referência de artefato em vez de cópia de texto; crítica estruturada com parsing tolerante (saída não parseável vira `needs_revision`, nunca aprovação) e correção mínima só dos bloqueantes. |
 | **Verification Engine 2.0** (`verification/engine.ts`) | Três camadas: determinística, evidência e semântica. A camada determinística tem nove checks; oito leem o artefato (`artifact-valid`, `min-size`, `contains`, `not-contains`, `matches`, `json-field`, `file-exists`, `references-exist`) e um decide por EXECUÇÃO: `exit-zero`, alimentado pelo nó `verify-tests` (`--verify-tests`), que roda o comando de teste do projeto. Exit code ausente é `unknown`, nunca `pass`: um check de execução que aprova por ausência de evidência seria pior que a métrica derivada de artefato que ele substituiu. O juiz semântico default (`verification/judge.ts`) vem ligado na CLI e no SDK quando há provider, roda no papel `worker` e recebe o artefato resumido; sem juiz (`--no-judge` ou modo headless) o critério fica `UNVERIFIED` e NUNCA conta como aprovação. Juiz que não respondeu é `inconclusive`, nunca reprovação. Só `VERIFIED` encerra uma tarefa. |
 | **Budget Controller** (`token/execution-budget.ts`) | Custo em USD, tetos de tool call/agente/retry, tempo de parede e escada de degradação (contexto → saída → modelo → paralelismo → tarefas opcionais → aprovação humana). Gasto que estouraria um teto é recusado, e **registrado antes de ser recusado**: gasto recusado por teto ainda aconteceu na fatura. Desde 2026-09-04 `maxRetries` e `maxAgents` de fato BARRAM (antes contavam e o retorno era descartado), e `remainingTokens` alimenta o roteamento por nó. Teto estourado é `non-recoverable` no `Healer`: um teto não se move entre tentativas, então retentar é gastar orçamento numa porta fechada. |
-| **Response Cache** (`cache/response-cache.ts`) | Cache local por hash de (provider, modelo, system, mensagens, teto, temperatura), com TTL, eviction e versão de esquema. Opt-in (`--cache` / `IZANAGI_CACHE=1`). |
+| **Response Cache** (`cache/response-cache.ts`) | Cache local por hash de (provider, modelo, system, mensagens, teto, temperatura, política de tools do executor), com TTL, eviction e versão de esquema (v2). A política entra na chave porque muda o que a resposta pôde ver: a mesma pergunta respondida com leitura do repositório não é a mesma resposta, e servir uma pela outra seria um hit que mente sobre a evidência. Opt-in (`--cache` / `IZANAGI_CACHE=1`). |
 | **SDK** (`src/sdk.ts`) | `izanagi.run({ objective })` e `izanagi.plan({ objective })`: mesma engine da CLI, sem saída no terminal, com eventos do run em tempo real. |
 | **Evaluation Engine** (`evaluation/`) | Métricas ponderadas (correctness, completeness, security, etc.), veredito derivado, relatório com regressões e recomendações. |
 | **Artifact Contracts** (`contracts/artifacts.ts`) | 10+ schemas de artefato (requirements, architecture, database-schema, test-plan...) com validação por campos obrigatórios + tamanho mínimo, em PT-BR. |
@@ -289,12 +289,47 @@ Novos agentes e skills são **gerados, não escritos à mão**:
 
 ## Model Router
 
-`src/runtime/model/router.ts` mantém um catálogo por provider (OpenAI, Anthropic, Google, OpenRouter, Ollama, LM Studio, custom) extensível via `.izanagi/izanagi.config.json` → `models`. Duas rotas coexistem:
+`src/runtime/model/router.ts` mantém um catálogo por provider (OpenAI, Anthropic, Google, OpenRouter, Ollama, LM Studio, `claude-cli`, custom) extensível via `.izanagi/izanagi.config.json` → `models`. O provider `claude-cli` declara os três ids validados contra o CLI instalado (`claude-haiku-4-5`, `claude-sonnet-5`, `claude-opus-5`) com a tabela de lista da Anthropic, que é a base que o próprio CLI reporta (`costBasis: "list"`): sem entrada no catálogo o roteador nunca teria modelo a escolher e o caminho sem chave não existiria de fato. Duas rotas coexistem:
 
 - `route(ctx)`: rota legada, um modelo para o run inteiro, por complexidade/custo/latência/histórico. Preservada sem mudança de assinatura.
 - `routeForRole(role, ctx)`: rota por PAPEL. Tier preferido por papel (commander→premium, specialist→balanced, worker→fast), com queda explícita para o tier adjacente quando o catálogo disponível não tem aquele tier. Pin por papel via `roles` na config ou `IZANAGI_MODEL_{COMMANDER,SPECIALIST,WORKER}` (env vence config). `escalateRole` sobe worker→specialist→commander e para no topo. `costUsd` e `estimateCostForRole` dão o custo real de catálogo (modelos self-hosted declaram 0, o que é fato, não estimativa).
 
 `izanagi models` mostra o catálogo, quais providers estão realmente configurados e qual modelo cada papel receberia agora, com custo por 10k tokens.
+
+## Executor: quem roda os nós
+
+O runtime separa **quem decide** (Commander, determinístico) de **quem executa** (o modelo). A camada de executor tem três caminhos, e o primeiro não pede configuração nenhuma.
+
+### `claude-cli`: agente de codificação como executor (`llm/agent-cli.ts`)
+
+`AgentCLIAdapter` implementa `ModelAdapter`, então entra no `LLMClient` como qualquer provider e atravessa run/SDK/`models`/juiz semântico/arena sem que nenhum chamador mude. A diferença é que ele não fala HTTP: **spawna um agente de codificação já instalado e autenticado na máquina**, em modo não interativo.
+
+Hoje o spec implementado é o do `claude` (Claude Code CLI). O binário é procurado no PATH sem shell (`findExecutable`, com PATHEXT no Windows), e `configured` é verdadeiro quando ele existe — não há checagem de autenticação, porque não existe checagem barata e offline disso: falha de credencial aparece como erro real do CLI, com o stderr dele, na primeira chamada.
+
+O mapeamento entre conceito do runtime e flag do CLI é o que torna esse caminho um executor de verdade, e não um wrapper de prompt:
+
+| Conceito do Izanagi | Flag |
+|---|---|
+| modelo do papel (commander/specialist/worker) | `--model` |
+| teto de custo restante do run | `--max-budget-usd` |
+| política de tools | `--restricted` + `--tools` |
+| escrita de arquivo (opt-in) | `--permission-mode acceptEdits` |
+| sem estado residual entre nós | `--no-session-persistence`, `--strict-mcp-config` |
+| telemetria de token e custo | `--output-format json` → `usage` + `total_cost_usd` |
+
+Decisões que não são detalhe:
+
+- **Prompt por stdin, nunca por argv.** O system prompt de um nó com chain de skills passa de 30KB e o limite de linha de comando do Windows é 32.767 caracteres: por argv, o run quebraria justamente nos nós mais ricos. Vai em blocos delimitados (`<izanagi:instructions>`, `<izanagi:task>`), e `--append-system-prompt` carrega só o contrato curto que diz como tratá-los.
+- **Default sem tool alguma.** `--restricted --tools ""`: sem shell, sem escrita, sem settings do projeto. Medido: derruba o system prompt do próprio CLI de 20.848 para 4.095 tokens de entrada (US$ 0,042 → US$ 0,005 na mesma pergunta). `--agent-tools read` libera `Read/Grep/Glob` (grounding no repositório real); `write` acrescenta `Write/Edit`. `Bash` não entra em nenhuma política.
+- **Custo medido vence custo estimado.** `total_cost_usd` sobe pelo producer até o `Budget Controller` (`NodeProduction.costUsd`), então `--max-cost` passa a ser cobrado sobre o que foi gasto de fato, e não sobre a tabela de preço do catálogo.
+- **Guarda de recursão.** Um `izanagi run` disparado de dentro de uma sessão do agente pode spawnar o agente (profundidade 0 → 1); o filho recebe `IZANAGI_AGENT_CLI_DEPTH+1` e no teto o adapter fica `configured: false`, degradando para headless em vez de estourar no meio do grafo.
+- **Suprimido em test runner.** `NODE_TEST_CONTEXT` presente desliga o executor: sem isso, qualquer teste que chame a CLI em processo passaria a gastar cota real de quem rodou `npm test` (medido: um teste de compatibilidade de flag saiu de milissegundos para 28 segundos de chamada de modelo). `IZANAGI_AGENT_CLI_IN_TESTS=1` libera.
+
+Custo por nó, MEDIDO num specialist com chain de skills: ~18.000 tokens com `tools=none` e ~68.000 com `tools=read` (o agente faz várias voltas de tool antes de responder). Daí o piso recomendado de `--budget`: 30.000 e 105.000 respectivamente, avisado pela CLI quando o teto declarado está abaixo.
+
+### Os outros dois caminhos
+
+API key por env (`IZANAGI_{ANTHROPIC,OPENAI,GOOGLE,OPENROUTER}_API_KEY`) e modelo local em opt-in (`IZANAGI_OLLAMA_ENABLED=1`, `IZANAGI_LMSTUDIO_ENABLED=1`, `IZANAGI_CUSTOM_BASE_URL`). Sem nenhum dos três, o run segue planejando, roteando e verificando de verdade, e SIMULA o conteúdo dos nós (headless). `izanagi doctor` reporta qual executor está disponível agora, e `izanagi run` diz qual escolheu antes de começar.
 
 ## Tool Registry (Tools/MCP-ready)
 

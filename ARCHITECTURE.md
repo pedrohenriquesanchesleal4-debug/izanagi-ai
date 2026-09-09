@@ -1,6 +1,6 @@
 # Izanagi AI — Target Architecture
 
-> Version: 3.21.0
+> Version: 3.22.0
 > Status: Legacy runtime implemented; polyglot topology growing alongside it (Strangler Fig, ADR-001)
 > Source of Truth: This document drives implementation · Canonical polyglot IPC contracts & ADRs: docs/POLYGLOT.md
 
@@ -90,7 +90,8 @@ src/
     ├── model/
     │   └── router.ts                # Catálogo, routeForRole por tier, escalada, custo em USD
     ├── llm/
-    │   ├── client.ts                # 7 adapters (OpenAI-compatible, Anthropic, Google, locais)
+    │   ├── client.ts                # 8 adapters (OpenAI-compatible, Anthropic, Google, locais, CLI de agente)
+    │   ├── agent-cli.ts             # Executor SEM API key: spawna o agente de codificação autenticado da máquina
     │   ├── prompt-cache.ts          # CAPC: prefixo estático cacheável
     │   └── session-diet.ts          # AgentDiet: observation masking determinístico
     ├── routing/                     # SkillResolver + CandidateScorer
@@ -323,7 +324,9 @@ Router → Score Agents/Skills/Models (history-aware)
     ↓
 Scheduler → Execute Batches (parallel + serial)
     ↓
-Produce → Validate Artifacts (contracts)
+Produce → Executor (API key | modelo local | CLI de agente autenticado | headless)
+    ↓
+Validate Artifacts (contracts)
     ↓
 Evaluate → Verdict + Score + Recommendations
     ↓

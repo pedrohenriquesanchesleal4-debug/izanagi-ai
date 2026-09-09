@@ -1,6 +1,8 @@
 # Izanagi AI
 
-> **v3.21.0** · Runtime de execução de trabalho orientado a agentes: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
+> **v3.22.0** · Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
+>
+> Arquitetura: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
 **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -20,6 +22,57 @@ izanagi --version
 
 ---
 
+## Executar sem API key
+
+O Izanagi precisa de um **executor**: alguém que rode os nós do grafo. Existem três caminhos, e o primeiro não pede chave nenhuma.
+
+```bash
+izanagi doctor     # diz qual executor está disponível AGORA
+```
+
+| Caminho | O que exige | Como o runtime o chama |
+|---|---|---|
+| **CLI de agente** (recomendado) | um agente de codificação já instalado e autenticado: hoje o `claude` no PATH | provider `claude-cli`, por subprocesso em modo print. **Zero configuração**: detectado no PATH |
+| API key | `IZANAGI_ANTHROPIC_API_KEY`, `IZANAGI_OPENAI_API_KEY`, `IZANAGI_GOOGLE_API_KEY`, `IZANAGI_OPENROUTER_API_KEY` | HTTP direto no provider |
+| Modelo local | `IZANAGI_OLLAMA_ENABLED=1` ou `IZANAGI_LMSTUDIO_ENABLED=1` | endpoint OpenAI-compatible em localhost |
+
+Sem nenhum dos três, o run continua funcionando em **modo headless**: planeja, roteia e verifica de verdade, mas SIMULA o conteúdo dos nós. É o comportamento antigo, e agora ele é o último recurso, não o default de quem nunca configurou nada.
+
+```bash
+# nada além do Claude Code instalado:
+izanagi run "Escreva a função validarCPF em TypeScript" --output out
+#   ✔ Execução real: claude-cli
+#     via CLI de agente já autenticado (sem API key)
+#     tools do executor: none (--agent-tools read liga leitura do repositório)
+```
+
+### Política de tools do executor
+
+O subprocesso roda **sem nenhuma tool por padrão** (`--restricted --tools ""`): nada de shell, nada de escrita, nenhum settings do projeto carregado. É o mais barato, o mais determinístico e o mais seguro.
+
+```bash
+izanagi run "..."                          # tools: none  (default)
+izanagi run "..." --agent-tools read       # Read/Grep/Glob: o executor LÊ o repositório
+izanagi run "..." --agent-tools write      # + Write/Edit: altera arquivos (opt-in explícito)
+```
+
+`write` é o único valor que autoriza alteração de arquivo, e Bash nunca entra em nenhuma das políticas.
+
+### Custo, medido
+
+O CLI devolve o custo real de cada chamada (`total_cost_usd`), então neste executor o custo do run **é medido, não estimado** por tabela de preço. Números observados nesta máquina, num nó de specialist com chain de skills:
+
+| Política | Tokens do nó | Observação |
+|---|---|---|
+| `none` | ~18.000 | 4.095 deles são o system prompt do próprio CLI, cobrado em toda chamada |
+| `read` | ~68.000 | o agente faz várias voltas de tool antes de responder: ~3,8x |
+
+Por isso `--budget` apertado estoura no primeiro nó. Piso recomendado: **30.000** por nó com `none`, **105.000** com `read` (a CLI avisa quando o teto está abaixo disso).
+
+Controles: `IZANAGI_AGENT_CLI_DISABLED=1` desliga o executor · `IZANAGI_AGENT_CLI_TIMEOUT_MS` ajusta o timeout (default 300.000) · `IZANAGI_AGENT_CLI_TOOLS=read|write` é o equivalente de `--agent-tools` por ambiente. Dentro de um test runner o executor fica desligado por padrão, para que `npm test` nunca gaste cota real (`IZANAGI_AGENT_CLI_IN_TESTS=1` libera).
+
+---
+
 ## Quick Start
 
 ```bash
@@ -28,6 +81,7 @@ izanagi init my-project
 #    ou sem interação: izanagi init my-project --packs core,agents,coding,database
 
 # 2. Executa uma tarefa. O modo é decidido pelo Commander, não fixo.
+#    Sem API key: basta ter o Claude Code CLI instalado (izanagi doctor confirma).
 izanagi run "Converta 10 dólares para reais"                  # modo direct: 1 chamada, sem grafo
 izanagi run "Criar uma landing page de um SaaS de analytics"  # modo composto, com verificação
 izanagi run "..." --mode autonomous --max-cost 0.50           # teto de custo respeitado no plano
@@ -36,6 +90,7 @@ izanagi run "..." --acceptance "o endpoint aceita ?page e ?limit"  # o que o usu
 izanagi run "..." --output src --verify-tests                # a métrica de teste vem do exit code do projeto
 izanagi run "..." --min-quality 0.3                          # a estratégia mais barata que atinge o piso
 izanagi run "..." --reuse-artifacts                          # segundo run da mesma pergunta não repaga a chamada
+izanagi run "..." --agent-tools read                         # o executor lê o repositório antes de responder
 
 # 3. Observabilidade, custo e auditoria
 izanagi trace            # spans, healing, graph, avaliação
@@ -169,7 +224,7 @@ CLI legado (`izanagi`, publicada no npm):
 | Comando | Descrição |
 |---|---|
 | `izanagi init [dir] [--packs a,b,c]` | Cria projeto com `.agents/` e seleção de packs de skills. |
-| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local` (só providers locais, e serializa o pool: GPU única não ganha com paralelismo), `--max-concurrency N` (teto de tarefas em voo), `--cache`, `--output <dir>` (grava a entrega no projeto), `--survey` / `--no-survey` (força ou desliga o levantamento do projeto antes de decidir), `--acceptance "<critério>"` (repetível: o que a ENTREGA precisa cumprir, além do schema), `--verify-tests` (roda o comando de teste do projeto no fim do grafo e a métrica de teste passa a vir do exit code), `--min-quality 0..1` (compara estratégias e escolhe a mais barata que atinge o piso de VERIFICAÇÃO), `--reuse-artifacts` (reaproveita artefato de run anterior com a mesma pergunta), `--allow-tool <id>` (allowlist de tools do run). **Ctrl-C cancela o run** em vez de matar o processo: o batch em voo é abortado, o progresso já gravado fica no checkpoint e `izanagi resume <run-id>` retoma dali, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
+| `izanagi run [agent] --task "<task>"` | Commander decide o modo, roteia por papel, executa o grafo, verifica contra os critérios de aceite e persiste trace + telemetria de custo. Flags: `--mode direct\|assisted\|orchestrated\|autonomous`, `--budget N`, `--max-cost N`, `--model <id>`, `--local` (só providers locais, e serializa o pool: GPU única não ganha com paralelismo), `--max-concurrency N` (teto de tarefas em voo), `--cache`, `--output <dir>` (grava a entrega no projeto), `--survey` / `--no-survey` (força ou desliga o levantamento do projeto antes de decidir), `--acceptance "<critério>"` (repetível: o que a ENTREGA precisa cumprir, além do schema), `--verify-tests` (roda o comando de teste do projeto no fim do grafo e a métrica de teste passa a vir do exit code), `--min-quality 0..1` (compara estratégias e escolhe a mais barata que atinge o piso de VERIFICAÇÃO), `--reuse-artifacts` (reaproveita artefato de run anterior com a mesma pergunta), `--allow-tool <id>` (allowlist de tools do run), `--agent-tools none\|read\|write` (política de tools do EXECUTOR de processo, diferente de `--allow-tool`: aqui se decide se o subprocesso do agente lê o repositório ou altera arquivos). **Ctrl-C cancela o run** em vez de matar o processo: o batch em voo é abortado, o progresso já gravado fica no checkpoint e `izanagi resume <run-id>` retoma dali, `--no-commander` (planejamento legado por categoria), `--no-judge` (desliga o juiz semantico), `--prompt-only`. |
 | `izanagi models [--json]` | Catálogo de modelos, providers configurados e qual modelo cada papel (commander/specialist/worker) receberia agora, com custo por 10k tokens. |
 | `izanagi budget [run-id] [--json]` | Para onde foi o orçamento daquele run: tokens por fase, custo estimado, cache local e do provider, contexto poupado, escaladas, degradação e verificação por tarefa. |
 | `izanagi chat` | REPL interativo da CLI. |

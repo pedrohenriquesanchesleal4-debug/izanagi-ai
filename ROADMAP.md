@@ -1,6 +1,6 @@
 # Roadmap
 
-> Versão atual: **3.21.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
+> Versão atual: **3.22.0**. Estado atual e evolução planejada do **Izanagi AI: Adaptive Agent & Skill Runtime**.
 > Legenda: ✅ Done · 🔧 In progress · 📋 Planned · 💡 Future idea
 > Histórico linha-a-linha de cada release em `CHANGELOG.md`: este arquivo resume por fase, não duplica o changelog.
 
@@ -530,6 +530,72 @@ Testes: **838, 837 passando** (74 novos nesta fase; medido no Windows, onde o
 "837, 837 passando" a partir de uma medição só no Linux: dois testes de
 `project.test` falhavam no Windows, e o motivo virou linha na seção 3 do
 [`docs/HANDOFF.md`](docs/HANDOFF.md).
+
+## Fase 16: O executor que faltava (v3.22.0) ✅
+
+O defeito não era de arquitetura: era de **alcance**. O runtime planejava,
+roteava por papel, verificava por evidência, curava e replanejava — e, sem
+API key configurada, executava os nós com `createHeadlessProducer`, que
+SIMULA o artefato. Quem não quisesse colar uma chave nem subir um modelo
+local tinha um planejador, não um runtime. É a diferença entre "o framework
+está completo" e "o framework funciona na máquina de quem instalou".
+
+### O que entrou
+
+- **`claude-cli`: agente de codificação já autenticado como executor**
+  (`runtime/llm/agent-cli.ts`). `AgentCLIAdapter` implementa `ModelAdapter`,
+  entra no `LLMClient` como qualquer provider e atravessa run/SDK/`models`/
+  juiz/arena sem que nenhum chamador mude. Não fala HTTP: spawna o `claude`
+  em modo print, sem shell, prompt por stdin. **Zero configuração** — o
+  binário é detectado no PATH.
+- **As flags do CLI viraram os controles do runtime**: modelo do papel
+  (`--model`), teto de custo restante (`--max-budget-usd`), política de tools
+  (`--restricted`/`--tools`), escrita em opt-in (`--permission-mode
+  acceptEdits`), sem estado residual (`--no-session-persistence`,
+  `--strict-mcp-config`) e telemetria (`--output-format json`).
+- **Custo MEDIDO substitui custo estimado.** `total_cost_usd` sobe pelo
+  producer até o Budget Controller (`NodeProduction.costUsd`): `--max-cost`
+  passa a ser cobrado sobre o gasto real, não sobre a tabela do catálogo.
+- **`--agent-tools none|read|write`**: o executor roda sem tool alguma por
+  padrão; `read` dá grounding real no repositório (`Read/Grep/Glob`), `write`
+  autoriza alteração de arquivo. `Bash` não entra em nenhuma política. A
+  política também entra na chave do cache de resposta (esquema v2).
+- **Dois avisos que faltavam**: `izanagi doctor` passou a ter seção
+  "Executor" dizendo quem vai rodar os nós AGORA, e `izanagi run` diz qual
+  escolheu antes de começar — antes, "modo headless" era descoberto vendo o
+  run simular.
+- **Guarda de recursão e supressão em teste**: o filho recebe
+  `IZANAGI_AGENT_CLI_DEPTH+1` e no teto o adapter degrada para headless;
+  dentro de test runner o executor fica desligado, para que `npm test` nunca
+  gaste cota real de quem rodou.
+- **Higiene de repositório e de disco, tudo achado executando de verdade**: a
+  verificação de build escrevia ~700 arquivos na raiz do repo (sandbox que só
+  era limpo no caminho de sucesso), o espelho de assets em `.agents/` era
+  criado dentro do próprio repo do framework (~700 arquivos duplicando o que o
+  repositório já é, e a razão das "duas pastas de agentes"), e 3.517
+  diretórios temporários estavam acumulados no TEMP do usuário porque ~40
+  suítes criam `mkdtempSync` e nenhuma remove. Novo `npm run clean:temp`,
+  varrendo por prefixo conhecido e rodando dentro do `npm test`.
+- **Dois bugs de artefato achados executando de verdade**: o survey do projeto reprovava
+  como "stub/lazy-code" qualquer repositório que contivesse a palavra `TODO`
+  (o run abortava no PRIMEIRO nó, culpando o runtime pelo vocabulário do
+  projeto), e o teste de capacidades cobrava `model`/`evaluation` dos agentes
+  de `agents/generated/`, que nascem sem eles.
+
+Medições desta fase, no executor sem chave: um nó de specialist custou ~18.000
+tokens com `tools=none` e ~68.000 com `tools=read`; o system prompt do próprio
+CLI cai de 20.848 para 4.095 tokens de entrada com `--restricted --tools ""`
+(US$ 0,042 → US$ 0,005 na mesma pergunta).
+
+Limitação nova, e é de QUALIDADE, não de implementação: com `--agent-tools
+read` o executor leu o repositório de verdade (acertou a versão exata do
+`package.json`) e ainda assim reportou 5 providers onde havia 6, citando um
+intervalo de linhas que terminava antes da entrada nova. Grounding real não é
+grounding completo, e é por isso que a Verification Engine e os critérios de
+aceite continuam sendo o que decide se um artefato passa.
+
+Testes: **891, 890 passando** (41 novos nesta fase; medido no Windows, onde o
+único vermelho segue sendo `polyglot`).
 
 ## Critérios de aceite das próximas fases
 
