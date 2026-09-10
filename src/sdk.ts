@@ -256,6 +256,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
     ...(options.budget?.maxCost !== undefined ? { maxCostUsd: options.budget.maxCost } : {}),
     ...(options.model ? { model: options.model } : {}),
     availableProviders: providers,
+    ...(options.agentTools ? { agentTools: options.agentTools } : {}),
     ...(outputDir ? { output: outputDir } : {}),
     ...(options.survey ?? looksLikeProject(workspaceDir) ? { survey: true } : {}),
     ...(options.acceptance ? { acceptance: options.acceptance } : {}),
@@ -400,7 +401,7 @@ export function run(options: IzanagiRunOptions): IzanagiRunHandle {
  * nem gastar token. Útil para mostrar ao usuário o que vai acontecer (e quanto
  * vai custar) antes de autorizar.
  */
-export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 'mode' | 'model' | 'agent' | 'skillChain' | 'budget' | 'local' | 'client' | 'acceptance'>): CommanderPlan | undefined {
+export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 'mode' | 'model' | 'agent' | 'skillChain' | 'budget' | 'local' | 'client' | 'acceptance' | 'agentTools'>): CommanderPlan | undefined {
   const baseDir = options.baseDir ?? process.cwd();
   const client = options.client ?? new LLMClient();
   const all = client.configuredProviders();
@@ -414,6 +415,7 @@ export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 
     ...(options.budget?.maxCost !== undefined ? { maxCostUsd: options.budget.maxCost } : {}),
     ...(options.model ? { model: options.model } : {}),
     ...(options.acceptance ? { acceptance: options.acceptance } : {}),
+    ...(options.agentTools ? { agentTools: options.agentTools } : {}),
     availableProviders: providers,
   }).plan;
 }

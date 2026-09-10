@@ -24,6 +24,12 @@ A auditoria de 2026-09-09 (v3.22.1) deixou registrado que o elo fraco não era o
 
 **O que continua aberto nessa frente**, e é limitação e não gap: "Documentar a API REST de pagamentos" ranqueia `docs` no topo geral, e a escolha por papel `specialist` fica com `senior-engineer`, porque `docs` está classificado como `worker` em `WORKER_AGENTS`. Mudar a classificação afeta seleção e nada mais (o modelo já vem do `modelHint` do agente, `sonnet`), mas é decisão sobre a hierarquia dos papéis, não sobre o matching, e não foi medida aqui.
 
+## Fechado em 2026-09-10: o caminho sem API key não entregava
+
+`izanagi run "..."` sem flag nenhuma terminava em `HUMAN_REQUIRED` sem gravar arquivo, apesar de o executor `claude-cli` existir e funcionar desde a v3.22.0. Encontrado RODANDO, não lendo: teto do modo `direct` (2.000) contra um nó medido em ~20.000; piso recomendado calculado sobre a média em vez de sobre a média com folga; e a varredura anti-stub reprovando qualquer artefato em português com a palavra "todos". Os três estão no `CHANGELOG.md` com o teste que os prende (`executor-budget.test.ts`). Verificado de ponta a ponta: `PASS`, entrega em disco, 20.114 tokens de 39.000, $0.0326.
+
+**Aberto nessa frente:** no modo `direct` a escolha do agente não passa pelo capability matching corrigido. O trace mostra `agent-routing` decidido por `SkillResolver.rankAgents` (que usa a `semanticRelevance` saturante), e por isso "Escreva a função validarCPF" ainda registra `bug-hunter` na decisão. A entrega saiu correta, então isto é qualidade de despacho, não quebra: o mesmo tratamento dado ao `findCapable` precisa alcançar esse caminho.
+
 ---
 
 ## Limitações conhecidas que NÃO são gaps

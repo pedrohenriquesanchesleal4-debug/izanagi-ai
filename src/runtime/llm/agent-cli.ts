@@ -97,13 +97,31 @@ export const AGENT_CLI_OVERHEAD_TOKENS = 4_095;
 export const AGENT_CLI_TOKENS_PER_NODE = 18_000;
 
 /**
- * Piso de `--budget` recomendado para um run de um nó neste executor:
- * AGENT_CLI_TOKENS_PER_NODE dividido pela fatia da fase `execution` (0,65 no
- * peso default), arredondado. Abaixo disso o run falha por orçamento, não por
- * qualidade — e falhar por orçamento mal declarado é o pior tipo de falha,
- * porque parece falha do modelo.
+ * Menor fatia que a fase `execution` recebe do teto do run
+ * (`defaultWeights`: 0,7 em complexidade baixa, 0,65 no meio, 0,6 alta).
+ *
+ * O piso usa a MENOR das três, e não a do meio: um piso que só vale para uma
+ * complexidade é um piso que falha nas outras duas, e falhar por orçamento mal
+ * declarado é o pior tipo de falha, porque parece falha do modelo.
  */
-export const AGENT_CLI_MIN_RECOMMENDED_BUDGET = 30_000;
+export const MIN_EXECUTION_PHASE_SHARE = 0.6;
+
+/**
+ * Folga sobre o consumo MEDIDO.
+ *
+ * `AGENT_CLI_TOKENS_PER_NODE` é uma média, e média não é piso: o gasto varia
+ * com o tamanho da resposta. Quatro execuções do mesmo objetivo em 2026-09-10
+ * gastaram 19.799, 20.706, 20.108 e 20.1k tokens contra os 18.000 medidos
+ * originalmente. Sem folga, o piso reprova o caso típico.
+ */
+export const AGENT_CLI_VARIANCE_HEADROOM = 1.3;
+
+/**
+ * Piso de `--budget` recomendado para um run de um nó neste executor, sem
+ * tools: consumo medido, mais folga de variância, dividido pela menor fatia da
+ * fase `execution`, arredondado para o milhar.
+ */
+export const AGENT_CLI_MIN_RECOMMENDED_BUDGET = floorFor(AGENT_CLI_TOKENS_PER_NODE);
 
 /**
  * O mesmo nó com `--agent-tools read`, MEDIDO: 47,4k de entrada e 20,3k de
@@ -116,7 +134,12 @@ export const AGENT_CLI_MIN_RECOMMENDED_BUDGET = 30_000;
 export const AGENT_CLI_TOKENS_PER_NODE_WITH_TOOLS = 68_000;
 
 /** Piso recomendado por política de tools (mesma conta do caso sem tools). */
-export const AGENT_CLI_MIN_BUDGET_WITH_TOOLS = 105_000;
+export const AGENT_CLI_MIN_BUDGET_WITH_TOOLS = floorFor(AGENT_CLI_TOKENS_PER_NODE_WITH_TOOLS);
+
+/** Consumo medido -> teto de run que o comporta, arredondado para o milhar. */
+function floorFor(measuredPerNode: number): number {
+  return Math.ceil((measuredPerNode * AGENT_CLI_VARIANCE_HEADROOM) / MIN_EXECUTION_PHASE_SHARE / 1000) * 1000;
+}
 
 /** Piso de `--budget` recomendado para um nó, dada a política de tools. */
 export function recommendedBudget(policy: AgentCLIToolPolicy): number {

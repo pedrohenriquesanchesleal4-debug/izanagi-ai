@@ -10,10 +10,25 @@ import crypto from 'crypto';
 import type { ArtifactKind, ArtifactRef, ArtifactSchema } from '../types.js';
 import { sanitizeText } from '../text/unicode-hygiene.js';
 
+/**
+ * Marcadores de código inacabado.
+ *
+ * Os três primeiros são MAIÚSCULOS e com fronteira de palavra, e nenhuma das
+ * duas coisas é preciosismo. `/TODO/i` como substring reprovava qualquer
+ * artefato em português que contivesse "todo", "toda" ou "todos": uma
+ * implementação correta de `validarCPF`, com testes, foi recusada porque um
+ * comentário dizia "rejeita CPFs com todos os dígitos iguais". Num framework
+ * escrito em pt-BR isso não é um caso de borda, é o caso comum, e o efeito era
+ * o run inteiro terminar em FAIL sem gravar entrega.
+ *
+ * Marcador de stub é escrito em caixa alta por convenção (`// TODO:`,
+ * `FIXME(joao)`), então exigir caixa alta não perde detecção real; e a
+ * fronteira de palavra é o que separa o marcador da palavra que o contém.
+ */
 const STUB_PATTERNS = [
-  /TODO/i,
-  /FIXME/i,
-  /XXX/i,
+  /\bTODO\b/,
+  /\bFIXME\b/,
+  /\bXXX\b/,
   /implement later/i,
   /placeholder/i,
   /not implemented/i,

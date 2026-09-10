@@ -18,6 +18,8 @@ import { MemoryStore } from './memory/store.js';
 import { SkillResolver } from './routing/resolver.js';
 import { ModelRouter } from './model/router.js';
 import { ContextResolver } from './orchestration/context-resolver.js';
+import { AGENT_CLI_PROVIDERS } from './llm/client.js';
+import { recommendedBudget, toolPolicyFromEnv, type AgentCLIToolPolicy } from './llm/agent-cli.js';
 import { ResponseCache } from './cache/response-cache.js';
 import { simulatedArtifact, validateArtifact } from './contracts/artifacts.js';
 import { createModelJudge } from './verification/judge.js';
@@ -50,6 +52,12 @@ export interface PlanningInput {
   model?: string;
   /** Providers realmente utilizáveis (com chave/opt-in). */
   availableProviders: string[];
+  /**
+   * Política de tools do executor de processo (`--agent-tools`). Entra no
+   * PLANEJAMENTO porque muda o custo medido de um nó em ~3,8x, e é esse custo
+   * que define o piso de orçamento. Ausente, vale o ambiente.
+   */
+  agentTools?: AgentCLIToolPolicy;
   /** Pula o Commander e devolve `plan: undefined` (caminho legado por categoria). */
   noCommander?: boolean;
   /**
@@ -233,9 +241,29 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
       }
     : undefined;
 
+  // Piso de orçamento por nó, quando quem vai executar é um CLI de agente.
+  //
+  // Sem isto, o caminho SEM API KEY (que é o default de quem não configurou
+  // nada) não entregava: o modo `direct` dá 2.000 tokens ao run, um nó deste
+  // executor foi medido em ~18.000, e todo run terminava em `HUMAN_REQUIRED`
+  // com "teto de tentativas esgotado" e nenhum arquivo gravado. O aviso que
+  // existia só disparava para quem passasse `--budget` baixo à mão; quem não
+  // passava nada caía no teto do modo, que é mais baixo ainda.
+  //
+  // O piso é o RECOMENDADO (30.000 sem tools, 105.000 com), não o consumo médio
+  // medido (18.000 / 68.000): média não é piso. Três execuções do mesmo objetivo
+  // gastaram 19.799, 20.706 e 20.108 tokens, e um teto de 18.000 reprovava as
+  // três — trocar uma falha por orçamento por outra não é conserto. A conta do
+  // recomendado já divide pela fatia da fase `execution`, que é onde o gasto
+  // realmente acontece.
+  const executorFloor = input.availableProviders.some((p) => AGENT_CLI_PROVIDERS.includes(p))
+    ? recommendedBudget(input.agentTools ?? toolPolicyFromEnv())
+    : undefined;
+
   const commander = new Commander();
   const commanderInput = {
     objective: input.objective,
+    ...(executorFloor !== undefined ? { minTokensPerNode: executorFloor } : {}),
     ...(input.explicitAgent && input.agent ? { agent: input.agent } : {}),
     ...(input.skillChain ? { skillChain: input.skillChain } : {}),
     ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
@@ -257,6 +285,7 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(input.explicitAgent && input.agent ? { agent: input.agent } : {}),
         ...(input.skillChain ? { skillChain: input.skillChain } : {}),
         ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
+        ...(executorFloor !== undefined ? { minTokensPerNode: executorFloor } : {}),
         ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
         capabilities,
         ...(planningMemory ? { memory: planningMemory } : {}),

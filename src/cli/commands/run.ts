@@ -853,6 +853,7 @@ export async function runRuntime(
     ...(opts.maxCost !== undefined ? { maxCostUsd: opts.maxCost } : {}),
     ...(opts.model ? { model: opts.model } : {}),
     availableProviders: llmProviders,
+    ...(opts.agentTools ? { agentTools: opts.agentTools } : {}),
     ...(opts.output ? { output: opts.output } : {}),
     ...(opts.survey ? { survey: true } : {}),
     ...(opts.acceptance ? { acceptance: opts.acceptance } : {}),

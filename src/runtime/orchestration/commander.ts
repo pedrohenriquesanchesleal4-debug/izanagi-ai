@@ -228,6 +228,22 @@ export interface CommanderInput {
   skillChain?: string[];
   /** Teto global de tokens do run. */
   maxTokens?: number;
+  /**
+   * Piso de tokens por nó que CONSOME modelo, imposto pelo executor.
+   *
+   * `budgetForMode` foi calibrado quando um nó era uma requisição HTTP com
+   * prompt curto. O executor por CLI de agente tem um custo fixo por chamada
+   * (o system prompt do próprio CLI hospedeiro, cobrado sempre) e um nó dele
+   * foi MEDIDO em ~18.000 tokens sem tools. Contra o teto de 2.000 do modo
+   * `direct`, todo run pelo caminho sem API key estourava no primeiro nó e
+   * terminava em `HUMAN_REQUIRED` sem gravar entrega: o comando mais básico do
+   * framework não entregava nada.
+   *
+   * Isto NÃO é o teto: é o piso. `maxTokens` explícito do usuário continua
+   * vencendo, porque um teto que o usuário declarou é uma decisão dele (e a
+   * CLI já avisa quando está abaixo do piso medido).
+   */
+  minTokensPerNode?: number;
   /** Teto global de custo em USD: quando a estimativa estoura, o modo degrada. */
   maxCostUsd?: number;
   /** Registro de capacidades para escolher agentes por capacidade, não por nome fixo. */
@@ -946,7 +962,9 @@ export class Commander {
       nodes: finalNodes,
       budget: {
         maxAttempts: mode === 'autonomous' ? 3 : mode === 'orchestrated' ? 2 : 1,
-        maxTokens: input.maxTokens ?? budgetForMode(mode, classification.complexity),
+        maxTokens:
+          input.maxTokens ??
+          liftToExecutorFloor(budgetForMode(mode, classification.complexity), finalNodes, input.minTokensPerNode),
         maxTimeMs: mode === 'autonomous' ? 900_000 : mode === 'orchestrated' ? 600_000 : 180_000,
       },
     });
@@ -1240,7 +1258,10 @@ export class Commander {
       constraints: constraintsFor(classification, mode, { materialize: Boolean(input.output) && bearsCode(kind) }),
       priority: classification.risk > 0.6 ? 'high' : 'normal',
       budget: {
-        maxTokens: node.tokenBudget ?? 4000,
+        // Nó de tool não chama modelo: o piso do executor não se aplica a ele.
+        maxTokens: (node.kind ?? 'agent') === 'agent'
+          ? Math.max(node.tokenBudget ?? 4000, input.minTokensPerNode ?? 0)
+          : node.tokenBudget ?? 4000,
         ...(node.timeoutMs ? { maxTimeMs: node.timeoutMs } : {}),
         ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
       },
@@ -1287,6 +1308,24 @@ export class Commander {
 }
 
 /* ============================ HELPERS ============================ */
+
+/**
+ * Sobe o teto do run até o que o executor realmente cobra pelos nós de modelo.
+ *
+ * Só os nós que CHAMAM modelo entram na conta: nó de tool (`survey`,
+ * `materialize`, `deliver`, `verify-tests`) é determinístico e custa zero
+ * token, e somá-los inflaria o teto sem que nada fosse gasto ali.
+ *
+ * Quando não há piso declarado (provider por chave, modelo local, headless), o
+ * valor do modo passa intacto: o piso é do executor, não uma constante nova do
+ * planejamento.
+ */
+function liftToExecutorFloor(modeBudget: number, nodes: GraphNode[], minTokensPerNode?: number): number {
+  if (!minTokensPerNode || minTokensPerNode <= 0) return modeBudget;
+  const modelNodes = nodes.filter((n) => (n.kind ?? 'agent') === 'agent').length;
+  if (modelNodes === 0) return modeBudget;
+  return Math.max(modeBudget, modelNodes * minTokensPerNode);
+}
 
 function budgetForMode(mode: ExecutionMode, complexity: number): number {
   switch (mode) {

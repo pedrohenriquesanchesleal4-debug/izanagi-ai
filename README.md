@@ -91,7 +91,9 @@ O CLI devolve o custo real de cada chamada (`total_cost_usd`), então neste exec
 | `none` | ~18.000 | 4.095 deles são o system prompt do próprio CLI, cobrado em toda chamada |
 | `read` | ~68.000 | o agente faz várias voltas de tool antes de responder: ~3,8x |
 
-Por isso `--budget` apertado estoura no primeiro nó. Piso recomendado: **30.000** por nó com `none`, **105.000** com `read` (a CLI avisa quando o teto está abaixo disso).
+Por isso `--budget` apertado estoura no primeiro nó, e por isso **você não precisa passar `--budget`**: quando o executor é o CLI de agente, o teto default do run sobe sozinho para o piso desta tabela. Piso recomendado: **39.000** por nó com `none`, **148.000** com `read` (a CLI avisa quando um `--budget` explícito fica abaixo disso).
+
+O piso não é a média medida: é a média com folga de variância, dividida pela menor fatia que a fase `execution` recebe do teto (0,6). Execuções do mesmo objetivo gastaram 19.799, 20.706 e 20.114 tokens contra os ~18.000 da tabela, e um teto igual à média reprova metade das execuções por definição.
 
 Controles: `IZANAGI_AGENT_CLI_DISABLED=1` desliga o executor · `IZANAGI_AGENT_CLI_TIMEOUT_MS` ajusta o timeout (default 300.000) · `IZANAGI_AGENT_CLI_TOOLS=read|write` é o equivalente de `--agent-tools` por ambiente. Dentro de um test runner o executor fica desligado por padrão, para que `npm test` nunca gaste cota real (`IZANAGI_AGENT_CLI_IN_TESTS=1` libera).
 
