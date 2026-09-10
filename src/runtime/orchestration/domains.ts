@@ -14,11 +14,11 @@
 
 export type Domain =
   | 'frontend' | 'backend' | 'database' | 'security' | 'devops'
-  | 'testing' | 'research' | 'debugging' | 'architecture' | 'automation' | 'docs';
+  | 'testing' | 'research' | 'debugging' | 'architecture' | 'automation' | 'docs' | 'ai';
 
 export const DOMAINS: Domain[] = [
   'frontend', 'backend', 'database', 'security', 'devops',
-  'testing', 'research', 'debugging', 'architecture', 'automation', 'docs',
+  'testing', 'research', 'debugging', 'architecture', 'automation', 'docs', 'ai',
 ];
 
 export const DOMAIN_SIGNALS: Array<[Domain, RegExp]> = [
@@ -33,6 +33,11 @@ export const DOMAIN_SIGNALS: Array<[Domain, RegExp]> = [
   ['architecture', /arquitet|architect|clean architecture|\bddd\b|domain-driven|cqrs|hexagonal|\badr\b|monólito|monolito|design de sistema|system design|trade-off/i],
   ['automation', /automa|automatiz|scrap|\betl\b|planilha|spreadsheet|robô|robo|em massa|selenium|orquestr/i],
   ['docs', /document|readme|guia|tutorial|changelog|diátaxis|diataxis|technical writing/i],
+  // Trabalho COM modelo de linguagem, que é diferente de trabalho DE agente:
+  // "agente", "orquestrar" e "prompt" sozinhos ficam de fora de propósito, senão
+  // "projetar um agente novo" (que é do `agent-architect`) e qualquer objetivo
+  // deste próprio framework cairiam aqui.
+  ['ai', /\bllm\b|\brag\b|embedding|vector db|vector database|prompt engineering|tool.?calling|\bmcp\b|fine.?tun|openai|anthropic|\bgpt\b|generative|ia generativa|intelig[êe]ncia artificial/i],
 ];
 
 /** Domínios detectados no texto, na ordem canônica de DOMAIN_SIGNALS. */

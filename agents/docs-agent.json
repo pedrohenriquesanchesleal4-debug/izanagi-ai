@@ -59,6 +59,9 @@
     "guias",
     "referências de api"
   ],
+  "domains": [
+    "docs"
+  ],
   "optionalSkills": [
     "qa"
   ],

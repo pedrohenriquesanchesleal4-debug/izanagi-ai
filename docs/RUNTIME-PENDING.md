@@ -18,6 +18,14 @@ Esta frase já esteve errada uma vez: a versão de 2026-09-03 afirmava "nenhum i
 
 ---
 
+## Fechado em 2026-09-10: a escolha do agente
+
+A auditoria de 2026-09-09 (v3.22.1) deixou registrado que o elo fraco não era o roteamento de modelo, e sim QUAL agente é escolhido. Medido contra o catálogo real: **7 de 14 objetivos comuns despachavam para o agente errado**. Quatro causas independentes, todas fechadas com teste em `agent-selection.test.ts` (detalhe de cada uma no `CHANGELOG.md`): domínio inferido também das skills e chains, relevância léxica que satura e cai no desempate alfabético, penalidade subtrativa calibrada para a escala antiga e papel usado como portão em vez de preferência. A tabela de despacho (12 objetivos contra o agente esperado) é o gate que quebra se qualquer uma voltar.
+
+**O que continua aberto nessa frente**, e é limitação e não gap: "Documentar a API REST de pagamentos" ranqueia `docs` no topo geral, e a escolha por papel `specialist` fica com `senior-engineer`, porque `docs` está classificado como `worker` em `WORKER_AGENTS`. Mudar a classificação afeta seleção e nada mais (o modelo já vem do `modelHint` do agente, `sonnet`), mas é decisão sobre a hierarquia dos papéis, não sobre o matching, e não foi medida aqui.
+
+---
+
 ## Limitações conhecidas que NÃO são gaps
 
 Coisas que alguém pode confundir com dívida ao ler o código. São escolhas, e o motivo está registrado.

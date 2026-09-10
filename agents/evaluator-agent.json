@@ -42,6 +42,7 @@
     "recomendações acionáveis",
     "auditoria de evidência (logs de build/testes)"
   ],
+  "domains": [],
   "inputs": [
     "artefato a avaliar",
     "requisitos originais",

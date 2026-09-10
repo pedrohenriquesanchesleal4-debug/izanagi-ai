@@ -4,6 +4,29 @@
 
 ---
 
+## [Não publicado]
+
+### Fixed
+- **O runtime escolhia o agente errado em 7 de 14 objetivos comuns.** O roteamento de MODELO por papel estava correto e verificado; a pergunta ao lado, QUAL agente atende o objetivo, não tinha teste nenhum e errava metade. Medido contra o catálogo real dos 22 agentes: `automation-engineer` para "Escreva a função validarCPF", `skill-architect` para uma migration Postgres e também para uma auditoria OWASP, `adversarial-critic` para "Definir a arquitetura de um SaaS multi-tenant", `ai-engineer` para uma landing page. Eram quatro causas independentes, e cada uma tem agora um teste que quebra se voltar (`agent-selection.test.ts`, 10 casos, incluindo a tabela de despacho com 12 objetivos):
+
+  1. **Domínio do agente era inferido também das skills e das chains.** Uma skill de apoio na lista bastava para o agente "cobrir" o domínio dela: o agente `database` cobria `[database, security, debugging, architecture]` por carregar `security-privacy`, `error-recovery` e `architecture-patterns`; o `security` cobria cinco domínios; o `automation-engineer`, sete de onze. Com quase todo agente cobrindo quase todo domínio, casar domínio deixou de separar candidato. A fonte agora é o que o agente É (`role`/`name`) mais o que ele DECLARA saber fazer (`capabilities`). Uma skill diz o que ele USA no caminho, não o problema que resolve.
+
+  2. **A relevância léxica saturava, e o empate caía no alfabeto.** `semanticRelevance` pontua pela especificidade média do termo casado: um único termo longo em comum já devolve ~0.8. "Escreva a função validarCPF em TypeScript" dava exatamente 0.81 para `automation-engineer` e para `senior-engineer`, e o desempate era `localeCompare` do id. Todo despacho errado observado terminou num agente alfabeticamente inicial, que é a assinatura desse empate. Nova `capabilityCoverage`: a nota é COBERTURA (fração dos termos significativos do objetivo que o alvo casa), com verbo genérico de pedido fora do cálculo (era o "criar" que dava 0.67 ao `skill-architect` num objetivo de banco), casamento por prefixo a partir de 5 caracteres (`postgres` casa `postgresql`) e canonização pt/en dos termos que decidem o roteamento (sem ela, `arquitetura` não casava a descrição em inglês do `architect`, e `revisar` não casava `Code Review` do `techlead`). `semanticRelevance` fica intacta para o ranking de skills, que é outra pergunta.
+
+  3. **As penalidades de custo e amplitude eram subtrativas, calibradas para a escala antiga.** Um desconto fixo de 0.08 valia ~10% sobre notas que saturavam perto de 0.8; sobre cobertura real vale 27%, e passou a DECIDIR o ranking em vez de desempatá-lo, chegando a zerar candidatos com evidência positiva. Agora são fatores multiplicativos: valem a mesma fração em qualquer escala e nunca aniquilam a evidência. Empate cai em critério com significado antes do alfabeto (agente mais estreito, depois mais barato).
+
+  4. **O papel era um portão, não uma preferência.** `pickAgent` filtrava por papel e aceitava o que sobrasse, por pior que fosse: "Definir a arquitetura de um SaaS multi-tenant" ficava com `skill-architect` (0.115) tendo `architect` (0.380) na mesa, porque o arquiteto é `commander`. Agora o papel cede quando o candidato dele está muito abaixo do melhor de todos (`ROLE_PREFERENCE_RATIO`), e o teto de custo continua protegido por quem realmente paga a conta, o Budget Controller.
+
+### Added
+- **`domains` declarável no JSON do agente**, com precedência sobre a inferência, inclusive quando é lista vazia: declarar o campo é optar por não ser inferido. É o que dá endereço aos agentes transversais. `adversarial-critic`, `evaluator`, `techlead`, `professor`, `pm`, `agent-architect` e `skill-architect` declaram `[]`: um crítico que menciona "problemas de arquitetura" não é um arquiteto, e era assim que ele ganhava do `architect`. `docs` declara `docs`, `discovery` declara `research`, `ai-engineer` declara `ai`.
+- **Domínio `ai`** na tabela bilíngue (`llm`, `rag`, `embedding`, `vector db`, `tool-calling`, `mcp`, `prompt engineering`). O `ai-engineer` era o único agente sem domínio próprio, e por isso disputava (e às vezes ganhava) frontend e devops. A regex deixa "agente", "orquestrar" e "prompt" sozinhos de fora de propósito: com eles, "projetar um agente novo" cairia aqui em vez de no `agent-architect`.
+- **Piso de evidência (`MIN_EVIDENCE`) no capability matching.** Abaixo dele o que casou foi um termo de apoio solto, e devolver esse agente é pior que não devolver nenhum: quem chama tem um default declarado. Medido: "Revisar este PR antes do merge" não tem specialist com evidência, e sem o piso a busca por papel devolvia `database`.
+
+### Verificação
+- **909 testes, 905 passando, 0 falhando, 4 skipped** com motivo declarado (os `polyglot` que dependem de shebang, medidos no Windows em 2026-09-10). Os 10 casos novos incluem a tabela de despacho: 12 objetivos reais contra o agente esperado, que era o gate ausente enquanto a escolha errava metade.
+
+---
+
 ## [3.22.1]: 2026-09-09
 
 ### Fixed

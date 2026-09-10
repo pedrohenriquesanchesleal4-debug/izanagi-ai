@@ -15,8 +15,8 @@ import fs from 'fs';
 import path from 'path';
 import type { AgentRole } from '../contracts/task-contract.js';
 import type { TrustTier } from '../security/policy.js';
-import { semanticRelevance } from '../routing/scorer.js';
-import { detectDomains, domainOverlap, type Domain } from '../orchestration/domains.js';
+import { capabilityCoverage } from '../routing/scorer.js';
+import { DOMAINS, detectDomains, domainOverlap, type Domain } from '../orchestration/domains.js';
 
 export interface AgentCapability {
   id: string;
@@ -126,6 +126,54 @@ function trustTierFor(file: string): TrustTier {
   return 'builtin';
 }
 
+/**
+ * Domínios que um agente cobre.
+ *
+ * A fonte é o que o agente É (`role`/`description`, `name`) mais o que ele
+ * DECLARA saber fazer (`capabilities`). Antes entravam também `skills` e os
+ * nomes das `chains`, e isso inflava o alcance de todo mundo: uma skill de
+ * apoio na lista bastava para o agente "cobrir" o domínio dela. Medido no
+ * catálogo real: o agente `database` cobria `[database, security, debugging,
+ * architecture]` porque carrega `security-privacy`, `error-recovery` e
+ * `architecture-patterns` na chain; o `security` cobria cinco domínios; o
+ * `automation-engineer`, sete. Com quase todo agente cobrindo quase todo
+ * domínio, casar domínio deixava de separar candidato nenhum.
+ *
+ * Uma skill na chain diz o que o agente USA no caminho, não o problema que ele
+ * resolve. É por isso que ela informa a relevância léxica (com peso baixo) e
+ * não o domínio.
+ *
+ * `domains` explícito no JSON vence a inferência, INCLUSIVE quando é uma lista
+ * vazia: declarar o campo é optar por não ser inferido. Isso é o que dá endereço
+ * aos agentes transversais — `adversarial-critic`, `evaluator`, `techlead`,
+ * `professor`, `agent-architect`, `skill-architect` não são donos de domínio
+ * nenhum, e a inferência os fazia disputar (e ganhar) domínios só porque a
+ * descrição deles CITA o domínio que eles criticam, avaliam ou ensinam. Um
+ * crítico que menciona "problemas de arquitetura" não é um arquiteto.
+ *
+ * Valor fora da lista canônica é descartado em silêncio; o resultado sai sempre
+ * na ordem canônica de `DOMAINS`, para a nota não depender da ordem em que
+ * alguém escreveu o array.
+ */
+function domainsFor(raw: Record<string, unknown>, capabilities: string[]): Domain[] {
+  if (Array.isArray(raw.domains)) {
+    const declared = (raw.domains as unknown[]).filter((d): d is Domain => typeof d === 'string' && (DOMAINS as string[]).includes(d));
+    return DOMAINS.filter((d) => declared.includes(d));
+  }
+  return detectDomains([raw.role ?? raw.description, raw.name, ...capabilities].filter(Boolean).join(' '));
+}
+
+/**
+ * Piso de evidência para um agente ser considerado candidato.
+ *
+ * Abaixo disto o que casou foi um termo de apoio solto, e devolver esse agente é
+ * pior que não devolver nenhum: quem chama tem um default declarado
+ * (`senior-engineer`), e um default explícito é melhor que um sorteio. Medido:
+ * "Revisar este PR antes do merge" não tem specialist nenhum com evidência, e
+ * sem o piso a busca por papel devolvia `database`.
+ */
+const MIN_EVIDENCE = 0.05;
+
 function costClassFor(tokenBudget: number): AgentCapability['costClass'] {
   if (tokenBudget >= 8000) return 'high';
   if (tokenBudget >= 4000) return 'medium';
@@ -193,7 +241,7 @@ export class AgentCapabilityRegistry {
       costClass: costClassFor(tokenBudget),
       role: roleFor(id),
       outputs: Array.isArray(raw.outputs) ? (raw.outputs as string[]) : [],
-      domains: detectDomains([raw.role, raw.description, raw.name, ...capabilities, ...skills, ...Object.keys(chains)].filter(Boolean).join(' ')),
+      domains: domainsFor(raw, capabilities),
       trustTier: trustTierFor(file),
       ...(typeof raw.model === 'string' && raw.model ? { modelHint: raw.model } : {}),
       declaredPermissions: Array.isArray(raw.permissions) ? (raw.permissions as string[]) : [],
@@ -222,24 +270,54 @@ export class AgentCapabilityRegistry {
     for (const agent of this.list()) {
       if (exclude.has(agent.id)) continue;
       if (opts.role && agent.role !== opts.role) continue;
-      const haystack = [agent.purpose, agent.name, agent.id, ...agent.capabilities, ...agent.skills, ...Object.keys(agent.chains)].join(' ');
-      const lexical = semanticRelevance(objective, haystack);
+      // Três evidências separadas, porque valem coisas diferentes. Antes eram
+      // um só bloco de texto concatenado, e nele o nome de uma skill de apoio
+      // pesava igual ao que o agente É.
+      const identity = capabilityCoverage(objective, [agent.id, agent.name].join(' '));
+      const purpose = capabilityCoverage(objective, [agent.purpose, ...agent.capabilities].join(' '));
+      const support = capabilityCoverage(objective, [...agent.skills, ...Object.keys(agent.chains)].join(' '));
       const domainFit = domainOverlap(objectiveDomains, agent.domains);
-      if (lexical <= 0 && domainFit <= 0) continue;
+      if (identity <= 0 && purpose <= 0 && support <= 0 && domainFit <= 0) continue;
       const reasons: string[] = [];
-      if (lexical > 0) reasons.push(`relevância léxica ${lexical.toFixed(2)}`);
+      if (identity > 0) reasons.push(`identidade ${identity.toFixed(2)}`);
+      if (purpose > 0) reasons.push(`propósito ${purpose.toFixed(2)}`);
+      if (support > 0) reasons.push(`skills ${support.toFixed(2)}`);
       if (domainFit > 0) {
         const shared = objectiveDomains.filter((d) => agent.domains.includes(d));
         reasons.push(`domínios em comum: ${shared.join(', ')}`);
       }
-      // Custo entra como desempate: entre dois agentes igualmente relevantes,
-      // o mais barato vence (princípio "mínima inteligência necessária").
-      const costPenalty = agent.costClass === 'high' ? 0.08 : agent.costClass === 'medium' ? 0.03 : 0;
-      if (costPenalty > 0) reasons.push(`custo ${agent.costClass}`);
-      const score = Math.max(0, lexical * 0.6 + domainFit * 0.4 - costPenalty);
+      // As duas penalidades são MULTIPLICATIVAS, não subtrativas.
+      //
+      // Subtrair um valor fixo só funciona enquanto a escala das notas é
+      // conhecida, e ela mudou: `semanticRelevance` saturava perto de 0.8 e um
+      // desconto de 0.08 valia ~10%; sobre cobertura real, a mesma constante
+      // vale 27% e passou a DECIDIR o ranking em vez de desempatá-lo, chegando
+      // a zerar candidatos com evidência positiva (dois agentes empatados em
+      // 0.000 e a ordem caindo no desempate). Como fator, o desconto vale a
+      // mesma fração em qualquer escala e nunca aniquila a evidência.
+      const costFactor = agent.costClass === 'high' ? 0.1 : agent.costClass === 'medium' ? 0.04 : 0;
+      if (costFactor > 0) reasons.push(`custo ${agent.costClass}`);
+      // Amplitude: entre dois agentes que casam o mesmo domínio, o mais estreito
+      // é o mais específico para ele. Sem isto, um agente que cobre quatro
+      // domínios ganha do dono do domínio por casar um termo genérico a mais.
+      const breadthFactor = Math.min(0.12, 0.04 * Math.max(0, agent.domains.length - 1));
+      if (breadthFactor > 0) reasons.push(`${agent.domains.length} domínios`);
+      const evidence = identity * 0.3 + purpose * 0.3 + support * 0.1 + domainFit * 0.3;
+      const score = evidence * (1 - costFactor) * (1 - breadthFactor);
+      if (score < MIN_EVIDENCE) continue;
       matches.push({ agent, score, reasons });
     }
-    matches.sort((a, b) => b.score - a.score || a.agent.id.localeCompare(b.agent.id));
+    // Empate cai em critério com significado antes de cair no alfabeto: primeiro
+    // o agente mais estreito (mais específico), depois o mais barato. O id só
+    // decide quando tudo mais empatou, e aí é só para a ordem ser determinística.
+    const COST_ORDER = { low: 0, medium: 1, high: 2 } as const;
+    matches.sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.agent.domains.length - b.agent.domains.length ||
+        COST_ORDER[a.agent.costClass] - COST_ORDER[b.agent.costClass] ||
+        a.agent.id.localeCompare(b.agent.id),
+    );
     return matches.slice(0, opts.limit ?? 3);
   }
 

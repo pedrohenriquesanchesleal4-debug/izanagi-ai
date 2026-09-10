@@ -84,6 +84,9 @@
     "prompt engineering",
     "avaliação e guardrails de LLM"
   ],
+  "domains": [
+    "ai"
+  ],
   "optionalSkills": [
     "systematic-debugging"
   ],

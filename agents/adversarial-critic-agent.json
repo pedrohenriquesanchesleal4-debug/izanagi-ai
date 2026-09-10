@@ -45,6 +45,7 @@
     "validação de cobertura de requisitos",
     "priorização de fixes por severidade"
   ],
+  "domains": [],
   "inputs": [
     "implementação a criticar",
     "requisitos originais"

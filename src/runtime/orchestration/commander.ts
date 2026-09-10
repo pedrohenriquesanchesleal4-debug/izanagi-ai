@@ -330,6 +330,13 @@ const MIN_RUNS_FOR_TRUST = 3;
  * um agente que às vezes fecha o objetivo.
  */
 const MIN_BURNED_FAILURES = 2;
+/**
+ * Quanto o melhor candidato DO PAPEL pode ficar abaixo do melhor de todos antes
+ * de o papel ceder. Acima disso o papel vale; abaixo, a diferença de aptidão é
+ * grande demais para ser paga por uma preferência de hierarquia.
+ */
+const ROLE_PREFERENCE_RATIO = 0.6;
+
 /** Abaixo desta taxa, o agente sai da disputa (havendo alternativa). */
 const MIN_SUCCESS_RATE = 0.4;
 /** Skills carregadas por tarefa. O prompt já corta em 4; 3 dá folga. */
@@ -1049,15 +1056,38 @@ export class Commander {
   private pickAgent(input: CommanderInput, classification: Classification, role: AgentRole): string | null {
     if (!input.capabilities) return null;
     const exclude = this.unreliableAgents(input);
-    const pick = (opts: { role?: AgentRole; exclude?: string[] }) => input.capabilities!.bestFor(input.objective, opts)?.id ?? null;
     const chosen =
-      pick({ role, ...(exclude.length > 0 ? { exclude } : {}) }) ??
-      pick(exclude.length > 0 ? { exclude } : {}) ??
+      this.bestWithRolePreference(input, role, exclude.length > 0 ? exclude : undefined) ??
       // Nenhum agente confiável casou: melhor um agente com histórico ruim do
       // que nenhum agente. O motivo já foi registrado nas decisões do plano.
-      pick({ role }) ??
-      pick({});
+      this.bestWithRolePreference(input, role, undefined);
     return chosen;
+  }
+
+  /**
+   * Melhor agente para o objetivo, com o papel como PREFERÊNCIA e não como
+   * portão.
+   *
+   * O papel existe para não gastar um commander numa extração, e isso continua
+   * valendo. O que não vale é o inverso: filtrar por papel primeiro e aceitar o
+   * que sobrar, por pior que seja. Medido no catálogo real, esse portão dava
+   * `skill-architect` (0.115) para "Definir a arquitetura de um SaaS
+   * multi-tenant" tendo `architect` (0.380) na mesa, e `ai-engineer` para
+   * "projetar um agente novo" tendo `agent-architect`. Nos dois casos o certo é
+   * commander e o portão o descartava sem olhar a nota.
+   *
+   * A regra: fica no papel enquanto o candidato do papel for comparável ao
+   * melhor de todos. Quando ele é MUITO pior, o papel cede — e o teto de custo
+   * não fica desprotegido, porque quem paga a conta é o Budget Controller, que
+   * age sobre o gasto e não sobre o rótulo.
+   */
+  private bestWithRolePreference(input: CommanderInput, role: AgentRole, exclude?: string[]): string | null {
+    const opts = exclude ? { exclude } : {};
+    const inRole = input.capabilities!.findCapable(input.objective, { ...opts, role, limit: 1 })[0];
+    const anyRole = input.capabilities!.findCapable(input.objective, { ...opts, limit: 1 })[0];
+    if (!inRole) return anyRole?.agent.id ?? null;
+    if (!anyRole) return inRole.agent.id;
+    return inRole.score >= anyRole.score * ROLE_PREFERENCE_RATIO ? inRole.agent.id : anyRole.agent.id;
   }
 
   /**

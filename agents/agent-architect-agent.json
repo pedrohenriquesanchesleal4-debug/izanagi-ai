@@ -57,6 +57,7 @@
     "validação de qualidade de agentes",
     "handoffs formais"
   ],
+  "domains": [],
   "optionalSkills": [
     "code-auditor",
     "self-critique"

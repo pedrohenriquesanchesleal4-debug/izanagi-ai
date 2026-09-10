@@ -1,82 +1,94 @@
-# Izanagi AI: Claude Code Integration
+# CLAUDE.md
 
-Este projeto usa o **Izanagi AI Framework**: framework meta para engenharia de software autônoma orientada a agentes: arquitetura em camadas, biblioteca de skills especializadas e 22 agentes pré-definidos.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Fonte da verdade
+> Mantido à mão. Ele **não** carrega o `GENERATED_MARKER` (o rodapé "gerado por" que `src/exporters.ts` procura), e por isso `izanagi export --cli claude` o preserva em vez de reescrevê-lo: `writeIfAbsent` só regenera arquivo que tem o marcador. Não reintroduza essa string aqui, nem citada, ou o próximo export apaga este arquivo. O que deve chegar nos projetos que **instalam** o pacote vive em `claudeMainTemplate()` no mesmo `src/exporters.ts`: edite lá, não aqui.
 
-Este arquivo já cobre agentes, skills e regras essenciais do dia a dia: não precisa ler mais nada de saída. Consulte sob demanda só quando a tarefa exigir o tópico específico:
+## Este repositório É o framework
 
-- `AGENTS.md` (raiz): catálogo de agentes e regras que valem em qualquer projeto
-- `SYSTEM.md`: só para: detalhes de engines internas, quality gates, arquitetura de memória
-- `RULES.md`: só para: regras operacionais que não estejam listadas abaixo
-- `.agents/AGENTS.md`: a referência COMPLETA do framework, com a topologia poliglota, os comandos de desenvolvimento, a estrutura de pastas e o release flow. Isso descreve o repositório do framework, não necessariamente este projeto: num projeto que só consome o pacote, `npm run build` e `cargo test --workspace` de lá não têm o que rodar. Os comandos deste projeto estão na seção 0 do `AGENTS.md` da raiz.
+Izanagi AI é um framework meta de engenharia de software orientada a agentes, publicado no npm como `izanagi-ai` (bins `izanagi` e `izanagi-ai`). Aqui está a fonte dele, não um app que o consome. Consequência prática:
 
-## Orquestrador (`/agents`)
+- **Fonte:** `agents/*.json` (22 agentes), `skills/` (v1) e `.skills/` (catálogo v2, 106 módulos), `core/` (engines em `.md` + `skill-resolver.json`), `src/` (CLI + runtime TypeScript).
+- **Saída gerada:** `.claude/`, `.opencode/`, `.codex/`, `.cursor/`, `.github/copilot-instructions.md`, `.kimi/`, `.agents/agents/*.yaml`. Editar um desses à mão é editar o artefato: mude o gerador (`src/exporters.ts`, `packages/agent-migrator`) ou a fonte JSON.
+- Ponteiros do `CLAUDE.md` de consumidor (`.agents/AGENTS.md`, "seção 0 do AGENTS.md") descrevem a instalação do usuário e **não existem neste repo**. Aqui a referência completa é o `AGENTS.md` da raiz (seções 1 a 9).
 
-Digite `/agents` (`.claude/commands/agents.md`) para o protocolo completo de decomposição + swarm paralelo quando o pedido cobrir 2+ domínios ou for um projeto novo. Para o caso comum (uma frente clara), pule direto para a tabela abaixo.
+## Comandos
 
-## Agentes nativos (Agent tool)
+```bash
+# Legado npm (raiz): a CLI publicada
+npm install
+npm run build          # tsc + node dist/scripts/generate-manifest.js
+npm test               # build + clean-temp + node --test dist/runtime/tests/*.test.js
+npm run test:only      # mesma suíte SEM rebuildar (iteração rápida)
+npm run verify         # verify-build.js + a suíte de testes
+npm run doctor         # node bin/izanagi.js doctor [--deep]
 
-Os 22 agentes em `.claude/agents/*.md` são **subagents nativos do Claude Code** (Agent tool). **Regra de despacho: delegar é o padrão, responder direto como generalista é a exceção.** Para qualquer tarefa não-trivial que bata com uma linha da tabela abaixo, use o Agent tool com aquele agente antes de escrever a resposta você mesmo: não absorva o trabalho do especialista. Chame também por `/<slug>` em `.claude/commands/` quando quiser forçar um agente específico.
+# Um teste só (precisa de dist/ atualizado: rode npm run build antes)
+node --test dist/runtime/tests/export-global.test.js
+node --test --test-name-pattern="export --global" dist/runtime/tests/*.test.js
 
-| Agente | Quando usar |
+# Núcleos poliglotas
+cargo test --workspace
+cargo check -p izanagi_core --features wasm
+(cd go-services/swarm_orchestrator && go build ./... && go vet ./... && go test ./...)
+(cd python-engine && .venv/bin/python -m pytest tests/ -q)
+(cd packages/sdk && npm install && npm test)
+(cd packages/cli && npm install && npm run build)
+
+# Diagnóstico
+node bin/izanagi.js polyglot status [--json|--strict]
+node packages/agent-migrator/cli.mjs --check     # drift YAML vs JSON (exit 0 ok / 1 drift / 2 uso)
+node packages/skill-migrator/cli.mjs --dry-run
+```
+
+**Release:** `npm run bump:patch|minor|major` (só bumpa a versão), então `npm run build`, commit `chore: bump to vX.Y.Z`, `npm publish` (o `prepublishOnly` rebuilda) e `git push`. O CD só dispara em tag `v*` (`.github/workflows/publish.yml`); o CI roda 6 jobs paralelos em `.github/workflows/polyglot.yml`.
+
+## Arquitetura
+
+**Duas camadas convivendo por Strangler Fig (ADR-001):** o legado npm (`src/`, bin `izanagi`) permanece publicável e intocado; o crescimento novo vive em `packages/` mais 4 núcleos nativos, orquestrados pelo bin `izanagi-next`. Contratos IPC, error codes (`-32001..-32005`) e env vars: `docs/POLYGLOT.md`.
+
+| Onde | O quê |
 |---|---|
-| `adversarial-critic` | Crítica adversarial de implementações: caçar bugs, falhas de segurança, problemas de arquitetura, requisitos faltantes, problemas de… |
-| `agent-architect` | Projeto de novos agentes especializados: Requirements → Capability Analysis → Skill Discovery → Composition → Prompt Generation →… |
-| `ai-engineer` | Engenheiro de Software especializado em construir features com IA/LLM: RAG, embeddings e vector DBs, agentes autônomos… |
-| `animation` | Motion Engineering & Experiências Cinematográficas Web (Awwwards SOTD / Apple Grade): Scrollytelling, GSAP ScrollTrigger/SplitText, WebGL… |
-| `architect` | System Design de alta escala, Clean Architecture, DDD, CQRS, Hexagonal Architecture, ADRs, contratos de API e trade-offs operacionais |
-| `automation-engineer` | Engenheiro de Automações Profissionais: decompõe o processo, pesquisa soluções existentes, escolhe a melhor stack… |
-| `bug-hunter` | Debugging avançado em 6 fases (Reproduzir -> Isolar -> Hipótese -> Corrigir -> Verificar -> Prevenir), Root Cause Analysis (RCA),… |
-| `database` | Modelagem de dados relacional e NoSQL (PostgreSQL, Redis, MongoDB), ORMs (Prisma/Drizzle/SQLAlchemy), indexação avançada, prevenção N+1,… |
-| `devops` | Infraestrutura como Código (Terraform/OpenTofu), Docker multi-stage enxuto, Kubernetes, CI/CD automatizado (GitHub Actions),… |
-| `discovery` | Investigador de Pré-Produção: entrevista em 3 fases (~15 perguntas, uma por vez), pesquisa referências REAIS em 2 trilhas… |
-| `docs` | Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis… |
-| `evaluator` | Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN),… |
-| `form-engineer` | Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com auto-save (localStorage/IndexedDB),… |
-| `pm` | Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de User Stories em formato BDD… |
-| `product-reasoner` | Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite BDD e evidências antes de… |
-| `professor` | Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos… |
-| `qa` | Quality Assurance & Test Automation Specialist: testes unitários (Vitest/Pytest/Jest), integração de APIs, E2E resiliente com Playwright,… |
-| `researcher` | Pesquisa estruturada baseada em evidência: coleta de fatos com fontes citadas, distinção FACT/ASSUMPTION/INFERENCE/UNKNOWN, priorização… |
-| `security` | Auditoria de segurança SAST/DAST, mitigação OWASP Top 10, autenticação robusta (OAuth2/JWT/Argon2), blindagem de APIs, gestão de… |
-| `senior-engineer` | Full-Stack Software Engineer High-Craft: implementação profunda de ponta a ponta, Clean Code, TDD estrito, zero AI-Slop, zero stubs e… |
-| `skill-architect` | Arquitetura de novas skills: Capability Gap → Research → Draft → Examples → Tests → Security Scan → Evaluation → Register… |
-| `techlead` | Liderança técnica operacional, Code Review pedagógico em 5 dimensões (Corretude, Segurança, Performance, Manutenibilidade, DX),… |
+| `src/runtime/` | O runtime headless. Fluxo de um run: Task, Classify, Plan (grafo), Route (agente/skill/modelo por PAPEL, não por run), Execute em batches, Validate artifacts, Evaluate, Heal, Reflect, Trace. Entrada: `orchestrator.ts`. |
+| `src/runtime/llm/` | Executores. Precedência: CLI de agente (`claude-cli` por subprocesso, sem API key), API key, modelo local, e headless simulado como último recurso. |
+| `src/cli/commands/` | 24 subcomandos (`run`, `export`, `doctor`, `polyglot`, `agent`, `skill`, `resume`, `budget`...). Entrada: `src/cli/index.ts` chamando `runCLI`. |
+| `src/exporters.ts` | Gera os adapters de todas as CLIs. Idempotente com uma regra só: arquivo com `GENERATED_MARKER` é reescrito, arquivo sem o marker é preservado intocado. |
+| `src/installer.ts` | O que um projeto consumidor recebe: packs, `ROOT_DOCS` (`AGENTS.md`, `SYSTEM.md`, `RULES.md`) e a versão de consumidor do `AGENTS.md` via `buildConsumerAgentsDoc`. |
+| `crates/izanagi_core` (Rust) | Quality engine: 7 heurísticas anti-slop sobre TS/Python/Go, protocolo NDJSON, bindings WASM feature-gated. |
+| `crates/izanagi_mcp` (Rust) | Cliente MCP JSON-RPC 2.0 sobre stdio. |
+| `go-services/swarm_orchestrator` (Go) | Swarm architect/engineer/qa/security via JSON-RPC 2.0 sobre UDS. |
+| `python-engine/ast_analyzer` | Análise semântica multilíngue (tree-sitter com fallback estrutural). |
+| `packages/sdk`, `packages/cli` | `@izanagi/sdk` e o bin `izanagi-next`. Ambos `private`: não são publicados. |
 
-**Depois de despachar, o agente não usa 1 skill isolada:** cada `.claude/agents/<slug>.md` termina com uma seção **Chains** (ex: `fullstack`, `bug`, `refactor`, `review`) que já define a sequência de 3 a 9 skills daquele domínio, na ordem em que uma alimenta a próxima. Identifique qual chain bate com o pedido e siga a sequência completa: acionar 1 skill e ignorar o resto da chain é a violação que a Regra 3 do `RULES.md` (Skill Composition Obrigatória) proíbe.
+## Gotchas que custam tempo
 
-**Mapa rápido tarefa → agente(s) → chain:**
-- Ideia vaga / ainda não sabe o que construir → `discovery` (entrevista + pesquisa) → `product-reasoner` (requisitos/BDD) → `architect`.
-- Requisitos definidos, decisão estrutural em aberto → `architect` (ADR) → `senior-engineer` implementa.
-- Implementar feature/CRUD/bugfix/refactor → `senior-engineer` (chains `implement`/`bug`/`refactor`/`fullstack` conforme o pedido).
-- Feature com LLM/RAG/agentes/tool-calling → `ai-engineer`, não `senior-engineer`.
-- Site/landing/dashboard novo → `discovery`/`architect` primeiro (Style Selector, regra 15), depois `senior-engineer` com a chain `fullstack` (inclui `anti-ai-slop` no fim, obrigatório).
-- Cobrança/assinatura/checkout → `senior-engineer` com `payments-billing` na chain (webhook + idempotência, nunca liberar acesso pelo retorno do navegador).
-- Antes de merge/deploy → `security` + `qa` + `techlead` em paralelo (chain `review`); `adversarial-critic` só se pedirem para caçar pontos cegos.
-- Bug difícil/reincidente → `bug-hunter` (chain `systematic-debugging` → `tdd`).
-- Nota objetiva PASS/FAIL contra critério já definido → `evaluator`; revisão pedagógica do "porquê" → `techlead`.
+- `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/index.js`: **rode `npm run build` antes de qualquer comando CLI local**, senão executa código obsoleto ou quebra. Vale igual para `packages/*/dist`.
+- Testes do SDK e da CLI nunca por strip-types direto sobre `.ts`: use o `npm test` de dentro do package.
+- O socket do orquestrador tem defaults divergentes por lado: Go `/tmp/izanagi-orch.sock` (`IZANAGI_ORCHESTRATOR_SOCK`) contra SDK TS `/tmp/izanagi-swarm.sock` (`IZANAGI_ORCHESTRATOR_SOCKET`). Case os dois via env antes de integrar.
+- `.agents/memoria/` é gitignored e só existe local (`contexto.md`, `decisoes.md` com os ADRs, `erros-corrigidos.md`, `learnings.md`). Não assuma que está lá.
+- YAML em `.agents/agents/` é derivado: proibido editar à mão, regenere pelo agent-migrator.
+- Dentro de test runner o executor `claude-cli` fica desligado por padrão, para `npm test` nunca gastar cota real (`IZANAGI_AGENT_CLI_IN_TESTS=1` libera).
+- Commits em PT-BR: `chore: bump to vX.Y.Z` para bumps, `feat:`/`fix:`/`docs:` descritivos para o resto.
 
-**Execução paralela obrigatória** para frentes independentes: cada agente roda com contexto isolado, só o resultado final volta. Casos canônicos de fan-out (protocolo completo em `/agents`):
-- Feature nova (fronteiras estruturais independentes): `architect` + `database` + `security` em paralelo, depois `senior-engineer` implementa em sequência.
-- Revisão de PR antes de merge: `security` + `qa` + `techlead` em paralelo por padrão (cada um responde uma pergunta diferente: risco de segurança, testes/cobertura, padrão de código); acrescente `adversarial-critic` só quando pedirem para caçar pontos cegos explicitamente.
-- Nunca use um único agente genérico para um pedido que cobre 2+ domínios da tabela acima: divida em frentes e dispare em paralelo.
+## Despacho de agentes e skills
 
-## Skills (biblioteca inteira, nativa)
+Os 22 agentes em `.claude/agents/*.md` são subagents nativos (Agent tool) e o Claude Code já descobre nome e descrição de cada um: não precisa de tabela aqui. **Delegar é o padrão, responder direto como generalista é a exceção.** Force um específico com `/<slug>` (`.claude/commands/`); use `/agents` para o protocolo de swarm quando o pedido cobrir 2 ou mais domínios.
 
-Todas as 106 skills da biblioteca (`skills/<name>/SKILL.md`) foram exportadas fielmente para `.claude/skills/<name>/SKILL.md`. O Claude Code descobre nome+descrição de cada uma automaticamente ao abrir este projeto (custo fixo pequeno por skill) e só lê o corpo completo quando de fato a ativa: não é preciso listá-las aqui de novo nem chamar `izanagi export` para elas aparecerem. Peça por nome ("use a skill X") ou deixe o Claude escolher pela descrição; cada agente nativo também referencia as suas em "Skills relevantes" no próprio `.claude/agents/<slug>.md`.
+- Ideia vaga: `discovery` (entrevista e pesquisa), depois `product-reasoner` (BDD), depois `architect`.
+- Requisitos prontos e decisão estrutural em aberto: `architect` (ADR), depois `senior-engineer`.
+- Feature, bugfix ou refactor: `senior-engineer`. Se envolve LLM/RAG/tool-calling: `ai-engineer`.
+- Antes de merge: `security` + `qa` + `techlead` **em paralelo** (cada um responde uma pergunta diferente). `adversarial-critic` só quando pedirem pontos cegos.
+- Bug reincidente: `bug-hunter` (`systematic-debugging`, depois `tdd`).
+- Nota objetiva PASS/FAIL contra critério já definido: `evaluator`. Revisão pedagógica do porquê: `techlead`.
+
+Cada `.claude/agents/<slug>.md` termina numa seção **Chains** com a sequência de 3 a 9 skills daquele domínio. Acionar 1 skill e ignorar o resto da chain viola a Regra 3 do `RULES.md`. As 106 skills em `.claude/skills/<name>/SKILL.md` são descobertas automaticamente: o corpo só é lido quando a skill ativa de fato.
 
 ## Regras essenciais
 
-- **Arquitetura antes de código.** Toda decisão passa por engines de qualidade.
-- **Anti-generic, alto craft.** Nunca entregue código/UI genérica "cara de IA": identidade visual bespoke por nicho (rule 14), zinc-950/glassmorphism é uma direção possível, nunca o padrão default.
-- **Zero travessão "—" e zero "--" duplo.** Ornamento de texto: usar "·", ":" ou ponto final. Hífen simples "-" (compostos, ranges, bullets) continua normal.
-- **Execução paralela.** Ative múltiplos agentes especializados para frentes distintas; use `/agents` para o protocolo completo.
-- **Baixo token, alto sinal.** Comprima respostas; nunca repita contexto.
-- **Auto-correção e ensino.** Reflita após cada tarefa; ensine de forma adaptativa.
+- **Arquitetura antes de código.** Toda decisão passa pelas engines de qualidade.
+- **Anti-generic, alto craft.** Nada de UI com "cara de IA": identidade bespoke por nicho; zinc-950 e glassmorphism são uma direção possível, nunca o default.
+- **Zero travessão e zero hífen duplo como ornamento de texto.** Use "·", ":" ou ponto final. Hífen simples em compostos, ranges e bullets segue normal.
+- **Baixo token, alto sinal.** Contexto mínimo, leitura direcionada, zero releitura.
 - **Segurança não é opcional.** Sem secrets no código, sem credenciais hardcoded.
 
-> Regras específicas de cada agente (always/never) vivem em `.claude/agents/<slug>.md`: lidas sob demanda só quando aquele agente é ativado, não duplicadas aqui.
-
----
-Gerado pelo Izanagi AI: `izanagi export --cli claude`
+O que este arquivo não cobre: `AGENTS.md` (catálogo completo e release flow), `SYSTEM.md` (engines, quality gates, memória), `RULES.md` (regras operacionais), `ARCHITECTURE.md` (as 23 primitivas do runtime e o estado de cada uma), `docs/POLYGLOT.md` (contratos poliglotas).

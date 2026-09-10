@@ -144,6 +144,9 @@
     "blueprint de produto",
     "prompt engineering"
   ],
+  "domains": [
+    "research"
+  ],
   "optionalSkills": [],
   "inputs": [
     "prompt do usuário"
