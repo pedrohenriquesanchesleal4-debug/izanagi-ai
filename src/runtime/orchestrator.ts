@@ -59,6 +59,14 @@ import {
 import type { PolicyEnvironment, TrustTier } from './security/policy.js';
 import { formatCorrection, isBlocking, parseCritique, worstSeverity, type Critique } from './protocol/messages.js';
 
+/**
+ * Kinds resolvidos sem chamar modelo: o orchestrator os executa contra o
+ * `ToolRegistry`, a validade do artefato da dependência ou uma aprovação em
+ * disco. Custam zero token, e por isso não participam de nenhuma decisão que
+ * exista para conter gasto.
+ */
+const ZERO_TOKEN_NODE_KINDS = new Set(['tool', 'gate', 'approval']);
+
 export interface OrchestratorOptions {
   baseDir: string;
   /**
@@ -545,7 +553,32 @@ export class Orchestrator {
         // Ignora se não for possível gerar automaticamente
       }
     }
-    if (agentScore.length > 0) {
+    // Quem DECIDE o agente de cada nó é o Commander, pelo capability matching.
+    // Este ranking paralelo existia para outra pergunta (gerar agente novo?) e
+    // mesmo assim era o que ia para o trace e para o Decision Journal — que o
+    // planejamento CONSULTA depois para tirar agentes da disputa. O registro
+    // errado não ficava só no relatório: envenenava o planejamento seguinte.
+    // Medido: "Escreva a função validarCPF" gravava `bug-hunter` como escolhido
+    // enquanto o grafo rodava com outro agente.
+    const plannedAgents = graph.nodes
+      .filter((n) => (n.kind ?? 'agent') !== 'tool' && n.agent)
+      .map((n) => n.agent as string);
+    const chosenAgent = plannedAgents[0];
+    if (chosenAgent) {
+      trace.markAgent(chosenAgent);
+      if (!resumed) {
+        decisions.record({
+          kind: 'agent-routing',
+          chosen: chosenAgent,
+          alternatives: agentScore.map((c) => ({ option: c.candidate, score: c.finalScore, reason: c.reasons.join('; ') })),
+          reason: this.opts.plan
+            ? 'capability matching do Commander (domínio + propósito + identidade)'
+            : 'ranking por relevância (caminho legado, sem Commander)',
+          runId: trace.runId,
+          objective: this.opts.task,
+        });
+      }
+    } else if (agentScore.length > 0) {
       const best = agentScore[0];
       trace.markAgent(best.candidate);
       if (!resumed) {
@@ -1118,8 +1151,21 @@ export class Orchestrator {
         : runnable;
       if (batchNodes.length === 0) continue;
 
-      // Degradação `require-human-approval`: pausa antes de continuar gastando.
-      if (this.degradation.requireApproval) {
+      // Degradação `require-human-approval`: pausa antes de continuar GASTANDO.
+      //
+      // Batch que não gasta token nenhum não é "continuar gastando", e pausá-lo
+      // não protege orçamento nenhum: protege contra um custo de zero. O caso
+      // real é o fim do grafo, onde `materialize` e `deliver` são nós de tool.
+      // Medido: um run orchestrated produziu cinco artefatos válidos (relatório
+      // de 7,4KB, análise de 13,7KB, remediação de 23,7KB), zero retries, e
+      // terminou sem gravar arquivo porque a escada pediu aprovação humana
+      // exatamente na etapa de gravar. Todo o custo tinha sido pago; o que a
+      // pausa impediu foi a única parte de graça, que era a entrega.
+      const batchSpends = batchNodes.some((nodeId) => {
+        const node = graph.nodes.find((n) => n.id === nodeId);
+        return node ? !ZERO_TOKEN_NODE_KINDS.has(node.kind ?? 'agent') : true;
+      });
+      if (this.degradation.requireApproval && batchSpends) {
         this.degradation.requireApproval = false;
         const gateId = `budget-approval:${batchNodes[0]}`;
         const record = ctx.approvals.get(ctx.runId, gateId) ?? ctx.approvals.request(ctx.runId, gateId, 'orçamento próximo do teto: confirme para continuar gastando');

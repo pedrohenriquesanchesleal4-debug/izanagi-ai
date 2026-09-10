@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.22.0** · Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
+> **v3.23.0** · Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
 >
 > Arquitetura: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
@@ -88,12 +88,14 @@ O CLI devolve o custo real de cada chamada (`total_cost_usd`), então neste exec
 
 | Política | Tokens do nó | Observação |
 |---|---|---|
-| `none` | ~18.000 | 4.095 deles são o system prompt do próprio CLI, cobrado em toda chamada |
+| `none` | ~20.000 no modo `direct`, ~30.000 num nó de specialist | 4.095 deles são o system prompt do próprio CLI, cobrado em toda chamada |
 | `read` | ~68.000 | o agente faz várias voltas de tool antes de responder: ~3,8x |
 
-Por isso `--budget` apertado estoura no primeiro nó, e por isso **você não precisa passar `--budget`**: quando o executor é o CLI de agente, o teto default do run sobe sozinho para o piso desta tabela. Piso recomendado: **39.000** por nó com `none`, **148.000** com `read` (a CLI avisa quando um `--budget` explícito fica abaixo disso).
+Por isso `--budget` apertado estoura no primeiro nó, e por isso **você não precisa passar `--budget`**: quando o executor é o CLI de agente, o teto default do run sobe sozinho para o piso desta tabela. Piso recomendado: **65.000** por nó com `none`, **148.000** com `read` (a CLI avisa quando um `--budget` explícito fica abaixo disso).
 
-O piso não é a média medida: é a média com folga de variância, dividida pela menor fatia que a fase `execution` recebe do teto (0,6). Execuções do mesmo objetivo gastaram 19.799, 20.706 e 20.114 tokens contra os ~18.000 da tabela, e um teto igual à média reprova metade das execuções por definição.
+O piso não é a média medida: é o topo da faixa observada, com folga de variância, dividido pela menor fatia que a fase `execution` recebe do teto (0,6). O erro aqui não é simétrico. Teto folgado não gasta um token a mais, porque o gasto é o que o nó consome e quem limita dinheiro é `--max-cost`, cobrado sobre custo MEDIDO; teto curto aborta o run **depois** de todo o custo já ter sido pago. Medido: com um piso dimensionado pela média, um run orchestrated produziu cinco artefatos válidos (7,4KB + 13,7KB + 23,7KB) e terminou sem gravar arquivo nenhum.
+
+Teto não é gasto: num run orchestrated real o teto ficou em 260.000 e o consumo medido foi 147.140 (US$ 0,94). Para limitar dinheiro, use `--max-cost`.
 
 Controles: `IZANAGI_AGENT_CLI_DISABLED=1` desliga o executor · `IZANAGI_AGENT_CLI_TIMEOUT_MS` ajusta o timeout (default 300.000) · `IZANAGI_AGENT_CLI_TOOLS=read|write` é o equivalente de `--agent-tools` por ambiente. Dentro de um test runner o executor fica desligado por padrão, para que `npm test` nunca gaste cota real (`IZANAGI_AGENT_CLI_IN_TESTS=1` libera).
 

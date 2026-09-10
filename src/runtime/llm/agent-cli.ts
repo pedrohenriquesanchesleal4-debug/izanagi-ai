@@ -91,11 +91,29 @@ export const MAX_STDOUT_BYTES = 16 * 1024 * 1024;
 export const AGENT_CLI_OVERHEAD_TOKENS = 4_095;
 
 /**
- * Tokens observados num nó de specialist real (chain de skills + contrato +
- * artefato de código): 12,5k de entrada e 5,4k de saída. É a unidade de
- * planejamento honesta para "quanto custa um nó neste executor".
+ * Unidade de planejamento: quanto custa UM nó neste executor.
+ *
+ * Medido nesta máquina em 2026-09-10, com `--agent-tools none`:
+ *
+ * | Caso                                              | Tokens do nó |
+ * |---------------------------------------------------|--------------|
+ * | primeira medição, nó isolado                       | ~18.000      |
+ * | modo `direct` (três execuções do mesmo objetivo)   | 19.799 · 20.706 · 20.114 |
+ * | modo `orchestrated`, nó de specialist com survey no contexto | ~26.500 (106.140 em 4 chamadas) |
+ * | idem, com retentativa                              | ~29.400 (147.140 em 5 chamadas) |
+ *
+ * O valor é o do TOPO da faixa, e não a média das medições, porque o erro não é
+ * simétrico: um teto folgado não gasta um token a mais (o gasto é o que o nó
+ * consome, e quem limita dinheiro é `--max-cost`, cobrado sobre custo MEDIDO),
+ * enquanto um teto curto aborta o run depois de todo o custo já ter sido pago.
+ * Foi exatamente o que aconteceu duas vezes com 18.000: um run orchestrated
+ * produziu cinco artefatos válidos (7,4KB + 13,7KB + 23,7KB) e terminou sem
+ * gravar arquivo nenhum.
+ *
+ * O nó do modo `direct` é mais barato que isto, e tudo bem: o teto dele sobra.
+ * Dimensionar pelo caso mais barato é que quebraria o caso mais caro.
  */
-export const AGENT_CLI_TOKENS_PER_NODE = 18_000;
+export const AGENT_CLI_TOKENS_PER_NODE = 30_000;
 
 /**
  * Menor fatia que a fase `execution` recebe do teto do run, derivada dos
@@ -119,10 +137,11 @@ export function nodeCostWithHeadroom(policy: AgentCLIToolPolicy): number {
 /**
  * Folga sobre o consumo MEDIDO.
  *
- * `AGENT_CLI_TOKENS_PER_NODE` é uma média, e média não é piso: o gasto varia
- * com o tamanho da resposta. Quatro execuções do mesmo objetivo em 2026-09-10
- * gastaram 19.799, 20.706, 20.108 e 20.1k tokens contra os 18.000 medidos
- * originalmente. Sem folga, o piso reprova o caso típico.
+ * A medição é de execuções observadas, e a próxima pode ser maior: o gasto de
+ * um nó varia com o tamanho da resposta e com quanto contexto o Context
+ * Resolver injetou. A folga cobre essa variação sem que a constante precise ser
+ * reescrita a cada run — que é o erro que esta linha já cometeu uma vez, quando
+ * o piso era a média medida e reprovava metade das execuções.
  */
 export const AGENT_CLI_VARIANCE_HEADROOM = 1.3;
 

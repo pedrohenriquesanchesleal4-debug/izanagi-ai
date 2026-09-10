@@ -4,7 +4,12 @@
 
 ---
 
-## [Não publicado]
+## [3.23.0]: 2026-09-10
+
+### Fixed (o run terminava sem entregar o trabalho que já tinha pago)
+- **A degradação pedia aprovação humana no batch que grava o arquivo, e ele custa zero token.** Medido: um run orchestrated produziu cinco artefatos válidos (relatório de 7,4KB, análise de 13,7KB, remediação de 23,7KB), zero retries, e terminou sem gravar nada porque a escada de degradação chegou em `require-human-approval` exatamente na etapa `materialize`/`deliver`. Todo o custo tinha sido pago; a pausa impediu a única parte de graça, que era a entrega. O degrau passa a valer só para batch que CONSOME modelo: pausar um batch de custo zero não protege orçamento nenhum.
+- **A unidade de planejamento por nó estava 40% abaixo do real.** `AGENT_CLI_TOKENS_PER_NODE` era 18.000, medido num nó isolado. Num grafo de verdade, com survey no contexto e chain de skills, um nó de specialist custa ~26.500 (106.140 em 4 chamadas) e ~29.400 com retentativa (147.140 em 5). O valor passa a ser o TOPO da faixa observada (30.000), e não a média, porque o erro não é simétrico: teto folgado não gasta um token a mais (quem limita dinheiro é `--max-cost`, cobrado sobre custo medido), enquanto teto curto aborta o run depois de todo o custo já ter sido pago. Piso recomendado: 65.000 por nó sem tools.
+- **O `agent-routing` registrado não era o agente que rodava.** O trace e o Decision Journal gravavam o topo de um ranking paralelo (`SkillResolver.rankAgents`, que existe para outra pergunta: gerar agente novo?), enquanto o grafo executava o agente escolhido pelo capability matching do Commander. Não ficava só no relatório: o planejamento CONSULTA esse journal para tirar agentes da disputa, então o registro errado envenenava o run seguinte. Agora o que vai para o journal é o agente do plano, com as alternativas do ranking preservadas como contexto.
 
 ### Fixed (modo orchestrated: o grafo completo não fechava)
 Encontrados rodando `izanagi run --mode orchestrated` de verdade, um defeito por vez, cada um escondendo o seguinte. Testes em `artifact-integrity.test.ts` e `executor-budget.test.ts`.
