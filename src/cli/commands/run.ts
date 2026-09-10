@@ -27,6 +27,8 @@ import { DELIVER_NODE_ID, deliverableRelPath, validateOutputDir } from '../../ru
 import { looksLikeProject } from '../../runtime/tools/project-survey.js';
 import { measureGroundedness } from '../../runtime/benchmarks/arena.js';
 import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } from '../../runtime/notify/webhook.js';
+import { ARTIFACT_SCHEMAS } from '../../runtime/contracts/artifacts.js';
+import type { ArtifactKind, ArtifactSchema } from '../../runtime/types.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
 
 interface RunArgs {
@@ -1233,6 +1235,36 @@ function extractRulesFoundation(content: string, sourcePath: string): string {
  * RULES.md OU estático abaixo do piso → formato pré-wave SEM marker.
  * flags.noCacheFoundation desliga a fundação/marker incondicionalmente.
  */
+
+/**
+ * O que o nó precisa produzir, DITO ao agente.
+ *
+ * O runtime já reprovava artefato fora do schema (`validateArtifact`), e o
+ * prompt nunca dizia qual era o schema: a linha era "Artefato esperado deste
+ * nó: `security-report` (conteúdo estruturado)", enquanto a verificação cobrava
+ * `severity`, `vulnerabilities`, `remediation` e um tamanho mínimo. Medido num
+ * run orchestrated real, o nó falhou nas DUAS tentativas por "4 critério(s)
+ * obrigatório(s) reprovado(s)", com o agente escrevendo sobre o assunto certo
+ * na única forma que ele podia adivinhar.
+ *
+ * Cobrar um contrato que não foi comunicado não mede o agente, mede a sorte.
+ */
+export function artifactRequirementLine(kind: string): string {
+  const schema = ARTIFACT_SCHEMAS[kind as ArtifactKind] as ArtifactSchema | undefined;
+  let line = `- Artefato esperado deste nó: \`${kind}\` (conteúdo estruturado, sem markdown desnecessário).\n`;
+  if (!schema) return `${line}\n`;
+  if (schema.required.length > 0) {
+    line += `- Seções/campos OBRIGATÓRIOS (o artefato é reprovado sem eles): ${schema.required.join(', ')}.\n`;
+  }
+  if (schema.minSize && schema.minSize > 0) {
+    line += `- Tamanho mínimo: ${schema.minSize} caracteres de conteúdo real.\n`;
+  }
+  if (schema.forbidden && schema.forbidden.length > 0) {
+    line += `- Proibido no conteúdo: ${schema.forbidden.map((f) => `"${f}"`).join(', ')}.\n`;
+  }
+  return `${line}\n`;
+}
+
 export function buildNodePrompt(
   node: GraphNode,
   opts: { task: string; agent: any; skillChain: string[] },
@@ -1244,7 +1276,7 @@ export function buildNodePrompt(
   const skills = (node.skills ?? opts.skillChain).slice(0, 4);
 
   // Corpo volátil compartilhado pelas duas formas do prompt (ordem pré-wave preservada).
-  const artifactLine = `- Artefato esperado deste nó: \`${node.outputs?.[0] ?? 'raw'}\` (conteúdo estruturado, sem markdown desnecessário).\n\n`;
+  const artifactLine = artifactRequirementLine(node.outputs?.[0] ?? 'raw');
   let body = `## IDENTIDADE & PAPEL\n${identity}\n\n`;
   if (agent?.always?.length) body += `## REGRAS OBRIGATÓRIAS\n- ${agent.always.join('\n- ')}\n\n`;
   if (agent?.never?.length) body += `## PROIBIDO\n- ${agent.never.join('\n- ')}\n\n`;

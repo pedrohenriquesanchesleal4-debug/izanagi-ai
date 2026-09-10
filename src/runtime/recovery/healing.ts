@@ -64,6 +64,12 @@ const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
   // Precisa vir antes de qualquer regra que possa casar com o texto do motivo
   // informado por quem cancelou (SIGINT, timeout de agendador, etc.).
   { regex: /run cancelado|run aborted/i, kind: 'non-recoverable' },
+  // Executor que terminou sem chamar a API (quota, autenticação, CLI fora do
+  // ar). Precisa vir antes da regra de `tool`, que casa com "exit code" e
+  // classificaria como recuperável: retentar não devolve quota nem credencial,
+  // e cada retentativa custa tempo do usuário para chegar ao mesmo lugar. O
+  // caso é do PROCESSO, não do trabalho do nó, e a mensagem diz isso.
+  { regex: /executor indispon[íi]vel/i, kind: 'non-recoverable' },
   { regex: /timeout|timed out|etimedout|timeout/i, kind: 'recoverable' },
   { regex: /429|rate.?limit|too many requests/i, kind: 'recoverable' },
   { regex: /5\d\d|internal server|unavailable/i, kind: 'recoverable' },

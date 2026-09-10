@@ -150,16 +150,12 @@ export function runCheck(
         : { outcome: 'fail', message: check.message ?? `conteúdo com ${size} bytes, mínimo ${check.bytes}` };
     }
     case 'contains': {
-      const haystack = check.caseSensitive ? ctx.text : ctx.text.toLowerCase();
-      const needle = check.caseSensitive ? check.text : check.text.toLowerCase();
-      return haystack.includes(needle)
+      return textHas(ctx.text, check)
         ? { outcome: 'pass' }
         : { outcome: 'fail', message: check.message ?? `texto obrigatório ausente: "${check.text}"` };
     }
     case 'not-contains': {
-      const haystack = check.caseSensitive ? ctx.text : ctx.text.toLowerCase();
-      const needle = check.caseSensitive ? check.text : check.text.toLowerCase();
-      return haystack.includes(needle)
+      return textHas(ctx.text, check)
         ? { outcome: 'fail', message: check.message ?? `texto proibido presente: "${check.text}"` }
         : { outcome: 'pass' };
     }
@@ -234,6 +230,26 @@ export function runCheck(
     default:
       return { outcome: 'unknown', message: 'tipo de check desconhecido' };
   }
+}
+
+/**
+ * Busca de termo compartilhada por `contains` e `not-contains`.
+ *
+ * `wholeWord` troca a busca por substring por fronteira de palavra. É o que
+ * separa o MARCADOR da palavra que o contém: sem isso, `not-contains` de
+ * `"TODO"` (case-insensitive por default) reprovava "todos", e um relatório de
+ * segurança correto foi recusado duas vezes por dizer "todos os endpoints".
+ * O default continua substring porque termos como `"// implement later"` e
+ * `"[ ] checklist"` não são palavras e não teriam fronteira que os delimite.
+ */
+function textHas(text: string, check: { text: string; caseSensitive?: boolean; wholeWord?: boolean }): boolean {
+  if (!check.wholeWord) {
+    const haystack = check.caseSensitive ? text : text.toLowerCase();
+    const needle = check.caseSensitive ? check.text : check.text.toLowerCase();
+    return haystack.includes(needle);
+  }
+  const escaped = check.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${escaped}\\b`, check.caseSensitive ? '' : 'i').test(text);
 }
 
 export class VerificationEngine {

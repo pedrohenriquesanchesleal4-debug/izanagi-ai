@@ -60,6 +60,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { minPhaseShare } from '../token/budget.js';
 import type { CompletionOptions, CompletionResult, ModelAdapter } from './client.js';
 
 /* ============================ CONFIGURAÇÃO ============================ */
@@ -97,14 +98,23 @@ export const AGENT_CLI_OVERHEAD_TOKENS = 4_095;
 export const AGENT_CLI_TOKENS_PER_NODE = 18_000;
 
 /**
- * Menor fatia que a fase `execution` recebe do teto do run
- * (`defaultWeights`: 0,7 em complexidade baixa, 0,65 no meio, 0,6 alta).
+ * Menor fatia que a fase `execution` recebe do teto do run, derivada dos
+ * próprios pesos do alocador.
  *
- * O piso usa a MENOR das três, e não a do meio: um piso que só vale para uma
- * complexidade é um piso que falha nas outras duas, e falhar por orçamento mal
- * declarado é o pior tipo de falha, porque parece falha do modelo.
+ * O piso usa a MENOR das complexidades, e não a do meio: um piso que só vale
+ * para uma complexidade é um piso que falha nas outras duas, e falhar por
+ * orçamento mal declarado é o pior tipo de falha, porque parece falha do
+ * modelo.
  */
-export const MIN_EXECUTION_PHASE_SHARE = 0.6;
+export const MIN_EXECUTION_PHASE_SHARE = minPhaseShare('execution');
+
+/** O mesmo para a fase que paga as retentativas. */
+export const MIN_RECOVERY_PHASE_SHARE = minPhaseShare('recovery');
+
+/** Tokens que um nó precisa ter disponível para caber, já com a folga. */
+export function nodeCostWithHeadroom(policy: AgentCLIToolPolicy): number {
+  return Math.ceil(measuredTokensPerNode(policy) * AGENT_CLI_VARIANCE_HEADROOM);
+}
 
 /**
  * Folga sobre o consumo MEDIDO.
@@ -318,12 +328,86 @@ export const SYSTEM_CLOSE = '</izanagi:instructions>';
 export const TASK_OPEN = '<izanagi:task>';
 export const TASK_CLOSE = '</izanagi:task>';
 
+/**
+ * Marca de falha do EXECUTOR (e não do trabalho): o processo terminou sem
+ * chegar à API. Quem carrega o texto é a mensagem de erro, e quem a lê é o
+ * classificador do healing.
+ */
+export const EXECUTOR_UNAVAILABLE = 'executor indisponível';
+
+/**
+ * Traduz a saída de um CLI que terminou com código diferente de zero.
+ *
+ * Antes, 400 caracteres crus do stdout viravam a mensagem de erro do nó. Numa
+ * recusa do CLI hospedeiro isso é o envelope JSON de telemetria: o usuário lia
+ * `saiu com código 1: {"duration_api_ms":0,"stop_reason":"stop_sequence",...}`
+ * e não tinha como saber que nada foi executado.
+ *
+ * O sinal está no próprio envelope: `duration_api_ms` zero com uso zero
+ * significa que o processo nem falou com a API — quota, autenticação ou
+ * indisponibilidade. Isso é falha de EXECUTOR, não do trabalho do nó, e a
+ * diferença importa porque retentar não conserta a primeira e pode consertar a
+ * segunda.
+ */
+export function describeFailure(code: number | null, stderr: string, stdout: string): string {
+  const err = stderr.trim();
+  const out = stdout.trim();
+  const envelope = parseEnvelope(out);
+  if (envelope && envelope.reachedApi === false) {
+    const motivo = envelope.message ?? err.slice(0, 200) ?? '';
+    return `${EXECUTOR_UNAVAILABLE} (código ${code}): o processo terminou sem chamar a API (0 tokens, 0ms). ` +
+      `Causa provável: quota, autenticação ou indisponibilidade do CLI hospedeiro.${motivo ? ` Detalhe: ${motivo}` : ''}`;
+  }
+  const detail = (err || envelope?.message || out).slice(0, 400) || 'sem saída';
+  return `saiu com código ${code}: ${detail}`;
+}
+
+/** Lê o envelope JSON do CLI, quando houver. Saída não-JSON devolve `null`. */
+function parseEnvelope(stdout: string): { reachedApi: boolean; message?: string } | null {
+  if (!stdout.startsWith('{')) return null;
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(stdout) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  const usage = (raw.usage ?? {}) as Record<string, unknown>;
+  const tokens = Number(usage.input_tokens ?? 0) + Number(usage.output_tokens ?? 0);
+  const reachedApi = Number(raw.duration_api_ms ?? 0) > 0 || tokens > 0;
+  const message = typeof raw.result === 'string' && raw.result.trim() ? raw.result.trim().slice(0, 200) : undefined;
+  return { reachedApi, ...(message ? { message } : {}) };
+}
+
 /** Contrato de operação passado em argv (curto por necessidade). */
 export const CLAUDE_CONTRACT = [
   'You are executing one node of an Izanagi execution graph in non-interactive mode.',
   `Treat the ${SYSTEM_OPEN} block as your operating instructions and the ${TASK_OPEN} block as the objective.`,
   'Produce only the requested artifact as your final message: no preamble, no summary of what you did, no questions.',
 ].join(' ');
+
+/**
+ * Acréscimo ao contrato quando o subprocesso roda SEM tool nenhuma.
+ *
+ * Medido em 2026-09-10, num nó `security-report` com `--agent-tools none`: o
+ * artefato gravado foram onze linhas imitando uma transcrição de tool-calls
+ * (`**Tool Call: rg -il "jwt"**`, `Status: Completed`, `Terminal:` e uma lista
+ * de arquivos), citando `src/runtime/security/tokens.ts` e
+ * `webhookSecurity.ts` — dois arquivos que não existem neste repositório. Sem
+ * tools, o modelo não pode ler nada; o que ele fez foi ENCENAR a leitura.
+ *
+ * O aviso é preventivo e não substitui a detecção: `validateArtifact` reprova
+ * a transcrição encenada de qualquer forma, porque um contrato no prompt é um
+ * pedido, e um artefato entregue é um fato.
+ */
+export const NO_TOOLS_CONTRACT =
+  'You have NO tools in this run: you cannot read files, run commands or search the repository. ' +
+  'Never emit tool-call transcripts, terminal output, file listings or file contents as if you had inspected anything. ' +
+  'Answer from the provided context only, and say plainly what you could not verify.';
+
+/** Contrato completo para uma política de tools. */
+export function contractFor(policy: AgentCLIToolPolicy): string {
+  return policy === 'none' ? `${CLAUDE_CONTRACT} ${NO_TOOLS_CONTRACT}` : CLAUDE_CONTRACT;
+}
 
 export const claudeCLISpec: AgentCLISpec = {
   provider: 'claude-cli',
@@ -340,7 +424,7 @@ export const claudeCLISpec: AgentCLISpec = {
       // nem herdar MCP do projeto (custo, latência e superfície de risco).
       '--no-session-persistence',
       '--strict-mcp-config',
-      '--append-system-prompt', CLAUDE_CONTRACT,
+      '--append-system-prompt', contractFor(req.toolPolicy),
     ];
 
     // `--restricted` remove as tools que rodam comando/código e ignora os
@@ -618,8 +702,7 @@ export class AgentCLIAdapter implements ModelAdapter {
       throw new Error(`${this.spec.label}: timeout após ${envInt(this.env, 'IZANAGI_AGENT_CLI_TIMEOUT_MS', DEFAULT_TIMEOUT_MS)}ms (IZANAGI_AGENT_CLI_TIMEOUT_MS ajusta)`);
     }
     if (result.code !== 0) {
-      const detail = (result.stderr.trim() || result.stdout.trim()).slice(0, 400) || 'sem saída';
-      throw new Error(`${this.spec.label} saiu com código ${result.code}: ${detail}`);
+      throw new Error(`${this.spec.label} ${describeFailure(result.code, result.stderr, result.stdout)}`);
     }
 
     const parsed = this.spec.parse(result.stdout);

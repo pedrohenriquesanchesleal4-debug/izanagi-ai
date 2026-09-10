@@ -209,6 +209,50 @@ function toText(content: unknown): string {
   }
 }
 
+/** Linhas que só existem numa narração de ferramenta, não numa resposta. */
+const TRANSCRIPT_MARKERS = [
+  /^\s*\*{0,2}Tool Call\b/i,
+  /^\s*\*{0,2}(Tool )?(Result|Output)\s*:/i,
+  /^\s*Status\s*:\s*(Completed|Failed|Success|Error)\s*$/i,
+  /^\s*Terminal\s*:\s*$/i,
+  /^\s*(Running|Executing|Searching for|Reading file|Listing)\b.*\.{3}\s*$/i,
+];
+
+/**
+ * Artefato que ENCENA o uso de ferramenta em vez de responder.
+ *
+ * O caso que motivou: com `--agent-tools none` (nenhuma tool no subprocesso), o
+ * nó de auditoria gravou onze linhas no formato `**Tool Call: rg -il "jwt"**` /
+ * `Status: Completed` / `Terminal:` seguidas de dois caminhos de arquivo que
+ * não existem no repositório. Nenhuma leitura aconteceu, e o artefato não tinha
+ * uma linha de resposta: era a narração de um trabalho imaginário.
+ *
+ * A regra é de PROPORÇÃO, não de presença: uma resposta legítima pode citar um
+ * comando ou colar um trecho de terminal como evidência. O que não acontece
+ * numa resposta é a narração ser o texto inteiro. Por isso exige-se mais de um
+ * marcador e que sobre pouca prosa depois de removê-los.
+ */
+export function looksLikeStagedToolTranscript(text: string): boolean {
+  const lines = text.split(/\r?\n/);
+  const markers = lines.filter((l) => TRANSCRIPT_MARKERS.some((re) => re.test(l))).length;
+  if (markers < 2) return false;
+  const prose = lines
+    .filter((l) => !TRANSCRIPT_MARKERS.some((re) => re.test(l)))
+    .map((l) => l.trim())
+    // Caminho de arquivo e linha vazia são o RESTO da narração, não resposta.
+    .filter((l) => l.length > 0 && !/^[\w./\\@-]+$/.test(l))
+    .join(' ');
+  return prose.length < MIN_PROSE_AFTER_TRANSCRIPT;
+}
+
+/**
+ * Prosa mínima que precisa sobrar depois de descontar a narração.
+ *
+ * Duas frases. Abaixo disso não há resposta, há legenda: o artefato que motivou
+ * a regra deixava 0 caracteres.
+ */
+const MIN_PROSE_AFTER_TRANSCRIPT = 200;
+
 export function hashContent(content: string): string {
   return crypto.createHash('sha1').update(content).digest('hex').slice(0, 12);
 }
@@ -284,7 +328,18 @@ export function validateArtifact(kind: ArtifactKind, content: unknown): Validati
   }
 
   for (const f of schema.forbidden ?? []) {
-    if (text.includes(f)) issues.push(`conteúdo proibido detectado: "${f}"`);
+    // Mesma regra do check determinístico equivalente: marcador exige fronteira
+    // de palavra, senão "TODOS" num título em caixa alta reprova o artefato.
+    const hit = /^[A-Z]{3,}$/.test(f)
+      ? new RegExp(`\\b${f}\\b`).test(text)
+      : text.includes(f);
+    if (hit) issues.push(`conteúdo proibido detectado: "${f}"`);
+  }
+  // Transcrição de tool encenada. Vale para TODO artefato autoral, inclusive
+  // `raw`, que não tem campo obrigatório nenhum: era exatamente ali que uma
+  // encenação passaria batida e seria ENTREGUE como resposta.
+  if (!schema.capturedOutput && looksLikeStagedToolTranscript(text)) {
+    issues.push('transcrição de tool encenada: o artefato narra leituras/comandos em vez de responder');
   }
   // A varredura anti-stub pressupõe texto AUTORAL. Num artefato que é saída
   // capturada de um processo, ela mede o vocabulário do programa que rodou.

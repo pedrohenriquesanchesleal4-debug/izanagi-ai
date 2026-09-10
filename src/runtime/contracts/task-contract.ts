@@ -57,8 +57,17 @@ export type TaskPriority = 'low' | 'normal' | 'high' | 'critical';
 export type DeterministicCheck =
   | { kind: 'artifact-valid'; message?: string }
   | { kind: 'min-size'; bytes: number; message?: string }
-  | { kind: 'contains'; text: string; caseSensitive?: boolean; message?: string }
-  | { kind: 'not-contains'; text: string; caseSensitive?: boolean; message?: string }
+  /**
+   * `wholeWord` exige fronteira de palavra em volta do termo.
+   *
+   * Existe porque marcador e palavra se confundem por substring: `not-contains`
+   * de `"TODO"` (case-insensitive por default) reprovava qualquer artefato em
+   * português que dissesse "todos". Medido: um relatório de segurança correto
+   * foi recusado duas vezes por "saída sem TODO (zero stub/checklist)", tendo
+   * como única ofensa a frase "todos os endpoints".
+   */
+  | { kind: 'contains'; text: string; caseSensitive?: boolean; wholeWord?: boolean; message?: string }
+  | { kind: 'not-contains'; text: string; caseSensitive?: boolean; wholeWord?: boolean; message?: string }
   | { kind: 'matches'; pattern: string; flags?: string; message?: string }
   | { kind: 'json-field'; field: string; message?: string }
   | { kind: 'file-exists'; path: string; message?: string }

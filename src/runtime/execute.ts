@@ -19,7 +19,13 @@ import { SkillResolver } from './routing/resolver.js';
 import { ModelRouter } from './model/router.js';
 import { ContextResolver } from './orchestration/context-resolver.js';
 import { AGENT_CLI_PROVIDERS } from './llm/client.js';
-import { recommendedBudget, toolPolicyFromEnv, type AgentCLIToolPolicy } from './llm/agent-cli.js';
+import {
+  MIN_RECOVERY_PHASE_SHARE,
+  nodeCostWithHeadroom,
+  recommendedBudget,
+  toolPolicyFromEnv,
+  type AgentCLIToolPolicy,
+} from './llm/agent-cli.js';
 import { ResponseCache } from './cache/response-cache.js';
 import { simulatedArtifact, validateArtifact } from './contracts/artifacts.js';
 import { createModelJudge } from './verification/judge.js';
@@ -256,14 +262,22 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
   // três — trocar uma falha por orçamento por outra não é conserto. A conta do
   // recomendado já divide pela fatia da fase `execution`, que é onde o gasto
   // realmente acontece.
-  const executorFloor = input.availableProviders.some((p) => AGENT_CLI_PROVIDERS.includes(p))
-    ? recommendedBudget(input.agentTools ?? toolPolicyFromEnv())
+  const executorPolicy = input.availableProviders.some((p) => AGENT_CLI_PROVIDERS.includes(p))
+    ? (input.agentTools ?? toolPolicyFromEnv())
+    : undefined;
+  const executorFloor = executorPolicy ? recommendedBudget(executorPolicy) : undefined;
+  // Retentativa é cobrada da fase `recovery`, com fatia própria: dimensionar só
+  // a `execution` deixava o healing sem orçamento para a chamada que ele
+  // acabara de decidir fazer.
+  const retryFloor = executorPolicy
+    ? Math.ceil(nodeCostWithHeadroom(executorPolicy) / MIN_RECOVERY_PHASE_SHARE)
     : undefined;
 
   const commander = new Commander();
   const commanderInput = {
     objective: input.objective,
     ...(executorFloor !== undefined ? { minTokensPerNode: executorFloor } : {}),
+    ...(retryFloor !== undefined ? { minTokensPerRetry: retryFloor } : {}),
     ...(input.explicitAgent && input.agent ? { agent: input.agent } : {}),
     ...(input.skillChain ? { skillChain: input.skillChain } : {}),
     ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
@@ -286,6 +300,8 @@ export function buildExecutionPlan(baseDir: string, input: PlanningInput): Plann
         ...(input.skillChain ? { skillChain: input.skillChain } : {}),
         ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
         ...(executorFloor !== undefined ? { minTokensPerNode: executorFloor } : {}),
+        ...(retryFloor !== undefined ? { minTokensPerRetry: retryFloor } : {}),
+    ...(retryFloor !== undefined ? { minTokensPerRetry: retryFloor } : {}),
         ...(input.maxCostUsd !== undefined ? { maxCostUsd: input.maxCostUsd } : {}),
         capabilities,
         ...(planningMemory ? { memory: planningMemory } : {}),

@@ -198,11 +198,22 @@ export function acceptanceForKind(nodeId: string, kind: string): AcceptanceCrite
     });
   }
   for (const forbidden of schema.forbidden ?? []) {
+    // Marcador (`TODO`, `FIXME`) é palavra e precisa de fronteira: sem ela,
+    // "todos" reprovava o artefato, e o agente não tinha como adivinhar que a
+    // ofensa era uma palavra comum do idioma. Termo que não é palavra
+    // (`"// implement later"`, `"[ ] checklist"`) segue como substring, que é a
+    // única busca que faz sentido para ele.
+    const isMarker = /^[A-Z]{3,}$/.test(forbidden);
     criteria.push({
       id: `${nodeId}:forbidden:${slug(forbidden)}`,
       description: `saída sem "${forbidden}" (zero stub/checklist)`,
       kind: 'deterministic',
-      check: { kind: 'not-contains', text: forbidden, message: `conteúdo proibido "${forbidden}" presente` },
+      check: {
+        kind: 'not-contains',
+        text: forbidden,
+        ...(isMarker ? { caseSensitive: true, wholeWord: true } : {}),
+        message: `conteúdo proibido "${forbidden}" presente`,
+      },
     });
   }
   return criteria;
@@ -244,6 +255,17 @@ export interface CommanderInput {
    * CLI já avisa quando está abaixo do piso medido).
    */
   minTokensPerNode?: number;
+  /**
+   * Tokens que o teto do run precisa ter para que UMA retentativa caiba na fase
+   * `recovery`, quando o modo permite retentar.
+   *
+   * O piso por nó dimensiona a fase `execution`. A retentativa é cobrada de
+   * outra fase, com outra fatia, e sem esta segunda conta o healing era
+   * decorativo: medido num run orchestrated real, `recovery` fechou em
+   * 16.420/16.420 tentando reexecutar um nó de ~20.000 tokens. O runtime
+   * decidia curar, tentava, e morria no orçamento antes de chamar o modelo.
+   */
+  minTokensPerRetry?: number;
   /** Teto global de custo em USD: quando a estimativa estoura, o modo degrada. */
   maxCostUsd?: number;
   /** Registro de capacidades para escolher agentes por capacidade, não por nome fixo. */
@@ -956,15 +978,22 @@ export class Commander {
       : withContracts.map((node, i) => attachContract(node, finalContracts[i]));
     contracts.splice(0, contracts.length, ...finalContracts);
 
+    const maxAttempts = mode === 'autonomous' ? 3 : mode === 'orchestrated' ? 2 : 1;
     const graph = this.builder.build({
       id: `graph-${crypto.randomBytes(3).toString('hex')}`,
       task: input.objective,
       nodes: finalNodes,
       budget: {
-        maxAttempts: mode === 'autonomous' ? 3 : mode === 'orchestrated' ? 2 : 1,
+        maxAttempts,
         maxTokens:
           input.maxTokens ??
-          liftToExecutorFloor(budgetForMode(mode, classification.complexity), finalNodes, input.minTokensPerNode),
+          liftToExecutorFloor(budgetForMode(mode, classification.complexity), finalNodes, {
+            ...(input.minTokensPerNode !== undefined ? { perNode: input.minTokensPerNode } : {}),
+            // Só reserva retentativa onde ela pode acontecer: em `direct` o
+            // grafo tem uma tentativa só, e inflar o teto por uma fase que
+            // nunca será usada seria desligar a proteção sem ganho nenhum.
+            ...(maxAttempts > 1 && input.minTokensPerRetry !== undefined ? { perRetry: input.minTokensPerRetry } : {}),
+          }),
         maxTimeMs: mode === 'autonomous' ? 900_000 : mode === 'orchestrated' ? 600_000 : 180_000,
       },
     });
@@ -1320,11 +1349,38 @@ export class Commander {
  * valor do modo passa intacto: o piso é do executor, não uma constante nova do
  * planejamento.
  */
-function liftToExecutorFloor(modeBudget: number, nodes: GraphNode[], minTokensPerNode?: number): number {
-  if (!minTokensPerNode || minTokensPerNode <= 0) return modeBudget;
-  const modelNodes = nodes.filter((n) => (n.kind ?? 'agent') === 'agent').length;
+/**
+ * O nó chama modelo?
+ *
+ * Só `tool` não chama: ele roda uma tool do `ToolRegistry` e custa zero token.
+ * Todos os outros kinds acabam num producer que fala com o executor, e contar
+ * apenas `agent` subdimensionava o teto pelo número de nós de `evaluator` e
+ * `validator` do grafo. Medido: um run orchestrated com 4 nós de modelo recebeu
+ * teto para 3 e morreu no último (124.553 de 117.000), depois de ter feito
+ * quase todo o trabalho.
+ */
+function spendsModelTokens(node: GraphNode): boolean {
+  return !ZERO_TOKEN_KINDS.has(node.kind ?? 'agent');
+}
+
+/**
+ * Kinds resolvidos sem chamar modelo, verificados no orchestrator:
+ * `tool` roda uma tool do registry, `gate` só olha a validade do artefato da
+ * dependencia, `approval` pausa esperando `izanagi approve`. O resto termina
+ * num producer que fala com o executor.
+ */
+const ZERO_TOKEN_KINDS = new Set(['tool', 'gate', 'approval']);
+
+function liftToExecutorFloor(
+  modeBudget: number,
+  nodes: GraphNode[],
+  floors: { perNode?: number; perRetry?: number },
+): number {
+  const modelNodes = nodes.filter((n) => spendsModelTokens(n)).length;
   if (modelNodes === 0) return modeBudget;
-  return Math.max(modeBudget, modelNodes * minTokensPerNode);
+  const execution = floors.perNode && floors.perNode > 0 ? modelNodes * floors.perNode : 0;
+  const recovery = floors.perRetry && floors.perRetry > 0 ? floors.perRetry : 0;
+  return Math.max(modeBudget, execution, recovery);
 }
 
 function budgetForMode(mode: ExecutionMode, complexity: number): number {

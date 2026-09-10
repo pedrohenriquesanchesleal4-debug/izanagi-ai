@@ -26,21 +26,45 @@ export interface PhaseUsage {
   exhausted: boolean;
 }
 
-/** Pesos default por complexidade da tarefa — tarefa simples prioriza execution enxuta. */
+/**
+ * Pesos default por complexidade da tarefa.
+ *
+ * `planning` recebe uma fatia simbólica de propósito: **nenhum caminho do
+ * runtime cobra tokens dessa fase**. O Commander classifica, decide o modo,
+ * gera contratos e estima custo de forma determinística, sem uma chamada de
+ * modelo — é o que o README chama de "planejar não gasta um token". Só
+ * `execution` (1ª tentativa), `recovery` (retentativa) e `evaluation` (juiz
+ * semântico) chegam a `spend()`.
+ *
+ * Antes desta rodada `planning` levava de 5% a 15% do teto e devolvia zero
+ * gasto em todo run (medido: 0/17.550 num run real), enquanto `recovery` ficava
+ * com 10% e não comportava UMA retentativa: com o executor por CLI de agente um
+ * nó custa ~20.000 tokens, e a fatia de recovery de um run de 117.000 dava
+ * 11.700. O resultado era healing decorativo — o runtime decidia curar, tentava
+ * e morria no orçamento antes de chamar o modelo.
+ *
+ * A fatia simbólica não é zero porque zero transformaria qualquer cobrança
+ * futura nessa fase em falha imediata; é pequena porque hoje ela não é cobrada.
+ */
 export function defaultWeights(complexity: number): PhaseAllocation {
-  const base = {
-    planning: 0.1,
-    execution: 0.65,
-    evaluation: 0.05,
-    recovery: 0.2,
-  };
   if (complexity >= 4) {
-    return { planning: 0.05, execution: 0.6, evaluation: 0.05, recovery: 0.3 };
+    return { planning: 0.02, execution: 0.6, evaluation: 0.05, recovery: 0.33 };
   }
   if (complexity <= 2) {
-    return { planning: 0.15, execution: 0.7, evaluation: 0.05, recovery: 0.1 };
+    return { planning: 0.02, execution: 0.7, evaluation: 0.05, recovery: 0.23 };
   }
-  return base;
+  return { planning: 0.02, execution: 0.65, evaluation: 0.05, recovery: 0.28 };
+}
+
+/**
+ * Menor fatia que uma fase recebe em qualquer complexidade.
+ *
+ * Derivada dos próprios pesos, e não escrita à mão em outro arquivo: quem
+ * dimensiona um teto precisa da MESMA fração que o alocador vai aplicar, e duas
+ * cópias do número divergem na primeira vez que uma delas muda.
+ */
+export function minPhaseShare(phase: PhaseId): number {
+  return Math.min(...[1, 3, 5].map((complexity) => defaultWeights(complexity)[phase]));
 }
 
 /** Teto sugerido por tier de modelo (contexto pequeno não deve estourar). */
