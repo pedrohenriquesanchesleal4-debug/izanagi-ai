@@ -10,11 +10,12 @@
 
 import fs from 'fs';
 import path from 'path';
-import type { SkillManifest } from '../types.js';
+import type { SkillManifest, Stack } from '../types.js';
 import { SkillScanner } from '../security/skill-scanner.js';
 import { validateArtifact } from '../contracts/artifacts.js';
 import type { SkillResolver } from '../routing/resolver.js';
 import { semanticRelevance } from '../routing/scorer.js';
+import { STACK_META, isValidStack } from './stacks.js';
 
 export interface SkillFactoryInput {
   /** Lacuna de capacidade, ex.: "trabalhar com filas RabbitMQ". */
@@ -23,6 +24,12 @@ export interface SkillFactoryInput {
   /** Se true, registra mesmo se a skill já existir similar (força). */
   force?: boolean;
   targetDir?: string;
+  /**
+   * Stacks de destino da skill (`ts | go | rust | python | all`). Diferente de
+   * `all`, o corpo ganha uma seção de validação empírica por stack (ex.: Go →
+   * `go vet ./... + go test ./...`) e o frontmatter declara `stacks: [...]`.
+   */
+  stacks?: Stack[];
   /**
    * Corpo já redigido da skill. Usado pela síntese a partir de trajetórias,
    * onde o conteúdo descreve um caminho REALMENTE observado — o template
@@ -91,6 +98,7 @@ export class SkillFactory {
       compatibility: '>=2.0.0',
       risk: 'medium',
       tokenBudget: 1200,
+      stacks: input.stacks?.length ? [...new Set(input.stacks)] : undefined,
       examples: [input.gap],
       changelog: [{ version: '1.0.0', change: 'criação via Skill Factory' }],
     };
@@ -99,20 +107,29 @@ export class SkillFactory {
     // caminho REALMENTE observado, e o template genérico acrescentaria seções
     // que a evidência não sustenta.
     const body = input.body ?? buildSkillBody(manifest);
-    const fullContent = `---\nname: ${manifest.name}\ndescription: "${manifest.description}"\nversion: ${manifest.version}\nlifecycle: ${manifest.lifecycle}\ntriggers:\n${manifest.triggers.map((t) => `  - ${t}`).join('\n')}\ncapabilities:\n${manifest.capabilities.map((c) => `  - ${c}`).join('\n')}\ntoken_budget: ${manifest.tokenBudget}\ncompatibility: "${manifest.compatibility}"\n---\n\n${body}`;
+    const stacksBlock = manifest.stacks?.length
+      ? `stacks:\n${manifest.stacks.map((s) => `  - ${s}`).join('\n')}\n`
+      : '';
+    const fullContent = `---\nname: ${manifest.name}\ndescription: "${manifest.description}"\nversion: ${manifest.version}\nlifecycle: ${manifest.lifecycle}\ntriggers:\n${manifest.triggers.map((t) => `  - ${t}`).join('\n')}\ncapabilities:\n${manifest.capabilities.map((c) => `  - ${c}`).join('\n')}\ntoken_budget: ${manifest.tokenBudget}\ncompatibility: "${manifest.compatibility}"\n${stacksBlock}---\n\n${body}`;
 
     // Security Scan — skills novas são não-confiáveis por default
     const scan = this.scanner.scan(name, fullContent);
+
+    // Skill Genome — validação formal espelhando validateGenome (agentes):
+    // skill com genome inválido NUNCA vai para o disco (anti-stub).
+    const genomeValidation = validateSkillGenome(manifest);
 
     // Validation — artefato mínimo válido?
     const validation = validateArtifact('raw', fullContent);
     const issues: string[] = [];
     if (scan.level !== 'LOW') issues.push(`security scan: ${scan.level}`);
     if (!validation.valid) issues.push(...validation.issues);
-    if (scan.findings.length > 0 && scan.level !== 'LOW') {
-      const valid = false;
-      const registered = false;
-      return { manifest, file: '', scan, validation: { valid, issues }, registered };
+    if (!genomeValidation.valid) issues.push(...genomeValidation.issues);
+
+    // Só grava artefato APROVADO (mesmo padrão do AgentFactory): genome e scan
+    // reprovados nunca deixam resíduo no disco.
+    if (issues.length > 0) {
+      return { manifest, file: '', scan, validation: { valid: false, issues }, registered: false };
     }
 
     const targetDir = input.targetDir ?? path.join(process.cwd(), 'skills', 'generated');
@@ -144,7 +161,45 @@ function deriveSkillName(gap: string): string {
   return words.length > 1 ? `${words[words.length - 2]}-${words[words.length - 1]}` : `${words[0] ?? 'nova'}-skill`;
 }
 
+/**
+ * Skill Genome — validação formal do manifesto de uma skill, espelhando o
+ * `validateGenome` de agentes. Skills geradas com genome inválido são
+ * reprovadas ANTES de qualquer escrita em disco (anti-stub, anti-poluição).
+ *
+ * Campos validados: name, version (semver), description (≥ 10 chars),
+ * triggers e capabilities (não-vazios), permissions (allowlist), risk
+ * (low|medium|high), tokenBudget (> 0) e stacks (quando presentes, valores
+ * válidos de `STACKS`).
+ */
+export function validateSkillGenome(skill: SkillManifest): { valid: boolean; issues: string[] } {
+  const issues: string[] = [];
+  if (!skill.name) issues.push('name ausente');
+  if (!skill.version) issues.push('version ausente');
+  else if (!/^\d+\.\d+\.\d+/.test(skill.version)) issues.push(`version inválida (semver): ${skill.version}`);
+  if (!skill.description || skill.description.length < 10) issues.push('description curta demais (< 10 chars)');
+  if (!skill.triggers || skill.triggers.length === 0) issues.push('triggers vazios');
+  if (!skill.capabilities || skill.capabilities.length === 0) issues.push('capabilities vazias');
+  const allowedPermissions = new Set(['fs:read', 'fs:write', 'shell', 'network']);
+  for (const p of skill.permissions ?? []) {
+    if (!allowedPermissions.has(p)) issues.push(`permissions inválida: ${p}`);
+  }
+  if (!['low', 'medium', 'high'].includes(skill.risk)) issues.push(`risk inválido: ${String(skill.risk)}`);
+  if (skill.tokenBudget <= 0) issues.push('tokenBudget inválido');
+  if (skill.stacks) {
+    for (const s of skill.stacks) {
+      if (!isValidStack(s)) issues.push(`stack inválido: ${s}`);
+    }
+  }
+  return { valid: issues.length === 0, issues };
+}
+
 function buildSkillBody(m: SkillManifest): string {
+  const stackValidation = m.stacks?.length
+    ? `
+## Validação por stack
+- ${m.stacks.filter((s) => s !== 'all').map((s) => `${STACK_META[s].label}: ${STACK_META[s].validation}`).join('\n- ') || 'Fluxo de build/testes da stack do projeto (npm test / go test / cargo test / pytest).'}
+`
+    : '';
   return `# ${m.name}
 
 ## Identidade
@@ -157,9 +212,9 @@ Especialista em ${m.description.split(':')[0].replace('Skill de', '').trim()}.
 1. Analise a tarefa e confirme o escopo.
 2. Estude o repositório e a memória persistente antes de codar.
 3. Implemente a solução completa com tipagem estrita e tratamento de erros.
-4. Valide com build/typecheck/testes reais.
+4. Valide com build/typecheck/testes reais (evidência > afirmação).
 5. Registre aprendizados na memória.
-
+${stackValidation}
 ## Regras
 - Sempre: qualidade de produção, evidência (log de build) > afirmação.
 - Nunca: código esparso, atalhos, entregas parciais.

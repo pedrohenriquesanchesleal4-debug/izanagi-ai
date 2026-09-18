@@ -36,11 +36,12 @@ export function skillCommand(baseDir: string, args: string[]): void {
     const name = args[1];
     const gap = args.find((a) => a.startsWith('--gap='))?.split('=')[1];
     const force = args.includes('--force');
+    const stacks = args.find((a) => a.startsWith('--stack='))?.split('=')[1]?.split(',').filter(Boolean);
     if (!name) {
-      console.error('\x1b[31mUsage:\x1b[0m izanagi skill create <name> [--gap="<descrição da lacuna>"] [--force]\n');
+      console.error('\x1b[31mUsage:\x1b[0m izanagi skill create <name> [--gap="<descrição da lacuna>"] [--stack=go,rust] [--force]\n');
       process.exit(1);
     }
-    skillCreate(baseDir, name, gap, force);
+    skillCreate(baseDir, name, gap, force, stacks);
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
@@ -104,6 +105,7 @@ export function skillInspect(baseDir: string, name: string): void {
   console.log(`  \x1b[90mRisco:\x1b[0m ${m.risk}`);
   console.log(`  \x1b[90mToken budget:\x1b[0m ${m.tokenBudget}`);
   console.log(`  \x1b[90mCompatibilidade:\x1b[0m ${m.compatibility}`);
+  if (m.stacks?.length) console.log(`  \x1b[90mStacks:\x1b[0m ${m.stacks.join(', ')}`);
   console.log(`\n  \x1b[1mDescription:\x1b[0m ${m.description}`);
   console.log(`\n  \x1b[1mTriggers (${m.triggers.length}):\x1b[0m`);
   m.triggers.forEach((t) => console.log(`    • ${t}`));
@@ -122,13 +124,13 @@ export function skillInspect(baseDir: string, name: string): void {
   console.log('');
 }
 
-export function skillCreate(baseDir: string, name: string, gap?: string, force = false): void {
+export function skillCreate(baseDir: string, name: string, gap?: string, force = false, stacks?: string[]): void {
   // Modo Skill Factory: pipeline real (detecção de lacuna + security scan + registro)
   if (gap) {
     const resolver = new SkillResolver({ baseDir });
     const factory = new SkillFactory(resolver);
     try {
-      const generated = factory.generate({ gap, name, force });
+      const generated = factory.generate({ gap, name, force, stacks: stacks as import('../../runtime/types.js').Stack[] | undefined });
       if (!generated.registered) {
         console.error(`\n\x1b[31mSkill Factory recusou o registro:\x1b[0m`);
         generated.validation.issues.forEach((i) => console.error(`  • ${i}`));

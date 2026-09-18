@@ -11,9 +11,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import type { AgentGenome } from '../types.js';
+import type { AgentGenome, Stack } from '../types.js';
 import type { SkillResolver } from '../routing/resolver.js';
 import { semanticRelevance } from '../routing/scorer.js';
+import { STACK_META, isValidStack, stackCapabilities, stackGuardrails, stackValidation } from './stacks.js';
 
 export interface AgentFactoryInput {
   /** Descrição do agente desejado, ex.: "migração PHP legado para Laravel". */
@@ -22,6 +23,12 @@ export interface AgentFactoryInput {
   name?: string;
   /** Ids de skills obrigatórias adicionais. */
   requiredSkills?: string[];
+  /**
+   * Stack de destino (`ts | go | rust | python | all`). Diferente de `all`,
+   * o genome nasce com capabilities, guardrails de validação e identity da
+   * stack — ex.: `rust` exige `cargo clippy + cargo test` na entrega.
+   */
+  stack?: Stack;
   targetDir?: string;
   memory?: string[];
 }
@@ -40,6 +47,7 @@ export class AgentFactory {
   generate(input: AgentFactoryInput): GeneratedAgent {
     const name = input.name ?? deriveName(input.requirement);
     const purpose = input.requirement.trim().replace(/\s+/g, ' ');
+    const stack: Stack = input.stack ?? 'all';
 
     // 1. Capability Analysis + Skill Discovery (ranking semântico)
     const ranked = this.resolver.rankSkills(input.requirement, 10);
@@ -48,11 +56,11 @@ export class AgentFactory {
     const required = [...new Set([...(input.requiredSkills ?? []), ...ranked.slice(0, 4).map((r) => r.alias)])];
     const optional = ranked.slice(4, 8).map((r) => r.alias);
 
-    const capabilities = deriveCapabilities(input.requirement);
-    const guardrails = deriveGuardrails(input.requirement);
+    const capabilities = [...deriveCapabilities(input.requirement), ...stackCapabilities(stack)];
+    const guardrails = deriveGuardrails(input.requirement, stack);
 
     // 3. Agent Prompt Generation (identity sintética em PT-BR)
-    const identity = buildIdentity(name, purpose, capabilities);
+    const identity = buildIdentity(name, purpose, capabilities, stack);
 
     // 4. Genome completo
     const genome: AgentGenome = {
@@ -71,6 +79,7 @@ export class AgentFactory {
       evaluation: { metrics: ['correctness', 'requirementCoverage', 'maintainability'], minScore: 0.75 },
       tokenBudget: 6000,
       compatibility: '>=2.0.0',
+      stacks: [stack],
       role: purpose,
       identity,
       skills: required,
@@ -104,6 +113,11 @@ export function validateGenome(genome: AgentGenome): { valid: boolean; issues: s
   if (genome.inputs.length === 0) issues.push('inputs vazios');
   if (genome.outputs.length === 0) issues.push('outputs vazios');
   if (genome.tokenBudget <= 0) issues.push('tokenBudget inválido');
+  if (genome.stacks) {
+    for (const s of genome.stacks) {
+      if (!isValidStack(s)) issues.push(`stack inválido: ${s}`);
+    }
+  }
   return { valid: issues.length === 0, issues };
 }
 
@@ -141,19 +155,24 @@ function deriveCapabilities(requirement: string): string[] {
   return Array.from(new Set(caps));
 }
 
-function deriveGuardrails(requirement: string): { always: string[]; never: string[] } {
+function deriveGuardrails(requirement: string, stack?: Stack): { always: string[]; never: string[] } {
   const r = requirement.toLowerCase();
   const never: string[] = [
     'Gerar stubs, TODOs ou arquivos vazios',
     'Entregar checklist/resumo no lugar de código real completo',
+    ...stackGuardrails(stack),
   ];
   if (/php|laravel|legado|legacy/.test(r)) {
     never.push('Reescrever o sistema inteiro sem estratégia de migração incremental');
   }
   const always = ['Documentar decisões relevantes', 'Validar a entrega com testes'];
+  if (stack && stack !== 'all') {
+    always.push(`Validar na stack antes de entregar: ${stackValidation(stack)}`);
+  }
   return { always, never };
 }
 
-function buildIdentity(name: string, purpose: string, capabilities: string[]): string {
-  return `Você é o agente especializado ${prettify(name)} do Izanagi AI. Propósito: ${purpose}. Capacidades: ${capabilities.join(', ')}. Trabalhe orientado a artefatos estruturados, aplique qualidade de produção (tipagem estrita, tratamento de erros, testes) e registre aprendizados na memória.`;
+function buildIdentity(name: string, purpose: string, capabilities: string[], stack?: Stack): string {
+  const stackHint = stack && stack !== 'all' ? ` Stack de destino: ${STACK_META[stack].label} (validação obrigatória: ${stackValidation(stack)}).` : '';
+  return `Você é o agente especializado ${prettify(name)} do Izanagi AI. Propósito: ${purpose}. Capacidades: ${capabilities.join(', ')}.${stackHint} Trabalhe orientado a artefatos estruturados, aplique qualidade de produção (tipagem estrita, tratamento de erros, testes) e registre aprendizados na memória.`;
 }

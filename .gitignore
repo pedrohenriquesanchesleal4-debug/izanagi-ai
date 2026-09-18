@@ -45,3 +45,6 @@ __pycache__/
 
 # Sandbox de `npm run verify` quando a limpeza falhava (agora vive no TEMP do SO)
 tmp-sandbox-test/
+
+# Artefatos gerados pelas factories (mesmo padrão de agents/generated: locais por padrão)
+skills/generated/

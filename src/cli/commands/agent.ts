@@ -30,11 +30,12 @@ export function agentCommand(baseDir: string, args: string[]): void {
       .join(' ');
     const nameFlag = args.find((a) => a.startsWith('--name='))?.split('=')[1];
     const skillsFlag = args.find((a) => a.startsWith('--skills='))?.split('=')[1];
+    const stackFlag = args.find((a) => a.startsWith('--stack='))?.split('=')[1];
     if (!requirement) {
-      console.error('\x1b[31mUsage:\x1b[0m izanagi agent create "<requirement>" [--name=slug] [--skills=a,b]\n');
+      console.error('\x1b[31mUsage:\x1b[0m izanagi agent create "<requirement>" [--name=slug] [--stack=ts|go|rust|python|all] [--skills=a,b]\n');
       process.exit(1);
     }
-    agentCreate(baseDir, requirement, { name: nameFlag, requiredSkills: skillsFlag?.split(',') });
+    agentCreate(baseDir, requirement, { name: nameFlag, requiredSkills: skillsFlag?.split(','), stack: stackFlag as import('../../runtime/types.js').Stack | undefined });
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
@@ -90,6 +91,7 @@ export function agentInspect(baseDir: string, name: string): void {
   console.log(`  \x1b[90mVersão:\x1b[0m ${g.version}`);
   console.log(`  \x1b[90mModelo:\x1b[0m ${g.model ?? 'default'}`);
   console.log(`  \x1b[90mToken budget:\x1b[0m ${g.tokenBudget}`);
+  console.log(`  \x1b[90mStacks:\x1b[0m ${(g.stacks ?? ['all']).join(', ')}`);
   console.log(`\n  \x1b[1mPurpose:\x1b[0m ${g.purpose}`);
   console.log(`\n  \x1b[1mCapabilities:\x1b[0m`);
   g.capabilities.forEach((c) => console.log(`    • ${c}`));
@@ -109,7 +111,7 @@ export function agentInspect(baseDir: string, name: string): void {
 export function agentCreate(
   baseDir: string,
   requirement: string,
-  opts: { name?: string; requiredSkills?: string[] } = {},
+  opts: { name?: string; requiredSkills?: string[]; stack?: import('../../runtime/types.js').Stack } = {},
 ): void {
   const resolver = new SkillResolver({ baseDir });
   const factory = new AgentFactory(resolver);
@@ -118,6 +120,7 @@ export function agentCreate(
       requirement,
       name: opts.name,
       requiredSkills: opts.requiredSkills,
+      stack: opts.stack,
     });
     if (!generated.validation.valid) {
       console.error('\x1b[31mAgent Factory: genome inválido — registro abortado:\x1b[0m');
@@ -129,6 +132,7 @@ export function agentCreate(
     console.log(`  \x1b[90mPropósito:\x1b[0m ${generated.genome.purpose}`);
     console.log(`  \x1b[90mCapabilities:\x1b[0m ${generated.genome.capabilities.join(', ')}`);
     console.log(`  \x1b[90mSkills requeridas (${generated.genome.requiredSkills.length}):\x1b[0m ${generated.chain.join(', ')}`);
+    console.log(`  \x1b[90mStacks:\x1b[0m ${(generated.genome.stacks ?? ['all']).join(', ')}`);
     console.log(`  \x1b[90mHandoffs:\x1b[0m ${generated.genome.handoffs.map((h) => h.to).join(', ')}`);
     console.log(`  \x1b[90mToken budget:\x1b[0m ${generated.genome.tokenBudget}`);
     console.log(`  \x1b[90mValidação:\x1b[0m ${generated.validation.issues.length === 0 ? 'OK' : generated.validation.issues.join('; ')}`);

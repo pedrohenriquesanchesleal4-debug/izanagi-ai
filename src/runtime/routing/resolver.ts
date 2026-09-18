@@ -337,6 +337,7 @@ export function normalizeGenome(raw: Record<string, unknown>, id: string): impor
     evaluation: (raw.evaluation as { metrics: import('../types.js').MetricName[]; minScore: number } | undefined) ?? { metrics: ['correctness'] as import('../types.js').MetricName[], minScore: 0.7 },
     tokenBudget: Number(raw.token_budget ?? raw.tokenBudget ?? 4096),
     compatibility: (raw.compatibility as string) ?? '>=2.0.0',
+    stacks: Array.isArray(raw.stacks) ? (raw.stacks as import('../types.js').Stack[]) : ['all'],
     model: raw.model as string | undefined,
     role: raw.role as string | undefined,
     identity: raw.identity as string | undefined,

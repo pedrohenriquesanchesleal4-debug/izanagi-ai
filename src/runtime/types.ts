@@ -215,6 +215,15 @@ export interface ExecutionGraph {
 
 /* ============================ ROUTING / SCORING ============================ */
 
+/**
+ * Stacks de destino de um agente/skill gerado. `all` = indiferente a stack
+ * (default): o artefato vale para qualquer projeto. As demais marcam que o
+ * artefato nasceu com capacidades, guardrails e validação daquela stack —
+ * ex.: um agente `stack: 'rust'` exige `cargo clippy + cargo test` na entrega.
+ */
+export const STACKS = ['ts', 'go', 'rust', 'python', 'all'] as const;
+export type Stack = (typeof STACKS)[number];
+
 export interface CandidateScore {
   candidate: string;
   relevance: number;
@@ -244,6 +253,8 @@ export interface AgentGenome {
   tokenBudget: number;
   compatibility: string;
   model?: string;
+  /** Stacks de destino (default `['all']`). Ver `STACKS`. */
+  stacks?: Stack[];
   /** Campos legacy preservados (compatibilidade). */
   role?: string;
   identity?: string;
@@ -279,6 +290,8 @@ export interface SkillManifest {
   evaluation?: { metrics: MetricName[]; minScore?: number };
   examples?: string[];
   changelog?: Array<{ version: string; date?: string; change: string }>;
+  /** Stacks de destino da skill (default `all` quando ausente). Ver `STACKS`. */
+  stacks?: Stack[];
   /** Conteúdo cru do SKILL.md (sem frontmatter). */
   body?: string;
   path?: string;
