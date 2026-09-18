@@ -275,7 +275,13 @@ export class ModelRouter {
     return Math.max(0, score);
   }
 
-  private providerOf(modelId: string): string {
+  /**
+   * Provider dono de um model id do catálogo (ex.: `claude-sonnet-5` →
+   * `anthropic`). Público porque o validador de canvas e o resolveNodeModel
+   * precisam conferir provider de configuração manual sem re-implementar a
+   * busca.
+   */
+  providerOf(modelId: string): string {
     for (const p of this.providers) {
       if (p.models.some((m) => m.id === modelId)) return p.id;
     }
