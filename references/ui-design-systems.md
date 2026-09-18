@@ -37,6 +37,17 @@ Curadoria para direção de arte e design systems de alto craft (dark premium, g
 | Material Design 3 | https://m3.material.io | Sistema de cor dinâmica, estados e elevação |
 | Design Systems (Figma) | https://www.designsystems.com | Referência de como documentar tokens e componentes |
 
+## Design systems de referência por indústria
+
+Sistemas públicos maduros para estudar decisão de tokens, componentes e escrita de diretrizes — úteis quando o pedido for de nicho específico (admin/B2B, e-commerce, dados).
+
+| Sistema | URL | O que extrair |
+|---|---|---|
+| Carbon (IBM) | https://carbondesignsystem.com | Design system de produto de dados/enterprise: grid e espaçamento rigorosos, escalas de cor semântica, componentes de tabela/forms de alta densidade |
+| Polaris (Shopify) | https://polaris.shopify.com | Design system de e-commerce/comércio: foco em clareza de ações, estados de carga/vazio, escrita de UI orientada a conversão |
+| MUI | https://mui.com | Material para React: tokens de tema JS, acessibilidade de componentes complexos (data grid, autocomplete), documentação de APIs de componentes |
+| Radix Themes | https://www.radix-ui.com/themes | Camada de estilos/design system sobre os primitivos Radix (já usado como base do shadcn/ui): tokens por escala, dark mode nativo
+
 ## Como usar no Izanagi
 
 - **Quando consultar**: Discovery deve abrir esta curadoria na Fase 3 (P12 — preferências visuais) para propor direção de arte; e sempre antes do passo "Direção criativa" (2-3 caminhos com trade-offs).
