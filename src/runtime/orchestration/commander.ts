@@ -927,17 +927,49 @@ export class Commander {
       contracts.unshift(contract);
     }
 
+    // Gate de Revisão do Orquestrador (modos orquestrados): o coordenador
+    // REVISA a entrega consolidada com o modelo mais rápido do catálogo
+    // (papel worker -> tier fast) antes da aprovação. Não é reforço
+    // opcional: é a condição da aprovação, então não é marcado `optional` e
+    // o early stopping nunca o corta. Produz `critique` estruturada: o mesmo
+    // mecanismo A2A que o runtime já interpreta (`parseCritique` ->
+    // `isBlocking` -> `interpretCritique`), então uma reprovação reabre
+    // sozinha o nó-alvo nomeado em `issue.artifact` (qualquer nó do grafo) e
+    // o review roda de novo SEM escalar o modelo — re-criticar volta com
+    // `attempts` zerado, e a revisão continua saindo do modelo mais rápido.
+    if (mode === 'orchestrated' || mode === 'autonomous') {
+      const reviewNode = orchestratorReviewNode(withContracts);
+      // Contrato TOLERANTE por design: o gate nunca pode matar o run por FORMA
+      // da própria crítica (prosa, JSON truncado, citação de caminho proposto).
+      // Quem decide a semântica é o parseCritique tolerante do runtime (prosa
+      // vira needs_revision não-bloqueante). O critério mínimo garante só que
+      // a revisão não está vazia — aprovação/reprovação é conteúdo, não forma.
+      const reviewContract = orchestratorReviewContract(reviewNode, input, classification, mode);
+      withContracts.push(attachContract(reviewNode, reviewContract));
+      contracts.push(reviewContract);
+    }
+
     // Materialização: só quando existe um nó cujo artefato pode CARREGAR
     // código. Pendurar isto em qualquer artefato faria o runtime tentar
     // materializar uma ADR, e o resultado seria sempre "nenhum arquivo
     // declarado" — ruído com aparência de etapa.
+    //
+    // O materialize depende TAMBÉM do gate de revisão do orquestrador: só se
+    // grava o que foi aprovado. Sem esta aresta, materialize e review rodam
+    // no MESMO batch, o materialize grava a versão pré-revisão e, se o gate
+    // reabrir o produtor para correção, os arquivos gravados ficam com a
+    // versão REPROVADA enquanto a entrega registra a corrigida — dois
+    // resultados diferentes no mesmo run.
     if (input.output) {
       const manifestFrom = codeBearingNode(withContracts);
       if (manifestFrom) {
+        const reviewDep = withContracts.some((n) => n.id === ORCHESTRATOR_REVIEW_NODE_ID)
+          ? [ORCHESTRATOR_REVIEW_NODE_ID, manifestFrom]
+          : [manifestFrom];
         const { node, contract } = materializeNode({
           outputDir: input.output,
           objective: input.objective,
-          dependencies: [manifestFrom],
+          dependencies: reviewDep,
           manifestFrom,
         });
         withContracts.push(attachContract(node, contract));
@@ -1427,6 +1459,83 @@ function codeBearingNode(nodes: GraphNode[]): string | null {
     if (kind && bearsCode(kind)) return nodes[i].id;
   }
   return null;
+}
+
+/** Id do gate de revisão do orquestrador (usado por testes e instrumentação). */
+export const ORCHESTRATOR_REVIEW_NODE_ID = 'orchestrator-review';
+
+/**
+ * Gate de revisão do orquestrador. Depende de TODO nó de produto (agentes e
+ * avaliadores; fora tools, gates, approvals e nós que já produzem `critique`)
+ * porque é a visão consolidada da entrega inteira: um `issue.artifact` na
+ * crítica pode nomear qualquer nó do grafo para reabertura precisa. Papel
+ * `worker` por construção: o orquestrador audita com o modelo mais rápido do
+ * catálogo (tier fast), e o runtime re-roda o review no mesmo papel após uma
+ * correção — crítica não escala o modelo (`attempts` volta a zero).
+ */
+function orchestratorReviewNode(nodes: GraphNode[]): GraphNode {
+  const product = nodes.filter(
+    (n) =>
+      (n.kind ?? 'agent') !== 'tool' &&
+      (n.kind ?? 'agent') !== 'gate' &&
+      (n.kind ?? 'agent') !== 'approval' &&
+      !(n.outputs ?? []).includes('critique'),
+  );
+  return {
+    id: ORCHESTRATOR_REVIEW_NODE_ID,
+    // kind evaluator (agêntico, mas sem skills por contrato: é um avaliador):
+    // o gate audita a entrega inteira e aprova/reprova — não é um executor.
+    kind: 'evaluator',
+    agent: 'evaluator',
+    outputs: ['critique'],
+    dependencies: product.map((n) => n.id),
+    status: 'pending',
+    // 2000 tokens de saída: espaço honesto para listar 3+ problemas sem
+    // truncamento que o parse tolerante leria como aprovação parcial.
+    tokenBudget: 2000,
+    timeoutMs: 180_000,
+    retryPolicy: { maxAttempts: 2, backoffMs: 500, retryOnValidation: true },
+    metadata: { role: 'worker', reviewGate: true },
+  };
+}
+
+/**
+ * Contrato do gate de revisão. TOLERANTE de propósito: nenhum check
+ * determinístico além de "não vazio" (nem artifact-valid, nem contains de
+ * campos, nem groundedness `references-exist`). Uma crítica existe para
+ * apontar lugares que podem não existir, pode citar "TODO" como defeito
+ * alheio e pode chegar truncada de um modelo com teto de saída — nenhum
+ * desses é motivo para o GATE matar o run; a semântica é decidida pelo
+ * `parseCritique` tolerante (prosa vira needs_revision não-bloqueante).
+ * Aprovação e reprovação são conteúdo, nunca forma.
+ */
+function orchestratorReviewContract(
+  node: GraphNode,
+  input: CommanderInput,
+  classification: Classification,
+  mode: ExecutionMode,
+): TaskContract {
+  const base = contractFromNode(node, { objective: objectiveForNode(node, input.objective) });
+  return {
+    ...base,
+    role: 'worker',
+    objective: objectiveForNode(node, input.objective),
+    constraints: constraintsFor(classification, mode, {}),
+    priority: 'normal',
+    budget: { maxTokens: node.tokenBudget ?? 2000 },
+    verification: {
+      deterministic: [{ kind: 'min-size', bytes: 1, message: 'revisão vazia' }],
+      requireAllCriteria: false,
+    },
+    acceptance: [
+      {
+        id: `${node.id}:min`,
+        description: 'revisão não vazia',
+        kind: 'deterministic',
+        check: { kind: 'min-size', bytes: 1, message: 'revisão vazia' },
+      },
+    ],
+  };
 }
 
 function constraintsFor(

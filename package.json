@@ -91,9 +91,6 @@
     "type": "git",
     "url": "git+https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai.git"
   },
-  "dependencies": {
-    "undici-types": "^6.21.0"
-  },
   "bugs": {
     "url": "https://github.com/pedrohenriquesanchesleal4-debug/izanagi-ai/issues"
   },

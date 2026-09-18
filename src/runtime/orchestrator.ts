@@ -2181,9 +2181,31 @@ export class Orchestrator {
     if (!target || target.status !== 'succeeded') return null;
 
     if (this.critiqueRounds.has(targetId)) {
-      // Segunda crítica bloqueante no mesmo nó: registra como evidência (entra
-      // nas recomendações da avaliação) e não reabre. Ping-pong entre crítico e
-      // executor gasta orçamento sem convergir.
+      // Segunda crítica bloqueante no mesmo nó. Para o crítico adversarial,
+      // registra como evidência (entra nas recomendações da avaliação) e não
+      // reabre: ping-pong entre crítico e executor gasta orçamento sem
+      // convergir. Para o GATE DE REVISÃO DO ORQUESTRADOR, engolir seria
+      // aprovar contra a própria condição de aprovação: o review é o que
+      // transforma "tudo verificado" em "aprovado", e a segunda reprovação
+      // significa que UMA rodada corretiva não bastou. Não reabre de novo
+      // (anti ping-pong preservado), mas a reprovação vira erro persistente
+      // do alvo: o run termina em FAIL, nunca em PASS silencioso.
+      if (criticNode.metadata?.reviewGate === true) {
+        const blockingCount = critique.issues.filter((i) => i.severity === 'high' || i.severity === 'critical').length;
+        target.status = 'failed';
+        target.error = `revisão do orquestrador continua bloqueante após uma correção: ${blockingCount || critique.issues.length} problema(s)`;
+        ctx.trace.span(`critique:exhausted:${targetId}`, 'decision', {
+          reason: 'gate de revisão reprovou o mesmo nó duas vezes (uma rodada corretiva não bastou)',
+          issues: critique.issues.length,
+        })();
+        return {
+          status: 'error',
+          nodeId: targetId,
+          ...(target.agent ? { agent: target.agent } : {}),
+          ...(target.skills?.[0] ? { skill: target.skills[0] } : {}),
+          error: target.error,
+        };
+      }
       ctx.trace.span(`critique:exhausted:${targetId}`, 'decision', {
         reason: 'nó já reaberto uma vez por crítica bloqueante nesta execução',
         issues: critique.issues.length,

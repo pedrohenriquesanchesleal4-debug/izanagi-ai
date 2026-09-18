@@ -122,8 +122,8 @@ test('commander: decomposição externa válida é adotada', () => {
       { id: 'frontend', objective: 'tela de login', agent: 'senior-engineer', outputKind: 'raw', dependencies: ['backend'] },
     ],
   });
-  assert.deepEqual(plan.graph.nodes.map((n) => n.id), ['backend', 'frontend']);
-  assert.deepEqual(plan.graph.parallelBatches, [['backend'], ['frontend']]);
+  assert.deepEqual(plan.graph.nodes.map((n) => n.id), ['backend', 'frontend', 'orchestrator-review']);
+  assert.deepEqual(plan.graph.parallelBatches, [['backend'], ['frontend'], ['orchestrator-review']]);
 });
 
 test('commander: validateDecomposition detecta id duplicado, dependência fantasma e auto-dependência', () => {
