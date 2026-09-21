@@ -19,23 +19,65 @@
 
 import type { GraphNode, ExecutionGraph, RoutingHints } from '../types.js';
 import type { AgentRole } from '../contracts/task-contract.js';
-import { Orchestrator, type OrchestratorOptions, type ExecuteCtx } from '../orchestrator.js';
+import { Orchestrator, type OrchestratorOptions, type ExecuteCtx, type OrchestrationResult } from '../orchestrator.js';
 import type { CommanderPlan } from '../orchestration/commander.js';
 import { attachContract, type TaskContract } from '../contracts/task-contract.js';
+import type { ResolvedContext } from '../orchestration/context-resolver.js';
+import type { ExecutionBudget } from '../token/execution-budget.js';
 import { ModelRouter } from '../model/router.js';
-import type { WorkflowIR, WorkflowState, CanvasNodeResult } from './types.js';
-import { schedule } from './scheduler.js';
-import { MessageBus, createWorkflowState, recordNodeResult, accrueTokens } from './message-bus.js';
+import type { WorkflowIR, WorkflowState, CanvasNodeResult, AgentMessage } from './types.js';
+import { schedule, loopBackEdges } from './scheduler.js';
+import { MessageBus, createWorkflowState, recordNodeResult, accrueTokens, setWorkflowStatus } from './message-bus.js';
 import { buildContext } from './context-policy.js';
 import { resolveNodeModel } from './model-config.js';
 import { evaluateCondition } from './condition.js';
 import type { ToolPermission } from '../tools/registry.js';
+import { makeMessageSent, makeNodeStarted, makeNodeCompleted, makeNodeFailed, type WorkflowEvent } from './workflow-events.js';
+
+/** Resultado de produção de um nó (contrato do producer do canvas). */
+export type CanvasProduceResult = { content: unknown; kind: string; tokens?: number; model?: string; costUsd?: number };
+
+/**
+ * Contexto entregue ao producer do canvas.
+ *
+ * Dois mundos convivem aqui de propósito:
+ *  - `ctx`/`state`/`messages`/`iteration*`: o estado compartilhado CONTROLADO
+ *    do workflow (o que um autor de workflow vê ao escrever um producer);
+ *  - os campos da ponte (`model`/`provider`/`contract`/`nodeContext`/
+ *    `execBudget`/`signal`/...): fatia do `ExecuteCtx` REAL do Orchestrator,
+ *    para producers LLM (CLI/editor) lerem modelo roteado, contrato, orçamento
+ *    e sinal de cancelamento do run. Ausentes quando o nó roda fora do
+ *    Orchestrator (nunca acontece no caminho normal).
+ */
+export interface CanvasProduceContext {
+  ctx: WorkflowState;
+  state: WorkflowState;
+  messages: AgentMessage[];
+  iteration?: number;
+  iterationResults?: unknown[];
+  runId?: string;
+  task?: string;
+  category?: string;
+  primaryAgent?: string;
+  model?: string;
+  provider?: string;
+  contract?: TaskContract;
+  nodeContext?: ResolvedContext;
+  nodeRole?: AgentRole;
+  execBudget?: ExecutionBudget;
+  signal?: AbortSignal;
+}
+
+/** Producer do canvas: recebe o nó + contexto controlado e devolve o artefato. */
+export type CanvasProduce = (node: GraphNode, ctx: CanvasProduceContext) => Promise<CanvasProduceResult> | CanvasProduceResult;
 
 export interface CanvasExecutorDeps {
   baseDir: string;
   workspaceDir?: string;
   stateDir?: string;
   task: string;
+  /** Id do run (bus/estado/eventos). Ausente: derivado do relógio. */
+  runId?: string;
   /** Registry de capacidades para modelHint por agente. */
   agentHints?: (agentId: string) => string | undefined;
   /** Providers realmente utilizáveis (restrição de catálogo; vazio = todos). */
@@ -46,6 +88,8 @@ export interface CanvasExecutorDeps {
   onEvent?: OrchestratorOptions['onEvent'];
   signal?: AbortSignal;
   allowedTools?: string[];
+  /** Emissão de eventos de workflow (editor visual/CLI/SSE). Opcional. */
+  onWorkflowEvent?: (event: WorkflowEvent) => void;
 }
 
 export interface CanvasPlanInput {
@@ -207,10 +251,9 @@ export function buildCanvasPlan(input: CanvasPlanInput): CanvasExecutionPlan {
   return { plan, modelByNode, routeRole };
 }
 
-/** Verifica se a aresta é aresta de retorno de loop (volta para nó com loop). */
-function isLoopBackEdge(e: { from: string; to: string }, ir: WorkflowIR): boolean {
-  const loopNodes = new Set(ir.nodes.filter((n) => n.loop).map((n) => n.id));
-  return loopNodes.has(e.to);
+/** Verifica se a aresta é retorno de loop (sai de nó com loop e fecha ciclo). */
+function isLoopBackEdge(e: { id: string }, ir: WorkflowIR): boolean {
+  return loopBackEdges(ir).has(e.id);
 }
 
 /** Contrato default por nó (papel, orçamento, saída esperada). */
@@ -218,7 +261,7 @@ function contractForNode(n: WorkflowIR['nodes'][number], ir: WorkflowIR, input: 
   const role: AgentRole = n.kind === 'orchestrator' ? 'commander' : n.kind === 'evaluator' ? 'worker' : n.kind === 'tool' || n.kind === 'human-review' || n.kind === 'condition' ? 'worker' : 'specialist';
   const permissions: ToolPermission[] = (n.permissions ?? []) as ToolPermission[];
   const tool = n.kind === 'tool' && n.tool
-    ? { id: n.tool }
+    ? { id: n.tool, input: {} }
     : undefined;
   return {
     id: n.id,
@@ -255,8 +298,8 @@ function contractOfNode(node: GraphNode): TaskContract {
  */
 export async function executeCanvasWorkflow(
   ir: WorkflowIR,
-  deps: CanvasExecutorDeps & { produce?: OrchestratorOptions['produce']; consume?: OrchestratorOptions['consume'] },
-): Promise<Awaited<ReturnType<Orchestrator['run']>>> {
+  deps: CanvasExecutorDeps & { produce?: CanvasProduce; consume?: OrchestratorOptions['consume'] },
+): Promise<OrchestrationResult & { workflowState: WorkflowState }> {
   // Providers disponíveis: carrega do projeto (config) + catálogo default,
   // filtrado pelos `availableProviders` informados.
   const loaded = ModelRouter.loadProjectProviders(deps.baseDir);
@@ -272,29 +315,56 @@ export async function executeCanvasWorkflow(
     task: deps.task,
   });
 
-  const bus = new MessageBus(`canvas-${Date.now()}`);
+  const bus = new MessageBus(deps.runId ?? `canvas-${Date.now()}`);
   const state = createWorkflowState(bus.runId, { task: deps.task });
   state.messages = [...bus.all()];
+  const emit = deps.onWorkflowEvent ?? ((): void => undefined);
 
-  const loopWrapper = (node: GraphNode): OrchestratorOptions['produce'] => async (n, ctx) => {
+  const loopWrapper = (node: GraphNode) =>
+    async (n: GraphNode, octx?: ExecuteCtx): Promise<CanvasProduceResult> => {
     const canvasMeta = (n.metadata?.canvas as Record<string, unknown>) ?? {};
     const loop = canvasMeta.loop as { maxIterations?: number; terminationCondition?: string; uploadResults?: boolean } | undefined;
     const policy = canvasMeta.context as Parameters<typeof buildContext>[1] | undefined;
+    const canvasModel = (n.metadata?.canvasModel as { model?: string; provider?: string } | undefined) ?? {};
+    emit(makeNodeStarted(bus.runId, n.id, String(canvasMeta.kind ?? n.kind), n.agent));
     if (!loop || !loop.maxIterations) {
-      return runOnce(ir, state, bus, n, policy, deps.produce);
+      try {
+        const once = await runOnce(ir, state, bus, n, policy, deps.produce, bus.runId, emit, undefined, octx);
+        emit(makeNodeCompleted(bus.runId, n.id, {
+          latencyMs: once.latencyMs,
+          tokens: once.tokens,
+          model: canvasModel.model,
+          provider: canvasModel.provider,
+          outputSummary: once.outputSummary,
+        }));
+        return once.produced;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        emit(makeNodeFailed(bus.runId, n.id, message));
+        throw err;
+      }
     }
     const max = Math.min(loop.maxIterations, 50);
     const results: unknown[] = [];
     let lastResult: unknown;
     let terminated = false;
+    let loopTokens = 0;
+    const loopStart = Date.now();
     let reason = `loop concluído após ${max} iterações (teto)`;
     for (let i = 1; i <= max; i++) {
       if (deps.signal?.aborted) break;
       // estado por iteração: scope com variáveis do loop
-      const iterCtx = { ...ctx, iteration: i, iterationResults: results };
-      const produced = await runOnce(ir, state, bus, n, policy, deps.produce, iterCtx);
-      lastResult = produced.content;
-      results.push(produced.content);
+      let produced: Awaited<ReturnType<typeof runOnce>>;
+      try {
+        produced = await runOnce(ir, state, bus, n, policy, deps.produce, bus.runId, emit, { iteration: i, iterationResults: results }, octx);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        emit(makeNodeFailed(bus.runId, n.id, message, i));
+        throw err;
+      }
+      lastResult = produced.produced.content;
+      results.push(produced.produced.content);
+      loopTokens += produced.tokens ?? 0;
       // condição de término avaliada contra o estado REAL acumulado
       const scope = { state, iteration: i, result: lastResult, results };
       const term = loop.terminationCondition;
@@ -304,10 +374,28 @@ export async function executeCanvasWorkflow(
         break;
       }
     }
+    // Resultado agregado do loop vira o output do nó no estado (o que a UI
+    // e o snapshot expõem); cada iteração já deixou o seu registro parcial.
+    const loopOutput = loop.uploadResults === false ? lastResult : { iterations: results, terminated, reason };
+    const loopRecord: CanvasNodeResult = {
+      nodeId: n.id,
+      status: 'succeeded',
+      startedAt: state.nodeResults[n.id]?.startedAt ?? new Date(loopStart).toISOString(),
+      latencyMs: Date.now() - loopStart,
+      output: loopOutput,
+      tokensUse: { input: 0, output: loopTokens, total: loopTokens },
+    };
+    recordNodeResult(state, loopRecord);
+    emit(makeNodeCompleted(bus.runId, n.id, {
+      latencyMs: Date.now() - loopStart,
+      tokens: loopTokens,
+      model: canvasModel.model,
+      provider: canvasModel.provider,
+    }));
     return {
-      content: loop.uploadResults === false ? lastResult : { iterations: results, terminated, reason },
+      content: loopOutput,
       kind: 'artifact',
-      tokens: producedTokens(results),
+      tokens: loopTokens,
     };
   };
 
@@ -328,11 +416,18 @@ export async function executeCanvasWorkflow(
     ...(deps.allowedTools ? { allowedTools: deps.allowedTools } : {}),
     ...(deps.onEvent ? { onEvent: deps.onEvent } : {}),
     ...(deps.signal ? { signal: deps.signal } : {}),
-    produce: deps.produce ? (node, ctx) => loopWrapper(node)(node, ctx) : undefined,
+    produce: (node: GraphNode, octx?: ExecuteCtx) => loopWrapper(node)(node, octx),
     consume: deps.consume,
   });
 
-  return orchestrator.run();
+  const runResult = await orchestrator.run();
+  state.messages = [...bus.all()];
+  // Estado do workflow espelha o veredito do run: completed/paused/failed/cancelled
+  if (runResult.status === 'PASS' || runResult.status === 'PASS_WITH_WARNINGS') setWorkflowStatus(state, 'completed');
+  else if (runResult.status === 'FAIL') setWorkflowStatus(state, 'failed');
+  else if (runResult.pendingApproval) setWorkflowStatus(state, 'paused');
+  else setWorkflowStatus(state, 'cancelled');
+  return { ...runResult, workflowState: state };
 }
 
 /** Executa UM nó com o producer do caller, registrando no estado e no bus. */
@@ -342,15 +437,17 @@ async function runOnce(
   bus: MessageBus,
   node: GraphNode,
   policy: Parameters<typeof buildContext>[1] | undefined,
-  produce: OrchestratorOptions['produce'] | undefined,
+  produce: CanvasProduce | undefined,
+  runId: string,
+  emit: (event: WorkflowEvent) => void,
   extra?: Record<string, unknown>,
-): Promise<{ content: unknown; kind: string; tokens: number; model?: string }> {
+  octx?: ExecuteCtx,
+): Promise<{ produced: CanvasProduceResult; latencyMs: number; tokens: number; outputSummary?: string }> {
   const started = Date.now();
   const ctx = buildContext(state, policy, node.id);
   const result: CanvasNodeResult = {
     nodeId: node.id,
-    agent: node.agent,
-    status: 'completed',
+    status: 'succeeded',
     startedAt: new Date(started).toISOString(),
     latencyMs: 0,
   };
@@ -358,15 +455,27 @@ async function runOnce(
     // Mensagens que o nó RECEBE (incoming edges) — injetadas no scope de condição
     const incoming = bus.receivedBy(node.id);
     const produced = produce
-      ? await produce(node, { ctx: state, state, messages: incoming, ...extra } as unknown as Parameters<NonNullable<OrchestratorOptions['produce']>>[1])
+      ? await produce(node, produceCtxFor(state, incoming, octx, extra))
       : { content: headlessContent(node), kind: 'artifact', tokens: 0 };
+    result.output = produced.content;
+    result.tokensUse = { input: 0, output: produced.tokens ?? 0, total: produced.tokens ?? 0 };
     recordNodeResult(state, result);
     accrueTokens(state, { input: 0, output: produced.tokens ?? 0 });
     // Mensagens emitidas: arestas com messageType saem do nó
     for (const edge of ir.edges.filter((e) => e.from === node.id && e.messageType)) {
-      bus.send(node.id, edge.to, edge.messageType!, { summary: summarize(produced.content), ...(edge.condition ? { condition: edge.condition } : {}) }, { tokenEstimate: produced.tokens ?? 0 });
+      const msg = bus.send(node.id, edge.to, edge.messageType!, { summary: summarize(produced.content), ...(edge.condition ? { condition: edge.condition } : {}) }, { tokenEstimate: produced.tokens ?? 0 });
+      emit(makeMessageSent(runId, {
+        messageId: msg.id,
+        from: node.id,
+        to: edge.to,
+        messageType: edge.messageType!,
+        tokenEstimate: produced.tokens ?? 0,
+        payloadKeys: Object.keys(msg.payload),
+      }));
     }
-    return produced;
+    const latencyMs = Date.now() - started;
+    result.latencyMs = latencyMs;
+    return { produced, latencyMs, tokens: produced.tokens ?? 0, outputSummary: summarizeString(produced.content) };
   } catch (err) {
     result.status = 'failed';
     result.error = err instanceof Error ? err.message : String(err);
@@ -377,6 +486,46 @@ async function runOnce(
   }
 }
 
+function summarizeString(content: unknown): string | undefined {
+  const s = summarize(content);
+  return typeof s === 'string' && s.length > 0 ? s : undefined;
+}
+
+/**
+ * Monta o contexto do producer: estado controlado do workflow + fatia do
+ * ExecuteCtx real do Orchestrator + extras de iteração do loop. O producer
+ * LLM lê `model`/`provider`/`contract`/`signal` daqui; o autor do workflow lê
+ * `ctx`/`state`/`messages`. Nenhum campo interno de raciocínio vaza.
+ */
+function produceCtxFor(
+  state: WorkflowState,
+  incoming: AgentMessage[],
+  octx: ExecuteCtx | undefined,
+  extra?: Record<string, unknown>,
+): CanvasProduceContext {
+  return {
+    ...(octx
+      ? {
+          runId: octx.runId,
+          task: octx.task,
+          category: octx.category,
+          primaryAgent: octx.primaryAgent,
+          model: octx.model,
+          provider: octx.provider,
+          contract: octx.contract,
+          nodeContext: octx.nodeContext,
+          nodeRole: octx.nodeRole,
+          execBudget: octx.execBudget,
+          signal: octx.signal,
+        }
+      : {}),
+    ctx: state,
+    state,
+    messages: incoming,
+    ...(extra ?? {}),
+  } as CanvasProduceContext;
+}
+
 function headlessContent(node: GraphNode): unknown {
   return {
     nodeId: node.id,
@@ -384,10 +533,6 @@ function headlessContent(node: GraphNode): unknown {
     agent: node.agent,
     output: `[headless] simulação do nó ${node.id}${node.agent ? ` (${node.agent})` : ''} — execute com producer LLM para artefato real`,
   };
-}
-
-function producedTokens(results: unknown[]): number {
-  return 0;
 }
 
 function summarize(content: unknown): unknown {

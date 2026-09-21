@@ -103,12 +103,18 @@ export function compileCanvas(canvas: CanvasDefinition): WorkflowIR {
 
   const nodeIds = new Set(nodes.map((n) => n.id));
   const hasIncoming = new Set(edges.map((e) => e.to));
-  /** Entrada: nós sem aresta chegando. `group`/estruturais não contam como entrada. */
+  /** Entrada: nós sem aresta chegando (não-estruturais) + nós `input`. */
   const entryCandidates = nodes.filter((n) => !hasIncoming.has(n.id) && !STRUCTURAL_KINDS.has(n.kind));
-  const entryNodes = entryCandidates.length > 0 ? entryCandidates.map((n) => n.id) : nodes.filter((n) => n.kind === 'input').map((n) => n.id);
-  /** Saída: nós sem aresta saindo, não-estruturais. */
+  const entryNodes = [...new Set([
+    ...entryCandidates.map((n) => n.id),
+    ...nodes.filter((n) => n.kind === 'input').map((n) => n.id),
+  ])];
+  /** Saída: nós `output` + nós sem aresta saindo (não-estruturais). */
   const hasOutgoing = new Set(edges.map((e) => e.from));
-  const exitNodes = nodes.filter((n) => !hasOutgoing.has(n.id) && !STRUCTURAL_KINDS.has(n.kind)).map((n) => n.id);
+  const exitNodes = [...new Set([
+    ...nodes.filter((n) => n.kind === 'output').map((n) => n.id),
+    ...nodes.filter((n) => !hasOutgoing.has(n.id) && !STRUCTURAL_KINDS.has(n.kind)).map((n) => n.id),
+  ])];
 
   const capabilities = {
     hasLoops: nodes.some((n) => n.loop !== undefined) || hasCycle(nodeIds, edges),

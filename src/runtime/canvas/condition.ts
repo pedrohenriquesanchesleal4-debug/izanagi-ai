@@ -36,7 +36,7 @@ interface Token {
   pos: number;
 }
 
-const OPERATORS = ['>=', '<=', '==', '!=', '&&', '||', '>', '<', '!', '(', ')'];
+const OPERATORS = ['>=', '<=', '==', '!=', '&&', '||', '>', '<', '!', '.', '(', ')'];
 
 function tokenize(src: string): Token[] {
   const tokens: Token[] = [];
@@ -240,7 +240,9 @@ function isTruthy(v: ConditionValue): boolean {
   return v !== '';
 }
 
-function compare(op: ConditionAst['kind'] extends 'cmp' ? ConditionAst['kind'] : never, left: ConditionAst, right: ConditionAst, scope: Record<string, unknown>): boolean {
+type CmpOp = Extract<ConditionAst, { kind: 'cmp' }>['op'];
+
+function compare(op: CmpOp, left: ConditionAst, right: ConditionAst, scope: Record<string, unknown>): boolean {
   const l = evalNode(left, scope);
   const r = evalNode(right, scope);
   // Igualdade: objetos nunca são iguais por identidade; undefined/ausência tratado explicitamente.

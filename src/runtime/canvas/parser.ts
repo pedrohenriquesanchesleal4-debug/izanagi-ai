@@ -41,9 +41,9 @@ export function parseCanvas(json: string): ParsedCanvas {
   const parsed: ParsedCanvas = {
     nodes: Array.isArray(nodes) ? (nodes as CanvasDefinition['nodes']) : [],
     edges: Array.isArray(edges) ? (edges as CanvasDefinition['edges']) : [],
+    diagnostics: validateResult(diags),
     ...rest,
   };
-  parsed.diagnostics = validateResult(diags);
   return parsed;
 }
 

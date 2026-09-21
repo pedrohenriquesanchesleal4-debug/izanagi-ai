@@ -28,21 +28,47 @@ export interface SchedulePlan {
 }
 
 /**
- * Arestas de retorno de loop: aresta que volta para um nó que declara `loop`.
- * Essas arestas NÃO viram dependência direcional no batch — o fluxo de
- * iteração é controlado pelo executor (condição de término + maxIterations).
+ * Arestas de retorno de loop: aresta que SAI de um nó com `loop` e volta à
+ * própria cadeia de dependência (fecha ciclo). Ex.: `a → b(loop) → a` — a
+ * aresta `b → a` é retorno; `a → b` não é (é a entrada da cadeia) e continua
+ * como dependência normal. Essas arestas NÃO viram dependência direcional no
+ * DAG — a iteração é controlada pelo executor (maxIterations + condição de
+ * término). Aresta do loop para downstream (`b → out`) também não é retorno.
  */
-function backEdges(ir: WorkflowIR): Set<string> {
-  const backs = new Set<string>();
+export function loopBackEdges(ir: WorkflowIR): Set<string> {
   const loopNodes = new Set(ir.nodes.filter((n) => n.loop).map((n) => n.id));
+  const backs = new Set<string>();
   for (const e of ir.edges) {
-    if (loopNodes.has(e.to)) backs.add(e.id);
+    if (!loopNodes.has(e.from)) continue;
+    // T alcança L sem passar por esta aresta? Então (L → T) fecha um ciclo.
+    if (reaches(e.from, e.to, ir, e.id)) backs.add(e.id);
   }
   return backs;
 }
 
+/** BFS por alcançabilidade: `start` chega até `target` sem a aresta excluída? */
+function reaches(target: string, start: string, ir: WorkflowIR, excludedEdgeId: string): boolean {
+  const adj = new Map(ir.nodes.map((n) => [n.id, [] as string[]]));
+  for (const e of ir.edges) {
+    if (e.id === excludedEdgeId) continue;
+    adj.get(e.from)?.push(e.to);
+  }
+  const stack = [start];
+  const seen = new Set<string>();
+  while (stack.length > 0) {
+    const cur = stack.pop()!;
+    if (cur === target) return true;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    for (const nxt of adj.get(cur) ?? []) {
+      if (!seen.has(nxt)) stack.push(nxt);
+    }
+  }
+  return false;
+}
+
 export function schedule(ir: WorkflowIR): SchedulePlan {
-  const backs = backEdges(ir);
+  const backs = loopBackEdges(ir);
   // Grafo direcional SEM arestas de retorno de loop
   const incoming = new Map<string, Set<string>>();
   const outgoing = new Map<string, Set<string>>();
