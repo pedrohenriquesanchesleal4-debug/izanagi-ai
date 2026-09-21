@@ -1,0 +1,238 @@
+{
+  "id": "izanagi:example-architecture",
+  "name": "example-architecture",
+  "description": "Workflow de arquitetura liderado por orquestrador: parallel agents, revisão de segurança/QA e loop de avaliação com condição de término. Control plane declarativo — a execução vive no runtime Izanagi.",
+  "createdAt": "2026-09-21T00:00:00.000Z",
+  "nodes": [
+    {
+      "id": "input",
+      "type": "text",
+      "x": 0,
+      "y": 80,
+      "width": 220,
+      "height": 90,
+      "text": "Requisito do projeto",
+      "izanagi": { "kind": "input" }
+    },
+    {
+      "id": "orchestrator",
+      "type": "text",
+      "x": 280,
+      "y": 80,
+      "width": 220,
+      "height": 90,
+      "text": "Orquestrador: decompoe e despacha frentes",
+      "izanagi": { "kind": "orchestrator", "agent": "techlead" }
+    },
+    {
+      "id": "architect",
+      "type": "text",
+      "x": 560,
+      "y": -100,
+      "width": 220,
+      "height": 110,
+      "text": "Arquiteto: system design + ADR",
+      "izanagi": {
+        "kind": "agent",
+        "agent": "architect",
+        "skills": ["architecture-patterns"],
+        "model": { "mode": "auto" },
+        "context": { "mode": "summary", "summarizeAbove": 2000 }
+      }
+    },
+    {
+      "id": "researcher",
+      "type": "text",
+      "x": 560,
+      "y": 140,
+      "width": 220,
+      "height": 110,
+      "text": "Pesquisador: evidências e stack",
+      "izanagi": {
+        "kind": "agent",
+        "agent": "researcher",
+        "skills": ["deep-research"],
+        "model": { "mode": "auto" },
+        "context": { "mode": "selective", "include": ["input", "orchestrator.variables"] }
+      }
+    },
+    {
+      "id": "engineer",
+      "type": "text",
+      "x": 860,
+      "y": 80,
+      "width": 240,
+      "height": 120,
+      "text": "Engenheiro: implementacao completa (loop ate 3x)",
+      "izanagi": {
+        "kind": "agent",
+        "agent": "senior-engineer",
+        "skills": ["agentic-coding"],
+        "model": { "mode": "auto", "reasoning": { "effort": "high" } },
+        "retry": { "maxAttempts": 2 },
+        "context": { "mode": "artifact", "include": ["architect", "researcher"] },
+        "loop": { "maxIterations": 3, "terminationCondition": "result.score >= 0.8" }
+      }
+    },
+    {
+      "id": "security",
+      "type": "text",
+      "x": 1160,
+      "y": -60,
+      "width": 220,
+      "height": 110,
+      "text": "Seguranca: OWASP + auditoria",
+      "izanagi": {
+        "kind": "agent",
+        "agent": "security",
+        "skills": ["code-auditor", "security-privacy"],
+        "context": { "mode": "selective", "include": ["engineer", "architect"] }
+      }
+    },
+    {
+      "id": "qa",
+      "type": "text",
+      "x": 1160,
+      "y": 120,
+      "width": 220,
+      "height": 110,
+      "text": "QA: testes + WCAG",
+      "izanagi": {
+        "kind": "agent",
+        "agent": "qa",
+        "skills": ["qa", "testing-automation"],
+        "context": { "mode": "selective", "include": ["engineer", "security"] }
+      }
+    },
+    {
+      "id": "evaluator",
+      "type": "text",
+      "x": 1440,
+      "y": 80,
+      "width": 220,
+      "height": 110,
+      "text": "Avaliador: veredito e score",
+      "izanagi": {
+        "kind": "evaluator",
+        "agent": "evaluator",
+        "skills": ["evaluation"],
+        "model": { "mode": "auto" }
+      }
+    },
+    {
+      "id": "output",
+      "type": "text",
+      "x": 1720,
+      "y": 120,
+      "width": 220,
+      "height": 90,
+      "text": "Entrega final",
+      "izanagi": { "kind": "output" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-input-orch",
+      "fromNode": "input",
+      "toNode": "orchestrator",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "task" }
+    },
+    {
+      "id": "e-orch-arch",
+      "fromNode": "orchestrator",
+      "toNode": "architect",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "task" }
+    },
+    {
+      "id": "e-orch-res",
+      "fromNode": "orchestrator",
+      "toNode": "researcher",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "task" }
+    },
+    {
+      "id": "e-arch-eng",
+      "fromNode": "architect",
+      "toNode": "engineer",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "result" }
+    },
+    {
+      "id": "e-res-eng",
+      "fromNode": "researcher",
+      "toNode": "engineer",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "result" }
+    },
+    {
+      "id": "e-eng-sec",
+      "fromNode": "engineer",
+      "toNode": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "result" }
+    },
+    {
+      "id": "e-eng-qa",
+      "fromNode": "engineer",
+      "toNode": "qa",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "result" }
+    },
+    {
+      "id": "e-sec-qa",
+      "fromNode": "security",
+      "toNode": "qa",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "critique" }
+    },
+    {
+      "id": "e-qa-eval",
+      "fromNode": "qa",
+      "toNode": "evaluator",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "request-review" }
+    },
+    {
+      "id": "e-eval-eng-loop",
+      "fromNode": "evaluator",
+      "toNode": "engineer",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "endArrow": "arrow",
+      "color": "2",
+      "izanagi": {
+        "messageType": "critique",
+        "condition": { "type": "score", "threshold": 0.8, "expression": "result.score < 0.8" }
+      }
+    },
+    {
+      "id": "e-eval-out",
+      "fromNode": "evaluator",
+      "toNode": "output",
+      "fromSide": "right",
+      "toSide": "left",
+      "endArrow": "arrow",
+      "izanagi": { "messageType": "result" }
+    }
+  ]
+}
