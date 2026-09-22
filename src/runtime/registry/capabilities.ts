@@ -183,16 +183,25 @@ function costClassFor(tokenBudget: number): AgentCapability['costClass'] {
 export class AgentCapabilityRegistry {
   private cache: AgentCapability[] | null = null;
 
-  constructor(private readonly opts: { baseDir: string; extraDirs?: string[] }) {}
+  constructor(
+    private readonly opts: { baseDir: string; extraDirs?: string[]; includeGenerated?: boolean },
+  ) {}
 
   /** Diretórios varridos, em ordem de precedência (projeto do usuário primeiro). */
   private dirs(): string[] {
-    return [
+    const dirs = [
       ...(this.opts.extraDirs ?? []),
       path.join(this.opts.baseDir, '.agents', 'agents'),
       path.join(this.opts.baseDir, 'agents'),
-      path.join(this.opts.baseDir, 'agents', 'generated'),
     ];
+    // `agents/generated/` é a casa da Agent Factory local: agentes que o usuário
+    // desta máquina criou (zanagi agent create). Eles são reais e entram no
+    // catálogo por padrão. A opção existe para os testes do framework medirem o
+    // despacho dos 22 core sem depender do que esta instalação gerou.
+    if (this.opts.includeGenerated !== false) {
+      dirs.push(path.join(this.opts.baseDir, 'agents', 'generated'));
+    }
+    return dirs;
   }
 
   /** Todos os agentes descobertos. Primeira declaração de um id vence. */

@@ -31,7 +31,11 @@ import { capabilityCoverage, semanticRelevance } from '../routing/scorer.js';
 import { Commander } from '../orchestration/commander.js';
 
 const repoRoot = path.resolve(process.cwd());
-const registry = () => new AgentCapabilityRegistry({ baseDir: repoRoot });
+// `includeGenerated: false`: o gate mede o despacho dos 22 agentes core do
+// framework, não o catálogo desta instalação. Agentes gerados localmente
+// (`izanagi agent create` escreve em `agents/generated/`) são legítimos, mas a
+// presença deles não deve decidir se o dispatch dos core regrediu.
+const registry = () => new AgentCapabilityRegistry({ baseDir: repoRoot, includeGenerated: false });
 
 /**
  * O mesmo critério do `pickAgent` do Commander: papel é preferência, não

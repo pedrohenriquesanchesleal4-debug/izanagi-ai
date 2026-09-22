@@ -38,7 +38,11 @@ const repoRoot = path.resolve(process.cwd());
 const OBJETIVO = 'Escreva a função validarCPF em TypeScript, com testes';
 
 test('executor por CLI de agente: o teto do run cobre o que um nó realmente gasta', () => {
-  const plano = buildExecutionPlan(repoRoot, { objective: OBJETIVO, availableProviders: ['claude-cli'] });
+  // `noMemory`: o teste mede o piso do executor, não a memória da máquina.
+  // Sem istso, `.izanagi/state/runtime-state.json` local com padrões de falha
+  // registrados faz o Commander subir o modo um degrau e o teto deixa de ser
+  // o do modo puro.
+  const plano = buildExecutionPlan(repoRoot, { objective: OBJETIVO, availableProviders: ['claude-cli'], noMemory: true });
   const teto = plano.plan!.graph.budget.maxTokens;
   const medido = measuredTokensPerNode('none');
   assert.ok(teto >= recommendedBudget('none'), `teto ${teto} abaixo do piso ${recommendedBudget('none')}`);
@@ -50,11 +54,12 @@ test('executor por CLI de agente: o teto do run cobre o que um nó realmente gas
 });
 
 test('o piso vale por política de tools: ler o repositório custa ~3,8x e o teto acompanha', () => {
-  const semTools = buildExecutionPlan(repoRoot, { objective: OBJETIVO, availableProviders: ['claude-cli'] });
+  const semTools = buildExecutionPlan(repoRoot, { objective: OBJETIVO, availableProviders: ['claude-cli'], noMemory: true });
   const comTools = buildExecutionPlan(repoRoot, {
     objective: OBJETIVO,
     availableProviders: ['claude-cli'],
     agentTools: 'read',
+    noMemory: true,
   });
   assert.ok(
     comTools.plan!.graph.budget.maxTokens > semTools.plan!.graph.budget.maxTokens,
@@ -64,7 +69,11 @@ test('o piso vale por política de tools: ler o repositório custa ~3,8x e o tet
 });
 
 test('o piso é do EXECUTOR: provider por chave continua com o teto do modo', () => {
-  const porChave = buildExecutionPlan(repoRoot, { objective: OBJETIVO, availableProviders: ['anthropic'] });
+  const porChave = buildExecutionPlan(repoRoot, {
+    objective: OBJETIVO,
+    availableProviders: ['anthropic'],
+    noMemory: true,
+  });
   // 2.000 é `budgetForMode('direct')`. Um provider HTTP não carrega o system
   // prompt de um CLI hospedeiro, e inflar o teto dele seria pagar por um custo
   // que não existe naquele caminho.
