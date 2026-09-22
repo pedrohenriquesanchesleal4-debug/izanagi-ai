@@ -26,7 +26,7 @@ import { explainCommand } from './commands/explain.js';
 import { polyglotCommand } from './commands/polyglot.js';
 import { modelsCommand } from './commands/models.js';
 import { budgetCommand } from './commands/budget.js';
-import { canvasCommand } from './commands/canvas.js';
+import { maestroCommand } from './commands/maestro.js';
 
 /**
  * `packageDir` é SEMPRE a instalação do próprio izanagi-ai (node_modules/izanagi-ai ou
@@ -130,8 +130,11 @@ export async function runCLI(args: string[]): Promise<void> {
       budgetCommand(stateDir, rest);
       break;
 
-    case 'canvas':
-      await canvasCommand(baseDir, rest, stateDir);
+    // Ponte com o RunMaestro (executor externo de agentes): planeja com o
+    // Commander, traduz o grafo em Auto Run docs (.md + markers) e despacha
+    // via maestro-cli. Subsistema canvas removido na v3.24.0 (ADR 2026-09-22).
+    case 'maestro':
+      await maestroCommand(baseDir, rest, stateDir);
       break;
 
     case 'diagnose':
@@ -243,7 +246,7 @@ function showHelp(): void {
   \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
   \x1b[32mpolyglot status [--json|--strict]\x1b[0m Saúde dos núcleos poliglotas (Rust, Go, Python, packages TS) — diagnóstico, exit 0; --strict sai 1 se algo ausente.
   \x1b[32mdashboard [--port N]\x1b[0m           Sobe o Dashboard local (Run Explorer, Arena, Memory) em http://localhost.
-  \x1b[32mcanvas create|list|validate|inspect|run|export|trace|ui\x1b[0m  Canvas Orchestration (workflows visuais JSON Canvas 1.0).
+  \x1b[32mmaestro init|plan|run|goal|list\x1b[0m  Maestro Bridge (RunMaestro executor)
   \x1b[32mresume <run-id>\x1b[0m                Retoma execução interrompida/pausada a partir do checkpoint.
   \x1b[32mapprove <run-id> [node-id]\x1b[0m     Aprova ação de alto risco pausada (human-in-the-loop) e retoma.
   \x1b[32mreject <run-id> [node-id] [--reason]\x1b[0m Rejeita ação pausada e retoma (nó falha com o motivo).

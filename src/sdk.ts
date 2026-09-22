@@ -30,8 +30,6 @@ import {
   type ProducerLLMClient,
 } from './runtime/execute.js';
 import { buildNodePrompt, classifyTask } from './cli/commands/run.js';
-import { executeWorkflow } from './runtime/canvas/api.js';
-import type { CanvasWorkflow, ExecuteWorkflowOptions, WorkflowRunResult } from './runtime/canvas/api.js';
 import type { ExecutionMode } from './runtime/contracts/task-contract.js';
 import type { IzanagiEvent, IzanagiEventName } from './runtime/observability/events.js';
 import type { CommanderPlan } from './runtime/orchestration/commander.js';
@@ -422,92 +420,5 @@ export function plan(options: Pick<IzanagiRunOptions, 'objective' | 'baseDir' | 
   }).plan;
 }
 
-/**
- * Opções do `izanagi.orchestrate`: a mesma superfície de `executeWorkflow`,
- * mais `workflow` (instância, caminho ou JSON inline) e os campos de produção
- * que o `run` conhece (`local`, `agentTools`, `client`).
- *
- * Sem `produce` declarado, o orchestrate constrói o producer real do mesmo jeito
- * que `izanagi.run` (provider por chave de ambiente, headless se nenhuma);
- * com `dryRun: true` nada executa, só planeja e resolve modelos.
- */
-export interface IzanagiOrchestrateOptions extends ExecuteWorkflowOptions {
-  /** Workflow a orquestrar: instância `CanvasWorkflow`, caminho de arquivo ou JSON string inline. */
-  workflow: CanvasWorkflow | string;
-  /** Só providers locais (Ollama / LM Studio / endpoint próprio). */
-  local?: boolean;
-  /** Política de tools do executor de processo: `none` (default), `read` ou `write`. */
-  agentTools?: 'none' | 'read' | 'write';
-  /** Client LLM alternativo (testes, proxy, gateway próprio). */
-  client?: ProducerLLMClient & { configuredProviders(): string[] };
-}
-
-/**
- * Orchestra um workflow de canvas contra o runtime real, com a mesma
- * convenção de execução da CLI `izanagi canvas run` e do SDK `izanagi.run`:
- * provider por chave de ambiente, producer real quando há provider, headless
- * (simulação) quando não há.
- */
-export async function orchestrate(options: IzanagiOrchestrateOptions): Promise<WorkflowRunResult> {
-  const baseDir = options.baseDir ?? process.cwd();
-  const stateDir = options.stateDir ?? baseDir;
-  const client = options.client ?? new LLMClient();
-  const allProviders = client.configuredProviders();
-  const providers = options.local ? allProviders.filter((p) => LOCAL_PROVIDERS.includes(p)) : allProviders;
-
-  const task = options.task ?? 'workflow canvas';
-
-  const baseOpts = {
-    ...(options.baseDir ? { baseDir: options.baseDir } : {}),
-    ...(options.workspaceDir ? { workspaceDir: options.workspaceDir } : {}),
-    ...(options.stateDir ? { stateDir: options.stateDir } : {}),
-    ...(options.input !== undefined ? { input: options.input } : {}),
-    task,
-    ...(options.budget !== undefined ? { budget: options.budget } : {}),
-    ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
-    ...(options.dryRun ? { dryRun: true } : {}),
-    ...(options.verbose ? { verbose: true } : {}),
-    ...(options.signal ? { signal: options.signal } : {}),
-    ...(options.allowedTools ? { allowedTools: options.allowedTools } : {}),
-    ...(options.consume ? { consume: options.consume } : {}),
-    ...(options.onEvent ? { onEvent: options.onEvent } : {}),
-    ...(options.onWorkflowEvent ? { onWorkflowEvent: options.onWorkflowEvent } : {}),
-    ...(options.fromNode ? { fromNode: options.fromNode } : {}),
-    ...(options.untilNode ? { untilNode: options.untilNode } : {}),
-    availableProviders: providers,
-  };
-
-  // `produce` explícito do chamador vence o construtor automático; dry-run não
-  // produz nada; sem provider o runtime fica headless (mesma convenção do run).
-  if (options.produce || options.dryRun || providers.length === 0) {
-    return executeWorkflow(options.workflow, {
-      ...baseOpts,
-      ...(options.produce ? { produce: options.produce } : {}),
-    });
-  }
-
-  const cache = new ResponseCache({ baseDir: stateDir, enabled: ResponseCache.enabledFromEnv() });
-  const knowledgeStore = new MemoryStore({ baseDir: stateDir });
-  const contextResolver = new ContextResolver({
-    knowledge: (query, limit) => knowledgeStore.search(query, limit).map((e) => ({ title: e.title, content: e.content })),
-  });
-  const producer = createLLMProducer({
-    objective: task,
-    client,
-    cache,
-    contextResolver,
-    ...(options.agentTools ? { toolPolicy: options.agentTools } : {}),
-    buildSystemPrompt: (node: GraphNode, _ctx: ExecuteCtx, minimalContext?: string) =>
-      buildNodePrompt(node, { task, agent: { name: node.agent ?? 'specialist' }, skillChain: node.skills ?? [] }, baseDir, {
-        ...(minimalContext ? { context: minimalContext } : {}),
-      }),
-  });
-
-  return executeWorkflow(options.workflow, {
-    ...baseOpts,
-    produce: (node, ctx) => producer(node, ctx as unknown as ExecuteCtx),
-  });
-}
-
-export const izanagi = { run, plan, orchestrate };
+export const izanagi = { run, plan };
 export default izanagi;
