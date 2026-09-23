@@ -11,6 +11,8 @@ capabilities:
   - "bespoke-identity"
   - "typography-intent"
   - "layout-critique"
+  - "taste-matrix"
+  - "design-evidence"
 ---
 
 # Anti AI-Slop (Zero "Cara de IA")
@@ -54,6 +56,31 @@ Modelos são treinados em milhões de sites e devolvem a média estatística: In
 - [ ] Fade genérico em todos os elementos. Fix: easing com identidade, stagger curto, scroll-driven onde fizer sentido.
 - [ ] Animações decorativas sem relação com conteúdo. Fix: motion que explica/conduz.
 
+## Matriz de Taste (decisões que precisam de evidência)
+
+Uma interface não deixa de parecer genérica apenas por remover tells. Antes de aprovar, exija um
+registro curto de decisões que conecte cada escolha a uma intenção do produto:
+
+| Dimensão | Pergunta obrigatória | Evidência aceitável |
+|---|---|---|
+| Identidade | O que só este produto poderia usar? | metáfora do nicho, pesquisa do público ou referência visual estudada |
+| Tipografia | Por que este par e esta escala? | contraste de voz, legibilidade medida e hierarquia por conteúdo |
+| Composição | Qual é a assinatura do layout? | wireframe assimétrico, ritmo editorial ou densidade justificada |
+| Cor | Qual ação ou estado cada cor comunica? | tokens semânticos e contraste WCAG AA |
+| Motion | O que o movimento ensina, revela ou confirma? | trigger, duração, easing, fallback e `prefers-reduced-motion` |
+| Conteúdo | O que torna o texto específico? | dado, verbo, entidade ou promessa verificável do domínio |
+
+Não aceite "moderno", "premium" ou "clean" como justificativa. São adjetivos sem decisão
+observável. Se uma escolha não tem intenção ou evidência, marque-a como UNKNOWN e peça uma
+alternativa antes da implementação.
+
+### Gate de variações
+
+Para uma tela principal, gere pelo menos duas composições estruturalmente diferentes antes de
+codificar. Variar apenas cores, fonte ou raio não conta. Compare as opções pela clareza da tarefa,
+memorabilidade, acessibilidade e custo de manutenção. Registre a direção escolhida e a razão no
+artefato de discovery.
+
 ## Processo
 
 ### Modo detect (auditar existente)
@@ -66,9 +93,22 @@ Modelos são treinados em milhões de sites e devolvem a média estatística: In
 1. Corrija por ordem de impacto: tipografia → cor → layout → copy → componentes → motion.
 2. Para cada fix, aplique a escolha intencional (não apenas "outra coisa genérica").
 3. Valide no final com o teste da identidade: a página agora é reconhecível por um setor específico? Alguém lembraria dela?
+4. Refaça a Matriz de Taste e rejeite qualquer dimensão sem evidência ou critério observável.
 
 ## Regras de Saída
 - Fixes com código real (não descrição). Nunca stubs.
 - Após o fix, rode o scan anti-tell de novo: ZERO ocorrências do catálogo.
+- O relatório deve incluir Matriz de Taste preenchida, direção escolhida e score por dimensão:
+  identidade, tipografia, composição, cor, motion e conteúdo. Uma dimensão sem evidência impede
+  aprovação.
 - Se o usuário pediu um estilo específico (ex: "quero glassmorphism"), respeite, mas aplique com refinamento (glass 2.0: translucidez sutil, noise, gradient borders, sem blur pesado).
 - Referências de qualidade: Linear, Vercel, Stripe, Apple, Awwwards SOTD — use o vocabulário, nunca copie.
+
+## Referências verificadas
+
+- [Emil Kowalski · AI Skills for Design Engineers](https://emilkowal.ski/skill) · regras práticas
+  de taste, motion e decisões intencionais para agentes.
+- [Emil Kowalski · Agents with Taste](https://emilkowal.ski/ui/agents-with-taste) · por que
+  variações e microdecisões explícitas reduzem UI estatística.
+- [Emil Kowalski · Skills](https://github.com/emilkowalski/skills) · implementação pública para
+  estudar, não copiar.
