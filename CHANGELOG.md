@@ -4,6 +4,11 @@
 
 ---
 
+## [3.24.1]: 2026-09-23
+
+### Fixed
+- O workflow de publicação agora instala dependências com `npm ci --ignore-scripts` antes do build, evitando falha do `postinstall` quando `dist/` ainda não existe em checkout limpo.
+
 ## [3.24.0]: 2026-09-11
 
 ### Added
