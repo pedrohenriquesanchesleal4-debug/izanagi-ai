@@ -79,7 +79,12 @@ export const WORKFLOW_TEMPLATES: Record<string, (ctx: PlannerContext) => GraphNo
   frontend: (ctx) => [
     node('design-direction', 'agent', { agent: 'animation', skills: ['design-directions'], outputs: ['direction'], dependencies: [] }),
     node('design-system', 'skill', { skills: ['ui-ux-pro-max', 'frontend'], outputs: ['design-system'], dependencies: ['design-direction'] }),
-    node('implementation', 'agent', { agent: 'senior-engineer', outputs: ['implementation'], dependencies: ['design-system'] }),
+    node('implementation', 'agent', {
+      agent: 'senior-engineer',
+      skills: ['anti-ai-slop', 'motion-design', 'frontend'],
+      outputs: ['implementation'],
+      dependencies: ['design-system'],
+    }),
     node('perf-check', 'gate', { validator: 'artifact.valid', outputs: ['perf-report'], dependencies: ['implementation'] }),
     node('critic', 'agent', { agent: 'adversarial-critic', outputs: ['critique'], dependencies: ['implementation'] }),
     node('evaluation', 'evaluator', { outputs: ['evaluation'], dependencies: ['perf-check', 'critic'] }),
