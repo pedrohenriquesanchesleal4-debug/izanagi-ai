@@ -74,9 +74,10 @@ function makeFakeSpawn(opts: FakeChildOptions): SpawnFn {
 
 test('init: detectProviders pega só os instalados no PATH (mock)', () => {
   const dir = tmpDir('izanagi-provider-');
+  const suffix = process.platform === 'win32' ? '.cmd' : '';
   // opencode e codex instalados; claude-code ausente de propósito
-  fs.writeFileSync(path.join(dir, 'opencode.cmd'), '');
-  fs.writeFileSync(path.join(dir, 'codex.cmd'), '');
+  fs.writeFileSync(path.join(dir, `opencode${suffix}`), '');
+  fs.writeFileSync(path.join(dir, `codex${suffix}`), '');
 
   const oldPath = process.env.PATH;
   process.env.PATH = dir;
@@ -89,7 +90,7 @@ test('init: detectProviders pega só os instalados no PATH (mock)', () => {
     assert.equal(claude?.installed, false, 'claude-code não instalado não é selecionável');
 
     const oc = providers.find((p) => p.id === 'opencode');
-    assert.equal(oc?.path, path.join(dir, 'opencode.cmd'));
+    assert.equal(oc?.path, path.join(dir, `opencode${suffix}`));
   } finally {
     process.env.PATH = oldPath;
   }
@@ -103,7 +104,7 @@ test('init: PROVIDER_DEFS cobre o catálogo do spec', () => {
   }
 });
 
-test('cli: findInPath acha binário nas extensões do Windows', () => {
+test('cli: findInPath acha binário nas extensões do Windows', { skip: process.platform !== 'win32' ? 'extensões .cmd são específicas do Windows' : false }, () => {
   const dir = tmpDir('izanagi-path-');
   fs.writeFileSync(path.join(dir, 'ferramenta.cmd'), '');
   const oldPath = process.env.PATH;

@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.24.4** · npm estável: **3.24.0**. Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
+> **v3.24.5** · npm estável: **3.24.0**. Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
 >
 > Arquitetura: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
