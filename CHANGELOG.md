@@ -4,6 +4,13 @@
 
 ---
 
+## [3.24.0]: 2026-09-11
+
+### Added
+- Grounding explícito para claims de pesquisa, com trecho literal (`span`) preservado no `EvidenceRegistry` e claims sem grounding sinalizadas para revisão.
+- QA visual anti-slop: auditorias agora exigem Matriz de Taste, composições estruturais distintas, estados completos e uma interação memorável.
+- Compatibilidade do skill migrator com frontmatter CRLF no Windows, coberta por teste de regressão.
+
 ## [3.23.0]: 2026-09-10
 
 ### Fixed (o run terminava sem entregar o trabalho que já tinha pago)
@@ -1168,4 +1175,3 @@ All 217 tests + AgentFactory/SkillFactory-specific tests pass; `izanagi doctor -
 | UX/Observability | 5 |
 | Self-Improvement | 6 |
 | **Total** | **111** |
-
