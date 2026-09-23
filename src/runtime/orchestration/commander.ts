@@ -1285,7 +1285,9 @@ export class Commander {
       return node;
     }
     if (ranked.length === 0) return node;
-    return { ...node, skills: ranked.slice(0, MAX_SKILLS_PER_TASK) };
+    const explicit = node.skills ?? [];
+    const skills = [...new Set([...explicit, ...ranked])].slice(0, MAX_SKILLS_PER_TASK);
+    return { ...node, skills };
   }
 
   /** Contrato completo de um nó, com critérios derivados do schema do artefato. */

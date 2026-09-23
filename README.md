@@ -112,6 +112,14 @@ As referências encontradas nos posts salvos foram separadas entre inspiração 
 
 Fontes e classificação: [`references/instagram-ai-leads-2026.md`](references/instagram-ai-leads-2026.md).
 
+**Integridade das skills:** o build valida que toda `SKILL.md` v2 tem alias no
+resolver e que toda skill declarada por um agent resolve para um arquivo real.
+No runtime, skills explícitas do nó são preservadas quando o ranking dinâmico
+adiciona contexto; cada tarefa recebe no máximo três skills ranqueadas. Em uma
+medição local de `--prompt-only --compact`, uma landing page gerou cerca de
+13k tokens de prompt, antes do overhead do executor; use `--compact` para
+discovery e reserve `read`/`write` para nós que realmente precisam do projeto.
+
 ## Quick Start
 
 ```bash

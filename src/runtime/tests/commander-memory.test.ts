@@ -207,3 +207,15 @@ test('skills: o teto por tarefa é respeitado mesmo com resolver generoso', () =
   });
   assert.ok(plan.graph.nodes[0].skills!.length <= 3, 'carregar 100 skills por tarefa é exatamente o que a arquitetura proíbe');
 });
+
+test('skills: composição explícita do nó não é descartada pelo ranking dinâmico', () => {
+  const plan = new Commander().plan({
+    objective: OBJECTIVE,
+    mode: 'assisted',
+    skillChain: ['chain-do-run'],
+    resolveSkills: () => ['ranked-a', 'ranked-b', 'ranked-c'],
+  });
+  const node = plan.graph.nodes.find((candidate) => candidate.kind === 'agent');
+  assert.ok(node);
+  assert.deepEqual(node!.skills, ['chain-do-run', 'ranked-a', 'ranked-b']);
+});

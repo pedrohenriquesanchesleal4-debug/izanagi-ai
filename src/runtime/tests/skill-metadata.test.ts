@@ -105,3 +105,48 @@ test('skills: o ranking usa os campos declarados, e não só a descrição', () 
   const tdd = resolver.loadSkill('tdd')!.manifest;
   assert.ok(!tdd.description.toLowerCase().includes('red-green-refactor'), 'o termo não pode estar na description');
 });
+
+test('skills: todo agent referencia apenas skills resolvíveis e toda SKILL.md v2 tem alias', () => {
+  const resolver = new SkillResolver({ baseDir: repoRoot });
+  const resolverFile = JSON.parse(fs.readFileSync(path.join(repoRoot, 'core', 'skill-resolver.json'), 'utf8')) as {
+    aliases: Record<string, string>;
+  };
+  const resolveTarget = (target: string): string | null => {
+    for (const candidate of [target, `${target}.md`, path.join(target, 'SKILL.md')]) {
+      const full = path.join(repoRoot, candidate);
+      if (fs.existsSync(full) && fs.statSync(full).isFile()) return full;
+    }
+    return null;
+  };
+
+  const unresolved: string[] = [];
+  const referencedTargets = new Set(
+    Object.values(resolverFile.aliases)
+      .map(resolveTarget)
+      .filter((file): file is string => file !== null),
+  );
+  for (const file of fs.readdirSync(path.join(repoRoot, 'agents')).filter((name) => name.endsWith('.json'))) {
+    const agent = JSON.parse(fs.readFileSync(path.join(repoRoot, 'agents', file), 'utf8')) as {
+      skills?: string[];
+      chains?: Record<string, string[]>;
+    };
+    const refs = [...(agent.skills ?? []), ...Object.values(agent.chains ?? {}).flat()];
+    for (const alias of refs) {
+      if (!resolver.loadSkill(alias)) unresolved.push(`${file}:${alias}`);
+    }
+  }
+  assert.deepEqual(unresolved, [], `agents com skills soltas ou aliases quebrados: ${unresolved.join(', ')}`);
+
+  const v2Root = path.join(repoRoot, 'skills');
+  const stack = [v2Root];
+  const orphaned: string[] = [];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (entry.name === 'SKILL.md' && !referencedTargets.has(full)) orphaned.push(path.relative(repoRoot, full));
+    }
+  }
+  assert.deepEqual(orphaned, [], `SKILL.md v2 sem alias no resolver: ${orphaned.join(', ')}`);
+});
