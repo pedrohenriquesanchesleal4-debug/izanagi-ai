@@ -52,6 +52,8 @@ export interface EvidenceClaim {
   verifiedAt: string;
   /** Quando verificado contra fonte primária (FACT com source oficial). */
   verified?: boolean;
+  /** Trecho literal usado para conferir a claim contra a fonte. */
+  span?: string;
   tags?: string[];
 }
 
@@ -97,6 +99,7 @@ export class EvidenceRegistry {
       confidence: Math.max(0, Math.min(1, input.confidence)),
       verifiedAt: new Date().toISOString(),
       verified: input.verified ?? false,
+      span: input.span?.trim() || undefined,
       tags: input.tags,
     };
     this.claims.push(claim);
@@ -120,6 +123,7 @@ export class EvidenceRegistry {
             sourceType: (c.sourceType as EvidenceSourceType) ?? 'reliable-tech',
             source: c.source,
             type: c.type,
+            span: c.span,
             tags: c.tags,
           });
           added++;
@@ -133,11 +137,12 @@ export class EvidenceRegistry {
    * Verifica uma claim: marca como verified e sobe o tipo quando a fonte é
    * primária (official-docs / source-code / tests / package-metadata).
    */
-  verify(id: string, sourceType: EvidenceSourceType): EvidenceClaim | undefined {
+  verify(id: string, sourceType: EvidenceSourceType, span?: string): EvidenceClaim | undefined {
     const claim = this.claims.find((c) => c.id === id);
     if (!claim) return undefined;
     claim.verified = true;
     claim.sourceType = sourceType;
+    if (span?.trim()) claim.span = span.trim();
     claim.confidence = Math.max(claim.confidence, SOURCE_TRUST[sourceType]);
     if (SOURCE_TRUST[sourceType] >= 0.9) claim.type = 'FACT';
     claim.verifiedAt = new Date().toISOString();
@@ -164,9 +169,11 @@ export class EvidenceRegistry {
     );
   }
 
-  /** Claims com score abaixo do limiar ou tipo UNKNOWN — precisam verificação. */
+  /** Claims com score abaixo do limiar, sem span ou tipo UNKNOWN — precisam verificação. */
   critical(minScore = 0.6): EvidenceClaim[] {
-    return this.claims.filter((c) => c.type === 'UNKNOWN' || this.score(c) < minScore);
+    return this.claims.filter(
+      (c) => c.type === 'UNKNOWN' || this.score(c) < minScore || !c.span?.trim(),
+    );
   }
 
   /** Relatório estruturado (artefato kind: research). */

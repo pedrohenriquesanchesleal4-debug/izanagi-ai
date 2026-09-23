@@ -24,10 +24,11 @@ test('evidence: add com type implícito e confiança clampada', () => {
 test('evidence: verificação promove claim a FACT com fonte primária', () => {
   const r = new EvidenceRegistry();
   const c = r.add({ claim: 'acho que Prisma suporta this', confidence: 0.7, sourceType: 'community' });
-  const verified = r.verify(c.id, 'official-docs');
+  const verified = r.verify(c.id, 'official-docs', 'Prisma supports this feature');
   assert.equal(verified?.type, 'FACT');
   assert.equal(verified?.verified, true);
   assert.equal(verified?.confidence, SOURCE_TRUST['official-docs']);
+  assert.equal(verified?.span, 'Prisma supports this feature');
 });
 
 test('evidence: score combina confiança e confiabilidade da fonte', () => {
@@ -40,7 +41,8 @@ test('evidence: score combina confiança e confiabilidade da fonte', () => {
 test('evidence: critical aponta UNKNOWN e confiança baixa', () => {
   const r = new EvidenceRegistry();
   r.add({ claim: 'spec incerta', confidence: 0.3, sourceType: 'community' });
-  r.add({ claim: 'fato verificado', confidence: 0.95, sourceType: 'official-docs' });
+  const verified = r.add({ claim: 'fato verificado', confidence: 0.95, sourceType: 'official-docs' });
+  r.verify(verified.id, 'official-docs', 'trecho confirmado na documentação');
   const critical = r.critical();
   assert.equal(critical.length, 1);
   assert.ok(critical[0].type === 'UNKNOWN' || r.score(critical[0]) < 0.6);
@@ -73,7 +75,7 @@ test('evidence: relatório agrega tipos, fontes e melhores fontes', () => {
   assert.equal(report.bySourceType['official-docs'], 1);
   assert.equal(report.bestSources.length, 2);
   assert.equal(report.bestSources[0].sourceType, 'official-docs');
-  assert.ok(report.critical.length >= 0);
+  assert.equal(report.critical.length, 2, 'claims sem span exigem grounding explícito');
 });
 
 test('evidence: toArtifact produz artefato research válido', () => {
