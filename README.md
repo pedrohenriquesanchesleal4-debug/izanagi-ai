@@ -1,6 +1,6 @@
 # Izanagi AI
 
-> **v3.24.0** · Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
+> **v3.24.2** · npm estável: **3.24.0**. Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
 >
 > Arquitetura: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
@@ -88,8 +88,8 @@ O CLI devolve o custo real de cada chamada (`total_cost_usd`), então neste exec
 
 | Política | Tokens do nó | Observação |
 |---|---|---|
-| `none` | ~20.000 no modo `direct`, ~30.000 num nó de specialist | 4.095 deles são o system prompt do próprio CLI, cobrado em toda chamada |
-| `read` | ~68.000 | o agente faz várias voltas de tool antes de responder: ~3,8x |
+| `none` | ~20.000 no modo `direct`, ~30.000 num nó de specialist | inclui o system prompt do CLI, cobrado em toda chamada |
+| `read` | ~68.000 | várias voltas de tool e contexto do repositório multiplicam o consumo |
 
 Por isso `--budget` apertado estoura no primeiro nó, e por isso **você não precisa passar `--budget`**: quando o executor é o CLI de agente, o teto default do run sobe sozinho para o piso desta tabela. Piso recomendado: **65.000** por nó com `none`, **148.000** com `read` (a CLI avisa quando um `--budget` explícito fica abaixo disso).
 
@@ -100,6 +100,17 @@ Teto não é gasto: num run orchestrated real o teto ficou em 260.000 e o consum
 Controles: `IZANAGI_AGENT_CLI_DISABLED=1` desliga o executor · `IZANAGI_AGENT_CLI_TIMEOUT_MS` ajusta o timeout (default 300.000) · `IZANAGI_AGENT_CLI_TOOLS=read|write` é o equivalente de `--agent-tools` por ambiente. Dentro de um test runner o executor fica desligado por padrão, para que `npm test` nunca gaste cota real (`IZANAGI_AGENT_CLI_IN_TESTS=1` libera).
 
 ---
+
+## Pesquisa aplicada: design, agentes e segundo cérebro
+
+As referências encontradas nos posts salvos foram separadas entre inspiração e evidência. O framework absorve apenas padrões verificáveis:
+
+- **Design:** Apple HIG e Playwright reforçam decisões centradas no usuário, contratos explícitos e teste do comportamento visível; isso alimenta `anti-ai-slop`, `design-directions`, `motion-design` e o QA visual.
+- **Processo:** Spec Kit confirma o valor de separar constituição, especificação, plano, tarefas, implementação e convergência. O Izanagi já faz isso por contratos, grafo, verificação e journal; a especificação deve ser um artefato de entrada, não um prompt descartável.
+- **Segurança:** Strix e o padrão “produzir → refutar → corrigir” inspiram uma etapa adversarial, mas qualquer ferramenta externa deve ser validada por fonte oficial antes de entrar no catálogo.
+- **Segundo cérebro:** **Markdown é a fonte canônica e Obsidian é uma interface humana opcional**. Use `raw/`, `wiki/`, `decisions/` e `output/`; não introduza banco vetorial até um benchmark provar ganho. O grafo visual ajuda navegação, não substitui `MemoryStore`, `DecisionJournal` ou `EvidenceRegistry`.
+
+Fontes e classificação: [`references/instagram-ai-leads-2026.md`](references/instagram-ai-leads-2026.md).
 
 ## Quick Start
 
@@ -323,7 +334,7 @@ Ordem importa: `dist/` é gitignored e `bin/izanagi.js` importa de `../dist/cli/
 # Legado npm (raiz)
 npm install
 npm run build       # tsc && node dist/scripts/generate-manifest.js
-npm test            # build + node --test dist/runtime/tests/*.test.js (764 testes)
+npm test            # build + node --test dist/runtime/tests/*.test.js (966 testes)
 npm run verify      # build + teste de instalação em sandbox (passa todos os pack IDs)
 npm run doctor      # node bin/izanagi.js doctor [--deep]
 
