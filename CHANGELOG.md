@@ -4,6 +4,12 @@
 
 ---
 
+## [3.24.2]: 2026-09-23
+
+### Fixed
+- O gate de release executa o build e a suíte completa diretamente, evitando a falha específica do sandbox de instalação no runner Node 24.
+- O CI raiz também evita lifecycle scripts durante `npm ci`, mantendo o build determinístico em checkout limpo.
+
 ## [3.24.1]: 2026-09-23
 
 ### Fixed

@@ -49,8 +49,8 @@ jobs:
         with:
           node-version: '24'
           cache: npm # usa o package-lock.json commitado na raiz
-      - name: Install (npm ci)
-        run: npm ci
+      - name: Install (npm ci without lifecycle scripts)
+        run: npm ci --ignore-scripts
       - name: Build
         run: npm run build
       - name: Test
