@@ -206,7 +206,9 @@ function unquoteScalar(raw) {
  */
 export function parseFrontmatter(source) {
   const text = source.replace(/^\uFEFF/, "");
-  const lines = text.split("\n");
+  // Skills checked out on Windows can contain CRLF. Normalize only the
+  // parser view so the generated catalog remains deterministic across OSes.
+  const lines = text.split(/\r?\n/);
   if (lines[0]?.trim() !== "---") {
     throw new Error("front-matter ausente (arquivo não começa com '---')");
   }
