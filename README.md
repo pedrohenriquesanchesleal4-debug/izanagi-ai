@@ -2,7 +2,7 @@
 
 > **v3.24.7** · npm estável: **3.24.5**. Runtime de execução de trabalho orientado a agentes. **Executa sem API key e sem modelo local**: se você já tem o `claude` (Claude Code CLI) instalado e autenticado, `izanagi run` faz trabalho de verdade usando essa autenticação, por subprocesso.
 >
-> Arquitetura: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 22 agentes especializados, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
+> Arquitetura: **Commander** → contrato de tarefa → roteamento por papel (por TAREFA, não por run) → grafo → verificação por evidência → healing → replan → memória. O run **lê o projeto** antes de decidir e **entrega arquivo** no fim, os dois por nós de tool com permissão declarada. Todo teto declarado (tokens, custo, tempo, retries, agentes, tool calls, concorrência, allowlist de tool) **é aplicado e tem teste que mede o teto**; `Ctrl-C` cancela o run e o `resume` retoma do último batch gravado. 23 agentes especializados, incluindo um coordenador orchestration-only, catálogo de skills v2, CLI publicada no npm (`izanagi-ai`), SDK programático e **topologia poliglota** (Rust · Go · Python · TypeScript) ao lado do runtime legado.
 
 **Filosofia:** Arquitetura primeiro. Código depois. Qualidade medida. Evolução contínua. Zero "cara de IA".
 
@@ -312,7 +312,7 @@ node dist/cli/src/index.js gates check <file>
 
 ## Skills & Agentes
 
-**22 agentes especializados** (`agents/*.json`, fonte da verdade): `/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/ai-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`. Cada um carrega um Agent Genome de 13 campos e chains compostas; a tabela completa com papéis está em [`AGENTS.md`](AGENTS.md).
+**23 agentes especializados** (`agents/*.json`, fonte da verdade): `/orchestrator`, `/discovery`, `/product-reasoner`, `/architect`, `/senior-engineer`, `/ai-engineer`, `/techlead`, `/automation-engineer`, `/security`, `/devops`, `/database`, `/qa`, `/bug-hunter`, `/docs`, `/pm`, `/professor`, `/researcher`, `/evaluator`, `/adversarial-critic`, `/form-engineer`, `/animation`, `/agent-architect`, `/skill-architect`. Cada um carrega um Agent Genome de 13 campos e chains compostas; a tabela completa com papéis está em [`AGENTS.md`](AGENTS.md).
 
 **Skills**: 106 módulos legado v1 (`skills/`) e o catálogo ativo **v2** (`.skills/<name>/SKILL.md`), ambos distribuídos no pacote npm. O formato v2 usa front-matter estruturado:
 
@@ -391,7 +391,7 @@ O webhook leva **metadado**: status, score, tokens, custo, verificação por tar
 
 | Documento | Conteúdo |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | Reference operacional: os 22 agentes, comandos, gotchas de desenvolvimento e release flow. |
+| [`AGENTS.md`](AGENTS.md) | Reference operacional: os 23 agentes, comandos, gotchas de desenvolvimento e release flow. |
 | [`docs/POLYGLOT.md`](docs/POLYGLOT.md) | Contratos IPC entre núcleos, error codes JSON-RPC, tabela de env vars, gaps conhecidos e resumo dos ADRs. |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | Passagem completa da rearquitetura v3.13.0 → v3.18.0: o que mudou, onde cada coisa vive, decisões e por quê, bugs encontrados, números medidos e por onde continuar. **Comece por aqui** se pegou o repositório sem contexto. |
 | [`docs/RUNTIME-PENDING.md`](docs/RUNTIME-PENDING.md) | Nenhum item aberto: a tabela do que foi fechado, em qual commit e como, mais as limitações que são escolha com motivo registrado. |

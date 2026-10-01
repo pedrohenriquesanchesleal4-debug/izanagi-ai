@@ -52,6 +52,7 @@ export { DYNAMIC_MARKER, MIN_CACHEABLE_TOKENS, splitStaticDynamic, joinWithoutMa
 export {
   AgentCLIAdapter,
   AGENT_CLI_PROVIDERS,
+  KNOWN_AGENT_CLI_PROVIDERS,
   AGENT_CLI_OVERHEAD_TOKENS,
   AGENT_CLI_TOKENS_PER_NODE,
   AGENT_CLI_MIN_RECOMMENDED_BUDGET,
@@ -60,6 +61,8 @@ export {
   measuredTokensPerNode,
   recommendedBudget,
   AGENT_CLI_SPECS,
+  KNOWN_AGENT_CLI_SPECS,
+  availableAgentCLIProviders,
   agentCLIStatus,
   claudeCLISpec,
   defaultAgentCLIAdapters,

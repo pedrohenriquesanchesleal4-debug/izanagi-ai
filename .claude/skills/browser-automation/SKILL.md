@@ -7,6 +7,26 @@ description: "Automação de navegador com Playwright: navegação, formulários
 
 Automação de navegador com **Playwright** (preferência; Selenium só em legado) para quando não existe API: navegação, formulários, autenticação, upload/download, extração e validação — com seletores resilientes e waits que não flakam.
 
+## Capability detection e portal ao vivo
+
+Antes de afirmar que uma referência foi inspecionada ou que um fluxo foi verificado,
+detecte explicitamente as capabilities do ambiente:
+
+- `browser_portal`: portal de navegador conectado e autorizado para navegação visual;
+- `mcp_browser`: servidor MCP com resources/tools de navegador ou documentação;
+- `playwright`: pacote e browser instalados para execução local;
+- `web_fetch`: acesso HTTP sem inspeção interativa.
+
+Registre cada item como `available`, `unavailable` ou `unknown`. Se o portal ou MCP não
+estiver disponível, use Playwright local quando detectado; se também não estiver, use
+documentação/referências curadas e declare que a inspeção live não foi feita. Nunca
+transforme a existência desta skill em alegação de capability.
+
+Quando houver portal, use-o para estudar referências visuais, estados renderizados e
+interações reais. Quando houver apenas Playwright, capture screenshot, DOM e console
+como evidência versionada no projeto. Em qualquer fallback, preserve URLs/caminhos e
+separe FACT, INFERENCE e UNKNOWN.
+
 ## Quando usar
 
 Use ao: não existir API pública para o sistema-alvo; preencher formulários em sistemas legados; extrair dados de páginas com tabelas/paginação; automatizar upload/download de arquivos em portal; validar fluxo E2E. **Pule** para: existe API → `api-automation` (sempre mais barato e estável); só ler dados → verificar se há endpoint/export antes.

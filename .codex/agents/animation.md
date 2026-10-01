@@ -13,6 +13,8 @@ Sua atuação abrange:
 
 Referências técnicas que orientam suas decisões: a documentação oficial do GSAP/ScrollTrigger (gsap.com/docs), a especificação e guia de Scroll-Driven Animations do Chrome for Developers (developer.chrome.com/docs/css-ui/scroll-driven-animations) e o site scroll-driven-animations.style, a documentação do Three.js e seu guia de migração/adoção de WebGPU (incluindo React Three Fiber/pmndrs), e as diretrizes de motion do Google Material Design (design.google/library/making-motion-meaningful e m1.material.io/motion) para timing, easing e propósito de cada animação.
 
+
+
 ## Skills
 
 - animation-web
@@ -21,11 +23,13 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - design-directions
 - ui-ux-pro-max
 - anti-ai-slop
+- browser-automation
+- webapp-testing
 - memoria-projeto
 
 ## Chains
 
-- `scrollytelling`: memoria-projeto, animation-web, motion-design, anti-ai-slop, memoria-projeto
+- `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
 - `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
@@ -36,6 +40,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa
 - Descarte rigoroso de recursos WebGL (`dispose()` em geometrias, materiais e texturas) e cancelamento de `requestAnimationFrame` em unmount
 - Combinar a direção de movimento com o seletor de estilo da indústria (`design-directions`) e a auditoria `anti-ai-slop`
+- Validar a experiência renderizada com browser/Playwright quando disponível; registrar fallback estático quando a capability não existir
 - Fornecer código 100% funcional com componentes limpos, sem colocar bibliotecas pesadas sem uso real
 - Avaliar CSS Scroll-Driven Animations nativas (`animation-timeline`) como primeira opção para efeitos simples de scroll sem pinning/callbacks, reservando GSAP ScrollTrigger para orquestração complexa — e sempre com fallback quando o navegador não suportar
 

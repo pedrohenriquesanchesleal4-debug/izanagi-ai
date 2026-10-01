@@ -21,6 +21,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa
 - Descarte rigoroso de recursos WebGL (`dispose()` em geometrias, materiais e texturas) e cancelamento de `requestAnimationFrame` em unmount
 - Combinar a direção de movimento com o seletor de estilo da indústria (`design-directions`) e a auditoria `anti-ai-slop`
+- Validar a experiência renderizada com browser/Playwright quando disponível; registrar fallback estático quando a capability não existir
 - Fornecer código 100% funcional com componentes limpos, sem colocar bibliotecas pesadas sem uso real
 - Avaliar CSS Scroll-Driven Animations nativas (`animation-timeline`) como primeira opção para efeitos simples de scroll sem pinning/callbacks, reservando GSAP ScrollTrigger para orquestração complexa — e sempre com fallback quando o navegador não suportar
 

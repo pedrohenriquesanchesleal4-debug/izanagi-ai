@@ -32,6 +32,7 @@ export interface IzanagiAgentInfo {
  * Edit/Write/Bash. Fallback conservador cobre agentes novos/gerados que ainda não têm entrada aqui.
  */
 export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
+  orchestrator: ['Read', 'Grep', 'Glob', 'Agent'],
   'adversarial-critic': ['Read', 'Grep', 'Glob', 'Bash'],
   'agent-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit'],
   animation: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'WebFetch'],
@@ -65,6 +66,7 @@ export const CLAUDE_AGENT_TOOLS_DEFAULT = ['Read', 'Grep', 'Glob', 'Edit', 'Writ
  * ("Use PROACTIVELY quando/para..."), não descritivo de marketing.
  */
 export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
+  orchestrator: 'Use PROACTIVELY como coordenador orchestration-only para decompor, delegar e auditar tarefas multiagente; nunca para editar implementação.',
   'adversarial-critic': 'Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar: não para confirmar o que a revisão já cobriu.',
   'agent-architect': 'Use quando faltar um agente especializado para uma lacuna real do time e for preciso desenhar um novo agente.',
   'ai-engineer': 'Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM: RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA (isso é `senior-engineer`).',
@@ -310,6 +312,55 @@ function chainList(chains: Record<string, string[]>): string {
     .join('\n');
 }
 
+/**
+ * Contrato compartilhado do coordenador. Ele é injetado nos adapters gerados em
+ * vez de manter regras divergentes entre Opencode e Claude Code.
+ */
+const ORCHESTRATOR_HARD_GATES = `
+## Contrato orchestration-only
+
+- **Nunca edite implementação**: não crie, altere, apague ou materialize código, testes,
+  configurações de produto ou adapters. Sua saída é coordenação e evidência.
+- **Pipeline obrigatório**: discovery/pesquisa → requisitos/BDD → arquitetura/ADR →
+  especialistas independentes em paralelo → implementação delegada → security + QA +
+  evaluation em paralelo.
+- **Artefatos são contratos**: cada handoff deve apontar para um artefato persistido,
+  com fonte, versão, decisões, unknowns e próximo agente. Não repasse transcrições
+  gigantes.
+- **Capabilities honestas**: detecte browser portal, MCP, Playwright e CLIs antes de
+  usá-los. Marque available/unavailable/unknown e use fallback explícito; nunca alegue
+  uma inspeção, tool call ou CLI que não ocorreu.
+- **Grounding antes de código**: para API, SDK, MCP ou biblioteca, recupere primeiro
+  exemplos locais, resources/tools MCP ou documentação oficial. Se o contrato não for
+  verificável, marque UNKNOWN e não invente imports, endpoints, flags ou seletores.
+- **Web UI high-craft**: exija design-directions escolhida e composição intencional antes
+  de implementar. GSAP/ScrollTrigger ou motion só entram com propósito; preserve
+  prefers-reduced-motion, fallback sem JS, degradação mobile e orçamento LCP/INP/CLS.
+- **Gate final**: security, QA e evaluator precisam emitir evidência independente. Falha
+  crítica, capability desconhecida sem fallback ou requisito órfão bloqueia a entrega.
+`;
+
+const CLAUDE_ORCHESTRATOR_DISPATCH_POLICY = `
+## Política de execução
+
+Este comando é apenas um roteador. Despache imediatamente para o subagent nativo
+\`orchestrator\` usando o Agent tool e consuma somente o resultado dele. O subagent nativo
+é restrito a \`Read\`, \`Grep\`, \`Glob\` e \`Agent\`: não possui \`Edit\`, \`Write\` ou
+\`Bash\`. Se o Agent tool não estiver disponível, pare e declare a capability
+\`unavailable\`; não execute implementação neste contexto.
+`;
+
+const CODEX_ORCHESTRATOR_LIMITATION = `
+## Limitação de enforcement do Codex
+
+O adapter Codex é markdown prompt-only: ele não oferece deny rules de tools por agente.
+Portanto, este contrato não consegue impor read-only no nível do host. O entrypoint deve
+usar um sandbox read-only e não pode emitir comandos de implementação, editar arquivos ou
+delegar escrita diretamente. Se o host não fornecer sandbox read-only, despache para um
+orquestrador nativo restrito; se isso também não existir, pare e declare a limitação em
+vez de implementar.
+`;
+
 /* ------------------------------------------------------------------ */
 /* Claude Code                                                         */
 /* ------------------------------------------------------------------ */
@@ -317,12 +368,14 @@ function chainList(chains: Record<string, string[]>): string {
 function claudeCommandTemplate(a: IzanagiAgentInfo): string {
   const modelLine = a.model ? `model: ${a.model}\n` : '';
   const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas de ${(a.role || a.name).toLowerCase()}.`;
+  const dispatchPolicy = a.slug === 'orchestrator' ? CLAUDE_ORCHESTRATOR_DISPATCH_POLICY : '';
   return `---
 description: ${truncate(trigger, 200)}
 ${modelLine}---
 
 # ${a.name}
 
+${dispatchPolicy}
 ${a.identity || a.role}
 
 ## Área de atuação
@@ -428,6 +481,8 @@ Este arquivo já cobre agentes, skills e regras essenciais do dia a dia: não pr
 
 Digite \`/agents\` (\`.claude/commands/agents.md\`) para o protocolo completo de decomposição + swarm paralelo quando o pedido cobrir 2+ domínios ou for um projeto novo. Para o caso comum (uma frente clara), pule direto para a tabela abaixo.
 
+${CLAUDE_ORCHESTRATOR_DISPATCH_POLICY}
+
 ## Agentes nativos (Agent tool)
 
 Os ${agents.length} agentes em \`.claude/agents/*.md\` são **subagents nativos do Claude Code** (Agent tool). **Regra de despacho: delegar é o padrão, responder direto como generalista é a exceção.** Para qualquer tarefa não-trivial que bata com uma linha da tabela abaixo, use o Agent tool com aquele agente antes de escrever a resposta você mesmo: não absorva o trabalho do especialista. Chame também por \`/<slug>\` em \`.claude/commands/\` quando quiser forçar um agente específico.
@@ -505,6 +560,10 @@ Você é o coordenador central do framework Izanagi AI para esta tarefa. Igual a
 **4. Unificar e validar:** agregue as entregas, deduplique, confirme que nenhum requisito ficou órfão; gate obrigatório para SaaS: ciclo vertical completo (Landing + Auth + Dashboard/CRUD + Backend/DB + README + Testes) e zero stubs/checklists.
 
 **5. Entregar resultado unificado:** resumo final em até 5 bullets (o que cada agente fez em paralelo, arquivos tocados, próximo passo), sem repetir código já mostrado.
+
+${ORCHESTRATOR_HARD_GATES}
+
+${CLAUDE_ORCHESTRATOR_DISPATCH_POLICY}
 
 ## Os ${agents.length} agentes especializados
 
@@ -600,12 +659,16 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
 /* ------------------------------------------------------------------ */
 
 function codexAgentTemplate(a: IzanagiAgentInfo): string {
+  const orchestratorPolicy = a.slug === 'orchestrator' ? CODEX_ORCHESTRATOR_LIMITATION : '';
+  const hardGates = a.slug === 'orchestrator' ? ORCHESTRATOR_HARD_GATES : '';
   return `# ${a.name}
 
 **${a.role}**
 
 ${a.identity || a.role}
 
+${orchestratorPolicy}
+${hardGates}
 ## Skills
 
 ${bullet(a.skills, 12) || '- (sem skills declaradas)'}
@@ -641,6 +704,8 @@ function codexInstructionsTemplate(agents: IzanagiAgentInfo[]): string {
 - **Auto-correção e ensino.** Reflita após cada tarefa; ensine de forma adaptativa.
 - **Segurança não é opcional.** Sem secrets no código, sem credenciais hardcoded.
 - **Qualidade é medida.** Se não pode ser medido, não pode ser melhorado.
+
+${CODEX_ORCHESTRATOR_LIMITATION}
 
 ## Agentes (em .codex/agents/)
 
@@ -843,6 +908,17 @@ ${agentList}
 
 Definições completas em \`agents/*.json\` e skills em \`skills/<name>/SKILL.md\`.
 
+## Coordenação orchestration-only
+
+Para tarefas com múltiplos domínios, roteie pelo \`/orchestrator\` antes de qualquer
+implementação: discovery/pesquisa → requisitos → arquitetura → especialistas em paralelo
+→ implementação delegada → security/QA/evaluation. O coordenador nunca edita arquivos
+de implementação. Antes de afirmar pesquisa live, MCP, browser, Playwright ou CLI,
+detecte a capability e declare available/unavailable/unknown com fallback honesto.
+Integrações exigem retrieval de exemplos oficiais ou existentes antes de codar; APIs
+desconhecidas são UNKNOWN, nunca inventadas. Para web UI, exija design-directions,
+anti-ai-slop, motion com propósito, reduced motion e orçamento de performance.
+
 ---
 ${provenanceFooter('copilot')}
 `;
@@ -931,15 +1007,31 @@ export function exportToKimi(baseDir: string): string[] {
 /**
  * opencode agent markdown frontmatter aceita `mode: primary|subagent|all`: omitido,
  * o default é `all` (manualmente selecionável E auto-invocável por outro agente via
- * Task tool, com base na `description`). Não fixamos `mode` de propósito: cada um dos
- * 21 especialistas deve continuar utilizável nos dois formatos.
+ * Task tool, com base na `description`). Só o orquestrador recebe `mode: primary` e
+ * uma política explícita de tools read-only; especialistas continuam utilizáveis nos
+ * dois formatos.
  */
 function opencodeAgentTemplate(a: IzanagiAgentInfo): string {
   const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas de ${(a.role || a.name).toLowerCase()}.`;
   const description = truncate(`${a.name} - ${trigger}`, 260);
+  const orchestratorFrontmatter = a.slug === 'orchestrator'
+    ? `mode: primary
+tools:
+  read: true
+  grep: true
+  glob: true
+  task: true
+  write: false
+  edit: false
+  bash: false
+permission:
+  edit: deny
+  bash: deny
+`
+    : '';
   return `---
 description: "${description}"
----
+${orchestratorFrontmatter}---
 
 # ${a.name}
 
@@ -962,6 +1054,18 @@ function opencodeOrchestratorTemplate(agents: IzanagiAgentInfo[]): string {
   return `---
 name: "Agents Orchestrator"
 description: "Izanagi Multi-Agent Orchestrator - Default Multi-Agent Swarm, parallel concurrent execution across ${agents.length} specialized agents"
+mode: primary
+tools:
+  read: true
+  grep: true
+  glob: true
+  task: true
+  write: false
+  edit: false
+  bash: false
+permission:
+  edit: deny
+  bash: deny
 ---
 
 Você é o **Izanagi Multi-Agent Orchestrator**, o coordenador central do framework Izanagi AI.
@@ -1006,6 +1110,8 @@ Quando o usuário digitar \`/agents\`, você apresenta ou ativa o **Modo de Orqu
 
 **PASSO 5: ENTREGAR RESULTADO UNIFICADO:**
 - Resumo final em até 5 bullets: o que cada agente fez em paralelo, arquivos tocados, próximo passo. Sem repetir código.
+
+${ORCHESTRATOR_HARD_GATES}
 
 ## Os ${agents.length} Agentes Especializados do Framework
 - \`/agents\`: Agents Orchestrator (Supervisor + Swarm paralelo)

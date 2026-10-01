@@ -303,6 +303,12 @@ export interface AgentCLISpec {
   readonly label: string;
   /** Como instalar/autenticar, citado quando o binário não é encontrado. */
   readonly install: string;
+  /**
+   * CLIs conhecidos podem ser detectados sem que Izanagi finja conhecer seu
+   * protocolo de execução. Specs discovery-only aparecem no diagnóstico, mas
+   * nunca entram no roteamento nem são marcados como disponíveis.
+   */
+  readonly executionSupported?: boolean;
   buildArgs(req: AgentCLIRequest): string[];
   /** Texto enviado por stdin (prompt e, se necessário, o system embutido). */
   buildStdin(req: AgentCLIRequest): string;
@@ -517,13 +523,72 @@ export const claudeCLISpec: AgentCLISpec = {
   },
 };
 
+const discoveryOnlySpec = (spec: Pick<AgentCLISpec, 'provider' | 'bin' | 'label' | 'install'>): AgentCLISpec => ({
+  ...spec,
+  executionSupported: false,
+  buildArgs: () => {
+    throw new Error(`${spec.label}: protocolo de execução não configurado; use um adapter explícito`);
+  },
+  buildStdin: () => '',
+  parse: () => {
+    throw new Error(`${spec.label}: protocolo de execução não configurado; resultado não pode ser interpretado`);
+  },
+});
+
+/**
+ * CLIs conhecidos são listados para diagnóstico e roteamento honesto. A
+ * presença do binário não autoriza um adapter inventado: até existir um
+ * contrato de stdout/flags testado, o estado permanece unsupported.
+ */
+export const KNOWN_AGENT_CLI_SPECS: AgentCLISpec[] = [
+  claudeCLISpec,
+  discoveryOnlySpec({
+    provider: 'codex-cli',
+    bin: 'codex',
+    label: 'OpenAI Codex CLI',
+    install: 'instale e autentique o Codex CLI; o protocolo de execução precisa ser configurado explicitamente',
+  }),
+  discoveryOnlySpec({
+    provider: 'opencode-cli',
+    bin: 'opencode',
+    label: 'OpenCode CLI',
+    install: 'instale o OpenCode CLI; o protocolo de execução precisa ser configurado explicitamente',
+  }),
+  discoveryOnlySpec({
+    provider: 'kimi-cli',
+    bin: 'kimi',
+    label: 'Kimi CLI',
+    install: 'instale o Kimi CLI; o protocolo de execução precisa ser configurado explicitamente',
+  }),
+];
+
 /** Specs conhecidos, por id de provider. */
 export const AGENT_CLI_SPECS: Record<string, AgentCLISpec> = {
-  [claudeCLISpec.provider]: claudeCLISpec,
+  ...Object.fromEntries(KNOWN_AGENT_CLI_SPECS.map((spec) => [spec.provider, spec])),
 };
 
-/** Ids de provider servidos por CLI de agente (usado por CLI/SDK para mensagens). */
-export const AGENT_CLI_PROVIDERS = Object.keys(AGENT_CLI_SPECS);
+/** Ids de providers com adapter real; entram no runtime e no roteamento. */
+export const AGENT_CLI_PROVIDERS = KNOWN_AGENT_CLI_SPECS
+  .filter((spec) => spec.executionSupported !== false)
+  .map((spec) => spec.provider);
+
+/** Ids conhecidos apenas para diagnóstico de instalação/capability. */
+export const KNOWN_AGENT_CLI_PROVIDERS = KNOWN_AGENT_CLI_SPECS.map((spec) => spec.provider);
+
+/** CLIs realmente executáveis e disponíveis, em ordem configurável. */
+export function availableAgentCLIProviders(
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  const preferred = (env.IZANAGI_AGENT_CLI_ORDER ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const statuses = agentCLIStatus(env)
+    .filter((status) => status.available)
+    .map((status) => status.provider);
+  const order = preferred.length > 0 ? preferred : statuses;
+  return order.filter((provider) => statuses.includes(provider));
+}
 
 /* ============================ EXECUÇÃO DO SUBPROCESSO ============================ */
 
@@ -670,6 +735,7 @@ export class AgentCLIAdapter implements ModelAdapter {
    * primeira chamada, com o stderr dele na mensagem.
    */
   get configured(): boolean {
+    if (this.spec.executionSupported === false) return false;
     if (this.env.IZANAGI_AGENT_CLI_DISABLED) return false;
     if (isSuppressedInTests(this.env)) return false;
     if (currentDepth(this.env) >= maxDepth(this.env)) return false;
@@ -678,6 +744,7 @@ export class AgentCLIAdapter implements ModelAdapter {
 
   /** Motivo de não estar utilizável, para mensagem ao usuário. `null` = utilizável. */
   get unavailableReason(): string | null {
+    if (this.spec.executionSupported === false) return 'binário detectável, mas protocolo de execução não suportado pelo Izanagi';
     if (this.env.IZANAGI_AGENT_CLI_DISABLED) return 'desligado por IZANAGI_AGENT_CLI_DISABLED';
     if (isSuppressedInTests(this.env)) return 'suprimido dentro de test runner (IZANAGI_AGENT_CLI_IN_TESTS=1 libera)';
     const depth = currentDepth(this.env);
@@ -739,7 +806,9 @@ export class AgentCLIAdapter implements ModelAdapter {
 
 /** Adapters de CLI de agente conhecidos, prontos para o `LLMClient`. */
 export function defaultAgentCLIAdapters(opts: { env?: NodeJS.ProcessEnv; cwd?: string } = {}): AgentCLIAdapter[] {
-  return Object.values(AGENT_CLI_SPECS).map((spec) => new AgentCLIAdapter(spec, opts));
+  return Object.values(AGENT_CLI_SPECS)
+    .filter((spec) => spec.executionSupported !== false)
+    .map((spec) => new AgentCLIAdapter(spec, opts));
 }
 
 /**
@@ -755,7 +824,7 @@ export function agentCLIStatus(env: NodeJS.ProcessEnv = process.env): Array<{
   reason: string | null;
   install: string;
 }> {
-  return Object.values(AGENT_CLI_SPECS).map((spec) => {
+  return KNOWN_AGENT_CLI_SPECS.map((spec) => {
     const adapter = new AgentCLIAdapter(spec, { env });
     return {
       provider: spec.provider,

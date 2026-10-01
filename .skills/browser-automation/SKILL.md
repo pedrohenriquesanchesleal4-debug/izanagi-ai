@@ -43,6 +43,13 @@ with sync_playwright() as p:
     page.get_by_role("button", name="Entrar").click()
 ```
 
+### Passo 0 — Capability detection honesta
+
+Antes da navegação, verifique portal de navegador, MCP/browser, Playwright e acesso HTTP.
+Registre `available`, `unavailable` ou `unknown` para cada um. Só chame uma ferramenta
+depois de confirmar que ela existe; se nenhuma estiver disponível, use referências locais
+ou documentação oficial e declare o fallback, sem afirmar inspeção live.
+
 ### Passo 2 — Waits inteligentes (não `sleep` cego)
 
 ```python

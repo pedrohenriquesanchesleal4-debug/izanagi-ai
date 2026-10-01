@@ -78,7 +78,7 @@ test('init: o AGENTS.md do consumidor PRESERVA as seções que valem em qualquer
     const doc = readRoot(dir, 'AGENTS.md');
     // Cortar seção demais transformaria o conserto em perda: o catálogo de
     // agentes e as regras de execução/anti-generic são o valor do arquivo.
-    assert.match(doc, /22 Agentes/i, 'o catálogo de agentes vale em qualquer projeto');
+    assert.match(doc, /23 Agentes/i, 'o catálogo de agentes vale em qualquer projeto');
     assert.match(doc, /Anti-Generic/i, 'a regra de craft vale em qualquer projeto');
     assert.match(doc, new RegExp(GENERATED_MARKER), 'sem marcador o próximo init não pode regenerar com segurança');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }

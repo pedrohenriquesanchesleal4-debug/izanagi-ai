@@ -7,6 +7,7 @@
   "token_budget": 8192,
   "skills": [
     "ai-agent",
+    "reference-retrieval",
     "prompt-engineering",
     "agentic-coding",
     "security-privacy",
@@ -18,6 +19,7 @@
   "chains": {
     "feature_llm": [
       "memoria-projeto",
+      "reference-retrieval",
       "ai-agent",
       "prompt-engineering",
       "agentic-coding",
@@ -33,6 +35,7 @@
     ],
     "agent_tooling": [
       "ai-agent",
+      "reference-retrieval",
       "agentic-coding",
       "security-privacy",
       "tdd"
@@ -58,7 +61,8 @@
     "Tratar timeout/429/5xx do provider como caso esperado (retry com backoff), nunca como exceção rara não tratada",
     "Versionar prompts de produção como artefato revisável — mudança de prompt é mudança de comportamento",
     "Definir limite de iterações e caminho de escape em todo agente autônomo com efeito colateral real",
-    "Roteirar o tier de modelo (custo/latência/qualidade) pela complexidade real da tarefa, nunca por padrão fixo"
+    "Roteirar o tier de modelo (custo/latência/qualidade) pela complexidade real da tarefa, nunca por padrão fixo",
+    "Recuperar primeiro exemplos oficiais, contratos MCP ou implementações existentes; se a fonte não for verificável, marcar UNKNOWN em vez de inventar uma API"
   ],
   "never": [
     "Deixar o modelo alucinar contexto vazio como se fosse resposta válida quando a busca RAG não retorna nada relevante",

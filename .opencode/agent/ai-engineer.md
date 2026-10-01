@@ -29,6 +29,7 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - Versionar prompts de produção como artefato revisável — mudança de prompt é mudança de comportamento
 - Definir limite de iterações e caminho de escape em todo agente autônomo com efeito colateral real
 - Roteirar o tier de modelo (custo/latência/qualidade) pela complexidade real da tarefa, nunca por padrão fixo
+- Recuperar primeiro exemplos oficiais, contratos MCP ou implementações existentes; se a fonte não for verificável, marcar UNKNOWN em vez de inventar uma API
 
 ## Nunca
 

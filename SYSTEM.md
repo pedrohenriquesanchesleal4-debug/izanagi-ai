@@ -280,7 +280,7 @@ A raiz da sandbox é `workspaceDir` (raiz do PROJETO), não `baseDir` (raiz do F
 
 Novos agentes e skills são **gerados, não escritos à mão**:
 
-- `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]`: o Agent Factory detecta lacuna vs. os 22 agentes core (recusa se o core já cobre), deriva ID slug, mapeia skills requeridas/opcionais, monta o genome completo (purpose, capabilities, inputs, outputs, handoffs, memory, evaluation, tokenBudget, compatibility), valida e escreve em `agents/generated/<id>.json`: descoberto automaticamente por `loadAgent`/`agent list`.
+- `izanagi agent create "<requisito>" [--name=slug] [--skills=a,b]`: o Agent Factory detecta lacuna vs. os 23 agentes core (recusa se o core já cobre), deriva ID slug, mapeia skills requeridas/opcionais, monta o genome completo (purpose, capabilities, inputs, outputs, handoffs, memory, evaluation, tokenBudget, compatibility), valida e escreve em `agents/generated/<id>.json`: descoberto automaticamente por `loadAgent`/`agent list`.
 - `izanagi skill create <nome> --gap="<descrição>" [--force]`: o Skill Factory recusa lacunas já cobertas, gera `skills/generated/<nome>/SKILL.md` com frontmatter de manifesto (name, description, version, compatibility, triggers, token_budget), roda o security scanner antes da escrita e só persiste com severidade LOW.
 
 ## Benchmarks & Regression

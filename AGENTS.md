@@ -8,17 +8,18 @@
 
 ## 1. Visão Geral do Framework
 
-Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas (catálogo v2 em `.skills/` convivendo com o legado `skills/`), **Skill Composer** (16 composições de skills encadeadas por domínio), **22 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`) e uma **topologia poliglota** (Rust · Go · Python · TS).<!-- izanagi:source-only --> A topologia está detalhada na seção 3. Este repositório É o framework (não um app que o usa).<!-- /izanagi:source-only -->
+Izanagi AI é um **framework meta** para engenharia de software autônoma orientada a agentes: arquitetura em camadas (Routing → Orchestration → Evaluation → Healing → Memory), biblioteca de skills especializadas (catálogo v2 em `.skills/` convivendo com o legado `skills/`), **Skill Composer** (16 composições de skills encadeadas por domínio), **23 agentes especializados core + gerados**, **Memória Persistente Anti-Repetição** (`.agents/memoria/`), **Curadoria de Referências** (`references/`), **Checkpoint & Self-Healing Swarm Engine**, uma **CLI executável (`izanagi`)** publicada no npm (`izanagi-ai`) e uma **topologia poliglota** (Rust · Go · Python · TS).<!-- izanagi:source-only --> A topologia está detalhada na seção 3. Este repositório É o framework (não um app que o usa).<!-- /izanagi:source-only -->
 
 ---
 
-## 2. Os 22 Agentes Especializados & Comandos Opencode (`/`)
+## 2. Os 23 Agentes Especializados & Comandos Opencode (`/`)
 
-O framework conta com **22 agentes especializados** em `agents/*.json` + orquestrador `/agents` (`.opencode/agent/agents.md`). Tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas com isolamento de contexto).
+O framework conta com **23 agentes especializados** em `agents/*.json`, incluindo o `/orchestrator` orchestration-only, além do comando `/agents` (`.opencode/agent/agents.md`). Tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas com isolamento de contexto).
 
 | Comando | Arquivo | Papel & Especialidade |
 |---|---|---|
 | `/agents` | `.opencode/agent/agents.md` | Orquestrador Multi-Agente (Swarm Mode padrão / Paralelo) |
+| `/orchestrator` | `agents/orchestrator-agent.json` | Coordenador orchestration-only: pipeline, handoffs, capabilities e gates |
 | `/discovery` | `agents/discovery-agent.json` | Pré-produção: entrevista condicional, pesquisa web, preview, prompt rico ⭐ |
 | `/product-reasoner` | `agents/product-reasoner-agent.json` | Entendimento: requisitos com evidências (FACT/ASSUMPTION/UNKNOWN), critérios BDD |
 | `/animation` | `agents/animation-agent.json` | Scrollytelling, 3D WebGL, motion signature |
@@ -106,7 +107,7 @@ node packages/skill-migrator/cli.mjs --dry-run          # valida migração skil
 
 **Legado (fonte canônica de agentes e skills):**
 - `core/`: 15 engines (.md, incluindo `skill-composer.md`, `checkpoint-healing-engine.md`, `quality-gates.md`) + **`skill-resolver.json`** (mapa alias → target, 258 aliases, 16 `compositions`)
-- `agents/`: 22 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos); derivados YAML em `.agents/agents/*.yaml` gerados pelo agent-migrator — proibido editar YAML à mão
+- `agents/`: 23 definições de agentes em JSON (fonte da verdade para os comandos) com `chains` compostas e Agent Genome (13 campos); derivados YAML em `.agents/agents/*.yaml` gerados pelo agent-migrator — proibido editar YAML à mão
 - `skills/`: legado histórico v1 (fonte do migrador). Catálogo ativo **v2**: `.skills/<name>/SKILL.md` (106 módulos; front-matter `name/description/version/category/tools.mcp` + seções Triggering Criteria / Step-by-Step Workflow / Verification Steps / Common Rationalizations / Red Flags; subpastas `references/`)
 - `references/`: curadoria de referências reais por domínio (webgl-3d, scrollytelling, ui-design-systems, stack-2026, performance-seo)
 - `.agents/memoria/`: memória persistente anti-repetição (**gitignored**, só existe local): `contexto.md`, `decisoes.md` (ADRs), `erros-corrigidos.md`, `learnings.md`

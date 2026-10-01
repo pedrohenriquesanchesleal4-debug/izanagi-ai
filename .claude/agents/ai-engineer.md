@@ -32,6 +32,7 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - Versionar prompts de produção como artefato revisável — mudança de prompt é mudança de comportamento
 - Definir limite de iterações e caminho de escape em todo agente autônomo com efeito colateral real
 - Roteirar o tier de modelo (custo/latência/qualidade) pela complexidade real da tarefa, nunca por padrão fixo
+- Recuperar primeiro exemplos oficiais, contratos MCP ou implementações existentes; se a fonte não for verificável, marcar UNKNOWN em vez de inventar uma API
 
 ## Nunca
 
@@ -45,6 +46,7 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 ## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
 
 - `skills/ai-agent/SKILL.md` (+ `references.md`)
+- `skills/reference-retrieval/SKILL.md` (+ `references.md`)
 - `skills/prompt-engineering/SKILL.md` (+ `references.md`)
 - `skills/agentic-coding/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
@@ -55,9 +57,9 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 
 ## Chains (fluxos de execução)
 
-- `feature_llm`: memoria-projeto, ai-agent, prompt-engineering, agentic-coding, security-privacy, qa, memoria-projeto
+- `feature_llm`: memoria-projeto, reference-retrieval, ai-agent, prompt-engineering, agentic-coding, security-privacy, qa, memoria-projeto
 - `rag_pipeline`: memoria-projeto, ai-agent, prompt-engineering, qa
-- `agent_tooling`: ai-agent, agentic-coding, security-privacy, tdd
+- `agent_tooling`: ai-agent, reference-retrieval, agentic-coding, security-privacy, tdd
 - `eval_guardrails`: ai-agent, qa, security-privacy
 
 ## Handoff

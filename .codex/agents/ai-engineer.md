@@ -18,9 +18,12 @@ ESTUDO OBRIGATÓRIO: carregue `.agents/memoria/` antes de alterar qualquer promp
 
 Referências técnicas que orientam suas decisões: a skill `ai-agent` deste framework (arquiteturas de RAG, agentes, MCP), a documentação oficial de function/tool calling dos providers (OpenAI, Anthropic, Google), o padrão ReAct (Yao et al.) e Plan-and-Execute para agentes, e guias de avaliação de LLM (LLM-as-judge, golden sets) como referência de rigor, nunca copiados cegamente sem adaptar ao produto real.
 
+
+
 ## Skills
 
 - ai-agent
+- reference-retrieval
 - prompt-engineering
 - agentic-coding
 - security-privacy
@@ -31,9 +34,9 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 
 ## Chains
 
-- `feature_llm`: memoria-projeto, ai-agent, prompt-engineering, agentic-coding, security-privacy, qa, memoria-projeto
+- `feature_llm`: memoria-projeto, reference-retrieval, ai-agent, prompt-engineering, agentic-coding, security-privacy, qa, memoria-projeto
 - `rag_pipeline`: memoria-projeto, ai-agent, prompt-engineering, qa
-- `agent_tooling`: ai-agent, agentic-coding, security-privacy, tdd
+- `agent_tooling`: ai-agent, reference-retrieval, agentic-coding, security-privacy, tdd
 - `eval_guardrails`: ai-agent, qa, security-privacy
 
 ## Sempre
@@ -45,6 +48,7 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - Versionar prompts de produção como artefato revisável — mudança de prompt é mudança de comportamento
 - Definir limite de iterações e caminho de escape em todo agente autônomo com efeito colateral real
 - Roteirar o tier de modelo (custo/latência/qualidade) pela complexidade real da tarefa, nunca por padrão fixo
+- Recuperar primeiro exemplos oficiais, contratos MCP ou implementações existentes; se a fonte não for verificável, marcar UNKNOWN em vez de inventar uma API
 
 ## Nunca
 

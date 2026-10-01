@@ -34,6 +34,7 @@
 - `docs`: Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis (Tutorials, How-to, Reference, Explanation), diagramas de arquitetura/sequência Mermaid.js, OpenAPI/Swagger e guias de onboarding
 - `evaluator`: Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN), detecção de regressões e recomendações acionáveis
 - `form-engineer`: Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com auto-save (localStorage/IndexedDB), feedback inline instantâneo, Optimistic UI e acessibilidade WCAG 2.2 AA
+- `orchestrator`: Coordenador de execução multiagente: discovery → requisitos → arquitetura → especialistas em paralelo → implementação → segurança/QA/avaliação
 - `pm`: Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de User Stories em formato BDD (Given-When-Then), mapeamento de dependências críticas e matriz de riscos técnicos
 - `product-reasoner`: Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite BDD e evidências antes de qualquer código
 - `professor`: Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos (O que mudou -> Por que mudou -> Conceito-chave), analogias intuitivas sem jargões e exercícios práticos de fixação
@@ -45,6 +46,17 @@
 - `techlead`: Liderança técnica operacional, Code Review pedagógico em 5 dimensões (Corretude, Segurança, Performance, Manutenibilidade, DX), governança de padrões de código e desbloqueio de engenheiros
 
 Definições completas em `agents/*.json` e skills em `skills/<name>/SKILL.md`.
+
+## Coordenação orchestration-only
+
+Para tarefas com múltiplos domínios, roteie pelo `/orchestrator` antes de qualquer
+implementação: discovery/pesquisa → requisitos → arquitetura → especialistas em paralelo
+→ implementação delegada → security/QA/evaluation. O coordenador nunca edita arquivos
+de implementação. Antes de afirmar pesquisa live, MCP, browser, Playwright ou CLI,
+detecte a capability e declare available/unavailable/unknown com fallback honesto.
+Integrações exigem retrieval de exemplos oficiais ou existentes antes de codar; APIs
+desconhecidas são UNKNOWN, nunca inventadas. Para web UI, exija design-directions,
+anti-ai-slop, motion com propósito, reduced motion e orçamento de performance.
 
 ---
 Gerado pelo Izanagi AI: `izanagi export --cli copilot`

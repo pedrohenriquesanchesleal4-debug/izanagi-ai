@@ -6,7 +6,10 @@ import path from 'path';
 import {
   AgentCLIAdapter,
   AGENT_CLI_PROVIDERS,
+  KNOWN_AGENT_CLI_PROVIDERS,
   agentCLIStatus,
+  availableAgentCLIProviders,
+  KNOWN_AGENT_CLI_SPECS,
   claudeCLISpec,
   currentDepth,
   DEFAULT_MAX_DEPTH,
@@ -195,12 +198,25 @@ test('agent-cli: teto de profundidade impede recursão agente -> izanagi -> agen
 
 test('agent-cli: agentCLIStatus é determinístico e cobre todo provider registrado', () => {
   const status = agentCLIStatus({ PATH: '' } as NodeJS.ProcessEnv);
-  assert.equal(status.length, AGENT_CLI_PROVIDERS.length);
+  assert.equal(status.length, KNOWN_AGENT_CLI_PROVIDERS.length);
   for (const s of status) {
     assert.equal(s.available, false);
     assert.ok(s.reason && s.reason.length > 0);
     assert.ok(s.install.length > 0);
   }
+});
+
+test('agent-cli: CLIs ausentes não entram no roteamento e CLIs detectados sem protocolo não são alegados como disponíveis', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'izanagi-cli-discovery-'));
+  const ext = process.platform === 'win32' ? '.CMD' : '';
+  fs.writeFileSync(path.join(dir, `codex${ext}`), '', 'utf8');
+  const env = { PATH: dir, PATHEXT: '.COM;.EXE;.CMD' } as NodeJS.ProcessEnv;
+
+  assert.ok(KNOWN_AGENT_CLI_SPECS.some((spec) => spec.provider === 'codex-cli'));
+  assert.deepEqual(availableAgentCLIProviders(env), []);
+  const codex = agentCLIStatus(env).find((status) => status.provider === 'codex-cli');
+  assert.equal(codex?.available, false);
+  assert.match(codex?.reason ?? '', /protocolo de execução não suportado/);
 });
 
 test('agent-cli: dentro de test runner o executor fica suprimido por padrão', () => {

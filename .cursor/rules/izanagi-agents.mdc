@@ -24,6 +24,7 @@ Use estes agentes como orquestração de papéis: escolha o agente pelo tipo de 
 | `docs` | Documentation Writer | Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis… |
 | `evaluator` | Evaluator | Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict… |
 | `form-engineer` | Form & UI Engineer | Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com… |
+| `orchestrator` | Izanagi Orchestrator | Coordenador de execução multiagente: discovery → requisitos → arquitetura → especialistas em paralelo →… |
 | `pm` | Project Manager | Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de… |
 | `product-reasoner` | Product Reasoner | Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite… |
 | `professor` | Professor / Mentor | Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos… |

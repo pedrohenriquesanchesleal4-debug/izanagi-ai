@@ -217,6 +217,9 @@
     "technology-selection": "skills/technology-selection/SKILL",
     "spreadsheet-automation": "skills/spreadsheet-automation/SKILL",
     "browser-automation": "skills/browser-automation/SKILL",
+    "browser-portal": "skills/browser-automation/SKILL",
+    "reference-retrieval": "skills/reference-retrieval/SKILL",
+    "example-retrieval": "skills/reference-retrieval/SKILL",
     "api-automation": "skills/api-automation/SKILL",
     "data-validation": "skills/data-validation/SKILL",
     "error-recovery": "skills/error-recovery/SKILL",
@@ -274,6 +277,7 @@
       ],
       "chain": [
         "design-directions",
+        "reference-retrieval",
         "ui-ux-pro-max",
         "editorial-layout",
         "frontend",
@@ -510,6 +514,7 @@
       ],
       "chain": [
         "ai-agent",
+        "reference-retrieval",
         "prompt-eng",
         "backend",
         "db",
@@ -517,6 +522,27 @@
         "observability"
       ],
       "artifact": "feature com LLM/RAG"
+    },
+    "orchestration_pipeline": {
+      "triggers": [
+        "orquestrar um projeto",
+        "pipeline multiagente",
+        "delegar discovery requisitos arquitetura implementação",
+        "coordenador de agentes"
+      ],
+      "chain": [
+        "memoria-projeto",
+        "deep-research",
+        "reference-retrieval",
+        "requirement-analyzer",
+        "architect",
+        "parallel-agents",
+        "handoff-protocol",
+        "security-privacy",
+        "qa",
+        "evaluation"
+      ],
+      "artifact": "pipeline multiagente com evidências, handoffs e gates"
     },
     "parallel_swarm": {
       "triggers": [
