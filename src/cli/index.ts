@@ -27,6 +27,8 @@ import { polyglotCommand } from './commands/polyglot.js';
 import { modelsCommand } from './commands/models.js';
 import { budgetCommand } from './commands/budget.js';
 import { maestroCommand } from './commands/maestro.js';
+import { runsCommand } from './commands/runs.js';
+import { securityCommand } from './commands/security.js';
 
 /**
  * `packageDir` é SEMPRE a instalação do próprio izanagi-ai (node_modules/izanagi-ai ou
@@ -74,20 +76,42 @@ export async function runCLI(args: string[]): Promise<void> {
       await initCommand(rest);
       break;
 
-    case 'list':
-    case 'skills':
-    case 'agents': {
-      const filter = rest[0] || (command === 'skills' ? 'skills' : command === 'agents' ? 'agents' : 'all');
+    case 'list': {
+      const filter = rest[0] || 'all';
       listCommand(baseDir, filter);
       break;
     }
+
+    case 'agents':
+      if (rest.length === 0) {
+        listCommand(baseDir, 'agents');
+      } else {
+        agentCommand(baseDir, rest);
+      }
+      break;
 
     case 'agent':
       agentCommand(baseDir, rest);
       break;
 
+    case 'skills':
+      if (rest.length === 0) {
+        listCommand(baseDir, 'skills');
+      } else {
+        await skillCommand(baseDir, rest);
+      }
+      break;
+
     case 'skill':
       await skillCommand(baseDir, rest);
+      break;
+
+    case 'runs':
+      await runsCommand(baseDir, rest, stateDir);
+      break;
+
+    case 'security':
+      securityCommand(baseDir, rest);
       break;
 
     case 'workflow':
@@ -123,7 +147,7 @@ export async function runCLI(args: string[]): Promise<void> {
       break;
 
     case 'models':
-      modelsCommand(baseDir, rest);
+      await modelsCommand(baseDir, rest);
       break;
 
     case 'budget':
@@ -233,15 +257,17 @@ function showHelp(): void {
   \x1b[32mcreate <agent|skill> <name>\x1b[0m    Bare scaffold, no validation/security-scan — quick manual starting point.
   \x1b[32mcompile <agent> [file]\x1b[0m         Compiles ready-to-use prompt for an Agent (e.g. architect, security).
   \x1b[32mlist [skills|agents]\x1b[0m           Lists all registered skills and agents.
-  \x1b[32mdoctor [--deep]\x1b[0m                Validates framework integrity + runtime (deep).
+  \x1b[32mdoctor [--deep] [--target <ide>]\x1b[0m Validates framework integrity & IDE discovery (antigravity, opencode, claude, cursor).
   \x1b[32magent list|inspect|create <req>\x1b[0m Agent Genome: lista/inspeciona/gera via Agent Factory (validado, recomendado).
-  \x1b[32mskill list|search|inspect|create\x1b[0m Skill Manifest: lista/busca/inspeciona/gera via Skill Factory (validado, recomendado).
+  \x1b[32mskill list|search|install|remove|update\x1b[0m Skill Manifest: busca (--stack), instala com verificação de segurança, atualiza, remove.
   \x1b[32mworkflow list|inspect <name>\x1b[0m   Execution Graph templates e composições.
   \x1b[32mtrace [run-id]\x1b[0m                 Observabilidade: lista/mostra execuções.
+  \x1b[32mruns list|inspect|cancel|resume\x1b[0m Ciclo de vida e acompanhamento de execuções ativas e salvas.
+  \x1b[32msecurity scan [--json]\x1b[0m          Auditoria estática de segurança de skills e extensões.
   \x1b[32meval [file|--metrics|--report]\x1b[0m Avalia artefatos/resultados (Evaluation Engine).
   \x1b[32mbenchmark list|run|memory\x1b[0m      Suíte de benchmarks (run --execute mede execução real) + benchmark memory (busca e compressão).
-  \x1b[32mmemory inspect|search <q>\x1b[0m      Memória persistente (patterns, learnings, stats).
-  \x1b[32mmodels [--json]\x1b[0m                Catálogo de modelos + roteamento por papel (commander/specialist/worker).
+  \x1b[32mmemory inspect|search|delete\x1b[0m   Memória persistente (patterns, learnings, stats, delete seletivo).
+  \x1b[32mmodels [list|benchmark] [--json]\x1b[0m Catálogo de modelos + benchmark e roteamento por papel.
   \x1b[32mbudget [run-id] [--json]\x1b[0m       Para onde foi o orçamento: tokens por fase, custo, cache, degradação.
   \x1b[32mdiagnose\x1b[0m                       Diagnóstico profundo do runtime.
   \x1b[32mpolyglot status [--json|--strict]\x1b[0m Saúde dos núcleos poliglotas (Rust, Go, Python, packages TS) — diagnóstico, exit 0; --strict sai 1 se algo ausente.
@@ -252,7 +278,7 @@ function showHelp(): void {
   \x1b[32mreject <run-id> [node-id] [--reason]\x1b[0m Rejeita ação pausada e retoma (nó falha com o motivo).
   \x1b[32mexplain <run-id> [--artifacts] [--conversation]\x1b[0m  Por que o Izanagi decidiu isso: decisões, conversa entre agentes, healing, veredito e artefatos.
   \x1b[32mexport --cli <target>\x1b[0m         Exports framework adapters for other AI CLIs
-                          (claude, codex, cursor, copilot, kimi, all).
+                          (antigravity, claude, codex, cursor, copilot, kimi, all).
   \x1b[32mversion\x1b[0m                       Displays Izanagi AI version.
 
 \x1b[1mOptions:\x1b[0m

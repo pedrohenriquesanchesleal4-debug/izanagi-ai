@@ -413,12 +413,23 @@ export class MemoryStore {
    *    busca "erro de timeout" quer o trecho sobre timeout, não a primeira
    *    entrada do arquivo de erros.
    */
-  search(query: string, limit = 10): Array<MemoryEntry & { score: number }> {
-    const q = query.toLowerCase();
-    const terms = q.split(/\s+/).filter((t) => t.length > 2);
+  /**
+   * Busca por termo nas entradas markdown com suporte opcional a filtro de categoria.
+   */
+  search(
+    query: string,
+    optsOrLimit: number | { limit?: number; category?: MemoryCategory } = 10
+  ): Array<MemoryEntry & { score: number }> {
+    const opts = typeof optsOrLimit === 'number' ? { limit: optsOrLimit } : optsOrLimit;
+    const limit = opts.limit ?? 10;
+    const q = query.toLowerCase().trim();
+    const terms = q.split(/\s+/).filter((t) => t.length > 1);
     const scored: Array<MemoryEntry & { score: number }> = [];
 
-    for (const e of this.listEntries({ full: true })) {
+    const allEntries = this.listEntries({ full: true });
+    const entries = opts.category ? allEntries.filter((e) => e.category === opts.category) : allEntries;
+
+    for (const e of entries) {
       const body = e.content.toLowerCase();
       let score = 0;
       let firstHit = -1;
@@ -428,13 +439,41 @@ export class MemoryStore {
         score += 1;
         if (firstHit === -1 || at < firstHit) firstHit = at;
       }
-      if (e.title.toLowerCase().includes(q)) score += 2;
-      if (e.tags.some((t) => t.includes(q))) score += 1;
+      if (e.title.toLowerCase().includes(q)) score += 3;
+      if (e.tags.some((t) => t.includes(q))) score += 2;
       if (score === 0) continue;
       scored.push({ ...e, content: excerpt(e.content, firstHit), score });
     }
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);
   }
+
+  /**
+   * Remove uma entrada específica de memória ou limpa uma categoria.
+   */
+  deleteMemory(category: MemoryCategory, targetTitle?: string): boolean {
+    const file = path.join(this.memoryDir, this.entryFile(category));
+    if (!fs.existsSync(file)) return false;
+
+    if (!targetTitle || targetTitle === '*') {
+      // Limpa mantendo apenas o título do documento
+      const content = fs.readFileSync(file, 'utf-8');
+      const lines = content.split(/\r?\n/);
+      const firstHeadingIndex = lines.findIndex((l) => /^#{2,4}\s+/.test(l));
+      const header = firstHeadingIndex > 0 ? lines.slice(0, firstHeadingIndex).join('\n').trim() : (lines[0] || `# ${category}`);
+      fs.writeFileSync(file, `${header}\n\n<!-- limpo pelo usuário em ${nowIso()} -->\n`, 'utf-8');
+      return true;
+    }
+
+    const content = fs.readFileSync(file, 'utf-8');
+    const escaped = targetTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(\\n#{2,4}\\s+${escaped}[\\s\\S]*?)(?=\\n#{2,4}|$)`, 'g');
+    if (!regex.test(content)) return false;
+
+    const updated = content.replace(regex, '');
+    fs.writeFileSync(file, updated, 'utf-8');
+    return true;
+  }
+
 
   /**
    * Acrescenta conhecimento REUTILIZÁVEL à camada semântica.

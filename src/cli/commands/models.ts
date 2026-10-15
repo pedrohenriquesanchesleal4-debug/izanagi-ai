@@ -4,12 +4,21 @@ import { AGENT_ROLES, type AgentRole } from '../../runtime/contracts/task-contra
 import type { RoutingContext } from '../../runtime/types.js';
 
 /**
- * `izanagi models`: catálogo de modelos, quem está configurado de verdade e
- * qual modelo cada PAPEL receberia agora. Responde a pergunta que o usuário
- * faz antes de gastar dinheiro: "com o que eu tenho configurado, quem vai
- * rodar o quê e por quanto?".
+ * `izanagi models [list]`: catálogo de modelos, quem está configurado de verdade e
+ * qual modelo cada PAPEL receberia agora.
+ * `izanagi models benchmark`: atalho para executar benchmark dos modelos/provedores.
  */
-export function modelsCommand(baseDir: string, args: string[] = []): void {
+export async function modelsCommand(baseDir: string, args: string[] = []): Promise<void> {
+  const sub = args[0]?.toLowerCase();
+  if (sub === 'benchmark' || sub === 'bench') {
+    const { benchmarkCommand } = await import('./benchmark.js');
+    await benchmarkCommand(baseDir, args.slice(1));
+    return;
+  }
+  if (sub === 'list') {
+    args = args.slice(1);
+  }
+
   const asJson = args.includes('--json');
   const client = new LLMClient();
   const configured = new Set(client.configuredProviders());

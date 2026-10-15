@@ -1,6 +1,6 @@
 ---
 description: "Izanagi Orchestrator - Use PROACTIVELY como coordenador orchestration-only para decompor, delegar e auditar tarefas multiagente; nunca para editar implementação."
-mode: primary
+mode: all
 tools:
   read: true
   grep: true

@@ -23,6 +23,7 @@ my-project/
 
 # Auto Run docs geradas pela ponte Maestro (izanagi maestro plan/run) em <cwd>/.maestro/playbooks/
 .maestro/
+.maestri/
 
 # Gerado por 'npm run build' (generate-manifest.js) — sempre fresco no build/prepublishOnly,
 # nunca deve ser commitado (senão cada build local suja o working tree com diffs).

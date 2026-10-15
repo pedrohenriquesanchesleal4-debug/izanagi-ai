@@ -14,6 +14,7 @@ import { runInSandbox, sandboxAvailability, DEFAULT_TIMEOUT_MS } from './code-sa
 import { surveyProject } from './project-survey.js';
 import { runProjectTests } from './project-test.js';
 import { parseFileManifest, validateManifest } from './file-manifest.js';
+import { runBrowserPlaywright } from './playwright-cli.js';
 
 export type ToolPermission = 'fs:read' | 'fs:write' | 'net:http' | 'shell';
 
@@ -270,6 +271,32 @@ const BUILTIN_TOOLS: Record<string, ToolDefinition> = {
       const dir = ensureInside(ctx.baseDir, (input as { dir: string }).dir, ctx.allowedDirs);
       if (!fs.existsSync(dir)) return { entries: [] };
       return { entries: fs.readdirSync(dir) };
+    },
+  },
+  'browser.playwright': {
+    id: 'browser.playwright',
+    description: 'Navegação e validação visual de páginas via Playwright (screenshot, status, console errors, inspeção)',
+    requiredPermission: 'net:http',
+    validateInput: (input) => {
+      const i = (input ?? {}) as { url?: unknown; action?: unknown };
+      const issues: string[] = [];
+      if (typeof i?.url !== 'string' || !i.url.startsWith('http')) issues.push('campo "url" (string iniciando com http:// ou https://) obrigatório');
+      if (i.action !== undefined && !['navigate', 'screenshot', 'inspect', 'check'].includes(String(i.action))) {
+        issues.push('campo "action" deve ser navigate, screenshot, inspect ou check');
+      }
+      return issues;
+    },
+    execute: async (input, ctx) => {
+      const i = input as { url: string; action?: 'navigate' | 'screenshot' | 'inspect' | 'check'; selector?: string; screenshotPath?: string; timeoutMs?: number };
+      const screenshotPath = i.screenshotPath ? ensureInside(ctx.baseDir, i.screenshotPath, ctx.allowedDirs) : undefined;
+      return await runBrowserPlaywright({
+        action: i.action ?? 'navigate',
+        url: i.url,
+        selector: i.selector,
+        screenshotPath,
+        timeoutMs: i.timeoutMs,
+        dir: ctx.baseDir,
+      });
     },
   },
 };

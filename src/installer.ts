@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, GENERATED_MARKER } from './exporters.js';
+import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, exportToAntigravity, GENERATED_MARKER } from './exporters.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -425,7 +425,7 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
   if (!fs.existsSync(opencodePath)) {
     const opencodeConfig = {
       $schema: 'https://opencode.ai/config.json',
-      instructions: ['AGENTS.md', 'SYSTEM.md']
+      instructions: ['AGENTS.md']
     };
     fs.writeFileSync(opencodePath, JSON.stringify(opencodeConfig, null, 2));
     console.log('  \x1b[32m✔\x1b[0m opencode.json created (auto-loads framework on opencode)');
@@ -440,13 +440,15 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
     // rodando o comando (isso é o que realmente importa — rodar `izanagi
     // init` de dentro do Claude Code deve gerar `.claude/` mesmo num projeto
     // 100% vazio, sem depender de uma pasta `.claude` já existir de antes).
-    if (process.env.CLAUDECODE === '1' || process.env.CLAUDE_CODE_ENTRYPOINT) targetCli = 'claude';
+    if (process.env.ANTIGRAVITY_AGENT === '1' || process.env.ANTIGRAVITY_LS_VERSION || process.env.ANTIGRAVITY_EDITOR_APP_ROOT) targetCli = 'antigravity';
+    else if (process.env.CLAUDECODE === '1' || process.env.CLAUDE_CODE_ENTRYPOINT) targetCli = 'claude';
     else if (process.env.CURSOR_TRACE_ID || process.env.CURSOR_AGENT) targetCli = 'cursor';
     else if (process.env.CODEX_SANDBOX || process.env.CODEX_HOME) targetCli = 'codex';
     else if (process.env.GITHUB_COPILOT_CLI || process.env.COPILOT_AGENT) targetCli = 'copilot';
     // Fallback: pastas de adaptador já existentes no projeto (segunda melhor
     // pista — cobre reinstalar/atualizar packs num projeto que já rodou
     // `izanagi export --cli X` antes e não está mais rodando dentro da CLI).
+    else if (fs.existsSync(path.join(destinationRoot, '.agents', 'skills.json'))) targetCli = 'antigravity';
     else if (fs.existsSync(path.join(destinationRoot, '.cursor'))) targetCli = 'cursor';
     else if (fs.existsSync(path.join(destinationRoot, '.claude'))) targetCli = 'claude';
     else if (fs.existsSync(path.join(destinationRoot, '.github'))) targetCli = 'copilot';
@@ -456,6 +458,7 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
   }
 
   const adapterMap: Record<string, () => string[]> = {
+    antigravity: () => exportToAntigravity(destinationRoot),
     claude: () => exportToClaude(destinationRoot),
     cursor: () => exportToCursor(destinationRoot),
     codex: () => exportToCodex(destinationRoot),

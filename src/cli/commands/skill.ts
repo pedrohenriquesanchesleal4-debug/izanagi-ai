@@ -6,21 +6,53 @@ import fs from 'fs';
 import path from 'path';
 import { SkillResolver } from '../../runtime/routing/resolver.js';
 import { SkillFactory } from '../../runtime/factories/skill-factory.js';
+import { SkillManager } from '../../runtime/skills/manager.js';
 
-export function skillCommand(baseDir: string, args: string[]): void {
+export async function skillCommand(baseDir: string, args: string[]): Promise<void> {
   const sub = args[0]?.toLowerCase() ?? 'list';
 
   if (sub === 'list') {
-    skillList(baseDir);
+    const installedOnly = args.includes('--installed');
+    skillList(baseDir, installedOnly);
     return;
   }
-  if (sub === 'search') {
-    const query = args.slice(1).join(' ');
+  if (sub === 'search' || sub === 'find') {
+    const query = args.slice(1).filter((a) => !a.startsWith('--')).join(' ');
     if (!query) {
-      console.error('\x1b[31mUsage:\x1b[0m izanagi skill search <query>\n');
+      console.error('\x1b[31mUsage:\x1b[0m izanagi skill search <query> [--stack=<stack>]\n');
       process.exit(1);
     }
-    skillSearch(baseDir, query);
+    const stack = args.find((a) => a.startsWith('--stack='))?.split('=')[1];
+    skillSearch(baseDir, query, stack);
+    return;
+  }
+  if (sub === 'install' || sub === 'add') {
+    const source = args[1];
+    if (!source) {
+      console.error('\x1b[31mUsage:\x1b[0m izanagi skill install <source> [--force] [--global] [--as=<name>]\n');
+      process.exit(1);
+    }
+    const force = args.includes('--force');
+    const global = args.includes('--global') || args.includes('-g');
+    const asName = args.find((a) => a.startsWith('--as='))?.split('=')[1];
+    await skillInstall(baseDir, source, { force, global, asName });
+    return;
+  }
+  if (sub === 'remove' || sub === 'uninstall') {
+    const name = args[1];
+    if (!name) {
+      console.error('\x1b[31mUsage:\x1b[0m izanagi skill remove <name> [--global]\n');
+      process.exit(1);
+    }
+    const global = args.includes('--global') || args.includes('-g');
+    skillRemove(baseDir, name, global);
+    return;
+  }
+  if (sub === 'update' || sub === 'upgrade') {
+    const name = args[1] && !args[1].startsWith('--') ? args[1] : undefined;
+    const force = args.includes('--force');
+    const global = args.includes('--global') || args.includes('-g');
+    await skillUpdate(baseDir, name, { force, global });
     return;
   }
   if (sub === 'inspect') {
@@ -45,7 +77,7 @@ export function skillCommand(baseDir: string, args: string[]): void {
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi skill <list|search|inspect|create> [args]\n');
+  console.error('Usage: izanagi skill <list|search|find|inspect|install|remove|update|create> [args]\n');
   process.exit(1);
 }
 
@@ -67,7 +99,25 @@ function lifecycleBadge(lifecycle?: string): string {
   }
 }
 
-export function skillList(baseDir: string): void {
+export function skillList(baseDir: string, installedOnly = false): void {
+  const manager = new SkillManager({ baseDir });
+  const installed = manager.listInstalled();
+
+  if (installedOnly) {
+    console.log(`\n\x1b[35m=== Izanagi AI Installed Skills (${installed.length}) ===\x1b[0m\n`);
+    if (installed.length === 0) {
+      console.log('  \x1b[90mNenhuma skill externa instalada via `izanagi skill install`.\x1b[0m\n');
+      return;
+    }
+    for (const item of installed) {
+      console.log(`\x1b[1m\x1b[36m• ${item.name}\x1b[0m \x1b[90m(v${item.version}, risco ${item.riskLevel})\x1b[0m`);
+      console.log(`  \x1b[90mFonte:\x1b[0m ${item.source} · \x1b[90mInstalado em:\x1b[0m ${item.installedAt.slice(0, 10)}`);
+      console.log(`  \x1b[90mDestino:\x1b[0m ${item.destination}`);
+    }
+    console.log('');
+    return;
+  }
+
   const resolver = new SkillResolver({ baseDir });
   const skills = resolver.list().sort((a, b) => a.name.localeCompare(b.name));
   console.log(`\n\x1b[35m=== Izanagi AI Skills (${skills.length}) ===\x1b[0m\n`);
@@ -75,20 +125,90 @@ export function skillList(baseDir: string): void {
     console.log(`\x1b[1m\x1b[36m• ${s.name}\x1b[0m \x1b[90m(v${s.version}, ${s.tokenBudget} tok, risco ${s.risk})\x1b[0m${lifecycleBadge(s.lifecycle)}`);
     console.log(`  \x1b[90m${(s.description ?? '').slice(0, 140)}\x1b[0m`);
   }
-  console.log('\nDica: \x1b[33mizanagi skill inspect <name>\x1b[0m | \x1b[33mizanagi skill search <query>\x1b[0m\n');
+  if (installed.length > 0) {
+    console.log(`\n\x1b[32m✔ ${installed.length} skills externas gerenciadas instaladas (\`izanagi skill list --installed\`).\x1b[0m`);
+  }
+  console.log('\nDica: \x1b[33mizanagi skill inspect <name>\x1b[0m | \x1b[33mizanagi skill search <query>\x1b[0m | \x1b[33mizanagi skill install <source>\x1b[0m\n');
 }
 
-export function skillSearch(baseDir: string, query: string): void {
+export function skillSearch(baseDir: string, query: string, stack?: string): void {
   const resolver = new SkillResolver({ baseDir });
-  const results = resolver.search(query, 20);
-  console.log(`\n\x1b[35m=== Skill Search: "${query}" (${results.length} resultados) ===\x1b[0m\n`);
+  const results = resolver.search(query, { limit: 20, stack });
+  console.log(`\n\x1b[35m=== Skill Search: "${query}"${stack ? ` [stack=${stack}]` : ''} (${results.length} resultados) ===\x1b[0m\n`);
   for (const s of results) {
-    console.log(`\x1b[1m\x1b[36m• ${s.name}\x1b[0m \x1b[90m(v${s.version})\x1b[0m`);
+    console.log(`\x1b[1m\x1b[36m• ${s.name}\x1b[0m \x1b[90m(v${s.version}, risco ${s.risk})\x1b[0m${lifecycleBadge(s.lifecycle)}`);
     console.log(`  \x1b[90m${(s.description ?? '').slice(0, 130)}\x1b[0m`);
     if (s.triggers.length > 0) console.log(`  \x1b[90mTriggers: ${s.triggers.slice(0, 5).join(' | ')}\x1b[0m`);
     console.log('');
   }
 }
+
+export async function skillInstall(
+  baseDir: string,
+  source: string,
+  opts: { force?: boolean; global?: boolean; asName?: string } = {}
+): Promise<void> {
+  console.log(`\n\x1b[36m=== Izanagi AI Skill Installer ===\x1b[0m`);
+  console.log(`  \x1b[90mFonte:\x1b[0m ${source}`);
+  console.log(`  \x1b[90mEscopo:\x1b[0m ${opts.global ? 'Global (~/.agents/skills)' : 'Projeto (.agents/skills)'}\n`);
+
+  const manager = new SkillManager({ baseDir });
+  try {
+    const res = await manager.install(source, { ...opts, baseDir });
+    console.log(` \x1b[32m✔\x1b[0m Skill \x1b[1m${res.name}\x1b[0m instalada com sucesso!`);
+    console.log(`   \x1b[90mDestino:\x1b[0m ${res.destination}`);
+    console.log(`   \x1b[90mNível de risco detectado:\x1b[0m ${res.scan.level}`);
+    if (res.warning) {
+      console.log(`   \x1b[33m⚠ Aviso de segurança:\x1b[0m ${res.warning}`);
+    }
+    console.log('');
+  } catch (err: any) {
+    console.error(`\x1b[31m✖ Erro ao instalar skill:\x1b[0m ${err.message}\n`);
+    process.exit(1);
+  }
+}
+
+export function skillRemove(baseDir: string, name: string, global = false): void {
+  const manager = new SkillManager({ baseDir });
+  const ok = manager.remove(name, { global });
+  if (ok) {
+    console.log(`\n\x1b[32m✔\x1b[0m Skill \x1b[1m${name}\x1b[0m removida com sucesso.\n`);
+  } else {
+    console.log(`\n\x1b[33m•\x1b[0m Skill "${name}" não encontrada no gerenciador.\n`);
+  }
+}
+
+export async function skillUpdate(
+  baseDir: string,
+  name?: string,
+  opts: { force?: boolean; global?: boolean } = {}
+): Promise<void> {
+  console.log(`\n\x1b[36m=== Izanagi AI Skill Updater ===\x1b[0m`);
+  console.log(`  \x1b[90mAlvo:\x1b[0m ${name ? name : 'Todas as skills instaladas'}`);
+  console.log(`  \x1b[90mEscopo:\x1b[0m ${opts.global ? 'Global (~/.agents/skills)' : 'Projeto (.agents/skills)'}\n`);
+
+  const manager = new SkillManager({ baseDir });
+  try {
+    const updated = await manager.update(name, opts);
+    if (updated.length === 0) {
+      console.log(`\x1b[33m•\x1b[0m Nenhuma skill instalada encontrada para atualizar.\n`);
+      return;
+    }
+    for (const res of updated) {
+      console.log(` \x1b[32m✔\x1b[0m Skill \x1b[1m${res.name}\x1b[0m atualizada com sucesso!`);
+      console.log(`   \x1b[90mDestino:\x1b[0m ${res.destination}`);
+      console.log(`   \x1b[90mNível de risco:\x1b[0m ${res.scan.level}`);
+      if (res.warning) {
+        console.log(`   \x1b[33m⚠ Aviso de segurança:\x1b[0m ${res.warning}`);
+      }
+      console.log('');
+    }
+  } catch (err: any) {
+    console.error(`\x1b[31m✖ Erro ao atualizar skill:\x1b[0m ${err.message}\n`);
+    process.exit(1);
+  }
+}
+
 
 export function skillInspect(baseDir: string, name: string): void {
   const resolver = new SkillResolver({ baseDir });

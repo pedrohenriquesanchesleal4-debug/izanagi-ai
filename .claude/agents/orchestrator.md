@@ -2,7 +2,7 @@
 name: orchestrator
 description: "Use PROACTIVELY como coordenador orchestration-only para decompor, delegar e auditar tarefas multiagente; nunca para editar implementação."
 tools: Read, Grep, Glob, Agent
-model: opus
+model: sonnet
 ---
 
 # Izanagi Orchestrator

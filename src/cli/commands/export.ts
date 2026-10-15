@@ -1,8 +1,8 @@
 import os from 'os';
 import path from 'path';
-import { exportAll, exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode } from '../../exporters.js';
+import { exportAll, exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, exportToAntigravity } from '../../exporters.js';
 
-const CLI_TARGETS = ['claude', 'codex', 'cursor', 'copilot', 'kimi', 'opencode', 'all'] as const;
+const CLI_TARGETS = ['claude', 'codex', 'cursor', 'copilot', 'kimi', 'opencode', 'antigravity', 'all'] as const;
 type CliTarget = (typeof CLI_TARGETS)[number];
 
 interface ExportArgs {
@@ -89,13 +89,14 @@ function showExportHelp(): void {
 \x1b[1mUsage:\x1b[0m izanagi export [--cli <target>] [--dir <path>]
 
   \x1b[1mTargets:\x1b[0m
-  \x1b[32mclaude\x1b[0m    Generates CLAUDE.md + .claude/agents + .claude/commands (22 agents) + .claude/skills (full 103-skill library, name+description always-loaded, body read on demand).
-  \x1b[32mcodex\x1b[0m     Generates .codex/instructions.md + .codex/agents (22 agents).
-  \x1b[32mcursor\x1b[0m    Generates .cursor/rules (core, agents, memory) in .mdc format.
-  \x1b[32mcopilot\x1b[0m   Generates .github/copilot-instructions.md.
-  \x1b[32mkimi\x1b[0m      Generates .kimi/README.md + kimi.md (Kimi CLI lê AGENTS.md/.opencode).
-  \x1b[32mopencode\x1b[0m  Generates .opencode/agent/*.md (22 agents + orchestrator) — same convention Kimi CLI reads.
-  \x1b[32mall\x1b[0m       Generates every adapter above (default).
+  \x1b[32mantigravity\x1b[0m Generates .agents/skills.json + GEMINI.md + .agents/rules + .agents/skills/izanagi-* (23 agents).
+  \x1b[32mclaude\x1b[0m      Generates CLAUDE.md + .claude/agents + .claude/commands (22 agents) + .claude/skills (full 103-skill library, name+description always-loaded, body read on demand).
+  \x1b[32mcodex\x1b[0m       Generates .codex/instructions.md + .codex/agents (22 agents).
+  \x1b[32mcursor\x1b[0m      Generates .cursor/rules (core, agents, memory) in .mdc format.
+  \x1b[32mcopilot\x1b[0m     Generates .github/copilot-instructions.md.
+  \x1b[32mkimi\x1b[0m        Generates .kimi/README.md + kimi.md (Kimi CLI lê AGENTS.md/.opencode).
+  \x1b[32mopencode\x1b[0m    Generates .opencode/agent/*.md (22 agents + orchestrator) — same convention Kimi CLI reads.
+  \x1b[32mall\x1b[0m         Generates every adapter above (default).
 
   \x1b[1mOptions:\x1b[0m
   \x1b[32m--cli, -c <target>\x1b[0m   Target CLI (default: all).
@@ -106,6 +107,7 @@ function showExportHelp(): void {
 
   \x1b[1mExamples:\x1b[0m
   izanagi export
+  izanagi export --cli antigravity
   izanagi export --cli claude
   izanagi export --cli cursor --dir ./my-project
   izanagi export --cli claude --global
@@ -134,7 +136,9 @@ export function exportCommand(args: string[]): void {
               ? exportToCopilot
               : target === 'opencode'
                 ? exportToOpencode
-                : exportToKimi;
+                : target === 'antigravity'
+                  ? exportToAntigravity
+                  : exportToKimi;
 
   console.log(`\n\x1b[36m=== Exporting Izanagi AI adapters for ${target} ===\x1b[0m`);
   console.log(`  \x1b[90mTarget directory:\x1b[0m ${targetDir}${personalScope ? ' \x1b[90m(escopo pessoal: vale em todo projeto)\x1b[0m' : ''}\n`);

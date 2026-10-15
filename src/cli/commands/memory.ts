@@ -14,17 +14,33 @@ export function memoryCommand(stateDir: string, args: string[]): void {
   const sub = args[0]?.toLowerCase() ?? 'inspect';
   const store = new MemoryStore({ baseDir: stateDir });
 
-  if (sub === 'inspect') {
+  if (sub === 'inspect' || sub === 'list') {
     memoryInspect(store);
     return;
   }
-  if (sub === 'search') {
-    const query = args.slice(1).join(' ');
+  if (sub === 'search' || sub === 'find') {
+    const categoryArg = args.find((a) => a.startsWith('--category='))?.split('=')[1] as any;
+    const query = args.slice(1).filter((a) => !a.startsWith('--')).join(' ');
     if (!query) {
-      console.error('\x1b[31mUsage:\x1b[0m izanagi memory search <query>\n');
+      console.error('\x1b[31mUsage:\x1b[0m izanagi memory search <query> [--category=<category>]\n');
       process.exit(1);
     }
-    memorySearch(store, query);
+    memorySearch(store, query, categoryArg);
+    return;
+  }
+  if (sub === 'delete' || sub === 'remove') {
+    const category = args[1] as any;
+    const title = args.slice(2).join(' ') || undefined;
+    if (!category) {
+      console.error('\x1b[31mUsage:\x1b[0m izanagi memory delete <category> [title|*]\n');
+      process.exit(1);
+    }
+    const ok = store.deleteMemory(category, title);
+    if (!ok) {
+      console.error(`\x1b[31mEntrada de memória não encontrada:\x1b[0m ${category} ${title ?? ''}\n`);
+      process.exit(1);
+    }
+    console.log(`\x1b[32m✔\x1b[0m Memória [${category}] ${title ? `"${title}"` : 'completa'} limpa com sucesso.\n`);
     return;
   }
   if (sub === 'invalidate' || sub === 'archive') {
@@ -43,7 +59,7 @@ export function memoryCommand(stateDir: string, args: string[]): void {
     return;
   }
   console.error(`\x1b[31mUnknown subcommand:\x1b[0m ${sub}`);
-  console.error('Usage: izanagi memory <inspect|search|invalidate|archive> [query|pattern]\n');
+  console.error('Usage: izanagi memory <inspect|search|delete|invalidate|archive> [args]\n');
   process.exit(1);
 }
 
@@ -87,9 +103,9 @@ function memoryInspect(store: MemoryStore): void {
   console.log('\nBuscar: \x1b[33mizanagi memory search <termo>\x1b[0m\n');
 }
 
-function memorySearch(store: MemoryStore, query: string): void {
-  const results = store.search(query, 10);
-  console.log(`\n\x1b[35m=== Memory Search: "${query}" (${results.length} resultados) ===\x1b[0m\n`);
+function memorySearch(store: MemoryStore, query: string, category?: any): void {
+  const results = store.search(query, { limit: 10, category });
+  console.log(`\n\x1b[35m=== Memory Search: "${query}"${category ? ` [category=${category}]` : ''} (${results.length} resultados) ===\x1b[0m\n`);
   for (const r of results) {
     console.log(`\x1b[1m\x1b[36m• [${r.category}] ${r.title}\x1b[0m \x1b[90m(score ${r.score})\x1b[0m`);
     const snippet = r.content.replace(/\s+/g, ' ').slice(0, 140);

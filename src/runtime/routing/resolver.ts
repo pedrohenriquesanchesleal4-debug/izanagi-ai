@@ -118,7 +118,7 @@ export class SkillResolver {
     this.loadAliases();
   }
 
-  /** Carrega aliases de core/skill-resolver.json (procura em baseDir e .agents). */
+  /** Carrega aliases de core/skill-resolver.json e auto-descobre pastas de skills. */
   private loadAliases(): void {
     const candidates = [
       path.join(this.opts.baseDir, 'core', 'skill-resolver.json'),
@@ -131,9 +131,34 @@ export class SkillResolver {
         for (const [k, v] of Object.entries(data.aliases ?? {})) {
           this.aliases.set(k, String(v));
         }
-        return;
+        break;
       } catch {
         // tenta o próximo
+      }
+    }
+
+    // Auto-descoberta em skills/, .skills/ e .agents/skills/
+    const skillRoots = [
+      path.join(this.opts.baseDir, 'skills'),
+      path.join(this.opts.baseDir, '.skills'),
+      path.join(this.opts.baseDir, '.agents', 'skills'),
+    ];
+    for (const root of skillRoots) {
+      if (!fs.existsSync(root)) continue;
+      try {
+        const entries = fs.readdirSync(root, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            const skillPath = path.join(root, entry.name, 'SKILL.md');
+            if (fs.existsSync(skillPath)) {
+              if (!this.aliases.has(entry.name)) {
+                this.aliases.set(entry.name, path.relative(this.opts.baseDir, skillPath));
+              }
+            }
+          }
+        }
+      } catch {
+        // ignora erro de permissão ou diretório
       }
     }
   }
@@ -198,6 +223,7 @@ export class SkillResolver {
       compatibility: (fm.compatibility as string) ?? '>=1.0.0',
       risk: ((fm.risk as string) ?? 'low') as SkillManifest['risk'],
       tokenBudget: Number(fm.token_budget ?? fm.tokenBudget ?? 800),
+      stacks: Array.isArray(fm.stacks) ? (fm.stacks as any[]) : undefined,
       body: stripFrontmatter(content),
       path: file,
     };
@@ -234,32 +260,77 @@ export class SkillResolver {
     return results.sort((a, b) => b.score.finalScore - a.score.finalScore).slice(0, limit);
   }
 
-  /** Busca skills por termo (para `izanagi skill search`). */
-  search(query: string, limit = 20): SkillManifest[] {
-    const results: Array<{ manifest: SkillManifest; score: number }> = [];
+  /** Busca skills por termo com ranking ponderado, deduplicação e filtros (para `izanagi skill search/find`). */
+  search(
+    query: string,
+    optsOrLimit: number | { limit?: number; stack?: string; category?: string; lifecycle?: string } = 20
+  ): SkillManifest[] {
+    const opts = typeof optsOrLimit === 'number' ? { limit: optsOrLimit } : optsOrLimit;
+    const limit = opts.limit ?? 20;
+    const q = query.toLowerCase().trim();
+    const queryTerms = q
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .split(/[\s,._\-/]+/)
+      .filter((t) => t.length >= 2);
+
+    const scoredMap = new Map<string, { manifest: SkillManifest; score: number }>();
+
     for (const alias of this.aliases.keys()) {
       const loaded = this.loadSkill(alias);
       if (!loaded) continue;
-      const haystack = [loaded.manifest.name, loaded.manifest.description, ...loaded.manifest.triggers, ...loaded.manifest.capabilities].join(' ').toLowerCase();
+      const m = loaded.manifest;
+
+      // Filtros opcionais
+      if (opts.lifecycle && m.lifecycle && m.lifecycle !== opts.lifecycle) continue;
+      if (opts.stack && m.stacks && !m.stacks.includes(opts.stack as any)) continue;
+
+      const normName = m.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const normDesc = (m.description || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const normTriggers = (m.triggers || []).map((t) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+      const normCaps = (m.capabilities || []).map((c) => c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+
       let score = 0;
-      for (const term of query.toLowerCase().split(/\s+/).filter((t) => t.length > 2)) {
-        if (haystack.includes(term)) score += 1;
+
+      // Match exato ou de prefixo no nome
+      if (normName === q) score += 25;
+      else if (normName.includes(q)) score += 12;
+
+      // Match no alias
+      if (alias.toLowerCase() === q) score += 10;
+      else if (alias.toLowerCase().includes(q)) score += 5;
+
+      for (const term of queryTerms) {
+        if (normName.includes(term)) score += 8;
+        if (normTriggers.some((t) => t.includes(term))) score += 5;
+        if (normCaps.some((c) => c.includes(term))) score += 4;
+        if (normDesc.includes(term)) score += 2;
       }
-      if (score > 0 || alias.includes(query.toLowerCase())) {
-        results.push({ manifest: loaded.manifest, score: score + (alias.includes(query.toLowerCase()) ? 2 : 0) });
+
+      if (score > 0) {
+        const existing = scoredMap.get(m.name);
+        if (!existing || score > existing.score) {
+          scoredMap.set(m.name, { manifest: m, score });
+        }
       }
     }
-    return results.sort((a, b) => b.score - a.score).slice(0, limit).map((r) => r.manifest);
+
+    return Array.from(scoredMap.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((r) => r.manifest);
   }
 
-  /** Lista todas as skills registradas com seus manifests. */
+  /** Lista todas as skills únicas registradas com seus manifests em ordem alfabética. */
   list(): SkillManifest[] {
-    const out: SkillManifest[] = [];
+    const unique = new Map<string, SkillManifest>();
     for (const alias of this.aliases.keys()) {
       const loaded = this.loadSkill(alias);
-      if (loaded) out.push(loaded.manifest);
+      if (loaded && !unique.has(loaded.manifest.name)) {
+        unique.set(loaded.manifest.name, loaded.manifest);
+      }
     }
-    return out;
+    return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /** Carrega o genome de um agente (JSON) com enriquecimento default. */

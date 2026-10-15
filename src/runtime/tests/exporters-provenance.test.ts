@@ -269,7 +269,7 @@ test('orchestrator: entrypoints gerados impõem política de execução, não s�
     ['.opencode', 'agent', 'orchestrator.md']
   ]) {
     const opencode = fs.readFileSync(path.join(repoRoot, ...rel), 'utf8');
-    assert.match(opencode, /^mode: primary$/m);
+    assert.match(opencode, /^mode: all$/m);
     assert.match(opencode, /^  write: false$/m);
     assert.match(opencode, /^  edit: false$/m);
     assert.match(opencode, /^  bash: false$/m);

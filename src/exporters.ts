@@ -1015,7 +1015,7 @@ function opencodeAgentTemplate(a: IzanagiAgentInfo): string {
   const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas de ${(a.role || a.name).toLowerCase()}.`;
   const description = truncate(`${a.name} - ${trigger}`, 260);
   const orchestratorFrontmatter = a.slug === 'orchestrator'
-    ? `mode: primary
+    ? `mode: all
 tools:
   read: true
   grep: true
@@ -1054,7 +1054,7 @@ function opencodeOrchestratorTemplate(agents: IzanagiAgentInfo[]): string {
   return `---
 name: "Agents Orchestrator"
 description: "Izanagi Multi-Agent Orchestrator - Default Multi-Agent Swarm, parallel concurrent execution across ${agents.length} specialized agents"
-mode: primary
+mode: all
 tools:
   read: true
   grep: true
@@ -1151,6 +1151,114 @@ export function exportToOpencode(baseDir: string): string[] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Antigravity (Google / AGY)                                         */
+/* ------------------------------------------------------------------ */
+
+function antigravityCoreRuleTemplate(): string {
+  return `# Izanagi AI: Antigravity Core Rules
+
+> Fonte da verdade: \`AGENTS.md\` (carregado nativamente pelo Antigravity).
+
+## Princípios de Alta Engenharia
+
+- **High-Craft & Anti-Generic**: Toda interface deve ser intencional, moderna e sem visual genérico de IA (evitar Tailwind padrão sem personalização, hero-cards repetitivos).
+- **Zero Stubs / Zero Lazy Code**: Todo código entregue deve ser funcional, completo, tipado e com tratamento real de erros. Proibido \`// TODO: implement later\`.
+- **Token Economy**: Contexto seletivo, progressive disclosure via skills sob demanda, reutilização de artefatos em disco.
+- **TDD & Qualidade**: Validar decisões antes de codar, verificar comportamento com testes automatizados e evidências de execução.
+- **Memória Persistente**: Registrar decisões arquiteturais e soluções de erros em \`.agents/memoria/\`.
+
+---
+${provenanceFooter('antigravity')}
+`;
+}
+
+function antigravityAgentSkillTemplate(a: IzanagiAgentInfo): string {
+  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas especializadas de ${(a.role || a.name).toLowerCase()}.`;
+  return `---
+name: izanagi-${a.slug}
+description: >-
+  Ativa a persona e diretrizes especializadas do agente ${a.name} (${a.role}).
+  ${trigger}
+---
+
+# Izanagi Agent: ${a.name}
+
+**Papel:** ${a.role}
+
+${a.identity || a.role}
+
+## Diretrizes Sempre
+
+${a.always.length > 0 ? bullet(a.always) : '- (seguir convenções do framework)'}
+
+## Diretrizes Nunca
+
+${a.never.length > 0 ? bullet(a.never) : '- (sem restrições específicas)'}
+
+## Skills Associadas
+
+${bullet(a.skills, 10) || '- (sem skills declaradas)'}
+
+> Fonte: \`agents/${a.file}\` · ${provenanceFooter('antigravity')}
+`;
+}
+
+export function exportToAntigravity(baseDir: string): string[] {
+  const created: string[] = [];
+  const source = resolveSourceDir(baseDir);
+  const agents = loadIzanagiAgents(source);
+
+  // 1. .agents/skills.json: Configuração nativa do Antigravity para descobrir skills externas sem duplicar
+  const skillsJsonContent = JSON.stringify(
+    {
+      entries: [
+        { path: 'skills' },
+        { path: '.skills' }
+      ]
+    },
+    null,
+    2
+  );
+  const skillsJson = writeIfAbsent(baseDir, '.agents/skills.json', skillsJsonContent);
+  if (skillsJson) created.push(skillsJson);
+
+  // 2. GEMINI.md: Regra raiz para o Antigravity / Gemini CLI
+  const geminiMdContent = `# Izanagi AI Framework (Antigravity Integration)
+
+> **Fonte da verdade canônica:** \`AGENTS.md\` (já lido nativamente pelo Antigravity).
+
+O Izanagi é um framework meta para engenharia de software autônoma com 23 agentes especializados,
+107 skills no catálogo e runtime com verificação contínua.
+
+- Regras essenciais: ver \`.agents/rules/izanagi-core.md\`.
+- Skills ativas: descobertas via \`.agents/skills.json\` em \`skills/\` e \`.skills/\`.
+- Agentes especializados: invocáveis via skills \`izanagi-<nome>\` ou comandos.
+
+---
+${provenanceFooter('antigravity')}
+`;
+  const geminiMd = writeIfAbsent(baseDir, 'GEMINI.md', geminiMdContent);
+  if (geminiMd) created.push(geminiMd);
+
+  // 3. .agents/rules/izanagi-core.md: Regras operacionais do workspace
+  const coreRule = writeIfAbsent(baseDir, '.agents/rules/izanagi-core.md', antigravityCoreRuleTemplate());
+  if (coreRule) created.push(coreRule);
+
+  // 4. Skills de ativação dos 23 agentes em .agents/skills/izanagi-<slug>/SKILL.md
+  // Isso permite que o Antigravity descubra e ative qualquer um dos 23 especialistas sob demanda!
+  for (const agent of agents) {
+    const rel = writeIfAbsent(
+      baseDir,
+      `.agents/skills/izanagi-${agent.slug}/SKILL.md`,
+      antigravityAgentSkillTemplate(agent)
+    );
+    if (rel) created.push(rel);
+  }
+
+  return created;
+}
+
+/* ------------------------------------------------------------------ */
 /* All                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -1162,5 +1270,7 @@ export function exportAll(baseDir: string): string[] {
   created.push(...exportToCopilot(baseDir));
   created.push(...exportToKimi(baseDir));
   created.push(...exportToOpencode(baseDir));
+  created.push(...exportToAntigravity(baseDir));
   return created;
 }
+

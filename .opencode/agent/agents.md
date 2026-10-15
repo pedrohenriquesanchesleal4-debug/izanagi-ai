@@ -1,7 +1,7 @@
 ---
 name: "Agents Orchestrator"
 description: "Izanagi Multi-Agent Orchestrator - Default Multi-Agent Swarm, parallel concurrent execution across 31 specialized agents"
-mode: primary
+mode: all
 tools:
   read: true
   grep: true
