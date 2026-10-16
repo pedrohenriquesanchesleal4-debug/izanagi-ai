@@ -82,8 +82,8 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - refero-styles
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
-> 1. **NUNCA carregue todas as skills de uma vez**: carregar múltiplas skills simultaneamente estoura o orçamento de tokens e polui o contexto.
-> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS a skill exata** (ou 1 a 2 skills da chain correspondente) necessária para o trabalho atual.
+> 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
+> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS as skills necessárias** (até no máximo 8 skills ao mesmo tempo) para o trabalho atual.
 > 3. **Conformidade Técnica**: É expressamente proibido atuar de forma genérica sem aplicar os padrões e checklists da skill relevante para o que estiver construindo. Toda entrega deve evidenciar a aplicação dela.
 
 ## Chains (Fluxos de Execução)

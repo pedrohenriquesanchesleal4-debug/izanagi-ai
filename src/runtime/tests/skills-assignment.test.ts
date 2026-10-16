@@ -103,17 +103,21 @@ test('Token Economy: selectRelevantSkills carrega cirurgicamente apenas as skill
   ];
 
   // 1. Tarefa de teste de UI/Playwright deve selecionar browser-playwright e web-design-guidelines
-  const uiTest = selectRelevantSkills(candidates, 'executar testes e2e de navegacao com playwright', 2);
+  const uiTest = selectRelevantSkills(candidates, 'executar testes e2e de navegacao com playwright', 8);
   assert.ok(uiTest.includes('browser-playwright'), 'deve selecionar browser-playwright');
-  assert.ok(uiTest.length <= 2, 'não pode carregar mais que o limite (2 skills)');
+  assert.ok(uiTest.length <= 8, 'não pode carregar mais que o limite (8 skills)');
 
   // 2. Tarefa de GraphQL deve selecionar graphql
-  const apiTest = selectRelevantSkills(candidates, 'desenvolver schema graphql e resolvers da api', 2);
+  const apiTest = selectRelevantSkills(candidates, 'desenvolver schema graphql e resolvers da api', 8);
   assert.ok(apiTest.includes('graphql'), 'deve selecionar graphql');
   assert.ok(!apiTest.includes('mobile-dev'), 'não deve carregar mobile-dev desnecessariamente');
 
   // 3. Tarefa genérica sem palavras-chave carrega no máximo 1 skill primária
-  const genericTest = selectRelevantSkills(candidates, 'tarefa generica sem termos especificos', 2);
+  const genericTest = selectRelevantSkills(candidates, 'tarefa generica sem termos especificos', 8);
   assert.equal(genericTest.length, 1, 'tarefa genérica carrega apenas 1 skill primária');
+
+  // 4. Default de maxSkills é 8
+  const defaultLimitTest = selectRelevantSkills(candidates, 'executar testes e2e de navegacao com playwright');
+  assert.ok(defaultLimitTest.length <= 8, 'default deve respeitar o teto de 8 skills');
 });
 

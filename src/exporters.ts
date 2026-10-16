@@ -385,7 +385,7 @@ ${bullet(a.skills) || '- (sem skills declaradas)'}
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico**: Para economizar tokens e não sobrecarregar o contexto, NUNCA carregue todas as skills de uma vez.
-> 2. **Ativação por Tarefa**: Identifique a necessidade imediata e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para o trabalho atual.
+> 2. **Ativação por Demanda**: Identifique a necessidade imediata e ative **APENAS as skills estritamente relevantes** (até no máximo 8 skills ao mesmo tempo) necessárias para o trabalho atual.
 > 3. **Conformidade Técnica**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill.
 
 ## Chains (fluxos de execução)
@@ -456,7 +456,7 @@ ${skillLines}
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
-> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para a etapa atual.
+> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS as skills necessárias** (até no máximo 8 skills ao mesmo tempo) para a etapa atual.
 > 3. **Rigor Técnico**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill. Proibido atuar sem invocar seus padrões.
 
 ## Chains (fluxos de execução)
@@ -687,7 +687,7 @@ Skills da sua especialidade:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
-> Ative apenas a skill estritamente relevante (1 ou 2) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões da skill ativada na entrega.
+> Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
 
 ## Chains
 
@@ -1067,8 +1067,8 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
-> 1. **NUNCA carregue todas as skills de uma vez**: carregar múltiplas skills simultaneamente estoura o orçamento de tokens e polui o contexto.
-> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS a skill exata** (ou 1 a 2 skills da chain correspondente) necessária para o trabalho atual.
+> 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
+> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS as skills necessárias** (até no máximo 8 skills ao mesmo tempo) para o trabalho atual.
 > 3. **Conformidade Técnica**: É expressamente proibido atuar de forma genérica sem aplicar os padrões e checklists da skill relevante para o que estiver construindo. Toda entrega deve evidenciar a aplicação dela.
 
 ## Chains (Fluxos de Execução)
@@ -1231,7 +1231,7 @@ Ao assumir este papel, você possui as seguintes skills atribuídas:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
 > ⚠️ **DIRETRIZ DE USO MANDATÓRIO & ECONOMIA DE TOKENS**:
-> Para economizar tokens e evitar contexto redundante, ative e consulte **APENAS a skill específica** necessária para a tarefa em execução no momento (1 a 2 skills no máximo). É proibido atuar sem aplicar os padrões da skill relevante da sua especialidade, mas jamais carregue skills não pertinentes ao escopo imediato.
+> Para economizar tokens e evitar contexto redundante, ative e consulte **APENAS as skills específicas** necessárias para a tarefa em execução no momento (até no máximo 8 skills ao mesmo tempo). É proibido atuar sem aplicar os padrões das skills relevantes da sua especialidade, mas jamais carregue skills não pertinentes ao escopo imediato.
 
 ## Chains (Fluxos de Execução)
 

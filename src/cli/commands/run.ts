@@ -1269,11 +1269,13 @@ export function artifactRequirementLine(kind: string): string {
  * Seleciona cirurgicamente apenas as skills relevantes para a tarefa imediata,
  * evitando poluir o contexto e economizando tokens preciosos.
  */
-export function selectRelevantSkills(candidates: string[], task: string, maxSkills = 2): string[] {
-  if (candidates.length <= maxSkills) return candidates;
+export function selectRelevantSkills(candidates: string[], task: string, maxSkills = 8): string[] {
+  if (!candidates || candidates.length === 0) return [];
+  if (candidates.length === 1) return candidates;
 
   const q = (task || '').toLowerCase();
   const qTerms = q.split(/[^a-z0-9_]+/).filter((t) => t.length >= 3);
+  const genericTerms = new Set(['dev', 'pro', 'max', 'app', 'tool', 'mode', 'code']);
 
   const scored: Array<{ skill: string; score: number }> = [];
 
@@ -1289,12 +1291,25 @@ export function selectRelevantSkills(candidates: string[], task: string, maxSkil
 
     // Correspondência de termos individuais da skill
     for (const part of sParts) {
-      if (part.length >= 3 && q.includes(part)) {
-        score += 5;
+      if (genericTerms.has(part)) {
+        // Termos genéricos só pontuam se houver correspondência exata de palavra
+        if (qTerms.includes(part)) {
+          score += 2;
+        }
+        continue;
       }
-      for (const qt of qTerms) {
-        if (part === qt) score += 6;
-        else if (part.includes(qt) || qt.includes(part)) score += 3;
+
+      // Palavra exata presente nos termos da tarefa
+      if (qTerms.includes(part)) {
+        score += 8;
+      } else if (part.length >= 4) {
+        // Prefixo ou substring com no mínimo 4 caracteres para evitar falsos positivos
+        for (const qt of qTerms) {
+          if (qt.length >= 4 && (part.startsWith(qt) || qt.startsWith(part))) {
+            score += 4;
+            break;
+          }
+        }
       }
     }
 
@@ -1302,7 +1317,7 @@ export function selectRelevantSkills(candidates: string[], task: string, maxSkil
   }
 
   scored.sort((a, b) => b.score - a.score);
-  const positive = scored.filter((item) => item.score > 0);
+  const positive = scored.filter((item) => item.score >= 4);
   if (positive.length > 0) {
     return positive.slice(0, maxSkills).map((item) => item.skill);
   }
@@ -1324,8 +1339,8 @@ export function buildNodePrompt(
     : (opts.skillChain && opts.skillChain.length > 0)
       ? opts.skillChain
       : (agent?.skills ?? []);
-  // Carrega cirurgicamente apenas as skills necessárias para a tarefa (Token Economy)
-  const skills = selectRelevantSkills(candidateSkills, opts.task, 2);
+  // Carrega cirurgicamente as skills necessárias para a tarefa (Token Economy - até 8 simultâneas)
+  const skills = selectRelevantSkills(candidateSkills, opts.task, 8);
 
   // Corpo volátil compartilhado pelas duas formas do prompt (ordem pré-wave preservada).
   const artifactLine = artifactRequirementLine(node.outputs?.[0] ?? 'raw');

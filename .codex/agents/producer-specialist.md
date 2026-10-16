@@ -14,7 +14,7 @@ Skills da sua especialidade:
 - layered-security
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
-> Ative apenas a skill estritamente relevante (1 ou 2) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões da skill ativada na entrega.
+> Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
 
 ## Chains
 

@@ -1,6 +1,6 @@
 {
   "name": "izanagi-ai",
-  "version": "3.24.12",
+  "version": "3.24.13",
   "description": "Izanagi AI - Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -30,7 +30,7 @@ Ao assumir este papel, você possui as seguintes skills atribuídas:
 - hallucination-detection
 
 > ⚠️ **DIRETRIZ DE USO MANDATÓRIO & ECONOMIA DE TOKENS**:
-> Para economizar tokens e evitar contexto redundante, ative e consulte **APENAS a skill específica** necessária para a tarefa em execução no momento (1 a 2 skills no máximo). É proibido atuar sem aplicar os padrões da skill relevante da sua especialidade, mas jamais carregue skills não pertinentes ao escopo imediato.
+> Para economizar tokens e evitar contexto redundante, ative e consulte **APENAS as skills específicas** necessárias para a tarefa em execução no momento (até no máximo 8 skills ao mesmo tempo). É proibido atuar sem aplicar os padrões das skills relevantes da sua especialidade, mas jamais carregue skills não pertinentes ao escopo imediato.
 
 ## Chains (Fluxos de Execução)
 
