@@ -1265,6 +1265,52 @@ export function artifactRequirementLine(kind: string): string {
   return `${line}\n`;
 }
 
+/**
+ * Seleciona cirurgicamente apenas as skills relevantes para a tarefa imediata,
+ * evitando poluir o contexto e economizando tokens preciosos.
+ */
+export function selectRelevantSkills(candidates: string[], task: string, maxSkills = 2): string[] {
+  if (candidates.length <= maxSkills) return candidates;
+
+  const q = (task || '').toLowerCase();
+  const qTerms = q.split(/[^a-z0-9_]+/).filter((t) => t.length >= 3);
+
+  const scored: Array<{ skill: string; score: number }> = [];
+
+  for (const s of candidates) {
+    const sLower = s.toLowerCase();
+    const sParts = sLower.split(/[-_]+/);
+    let score = 0;
+
+    // Correspondência direta do nome da skill na tarefa
+    if (q.includes(sLower)) {
+      score += 15;
+    }
+
+    // Correspondência de termos individuais da skill
+    for (const part of sParts) {
+      if (part.length >= 3 && q.includes(part)) {
+        score += 5;
+      }
+      for (const qt of qTerms) {
+        if (part === qt) score += 6;
+        else if (part.includes(qt) || qt.includes(part)) score += 3;
+      }
+    }
+
+    scored.push({ skill: s, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  const positive = scored.filter((item) => item.score > 0);
+  if (positive.length > 0) {
+    return positive.slice(0, maxSkills).map((item) => item.skill);
+  }
+
+  // Se nenhum termo específico bateu, pega apenas a primeira skill primária (evita desperdício)
+  return candidates.slice(0, 1);
+}
+
 export function buildNodePrompt(
   node: GraphNode,
   opts: { task: string; agent: any; skillChain: string[] },
@@ -1278,7 +1324,8 @@ export function buildNodePrompt(
     : (opts.skillChain && opts.skillChain.length > 0)
       ? opts.skillChain
       : (agent?.skills ?? []);
-  const skills = candidateSkills.slice(0, 6);
+  // Carrega cirurgicamente apenas as skills necessárias para a tarefa (Token Economy)
+  const skills = selectRelevantSkills(candidateSkills, opts.task, 2);
 
   // Corpo volátil compartilhado pelas duas formas do prompt (ordem pré-wave preservada).
   const artifactLine = artifactRequirementLine(node.outputs?.[0] ?? 'raw');

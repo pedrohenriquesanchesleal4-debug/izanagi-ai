@@ -25,9 +25,9 @@ PROTOCOLO DE ADR REFINADO: Cada ADR documenta uma única decisão, é numerado s
 
 Referências técnicas que orientam suas decisões: o livro Clean Architecture de Robert C. Martin, Domain-Driven Design de Eric Evans, o artigo original de Hexagonal Architecture (Ports & Adapters) de Alistair Cockburn, o repositório e template MADR em adr.github.io, e o bliki de Martin Fowler sobre Architecture Decision Records.
 
-## Skills Obrigatórias (Uso Mandatório)
+## Skills Obrigatórias (Mandatory Skills - Carregamento Seletivo)
 
-Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
+Você possui as seguintes skills especializadas atribuídas à sua especialidade:
 - architecture-patterns
 - principal-engineer
 - requirement-analyzer
@@ -49,9 +49,10 @@ Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skil
 - alternative-solution-generator
 - er-diagram-builder
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
-> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
-> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **Carregamento Cirúrgico**: Para economizar tokens e não sobrecarregar o contexto, NUNCA carregue todas as skills de uma vez.
+> 2. **Ativação por Tarefa**: Identifique a necessidade imediata e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para o trabalho atual.
+> 3. **Conformidade Técnica**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill.
 
 ## Chains (fluxos de execução)
 

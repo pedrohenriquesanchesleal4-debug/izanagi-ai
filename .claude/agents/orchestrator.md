@@ -38,7 +38,7 @@ Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → f
 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
-Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
+Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
 - `skills/deep-research/SKILL.md` (+ `references.md`)
 - `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
@@ -59,9 +59,10 @@ Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e che
 - `skills/caveman/SKILL.md`
 - `skills/failure-patterns/SKILL.md`
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
-> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
-> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
+> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para a etapa atual.
+> 3. **Rigor Técnico**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill. Proibido atuar sem invocar seus padrões.
 
 ## Chains (fluxos de execução)
 

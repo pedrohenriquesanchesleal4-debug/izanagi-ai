@@ -45,9 +45,9 @@ vez de implementar.
 - **Gate final**: security, QA e evaluator precisam emitir evidência independente. Falha
   crítica, capability desconhecida sem fallback ou requisito órfão bloqueia a entrega.
 
-## Skills Obrigatórias (Mandatory Skills)
+## Skills Obrigatórias (Mandatory Skills - Carregamento Seletivo)
 
-Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
+Skills da sua especialidade:
 - memoria-projeto
 - deep-research
 - requirement-analyzer
@@ -68,8 +68,8 @@ Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skil
 - caveman
 - failure-patterns
 
-> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
-> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
+> ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
+> Ative apenas a skill estritamente relevante (1 ou 2) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões da skill ativada na entrega.
 
 ## Chains
 

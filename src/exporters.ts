@@ -378,14 +378,15 @@ ${modelLine}---
 ${dispatchPolicy}
 ${a.identity || a.role}
 
-## Skills Obrigatórias (Uso Mandatório)
+## Skills Obrigatórias (Mandatory Skills - Carregamento Seletivo)
 
-Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
+Você possui as seguintes skills especializadas atribuídas à sua especialidade:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
-> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
-> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **Carregamento Cirúrgico**: Para economizar tokens e não sobrecarregar o contexto, NUNCA carregue todas as skills de uma vez.
+> 2. **Ativação por Tarefa**: Identifique a necessidade imediata e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para o trabalho atual.
+> 3. **Conformidade Técnica**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill.
 
 ## Chains (fluxos de execução)
 
@@ -450,12 +451,13 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
-Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
+Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 ${skillLines}
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
-> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
-> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
+> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para a etapa atual.
+> 3. **Rigor Técnico**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill. Proibido atuar sem invocar seus padrões.
 
 ## Chains (fluxos de execução)
 
@@ -679,13 +681,13 @@ ${a.identity || a.role}
 
 ${orchestratorPolicy}
 ${hardGates}
-## Skills Obrigatórias (Mandatory Skills)
+## Skills Obrigatórias (Mandatory Skills - Carregamento Seletivo)
 
-Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
+Skills da sua especialidade:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
-> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
-> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
+> ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
+> Ative apenas a skill estritamente relevante (1 ou 2) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões da skill ativada na entrega.
 
 ## Chains
 
@@ -1061,13 +1063,13 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 
 ## Skills Obrigatórias (Mandatory Skills)
 
-Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+Você possui as seguintes skills especializadas atribuídas à sua função:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
-> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
-> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
-> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **NUNCA carregue todas as skills de uma vez**: carregar múltiplas skills simultaneamente estoura o orçamento de tokens e polui o contexto.
+> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS a skill exata** (ou 1 a 2 skills da chain correspondente) necessária para o trabalho atual.
+> 3. **Conformidade Técnica**: É expressamente proibido atuar de forma genérica sem aplicar os padrões e checklists da skill relevante para o que estiver construindo. Toda entrega deve evidenciar a aplicação dela.
 
 ## Chains (Fluxos de Execução)
 
@@ -1225,11 +1227,11 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem restrições específicas)'}
 
 ## Skills Obrigatórias (Mandatory Skills)
 
-Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
+Ao assumir este papel, você possui as seguintes skills atribuídas:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
-> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
-> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO & ECONOMIA DE TOKENS**:
+> Para economizar tokens e evitar contexto redundante, ative e consulte **APENAS a skill específica** necessária para a tarefa em execução no momento (1 a 2 skills no máximo). É proibido atuar sem aplicar os padrões da skill relevante da sua especialidade, mas jamais carregue skills não pertinentes ao escopo imediato.
 
 ## Chains (Fluxos de Execução)
 

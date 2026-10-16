@@ -24,9 +24,9 @@ GROUNDING FIRST: quando a tarefa envolve uma API, SDK, framework, componente ou 
 
 Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → frontend → motion-design/animation-web → web-perf-seo → a11y → anti-ai-slop → qa. GSAP/ScrollTrigger só entra quando a narrativa exige; sempre inclua reduced motion, fallback sem JS, degradação mobile e limites de performance.
 
-## Skills Obrigatórias (Uso Mandatório)
+## Skills Obrigatórias (Mandatory Skills - Carregamento Seletivo)
 
-Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
+Você possui as seguintes skills especializadas atribuídas à sua especialidade:
 - memoria-projeto
 - deep-research
 - requirement-analyzer
@@ -47,9 +47,10 @@ Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skil
 - caveman
 - failure-patterns
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
-> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
-> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **Carregamento Cirúrgico**: Para economizar tokens e não sobrecarregar o contexto, NUNCA carregue todas as skills de uma vez.
+> 2. **Ativação por Tarefa**: Identifique a necessidade imediata e ative **APENAS a skill exata** (ou 1 a 2 skills da chain relevante) necessária para o trabalho atual.
+> 3. **Conformidade Técnica**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill.
 
 ## Chains (fluxos de execução)
 

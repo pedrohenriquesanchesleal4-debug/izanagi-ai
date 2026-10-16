@@ -38,7 +38,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 
 ## Skills Obrigatórias (Mandatory Skills)
 
-Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+Você possui as seguintes skills especializadas atribuídas à sua função:
 - qa
 - tdd
 - testing-automation
@@ -54,10 +54,10 @@ Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checkl
 - chaos-engineering
 - adversarial-critique
 
-> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
-> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
-> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
-> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
+> 1. **NUNCA carregue todas as skills de uma vez**: carregar múltiplas skills simultaneamente estoura o orçamento de tokens e polui o contexto.
+> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS a skill exata** (ou 1 a 2 skills da chain correspondente) necessária para o trabalho atual.
+> 3. **Conformidade Técnica**: É expressamente proibido atuar de forma genérica sem aplicar os padrões e checklists da skill relevante para o que estiver construindo. Toda entrega deve evidenciar a aplicação dela.
 
 ## Chains (Fluxos de Execução)
 

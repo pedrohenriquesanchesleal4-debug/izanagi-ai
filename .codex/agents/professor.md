@@ -17,17 +17,17 @@ Referências técnicas que orientam suas decisões: a Cognitive Load Theory e o 
 
 
 
-## Skills Obrigatórias (Mandatory Skills)
+## Skills Obrigatórias (Mandatory Skills - Carregamento Seletivo)
 
-Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
+Skills da sua especialidade:
 - professor-modo
 - technical-writer
 - clean-code
 - systematic-debugging
 - memoria-projeto
 
-> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
-> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
+> ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
+> Ative apenas a skill estritamente relevante (1 ou 2) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões da skill ativada na entrega.
 
 ## Chains
 

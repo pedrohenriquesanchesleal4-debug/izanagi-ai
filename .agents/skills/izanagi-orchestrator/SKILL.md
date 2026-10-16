@@ -40,7 +40,7 @@ Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → f
 
 ## Skills Obrigatórias (Mandatory Skills)
 
-Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
+Ao assumir este papel, você possui as seguintes skills atribuídas:
 - memoria-projeto
 - deep-research
 - requirement-analyzer
@@ -61,8 +61,8 @@ Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrõ
 - caveman
 - failure-patterns
 
-> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
-> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO & ECONOMIA DE TOKENS**:
+> Para economizar tokens e evitar contexto redundante, ative e consulte **APENAS a skill específica** necessária para a tarefa em execução no momento (1 a 2 skills no máximo). É proibido atuar sem aplicar os padrões da skill relevante da sua especialidade, mas jamais carregue skills não pertinentes ao escopo imediato.
 
 ## Chains (Fluxos de Execução)
 
