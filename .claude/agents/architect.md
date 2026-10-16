@@ -42,8 +42,9 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 - Tomar decisões arquiteturais sem analisar e explicitar os trade-offs de latência, throughput, complexidade e manutenibilidade
 - Criar dependências circulares entre módulos ou Bounded Contexts distintos
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/architecture-patterns/SKILL.md` (+ `references.md`)
 - `skills/principal-engineer/SKILL.md` (+ `references.md`)
 - `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
@@ -52,6 +53,22 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 - `skills/deep-research/SKILL.md` (+ `references.md`)
 - `skills/task-planner/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/design-pattern-advisor/SKILL.md` (+ `references.md`)
+- `skills/scalability-expert/SKILL.md` (+ `references.md`)
+- `skills/legacy-migration/SKILL.md` (+ `references.md`)
+- `skills/serverless-edge/SKILL.md` (+ `references.md`)
+- `skills/uml-generator/SKILL.md` (+ `references.md`)
+- `skills/cto-advisor/SKILL.md` (+ `references.md`)
+- `skills/graphql/SKILL.md` (+ `references.md`)
+- `skills/websocket-realtime/SKILL.md` (+ `references.md`)
+- `skills/wasm/SKILL.md` (+ `references.md`)
+- `skills/tradeoff-analyzer/SKILL.md` (+ `references.md`)
+- `skills/alternative-solution-generator/SKILL.md` (+ `references.md`)
+- `skills/er-diagram-builder/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -59,6 +76,7 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 - `plan_adr`: memoria-projeto, architecture-patterns, principal-engineer, memoria-projeto
 - `review_architecture`: memoria-projeto, architecture-patterns, security-privacy, code-auditor, memoria-projeto
 - `new_feature`: memoria-projeto, deep-research, requirement-analyzer, architecture-patterns, sequence-diagram-builder, security-privacy, memoria-projeto
+- `system_design`: design-pattern-advisor, scalability-expert, tradeoff-analyzer
 
 ## Handoff
 

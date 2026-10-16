@@ -34,14 +34,23 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Permitir consultas N+1 dentro de loops em aplicações web ou APIs
 - Alterar o schema e o código da aplicação que depende dele no mesmo deploy — sempre separar em fases Expand-Contract independentes e retrocompatíveis
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/data-engineering/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
 - `skills/architecture-patterns/SKILL.md` (+ `references.md`)
 - `skills/error-recovery/SKILL.md` (+ `references.md`)
 - `skills/data-validation/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/er-diagram-builder/SKILL.md` (+ `references.md`)
+- `skills/breaking-change-detector/SKILL.md` (+ `references.md`)
+- `skills/performance-optimizer/SKILL.md` (+ `references.md`)
+- `skills/scalability-expert/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -49,6 +58,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `migrate`: memoria-projeto, data-engineering, error-recovery, memoria-projeto
 - `optimize_query`: memoria-projeto, data-engineering, web-perf-seo, memoria-projeto
 - `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor, memoria-projeto
+- `schema_design`: er-diagram-builder, breaking-change-detector
 
 ## Handoff
 

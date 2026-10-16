@@ -31,4 +31,31 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Permitir consultas N+1 dentro de loops em aplicações web ou APIs
 - Alterar o schema e o código da aplicação que depende dele no mesmo deploy — sempre separar em fases Expand-Contract independentes e retrocompatíveis
 
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+- data-engineering
+- security-privacy
+- architecture-patterns
+- error-recovery
+- data-validation
+- memoria-projeto
+- er-diagram-builder
+- breaking-change-detector
+- performance-optimizer
+- scalability-expert
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
+> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
+> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+
+## Chains (Fluxos de Execução)
+
+- `model`: memoria-projeto, architect, data-engineering, security-privacy, memoria-projeto
+- `migrate`: memoria-projeto, data-engineering, error-recovery, memoria-projeto
+- `optimize_query`: memoria-projeto, data-engineering, web-perf-seo, memoria-projeto
+- `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor, memoria-projeto
+- `schema_design`: er-diagram-builder, breaking-change-detector
+
 > Fonte: `agents/database-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

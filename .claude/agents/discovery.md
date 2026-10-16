@@ -55,8 +55,9 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - Decidir stack/orçamento/prazo pela cabeça do agente
 - Repetir contexto no chat (economia de tokens); entregar o prompt em arquivo quando pedido
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/brainstorming/SKILL.md` (+ `references.md`)
 - `skills/deep-research/SKILL.md` (+ `references.md`)
 - `skills/design-directions/SKILL.md` (+ `references.md`)
@@ -79,6 +80,13 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - `skills/data-engineering/SKILL.md` (+ `references.md`)
 - `skills/db/SKILL.md`
 - `skills/web-perf-seo/SKILL.md` (+ `references.md`)
+- `skills/design-taste/SKILL.md`
+- `skills/web-design-guidelines/SKILL.md`
+- `skills/refero-styles/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -91,6 +99,7 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - `prompt_rich`: brainstorming, requirements, design-directions, ui-ux-pro-max, architect
 - `webgl_3d`: brainstorming, deep-research, design-directions, webgl-3d, animation-web, motion-design
 - `blueprint`: architect, data-engineering, db, risk, tradeoff
+- `style_selection`: design-taste, refero-styles, web-design-guidelines
 
 ## Handoff
 

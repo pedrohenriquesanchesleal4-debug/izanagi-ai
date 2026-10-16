@@ -20,8 +20,9 @@ OBSERVABILIDADE EM SISTEMAS DISTRIBUÍDOS: logs locais isolados são insuficient
 
 Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do Sistema Toyota de Produção, o Diagrama de Causa e Efeito (Ishikawa/Fishbone), e a especificação e documentação oficial do OpenTelemetry (CNCF) para tracing distribuído.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - systematic-debugging
 - hallucination-detection
 - tdd
@@ -29,12 +30,23 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 - self-correction
 - qa
 - memoria-projeto
+- bug-hunter
+- bug-prevention
+- debug-specialist
+- root-cause-analyzer
+- failure-patterns
+- reverse-engineering
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `bug_debug`: memoria-projeto, systematic-debugging, hallucination-detection, tdd, qa, memoria-projeto
 - `root_cause`: memoria-projeto, systematic-debugging, hallucination-detection, memoria-projeto
 - `regression_fix`: memoria-projeto, systematic-debugging, tdd, qa, continuous-improvement, memoria-projeto
+- `investigate`: bug-hunter, debug-specialist, root-cause-analyzer, failure-patterns
 
 ## Sempre
 

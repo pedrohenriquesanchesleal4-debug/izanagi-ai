@@ -20,8 +20,9 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 
 
 
-## Skills
+## Skills Obrigatórias (Mandatory Skills)
 
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - ai-agent
 - reference-retrieval
 - prompt-engineering
@@ -31,6 +32,9 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - qa
 - memoria-projeto
 - economia-tokens
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 

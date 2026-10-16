@@ -12,7 +12,9 @@
     "confidence-estimator",
     "economia-tokens",
     "task-planner",
-    "memoria-projeto"
+    "memoria-projeto",
+    "alternative-solution-generator",
+    "tradeoff-analyzer"
   ],
   "chains": {
     "entendimento_produto": [
@@ -35,6 +37,10 @@
       "requirement-analyzer",
       "task-planner",
       "memoria-projeto"
+    ],
+    "requirements_reasoning": [
+      "alternative-solution-generator",
+      "tradeoff-analyzer"
     ]
   },
   "always": [

@@ -22,8 +22,9 @@ ESTUDO OBRIGATÓRIO: carregue `.agents/memoria/` antes de alterar qualquer promp
 
 Referências técnicas que orientam suas decisões: a skill `ai-agent` deste framework (arquiteturas de RAG, agentes, MCP), a documentação oficial de function/tool calling dos providers (OpenAI, Anthropic, Google), o padrão ReAct (Yao et al.) e Plan-and-Execute para agentes, e guias de avaliação de LLM (LLM-as-judge, golden sets) como referência de rigor, nunca copiados cegamente sem adaptar ao produto real.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - ai-agent
 - reference-retrieval
 - prompt-engineering
@@ -33,6 +34,10 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - qa
 - memoria-projeto
 - economia-tokens
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 

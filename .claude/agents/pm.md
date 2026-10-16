@@ -36,13 +36,24 @@ Referências técnicas que orientam suas decisões: o Scrum Guide oficial, a not
 - Permitir expansão de escopo ('scope creep') sem atualizar o planejamento de prazos e dependências
 - Omitir bloqueios ou riscos técnicos críticos em relatórios executivos
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/task-planner/SKILL.md` (+ `references.md`)
 - `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
 - `skills/staff-engineer/SKILL.md` (+ `references.md`)
 - `skills/technical-writer/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/project-manager/SKILL.md` (+ `references.md`)
+- `skills/release-planner/SKILL.md` (+ `references.md`)
+- `skills/technical-debt-analyzer/SKILL.md` (+ `references.md`)
+- `skills/caveman/SKILL.md`
+- `skills/cto-advisor/SKILL.md` (+ `references.md`)
+- `skills/risk-analyzer/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -50,6 +61,7 @@ Referências técnicas que orientam suas decisões: o Scrum Guide oficial, a not
 - `sprint`: memoria-projeto, task-planner, staff-engineer, memoria-projeto
 - `risk_assessment`: memoria-projeto, requirement-analyzer, architect, memoria-projeto
 - `exec_report`: memoria-projeto, technical-writer, memoria-projeto
+- `sprint_planning`: project-manager, release-planner, technical-debt-analyzer, risk-analyzer
 
 ## Handoff
 

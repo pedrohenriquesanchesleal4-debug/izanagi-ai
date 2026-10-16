@@ -44,6 +44,14 @@
 - `senior-engineer`: Full-Stack Software Engineer High-Craft: implementação profunda de ponta a ponta, Clean Code, TDD estrito, zero AI-Slop, zero stubs e ciclo vertical completo
 - `skill-architect`: Arquitetura de novas skills: Capability Gap → Research → Draft → Examples → Tests → Security Scan → Evaluation → Register (zero skills desnecessárias)
 - `techlead`: Liderança técnica operacional, Code Review pedagógico em 5 dimensões (Corretude, Segurança, Performance, Manutenibilidade, DX), governança de padrões de código e desbloqueio de engenheiros
+- `curto-specialist`: orçamento curto
+- `feature-specialist`: minha-feature
+- `fluxo-specialist`: executar fluxo
+- `go-pay-agent`: microservico de pagamentos em Go
+- `loop-specialist`: workflow loop
+- `paginaco-specialist`: refatorar paginação
+- `producer-specialist`: falha de producer
+- `real-specialist`: produce real
 
 Definições completas em `agents/*.json` e skills em `skills/<name>/SKILL.md`.
 

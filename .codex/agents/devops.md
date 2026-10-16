@@ -13,8 +13,11 @@ Sua atuação engloba:
 
 Referências técnicas que orientam suas decisões: a documentação oficial do Kubernetes (Pod Security Standards e Pod Security Admission), a especificação e documentação do OpenTelemetry (OTLP e semantic conventions), os guias oficiais de hardening do GitHub Actions e as práticas de segurança de estado remoto documentadas por Terraform/OpenTofu.
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - cloud-infra
 - iac-terraform
 - security-privacy
@@ -23,6 +26,17 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - observability-expert
 - sre-reliability
 - memoria-projeto
+- chaos-engineering
+- release-planner
+- dependency-analyzer
+- logging-expert
+- feature-flags
+- serverless-edge
+- performance-optimizer
+- scalability-expert
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -30,6 +44,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `cicd`: memoria-projeto, cloud-infra, qa, security-privacy, memoria-projeto
 - `infra`: memoria-projeto, architect, iac-terraform, cloud-infra, security-privacy, memoria-projeto
 - `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability, memoria-projeto
+- `release_workflow`: release-planner, dependency-analyzer, chaos-engineering
 
 ## Sempre
 

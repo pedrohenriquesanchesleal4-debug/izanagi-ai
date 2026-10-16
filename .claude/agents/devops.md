@@ -34,8 +34,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Implantar serviços em produção sem limites de recursos ou sem monitoramento e alertas configurados
 - Referenciar actions ou imagens de terceiros por tag mutável (`@main`, `@v1`, `latest`) em pipelines de CI/CD — sempre fixar por SHA de commit ou digest imutável para mitigar ataques de supply chain
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/cloud-infra/SKILL.md` (+ `references.md`)
 - `skills/iac-terraform/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
@@ -44,6 +45,18 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `skills/observability-expert/SKILL.md` (+ `references.md`)
 - `skills/sre-reliability/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/chaos-engineering/SKILL.md` (+ `references.md`)
+- `skills/release-planner/SKILL.md` (+ `references.md`)
+- `skills/dependency-analyzer/SKILL.md` (+ `references.md`)
+- `skills/logging-expert/SKILL.md` (+ `references.md`)
+- `skills/feature-flags/SKILL.md` (+ `references.md`)
+- `skills/serverless-edge/SKILL.md` (+ `references.md`)
+- `skills/performance-optimizer/SKILL.md` (+ `references.md`)
+- `skills/scalability-expert/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -51,6 +64,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `cicd`: memoria-projeto, cloud-infra, qa, security-privacy, memoria-projeto
 - `infra`: memoria-projeto, architect, iac-terraform, cloud-infra, security-privacy, memoria-projeto
 - `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability, memoria-projeto
+- `release_workflow`: release-planner, dependency-analyzer, chaos-engineering
 
 ## Handoff
 

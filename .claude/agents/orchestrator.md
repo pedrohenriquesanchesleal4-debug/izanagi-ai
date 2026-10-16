@@ -36,8 +36,9 @@ Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → f
 - Fazer a implementação no lugar do senior-engineer ou absorver a auditoria de security/qa/evaluator.
 - Aprovar uma entrega sem artefato, evidência, teste ou fallback explícito quando a capability não existe.
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
 - `skills/deep-research/SKILL.md` (+ `references.md`)
 - `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
@@ -54,12 +55,20 @@ Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → f
 - `skills/evaluation/SKILL.md`
 - `skills/handoff-sessao/SKILL.md` (+ `references.md`)
 - `skills/economia-tokens/SKILL.md` (+ `references.md`)
+- `skills/cto-advisor/SKILL.md` (+ `references.md`)
+- `skills/caveman/SKILL.md`
+- `skills/failure-patterns/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
 - `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, ui-ux-pro-max, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
 - `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
+- `governance`: cto-advisor, failure-patterns
 
 ## Handoff
 

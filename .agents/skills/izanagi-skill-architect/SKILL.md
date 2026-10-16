@@ -49,8 +49,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial da 
 - Registrar skill com risk alto sem mitigação e sem avaliação
 - Registrar skill sem triggers com semântica forte
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - prompt-engineering
 - security-privacy
 - hallucination-detection
@@ -59,5 +60,13 @@ Referências técnicas que orientam suas decisões: a documentação oficial da 
 - economia-tokens
 - evaluation
 - memoria-projeto
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `criar_skill`: memoria-projeto, deep-research, prompt-engineering, hallucination-detection, confidence-estimator, security-privacy, evaluation, economia-tokens, memoria-projeto
+- `auditar_skills`: memoria-projeto, deep-research, confidence-estimator, hallucination-detection, memoria-projeto
 
 > Fonte: `agents/skill-architect-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

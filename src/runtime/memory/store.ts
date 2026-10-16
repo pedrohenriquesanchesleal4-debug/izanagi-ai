@@ -418,9 +418,12 @@ export class MemoryStore {
    */
   search(
     query: string,
-    optsOrLimit: number | { limit?: number; category?: MemoryCategory } = 10
-  ): Array<MemoryEntry & { score: number }> {
+    optsOrLimit: number | { limit?: number; category?: MemoryCategory; hybrid?: boolean } = 10
+  ): Array<MemoryEntry & { score: number; similarity?: number }> {
     const opts = typeof optsOrLimit === 'number' ? { limit: optsOrLimit } : optsOrLimit;
+    if (opts.hybrid) {
+      return this.hybridSearch(query, opts);
+    }
     const limit = opts.limit ?? 10;
     const q = query.toLowerCase().trim();
     const terms = q.split(/\s+/).filter((t) => t.length > 1);
@@ -445,6 +448,87 @@ export class MemoryStore {
       scored.push({ ...e, content: excerpt(e.content, firstHit), score });
     }
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+
+  /**
+   * Busca vetorial semântica local (Zero-Cost / Offline) utilizando representações
+   * morfológicas e similaridade de cosseno.
+   */
+  vectorSearch(
+    query: string,
+    opts: { limit?: number; category?: MemoryCategory; minSimilarity?: number } = {}
+  ): Array<MemoryEntry & { similarity: number }> {
+    const limit = opts.limit ?? 10;
+    const minSim = opts.minSimilarity ?? 0.05;
+    const qVec = computeLocalEmbedding(query);
+    const allEntries = this.listEntries({ full: true });
+    const entries = opts.category ? allEntries.filter((e) => e.category === opts.category) : allEntries;
+
+    const scored: Array<MemoryEntry & { similarity: number }> = [];
+    const qTerms = query.toLowerCase().split(/\s+/).filter((t) => t.length > 2);
+    for (const e of entries) {
+      const fullText = `${e.title} ${e.tags.join(' ')} ${e.content}`;
+      const docVec = computeLocalEmbedding(fullText);
+      const similarity = cosineSimilarity(qVec, docVec);
+      if (similarity >= minSim) {
+        let firstHit = -1;
+        const body = e.content.toLowerCase();
+        for (const t of qTerms) {
+          const at = body.indexOf(t);
+          if (at !== -1 && (firstHit === -1 || at < firstHit)) firstHit = at;
+        }
+        scored.push({ ...e, content: excerpt(e.content, firstHit), similarity });
+      }
+    }
+    return scored.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
+  }
+
+  /**
+   * Busca híbrida combinando score léxico exato com similaridade vetorial semântica.
+   */
+  hybridSearch(
+    query: string,
+    opts: { limit?: number; category?: MemoryCategory; vectorWeight?: number } = {}
+  ): Array<MemoryEntry & { score: number; similarity: number }> {
+    const limit = opts.limit ?? 10;
+    const weight = opts.vectorWeight ?? 2.5;
+    const q = query.toLowerCase().trim();
+    const terms = q.split(/\s+/).filter((t) => t.length > 1);
+    const qVec = computeLocalEmbedding(query);
+
+    const allEntries = this.listEntries({ full: true });
+    const entries = opts.category ? allEntries.filter((e) => e.category === opts.category) : allEntries;
+
+    const results: Array<MemoryEntry & { score: number; similarity: number }> = [];
+
+    for (const e of entries) {
+      const body = e.content.toLowerCase();
+      let lexicalScore = 0;
+      let firstHit = -1;
+      for (const t of terms) {
+        const at = body.indexOf(t);
+        if (at === -1) continue;
+        lexicalScore += 1;
+        if (firstHit === -1 || at < firstHit) firstHit = at;
+      }
+      if (e.title.toLowerCase().includes(q)) lexicalScore += 3;
+      if (e.tags.some((t) => t.includes(q))) lexicalScore += 2;
+
+      const docVec = computeLocalEmbedding(`${e.title} ${e.tags.join(' ')} ${e.content}`);
+      const similarity = cosineSimilarity(qVec, docVec);
+
+      const finalScore = lexicalScore + similarity * weight;
+      if (lexicalScore > 0 || similarity >= 0.15) {
+        results.push({
+          ...e,
+          content: excerpt(e.content, firstHit),
+          score: Math.round(finalScore * 100) / 100,
+          similarity: Math.round(similarity * 1000) / 1000,
+        });
+      }
+    }
+
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   /**
@@ -571,3 +655,56 @@ function excerpt(content: string, at: number): string {
   const slice = content.slice(start, start + MEMORY_EXCERPT_CHARS);
   return start > 0 ? `[...] ${slice}` : slice;
 }
+
+/**
+ * Extrai vetor de embedding leve (n-gramas de caracteres + tokens de palavras)
+ * para similaridade semântica offline sem dependência externa ou custo de tokens.
+ */
+export function computeLocalEmbedding(text: string): Map<string, number> {
+  const norm = text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const vec = new Map<string, number>();
+
+  // Tokens de palavras
+  const words = norm.split(/[^a-z0-9_]+/).filter((w) => w.length >= 2);
+  for (const w of words) {
+    vec.set(w, (vec.get(w) ?? 0) + 2.0);
+    // Subword 3-grams para robustez morfológica / typo tolerance
+    if (w.length >= 3) {
+      for (let i = 0; i <= w.length - 3; i++) {
+        const trigram = w.slice(i, i + 3);
+        vec.set(trigram, (vec.get(trigram) ?? 0) + 1.0);
+      }
+    }
+  }
+
+  // Normalização L2
+  let sumSq = 0;
+  for (const val of vec.values()) {
+    sumSq += val * val;
+  }
+  const mag = Math.sqrt(sumSq);
+  if (mag > 0) {
+    for (const [k, v] of vec.entries()) {
+      vec.set(k, v / mag);
+    }
+  }
+  return vec;
+}
+
+/** Similaridade de cosseno entre dois vetores esparsos normalizados. */
+export function cosineSimilarity(v1: Map<string, number>, v2: Map<string, number>): number {
+  let dot = 0;
+  // Itera sobre o menor mapa para performance
+  const [smaller, larger] = v1.size < v2.size ? [v1, v2] : [v2, v1];
+  for (const [k, val1] of smaller.entries()) {
+    const val2 = larger.get(k);
+    if (val2 !== undefined) {
+      dot += val1 * val2;
+    }
+  }
+  return dot;
+}
+

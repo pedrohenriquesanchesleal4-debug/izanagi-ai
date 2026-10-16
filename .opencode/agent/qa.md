@@ -36,4 +36,36 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - Usar seletores genéricos vinculados à estilização CSS (`.flex > div:nth-child(2)`) que quebram com refatoraçoes de layout
 - Aprovar uma UI composta apenas de padrões previsíveis (hero centralizado, cards uniformes, gradientes roxos, fonte padrão ou ícones sem contexto)
 
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+- qa
+- tdd
+- testing-automation
+- webapp-testing
+- browser-automation
+- reference-retrieval
+- accessibility-reviewer
+- data-validation
+- error-recovery
+- memoria-projeto
+- browser-playwright
+- bug-prevention
+- chaos-engineering
+- adversarial-critique
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
+> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
+> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+
+## Chains (Fluxos de Execução)
+
+- `unit`: memoria-projeto, tdd, testing-automation, qa, memoria-projeto
+- `integration`: memoria-projeto, testing-automation, security-privacy, qa, memoria-projeto
+- `e2e`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, testing-automation, qa, memoria-projeto
+- `accessibility`: memoria-projeto, accessibility-reviewer, qa, memoria-projeto
+- `regression`: memoria-projeto, systematic-debugging, testing-automation, qa, memoria-projeto
+- `e2e_testing`: browser-playwright, bug-prevention
+
 > Fonte: `agents/qa-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

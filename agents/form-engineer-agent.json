@@ -12,7 +12,13 @@
     "ux-reviewer",
     "data-validation",
     "ui-ux-pro-max",
-    "memoria-projeto"
+    "memoria-projeto",
+    "i18n-l10n",
+    "image-to-code",
+    "web-design-guidelines",
+    "react-next-practices",
+    "refero-styles",
+    "design-taste"
   ],
   "chains": {
     "form_wizard": [
@@ -36,6 +42,11 @@
       "accessibility-reviewer",
       "qa",
       "memoria-projeto"
+    ],
+    "form_flow": [
+      "web-design-guidelines",
+      "i18n-l10n",
+      "react-next-practices"
     ]
   },
   "always": [

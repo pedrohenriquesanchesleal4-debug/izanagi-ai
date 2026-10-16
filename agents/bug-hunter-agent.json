@@ -12,7 +12,13 @@
     "error-recovery",
     "self-correction",
     "qa",
-    "memoria-projeto"
+    "memoria-projeto",
+    "bug-hunter",
+    "bug-prevention",
+    "debug-specialist",
+    "root-cause-analyzer",
+    "failure-patterns",
+    "reverse-engineering"
   ],
   "chains": {
     "bug_debug": [
@@ -36,6 +42,12 @@
       "qa",
       "continuous-improvement",
       "memoria-projeto"
+    ],
+    "investigate": [
+      "bug-hunter",
+      "debug-specialist",
+      "root-cause-analyzer",
+      "failure-patterns"
     ]
   },
   "always": [

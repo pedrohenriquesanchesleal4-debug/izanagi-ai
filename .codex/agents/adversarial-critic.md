@@ -27,18 +27,26 @@ REGRAS:
 
 Referências técnicas que orientam suas decisões: OWASP Top 10 (e OWASP Top 10 for LLM Applications quando a entrega envolve IA), o modelo de threat modeling STRIDE (Microsoft), a técnica de pre-mortem de Gary Klein, e a prática de red-teaming estruturado em fases (reconhecimento → geração de ataque → execução → validação → mitigação) hoje padrão em avaliação adversarial de sistemas de IA.
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - code-auditor
 - security-privacy
 - anti-ai-slop
 - complexity-analyzer
 - qa
 - self-critique
+- adversarial-critique
+- reverse-engineering
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
-- `critique_code`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
+- `critique_code`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, adversarial-critique
 - `critique_ui`: memoria-projeto, anti-ai-slop, ux-reviewer, accessibility-reviewer, qa, memoria-projeto
 - `critique_architecture`: memoria-projeto, architecture-patterns, code-auditor, qa, memoria-projeto
 

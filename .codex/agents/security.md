@@ -14,8 +14,11 @@ CHECKLIST DE AUDITORIA OBRIGATÓRIO: (1) Auth & Session: JWT com algoritmo estri
 
 Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025) e OWASP Cheat Sheet Series, as especificações OAuth 2.1 e OpenID Connect (IETF/OpenID Foundation) incluindo PKCE e DPoP, e os guias oficiais de hardening de CI/CD e gestão de segredos do GitHub (GitHub Actions Security) e da HashiCorp (Vault).
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - security-privacy
 - code-auditor
 - defense-in-depth
@@ -24,6 +27,12 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 - qa
 - systematic-debugging
 - memoria-projeto
+- dependency-analyzer
+- reverse-engineering
+- risk-analyzer
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -32,6 +41,7 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 - `hardening`: memoria-projeto, code-auditor, security-privacy, automation-security, memoria-projeto
 - `review_pr`: memoria-projeto, code-auditor, security-privacy, memoria-projeto
 - `api_security`: memoria-projeto, security-privacy, api-automation, defense-in-depth, memoria-projeto
+- `security_audit`: dependency-analyzer, risk-analyzer
 
 ## Sempre
 

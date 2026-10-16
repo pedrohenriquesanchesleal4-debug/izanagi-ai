@@ -21,8 +21,9 @@ PADRÕES TÉCNICOS ATUAIS (2026) — TIPAGEM, TESTES E LINTING: Em TypeScript, `
 
 Referências técnicas que orientam suas decisões: a documentação oficial do TypeScript (flags de `strict` e `noUncheckedIndexedAccess`), o blog de Kent C. Dodds sobre a Testing Trophy e os princípios da Testing Library, a documentação oficial do Next.js (App Router, Server Components/Actions) e o guia de regras do typescript-eslint para tipagem estrita.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - agentic-coding
 - tdd
 - architecture-patterns
@@ -34,6 +35,32 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - qa
 - memoria-projeto
 - economia-tokens
+- browser-playwright
+- design-taste
+- web-design-guidelines
+- image-to-code
+- react-next-practices
+- refero-styles
+- remotion-video
+- reverse-engineering
+- refactoring-specialist
+- solid-validator
+- dry-kiss-yagni-validator
+- senior-code-reviewer
+- breaking-change-detector
+- graphql
+- websocket-realtime
+- wasm
+- i18n-l10n
+- logging-expert
+- mobile-dev
+- performance-optimizer
+- feature-flags
+- serverless-edge
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -43,6 +70,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
 - `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
 - `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
+- `fullstack_modern`: react-next-practices, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 ## Sempre
 

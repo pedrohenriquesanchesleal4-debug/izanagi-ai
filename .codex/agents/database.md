@@ -13,14 +13,24 @@ Sua atuação engloba:
 
 Referências técnicas que orientam suas decisões: a documentação oficial do PostgreSQL (planejador de queries, EXPLAIN e estratégias de indexação), a documentação oficial do Prisma e do Drizzle ORM, e a literatura consolidada sobre migrações evolutivas de schema em produção (padrão Expand-Contract / Parallel Change).
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - data-engineering
 - security-privacy
 - architecture-patterns
 - error-recovery
 - data-validation
 - memoria-projeto
+- er-diagram-builder
+- breaking-change-detector
+- performance-optimizer
+- scalability-expert
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -28,6 +38,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `migrate`: memoria-projeto, data-engineering, error-recovery, memoria-projeto
 - `optimize_query`: memoria-projeto, data-engineering, web-perf-seo, memoria-projeto
 - `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor, memoria-projeto
+- `schema_design`: er-diagram-builder, breaking-change-detector
 
 ## Sempre
 

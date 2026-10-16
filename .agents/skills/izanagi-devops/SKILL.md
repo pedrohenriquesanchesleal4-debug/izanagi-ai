@@ -36,8 +36,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Implantar serviços em produção sem limites de recursos ou sem monitoramento e alertas configurados
 - Referenciar actions ou imagens de terceiros por tag mutável (`@main`, `@v1`, `latest`) em pipelines de CI/CD — sempre fixar por SHA de commit ou digest imutável para mitigar ataques de supply chain
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - cloud-infra
 - iac-terraform
 - security-privacy
@@ -46,5 +47,24 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - observability-expert
 - sre-reliability
 - memoria-projeto
+- chaos-engineering
+- release-planner
+- dependency-analyzer
+- logging-expert
+- feature-flags
+- serverless-edge
+- performance-optimizer
+- scalability-expert
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `dockerize`: memoria-projeto, cloud-infra, security-privacy, automation-security, memoria-projeto
+- `cicd`: memoria-projeto, cloud-infra, qa, security-privacy, memoria-projeto
+- `infra`: memoria-projeto, architect, iac-terraform, cloud-infra, security-privacy, memoria-projeto
+- `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability, memoria-projeto
+- `release_workflow`: release-planner, dependency-analyzer, chaos-engineering
 
 > Fonte: `agents/devops-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

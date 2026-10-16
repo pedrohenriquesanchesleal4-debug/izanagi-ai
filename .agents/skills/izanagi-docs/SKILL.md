@@ -40,12 +40,26 @@ Referências técnicas que orientam suas decisões: o framework Diátaxis (diata
 - Fornecer exemplos de código com erros de sintaxe ou referências a pacotes e rotas que não existem
 - Omitir a explicação das variáveis de ambiente exigidas pela aplicação
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - technical-writer
 - readme-generator
 - sequence-diagram-builder
 - automation-documentation
 - memoria-projeto
+- uml-generator
+- caveman
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `readme`: memoria-projeto, readme-generator, technical-writer, memoria-projeto
+- `guide`: memoria-projeto, technical-writer, sequence-diagram-builder, memoria-projeto
+- `api_docs`: memoria-projeto, technical-writer, qa, memoria-projeto
+- `diagram`: memoria-projeto, sequence-diagram-builder, technical-writer, memoria-projeto
+- `architecture_docs`: uml-generator, caveman
 
 > Fonte: `agents/docs-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

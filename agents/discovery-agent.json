@@ -27,7 +27,10 @@
     "architect",
     "data-engineering",
     "db",
-    "web-perf-seo"
+    "web-perf-seo",
+    "design-taste",
+    "web-design-guidelines",
+    "refero-styles"
   ],
   "chains": {
     "new_project": [
@@ -97,6 +100,11 @@
       "db",
       "risk",
       "tradeoff"
+    ],
+    "style_selection": [
+      "design-taste",
+      "refero-styles",
+      "web-design-guidelines"
     ]
   },
   "process": [

@@ -39,8 +39,9 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 - Modificar código sem antes ter lido o stack trace ou sem um teste que reproduza a falha
 - Encerrar a tarefa declarando correção sem rodar o teste de verificação empírica
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - systematic-debugging
 - hallucination-detection
 - tdd
@@ -48,5 +49,21 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 - self-correction
 - qa
 - memoria-projeto
+- bug-hunter
+- bug-prevention
+- debug-specialist
+- root-cause-analyzer
+- failure-patterns
+- reverse-engineering
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `bug_debug`: memoria-projeto, systematic-debugging, hallucination-detection, tdd, qa, memoria-projeto
+- `root_cause`: memoria-projeto, systematic-debugging, hallucination-detection, memoria-projeto
+- `regression_fix`: memoria-projeto, systematic-debugging, tdd, qa, continuous-improvement, memoria-projeto
+- `investigate`: bug-hunter, debug-specialist, root-cause-analyzer, failure-patterns
 
 > Fonte: `agents/bug-hunter-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

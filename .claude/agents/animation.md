@@ -35,8 +35,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Deixar loops de renderização WebGL ou ScrollTriggers executando em segundo plano quando os elementos estão fora da viewport
 - Compromover a acessibilidade ou legibilidade de texto em prol de efeitos visuais excessivos
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/animation-web/SKILL.md` (+ `references.md`)
 - `skills/motion-design/SKILL.md` (+ `references.md`)
 - `skills/webgl-3d/SKILL.md` (+ `references.md`)
@@ -46,6 +47,16 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `skills/browser-automation/SKILL.md` (+ `references.md`)
 - `skills/webapp-testing/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/remotion-video/SKILL.md`
+- `skills/design-taste/SKILL.md`
+- `skills/web-design-guidelines/SKILL.md`
+- `skills/refero-styles/SKILL.md`
+- `skills/image-to-code/SKILL.md`
+- `skills/react-next-practices/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -53,6 +64,8 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
 - `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
+- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `video_generation`: remotion-video
 
 ## Handoff
 

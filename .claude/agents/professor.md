@@ -34,13 +34,18 @@ Referências técnicas que orientam suas decisões: a Cognitive Load Theory e o 
 - Usar jargões acadêmicos sem definir seu significado simples em linguagem natural
 - Fornecer apenas o código pronto sem explicar o motivo da escolha técnica adotada
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/professor-modo/SKILL.md` (+ `references.md`)
 - `skills/technical-writer/SKILL.md` (+ `references.md`)
 - `skills/clean-code/SKILL.md`
 - `skills/systematic-debugging/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 

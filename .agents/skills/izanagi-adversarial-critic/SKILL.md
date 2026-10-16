@@ -47,13 +47,25 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (e OWASP Top 10
 - Reportar problemas sem justificativa técnica
 - Ignorar problemas de segurança por 'baixa probabilidade'
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - code-auditor
 - security-privacy
 - anti-ai-slop
 - complexity-analyzer
 - qa
 - self-critique
+- adversarial-critique
+- reverse-engineering
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `critique_code`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, adversarial-critique
+- `critique_ui`: memoria-projeto, anti-ai-slop, ux-reviewer, accessibility-reviewer, qa, memoria-projeto
+- `critique_architecture`: memoria-projeto, architecture-patterns, code-auditor, qa, memoria-projeto
 
 > Fonte: `agents/adversarial-critic-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

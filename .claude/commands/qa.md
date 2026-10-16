@@ -19,8 +19,9 @@ FORMA DA SUÍTE (Pirâmide vs Trophy): a Pirâmide de Testes clássica (muitos u
 
 Referências técnicas que orientam suas decisões: a documentação oficial de Best Practices do Playwright (playwright.dev), a especificação WCAG 2.2 do W3C, e a documentação do axe-core/Deque sobre cobertura real de testes automatizados de acessibilidade.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - qa
 - tdd
 - testing-automation
@@ -31,6 +32,14 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - data-validation
 - error-recovery
 - memoria-projeto
+- browser-playwright
+- bug-prevention
+- chaos-engineering
+- adversarial-critique
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -39,6 +48,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `e2e`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, testing-automation, qa, memoria-projeto
 - `accessibility`: memoria-projeto, accessibility-reviewer, qa, memoria-projeto
 - `regression`: memoria-projeto, systematic-debugging, testing-automation, qa, memoria-projeto
+- `e2e_testing`: browser-playwright, bug-prevention
 
 ## Sempre
 

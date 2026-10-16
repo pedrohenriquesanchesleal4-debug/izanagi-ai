@@ -38,19 +38,27 @@ Referências técnicas que orientam suas decisões: o modelo de qualidade de sof
 - Reportar métricas não medidas como medidas
 - Emitir PASS sem verificar os critérios mínimos (score >= 0.85, zero testes falhando)
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/confidence-estimator/SKILL.md` (+ `references.md`)
 - `skills/code-auditor/SKILL.md` (+ `references.md`)
 - `skills/self-critique/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/adversarial-critique/SKILL.md`
+- `skills/root-cause-analyzer/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `evaluate_code`: memoria-projeto, code-auditor, confidence-estimator, qa, memoria-projeto
 - `evaluate_architecture`: memoria-projeto, requirement-analyzer, confidence-estimator, qa, memoria-projeto
 - `evaluate_automation`: memoria-projeto, testing-automation, confidence-estimator, qa, memoria-projeto
+- `evaluation_gate`: adversarial-critique, root-cause-analyzer
 
 ## Handoff
 

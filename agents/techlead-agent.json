@@ -13,7 +13,14 @@
     "security-privacy",
     "qa",
     "memoria-projeto",
-    "professor-modo"
+    "professor-modo",
+    "senior-code-reviewer",
+    "solid-validator",
+    "dry-kiss-yagni-validator",
+    "refactoring-specialist",
+    "technical-debt-analyzer",
+    "breaking-change-detector",
+    "clean-code-validator"
   ],
   "chains": {
     "review_teach": [
@@ -44,6 +51,13 @@
       "systematic-debugging",
       "agentic-coding",
       "memoria-projeto"
+    ],
+    "strict_review": [
+      "senior-code-reviewer",
+      "solid-validator",
+      "dry-kiss-yagni-validator",
+      "clean-code-validator",
+      "technical-debt-analyzer"
     ]
   },
   "always": [

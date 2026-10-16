@@ -43,8 +43,9 @@ Referências técnicas que orientam suas decisões: o guia oficial de revisão d
 - Fazer comentários de review ríspidos, subjetivos ou vagos
 - Tratar revisão de código gerado por IA (Copilot, agentes autônomos) como checagem superficial de lint — avaliar sempre o encaixe arquitetural e os pontos de acoplamento que não aparecem no diff isolado
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/tech-lead/SKILL.md` (+ `references.md`)
 - `skills/principal-engineer/SKILL.md` (+ `references.md`)
 - `skills/staff-engineer/SKILL.md` (+ `references.md`)
@@ -53,6 +54,17 @@ Referências técnicas que orientam suas decisões: o guia oficial de revisão d
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
 - `skills/professor-modo/SKILL.md` (+ `references.md`)
+- `skills/senior-code-reviewer/SKILL.md` (+ `references.md`)
+- `skills/solid-validator/SKILL.md` (+ `references.md`)
+- `skills/dry-kiss-yagni-validator/SKILL.md` (+ `references.md`)
+- `skills/refactoring-specialist/SKILL.md` (+ `references.md`)
+- `skills/technical-debt-analyzer/SKILL.md` (+ `references.md`)
+- `skills/breaking-change-detector/SKILL.md` (+ `references.md`)
+- `skills/clean-code-validator/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -60,6 +72,7 @@ Referências técnicas que orientam suas decisões: o guia oficial de revisão d
 - `governance`: memoria-projeto, tech-lead, principal-engineer, staff-engineer, memoria-projeto
 - `mentor`: memoria-projeto, tech-lead, professor-modo, memoria-projeto
 - `unblock`: memoria-projeto, tech-lead, systematic-debugging, agentic-coding, memoria-projeto
+- `strict_review`: senior-code-reviewer, solid-validator, dry-kiss-yagni-validator, clean-code-validator, technical-debt-analyzer
 
 ## Handoff
 

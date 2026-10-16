@@ -48,8 +48,9 @@ Referências técnicas que orientam suas decisões: o guia de engenharia "Buildi
 - Gerar prompts genéricos/inflados — o agente deve ser mais sistema do que prompt
 - Projetar agente sem input/output contract definidos
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - principal-engineer
 - prompt-engineering
 - architecture-patterns
@@ -58,5 +59,13 @@ Referências técnicas que orientam suas decisões: o guia de engenharia "Buildi
 - confidence-estimator
 - economia-tokens
 - memoria-projeto
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `projetar_agente`: memoria-projeto, principal-engineer, prompt-engineering, handoff-protocol, hallucination-detection, confidence-estimator, economia-tokens, memoria-projeto
+- `revisar_agente_existente`: memoria-projeto, principal-engineer, architecture-patterns, hallucination-detection, memoria-projeto
 
 > Fonte: `agents/agent-architect-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

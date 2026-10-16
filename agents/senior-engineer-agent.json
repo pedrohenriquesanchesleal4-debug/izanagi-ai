@@ -16,7 +16,29 @@
     "security-privacy",
     "qa",
     "memoria-projeto",
-    "economia-tokens"
+    "economia-tokens",
+    "browser-playwright",
+    "design-taste",
+    "web-design-guidelines",
+    "image-to-code",
+    "react-next-practices",
+    "refero-styles",
+    "remotion-video",
+    "reverse-engineering",
+    "refactoring-specialist",
+    "solid-validator",
+    "dry-kiss-yagni-validator",
+    "senior-code-reviewer",
+    "breaking-change-detector",
+    "graphql",
+    "websocket-realtime",
+    "wasm",
+    "i18n-l10n",
+    "logging-expert",
+    "mobile-dev",
+    "performance-optimizer",
+    "feature-flags",
+    "serverless-edge"
   ],
   "chains": {
     "fullstack": [
@@ -68,6 +90,13 @@
       "agentic-coding",
       "qa",
       "memoria-projeto"
+    ],
+    "fullstack_modern": [
+      "react-next-practices",
+      "web-design-guidelines",
+      "design-taste",
+      "browser-playwright",
+      "refactoring-specialist"
     ]
   },
   "always": [

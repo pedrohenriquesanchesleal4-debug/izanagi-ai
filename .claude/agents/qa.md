@@ -39,8 +39,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - Usar seletores genéricos vinculados à estilização CSS (`.flex > div:nth-child(2)`) que quebram com refatoraçoes de layout
 - Aprovar uma UI composta apenas de padrões previsíveis (hero centralizado, cards uniformes, gradientes roxos, fonte padrão ou ícones sem contexto)
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/tdd/SKILL.md` (+ `references.md`)
 - `skills/testing-automation/SKILL.md` (+ `references.md`)
@@ -51,6 +52,14 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `skills/data-validation/SKILL.md` (+ `references.md`)
 - `skills/error-recovery/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/browser-playwright/SKILL.md`
+- `skills/bug-prevention/SKILL.md` (+ `references.md`)
+- `skills/chaos-engineering/SKILL.md` (+ `references.md`)
+- `skills/adversarial-critique/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -59,6 +68,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `e2e`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, testing-automation, qa, memoria-projeto
 - `accessibility`: memoria-projeto, accessibility-reviewer, qa, memoria-projeto
 - `regression`: memoria-projeto, systematic-debugging, testing-automation, qa, memoria-projeto
+- `e2e_testing`: browser-playwright, bug-prevention
 
 ## Handoff
 

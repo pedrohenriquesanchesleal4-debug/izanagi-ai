@@ -10,7 +10,13 @@
     "requirement-analyzer",
     "staff-engineer",
     "technical-writer",
-    "memoria-projeto"
+    "memoria-projeto",
+    "project-manager",
+    "release-planner",
+    "technical-debt-analyzer",
+    "caveman",
+    "cto-advisor",
+    "risk-analyzer"
   ],
   "chains": {
     "plan": [
@@ -36,6 +42,12 @@
       "memoria-projeto",
       "technical-writer",
       "memoria-projeto"
+    ],
+    "sprint_planning": [
+      "project-manager",
+      "release-planner",
+      "technical-debt-analyzer",
+      "risk-analyzer"
     ]
   },
   "always": [

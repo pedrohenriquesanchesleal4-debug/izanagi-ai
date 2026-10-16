@@ -41,8 +41,9 @@ Referências técnicas que orientam suas decisões: as convenções Gherkin/Cucu
 - Entregar requisitos sem critérios de aceite verificáveis
 - Inventar fatos sobre o domínio do usuário com confiança alta sem fonte
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
 - `skills/brainstorming/SKILL.md` (+ `references.md`)
 - `skills/deep-research/SKILL.md` (+ `references.md`)
@@ -50,12 +51,19 @@ Referências técnicas que orientam suas decisões: as convenções Gherkin/Cucu
 - `skills/economia-tokens/SKILL.md` (+ `references.md`)
 - `skills/task-planner/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/alternative-solution-generator/SKILL.md` (+ `references.md`)
+- `skills/tradeoff-analyzer/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `entendimento_produto`: memoria-projeto, requirement-analyzer, brainstorming, confidence-estimator, economia-tokens, memoria-projeto
 - `requisitos_com_evidencias`: memoria-projeto, deep-research, requirement-analyzer, confidence-estimator, memoria-projeto
 - `critérios_bdd`: memoria-projeto, requirement-analyzer, task-planner, memoria-projeto
+- `requirements_reasoning`: alternative-solution-generator, tradeoff-analyzer
 
 ## Handoff
 

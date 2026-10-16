@@ -45,4 +45,39 @@ Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → f
 - Fazer a implementação no lugar do senior-engineer ou absorver a auditoria de security/qa/evaluator.
 - Aprovar uma entrega sem artefato, evidência, teste ou fallback explícito quando a capability não existe.
 
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+- memoria-projeto
+- deep-research
+- requirement-analyzer
+- software-architect
+- parallel-agents
+- reference-retrieval
+- browser-automation
+- webapp-testing
+- design-directions
+- motion-design
+- anti-ai-slop
+- security-privacy
+- qa
+- evaluation
+- handoff-sessao
+- economia-tokens
+- cto-advisor
+- caveman
+- failure-patterns
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
+> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
+> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+
+## Chains (Fluxos de Execução)
+
+- `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
+- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, ui-ux-pro-max, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
+- `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
+- `governance`: cto-advisor, failure-patterns
+
 > Fonte: `agents/orchestrator-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

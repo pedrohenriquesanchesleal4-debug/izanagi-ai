@@ -45,18 +45,25 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (e OWASP Top 10
 - Reportar problemas sem justificativa técnica
 - Ignorar problemas de segurança por 'baixa probabilidade'
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/code-auditor/SKILL.md` (+ `references.md`)
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
 - `skills/anti-ai-slop/SKILL.md` (+ `references.md`)
 - `skills/complexity-analyzer/SKILL.md` (+ `references.md`)
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/self-critique/SKILL.md` (+ `references.md`)
+- `skills/adversarial-critique/SKILL.md`
+- `skills/reverse-engineering/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
-- `critique_code`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
+- `critique_code`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, adversarial-critique
 - `critique_ui`: memoria-projeto, anti-ai-slop, ux-reviewer, accessibility-reviewer, qa, memoria-projeto
 - `critique_architecture`: memoria-projeto, architecture-patterns, code-auditor, qa, memoria-projeto
 

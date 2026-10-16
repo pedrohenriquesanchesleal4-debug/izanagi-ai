@@ -43,13 +43,18 @@ Referências técnicas que orientam suas decisões: o método GRADE (Grading of 
 - Apresentar suposições como fatos verificados
 - Entregar relatório sem seção de limitações
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/deep-research/SKILL.md` (+ `references.md`)
 - `skills/confidence-estimator/SKILL.md` (+ `references.md`)
 - `skills/hallucination-detection/SKILL.md` (+ `references.md`)
 - `skills/documentation-writer/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 

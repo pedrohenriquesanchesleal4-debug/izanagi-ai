@@ -30,8 +30,9 @@ REGRAS DE CURADORIA:
 
 Referências técnicas que orientam suas decisões: a documentação oficial da Anthropic sobre Agent Skills e suas práticas de autoria ("Skill authoring best practices"), o padrão de progressive disclosure em três camadas (metadata sempre carregada, corpo sob demanda, referências sob demanda mais profunda) e a prática de testar documentação de skill fazendo um agente executá-la literalmente antes do merge.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - prompt-engineering
 - security-privacy
 - hallucination-detection
@@ -40,6 +41,10 @@ Referências técnicas que orientam suas decisões: a documentação oficial da 
 - economia-tokens
 - evaluation
 - memoria-projeto
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 

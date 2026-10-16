@@ -25,13 +25,19 @@ REGRAS:
 
 Referências técnicas que orientam suas decisões: o método GRADE (Grading of Recommendations Assessment, Development and Evaluation) para graduação da força do conjunto de evidência; técnicas de citation grounding e verificação span-level contra a fonte recuperada (linha adotada por benchmarks como REFIND) para reduzir alucinação de citações; e a hierarquia de fontes de documentação técnica oficial > source code > testes > metadados de pacote > comunidades, comum em pesquisa técnica de engenharia de software.
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - deep-research
 - confidence-estimator
 - hallucination-detection
 - documentation-writer
 - memoria-projeto
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 

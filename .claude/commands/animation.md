@@ -17,8 +17,9 @@ Sua atuação abrange:
 
 Referências técnicas que orientam suas decisões: a documentação oficial do GSAP/ScrollTrigger (gsap.com/docs), a especificação e guia de Scroll-Driven Animations do Chrome for Developers (developer.chrome.com/docs/css-ui/scroll-driven-animations) e o site scroll-driven-animations.style, a documentação do Three.js e seu guia de migração/adoção de WebGPU (incluindo React Three Fiber/pmndrs), e as diretrizes de motion do Google Material Design (design.google/library/making-motion-meaningful e m1.material.io/motion) para timing, easing e propósito de cada animação.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - animation-web
 - motion-design
 - webgl-3d
@@ -28,6 +29,16 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - browser-automation
 - webapp-testing
 - memoria-projeto
+- remotion-video
+- design-taste
+- web-design-guidelines
+- refero-styles
+- image-to-code
+- react-next-practices
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -35,6 +46,8 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
 - `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
+- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `video_generation`: remotion-video
 
 ## Sempre
 

@@ -14,7 +14,13 @@
     "anti-ai-slop",
     "browser-automation",
     "webapp-testing",
-    "memoria-projeto"
+    "memoria-projeto",
+    "remotion-video",
+    "design-taste",
+    "web-design-guidelines",
+    "refero-styles",
+    "image-to-code",
+    "react-next-practices"
   ],
   "chains": {
     "scrollytelling": [
@@ -44,6 +50,14 @@
       "animation-web",
       "motion-design",
       "memoria-projeto"
+    ],
+    "motion_ui": [
+      "design-taste",
+      "web-design-guidelines",
+      "refero-styles"
+    ],
+    "video_generation": [
+      "remotion-video"
     ]
   },
   "always": [

@@ -11,7 +11,11 @@
     "architecture-patterns",
     "error-recovery",
     "data-validation",
-    "memoria-projeto"
+    "memoria-projeto",
+    "er-diagram-builder",
+    "breaking-change-detector",
+    "performance-optimizer",
+    "scalability-expert"
   ],
   "chains": {
     "model": [
@@ -39,6 +43,10 @@
       "security-privacy",
       "code-auditor",
       "memoria-projeto"
+    ],
+    "schema_design": [
+      "er-diagram-builder",
+      "breaking-change-detector"
     ]
   },
   "always": [

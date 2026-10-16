@@ -34,8 +34,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Permitir múltiplos cliques/submissões simultâneas que disparem requisições duplicadas à API
 - Utilizar placeholders genéricos no lugar de labels visíveis permanentes
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/web-forms/SKILL.md` (+ `references.md`)
 - `skills/frontend/SKILL.md` (+ `references.md`)
 - `skills/accessibility-reviewer/SKILL.md` (+ `references.md`)
@@ -43,12 +44,23 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `skills/data-validation/SKILL.md` (+ `references.md`)
 - `skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/i18n-l10n/SKILL.md` (+ `references.md`)
+- `skills/image-to-code/SKILL.md`
+- `skills/web-design-guidelines/SKILL.md`
+- `skills/react-next-practices/SKILL.md`
+- `skills/refero-styles/SKILL.md`
+- `skills/design-taste/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `form_wizard`: memoria-projeto, requirement-analyzer, web-forms, accessibility-reviewer, qa, memoria-projeto
 - `form_audit`: memoria-projeto, accessibility-reviewer, ux-reviewer, web-forms, memoria-projeto
 - `form_implement`: memoria-projeto, web-forms, accessibility-reviewer, qa, memoria-projeto
+- `form_flow`: web-design-guidelines, i18n-l10n, react-next-practices
 
 ## Handoff
 

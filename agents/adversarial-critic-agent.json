@@ -11,7 +11,9 @@
     "anti-ai-slop",
     "complexity-analyzer",
     "qa",
-    "self-critique"
+    "self-critique",
+    "adversarial-critique",
+    "reverse-engineering"
   ],
   "chains": {
     "critique_code": [
@@ -20,7 +22,7 @@
       "security-privacy",
       "anti-ai-slop",
       "qa",
-      "memoria-projeto"
+      "adversarial-critique"
     ],
     "critique_ui": [
       "memoria-projeto",

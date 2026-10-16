@@ -52,4 +52,51 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - Decidir stack/orçamento/prazo pela cabeça do agente
 - Repetir contexto no chat (economia de tokens); entregar o prompt em arquivo quando pedido
 
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+- brainstorming
+- deep-research
+- design-directions
+- ui-ux-pro-max
+- anti-ai-slop
+- requirements
+- frontend
+- animation-web
+- motion-design
+- webgl-3d
+- browser-automation
+- webapp-testing
+- reference-retrieval
+- alternatives
+- tradeoff
+- risk
+- ux
+- a11y
+- architect
+- data-engineering
+- db
+- web-perf-seo
+- design-taste
+- web-design-guidelines
+- refero-styles
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
+> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
+> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+
+## Chains (Fluxos de Execução)
+
+- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirements, frontend
+- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, anti-ai-slop
+- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirements
+- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirements
+- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff
+- `app_ui`: brainstorming, design-directions, ui-ux-pro-max, frontend, motion-design
+- `prompt_rich`: brainstorming, requirements, design-directions, ui-ux-pro-max, architect
+- `webgl_3d`: brainstorming, deep-research, design-directions, webgl-3d, animation-web, motion-design
+- `blueprint`: architect, data-engineering, db, risk, tradeoff
+- `style_selection`: design-taste, refero-styles, web-design-guidelines
+
 > Fonte: `agents/discovery-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

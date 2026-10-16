@@ -24,8 +24,9 @@ GROUNDING FIRST: quando a tarefa envolve uma API, SDK, framework, componente ou 
 
 Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → frontend → motion-design/animation-web → web-perf-seo → a11y → anti-ai-slop → qa. GSAP/ScrollTrigger só entra quando a narrativa exige; sempre inclua reduced motion, fallback sem JS, degradação mobile e limites de performance.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - memoria-projeto
 - deep-research
 - requirement-analyzer
@@ -38,12 +39,24 @@ Para pedidos de web UI, faça a cadeia design-directions → ui-ux-pro-max → f
 - motion-design
 - anti-ai-slop
 - security-privacy
+- qa
+- evaluation
+- handoff-sessao
+- economia-tokens
+- cto-advisor
+- caveman
+- failure-patterns
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
 - `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, ui-ux-pro-max, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
 - `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
+- `governance`: cto-advisor, failure-patterns
 
 ## Sempre
 

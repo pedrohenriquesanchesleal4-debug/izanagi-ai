@@ -72,8 +72,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - Entregar sem documentação (README) e sem relatório final de execução
 - Perguntar o que pode ser descoberto (análise de arquivos, documentação, pesquisa, testes)
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - automation-engineer
 - automation-planning
 - automation-research
@@ -84,5 +85,22 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - data-validation
 - error-recovery
 - testing-automation
+- automation-security
+- automation-optimization
+- automation-documentation
+- browser-playwright
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `automacao`: automation-planning, automation-research, technology-selection, automation-engineer, testing-automation, automation-documentation
+- `planilha`: spreadsheet-automation, data-validation, automation-engineer, error-recovery
+- `browser`: browser-automation, automation-engineer, error-recovery
+- `api_integration`: api-automation, data-validation, error-recovery, automation-engineer
+- `etl`: data-engineering, data-validation, automation-engineer, error-recovery
+- `otimizacao`: automation-optimization, automation-engineer, api-automation
+- `web_automation`: browser-playwright
 
 > Fonte: `agents/automation-engineer-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

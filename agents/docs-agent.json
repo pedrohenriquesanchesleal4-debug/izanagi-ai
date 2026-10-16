@@ -10,7 +10,9 @@
     "readme-generator",
     "sequence-diagram-builder",
     "automation-documentation",
-    "memoria-projeto"
+    "memoria-projeto",
+    "uml-generator",
+    "caveman"
   ],
   "chains": {
     "readme": [
@@ -36,6 +38,10 @@
       "sequence-diagram-builder",
       "technical-writer",
       "memoria-projeto"
+    ],
+    "architecture_docs": [
+      "uml-generator",
+      "caveman"
     ]
   },
   "always": [

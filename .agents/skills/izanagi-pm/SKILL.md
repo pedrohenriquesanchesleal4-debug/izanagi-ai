@@ -38,12 +38,30 @@ Referências técnicas que orientam suas decisões: o Scrum Guide oficial, a not
 - Permitir expansão de escopo ('scope creep') sem atualizar o planejamento de prazos e dependências
 - Omitir bloqueios ou riscos técnicos críticos em relatórios executivos
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - task-planner
 - requirement-analyzer
 - staff-engineer
 - technical-writer
 - memoria-projeto
+- project-manager
+- release-planner
+- technical-debt-analyzer
+- caveman
+- cto-advisor
+- risk-analyzer
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `plan`: memoria-projeto, requirement-analyzer, task-planner, staff-engineer, memoria-projeto
+- `sprint`: memoria-projeto, task-planner, staff-engineer, memoria-projeto
+- `risk_assessment`: memoria-projeto, requirement-analyzer, architect, memoria-projeto
+- `exec_report`: memoria-projeto, technical-writer, memoria-projeto
+- `sprint_planning`: project-manager, release-planner, technical-debt-analyzer, risk-analyzer
 
 > Fonte: `agents/pm-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

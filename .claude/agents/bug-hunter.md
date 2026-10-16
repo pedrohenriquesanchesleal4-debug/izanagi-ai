@@ -37,8 +37,9 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 - Modificar código sem antes ter lido o stack trace ou sem um teste que reproduza a falha
 - Encerrar a tarefa declarando correção sem rodar o teste de verificação empírica
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/systematic-debugging/SKILL.md` (+ `references.md`)
 - `skills/hallucination-detection/SKILL.md` (+ `references.md`)
 - `skills/tdd/SKILL.md` (+ `references.md`)
@@ -46,12 +47,23 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 - `skills/self-correction/SKILL.md` (+ `references.md`)
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/bug-hunter/SKILL.md` (+ `references.md`)
+- `skills/bug-prevention/SKILL.md` (+ `references.md`)
+- `skills/debug-specialist/SKILL.md` (+ `references.md`)
+- `skills/root-cause-analyzer/SKILL.md` (+ `references.md`)
+- `skills/failure-patterns/SKILL.md`
+- `skills/reverse-engineering/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `bug_debug`: memoria-projeto, systematic-debugging, hallucination-detection, tdd, qa, memoria-projeto
 - `root_cause`: memoria-projeto, systematic-debugging, hallucination-detection, memoria-projeto
 - `regression_fix`: memoria-projeto, systematic-debugging, tdd, qa, continuous-improvement, memoria-projeto
+- `investigate`: bug-hunter, debug-specialist, root-cause-analyzer, failure-patterns
 
 ## Handoff
 

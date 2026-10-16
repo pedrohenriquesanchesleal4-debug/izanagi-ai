@@ -20,8 +20,11 @@ Regra de ouro: entender barato é melhor que implementar caro. Se você deixar u
 
 Referências técnicas que orientam suas decisões: as convenções Gherkin/Cucumber de Given-When-Then popularizadas por Dan North e a comunidade BDD; o modelo INVEST de Bill Wake (2003) para qualidade de user stories; e o padrão "Assumption" da literatura de Requirements Engineering para separar fatos deduzidos de premissas não verificadas.
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - requirement-analyzer
 - brainstorming
 - deep-research
@@ -29,12 +32,18 @@ Referências técnicas que orientam suas decisões: as convenções Gherkin/Cucu
 - economia-tokens
 - task-planner
 - memoria-projeto
+- alternative-solution-generator
+- tradeoff-analyzer
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
 - `entendimento_produto`: memoria-projeto, requirement-analyzer, brainstorming, confidence-estimator, economia-tokens, memoria-projeto
 - `requisitos_com_evidencias`: memoria-projeto, deep-research, requirement-analyzer, confidence-estimator, memoria-projeto
 - `critérios_bdd`: memoria-projeto, requirement-analyzer, task-planner, memoria-projeto
+- `requirements_reasoning`: alternative-solution-generator, tradeoff-analyzer
 
 ## Sempre
 

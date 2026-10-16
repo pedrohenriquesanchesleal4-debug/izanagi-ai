@@ -1273,7 +1273,12 @@ export function buildNodePrompt(
 ): string {
   const agent = node.agent ? findAgentJson(node.agent, baseDir) : undefined;
   const identity = agent?.identity || agent?.role || opts.agent.identity || opts.agent.role || `Agente especialista (${node.agent ?? node.id})`;
-  const skills = (node.skills ?? opts.skillChain).slice(0, 4);
+  const candidateSkills = (node.skills && node.skills.length > 0)
+    ? node.skills
+    : (opts.skillChain && opts.skillChain.length > 0)
+      ? opts.skillChain
+      : (agent?.skills ?? []);
+  const skills = candidateSkills.slice(0, 6);
 
   // Corpo volátil compartilhado pelas duas formas do prompt (ordem pré-wave preservada).
   const artifactLine = artifactRequirementLine(node.outputs?.[0] ?? 'raw');
@@ -1285,7 +1290,8 @@ export function buildNodePrompt(
   // nunca via a saída dos predecessores.
   body += flags?.context ? `${flags.context}\n` : `## TAREFA\n${opts.task}\n`;
   if (skills.length > 0) {
-    body += `\n## SKILLS APLICÁVEIS\n`;
+    body += `\n## SKILLS OBRIGATÓRIAS (MANDATÓRIO SEGUIR E APLICAR)\n`;
+    body += `> ⚠️ **CLÁUSULA DE EXECUÇÃO OBRIGATÓRIA**: O agente em execução é ESTRITAMENTE OBRIGADO a seguir e aplicar os procedimentos, regras e padrões técnicos definidos nas skills abaixo. É expressamente proibido atuar sem invocar seus padrões:\n`;
     for (const skill of skills) {
       const sPath = resolveSkillPath(process.cwd(), baseDir, skill);
       if (sPath && fs.existsSync(sPath)) {

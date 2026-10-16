@@ -38,13 +38,20 @@ Referências técnicas que orientam suas decisões: o framework Diátaxis (diata
 - Fornecer exemplos de código com erros de sintaxe ou referências a pacotes e rotas que não existem
 - Omitir a explicação das variáveis de ambiente exigidas pela aplicação
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/technical-writer/SKILL.md` (+ `references.md`)
 - `skills/readme-generator/SKILL.md` (+ `references.md`)
 - `skills/sequence-diagram-builder/SKILL.md` (+ `references.md`)
 - `skills/automation-documentation/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/uml-generator/SKILL.md` (+ `references.md`)
+- `skills/caveman/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -52,6 +59,7 @@ Referências técnicas que orientam suas decisões: o framework Diátaxis (diata
 - `guide`: memoria-projeto, technical-writer, sequence-diagram-builder, memoria-projeto
 - `api_docs`: memoria-projeto, technical-writer, qa, memoria-projeto
 - `diagram`: memoria-projeto, sequence-diagram-builder, technical-writer, memoria-projeto
+- `architecture_docs`: uml-generator, caveman
 
 ## Handoff
 

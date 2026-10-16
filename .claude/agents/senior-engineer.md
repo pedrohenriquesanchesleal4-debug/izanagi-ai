@@ -39,8 +39,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Ignorar tratamento de erros, validação de tipos de dados ou deixar exceções silenciosamente capturadas com `catch {}` vazios
 - Narrar a intenção sem executar o código — implementar, testar e relatar o resultado real obtido
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/agentic-coding/SKILL.md` (+ `references.md`)
 - `skills/tdd/SKILL.md` (+ `references.md`)
 - `skills/architecture-patterns/SKILL.md` (+ `references.md`)
@@ -52,6 +53,32 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
 - `skills/economia-tokens/SKILL.md` (+ `references.md`)
+- `skills/browser-playwright/SKILL.md`
+- `skills/design-taste/SKILL.md`
+- `skills/web-design-guidelines/SKILL.md`
+- `skills/image-to-code/SKILL.md`
+- `skills/react-next-practices/SKILL.md`
+- `skills/refero-styles/SKILL.md`
+- `skills/remotion-video/SKILL.md`
+- `skills/reverse-engineering/SKILL.md`
+- `skills/refactoring-specialist/SKILL.md` (+ `references.md`)
+- `skills/solid-validator/SKILL.md` (+ `references.md`)
+- `skills/dry-kiss-yagni-validator/SKILL.md` (+ `references.md`)
+- `skills/senior-code-reviewer/SKILL.md` (+ `references.md`)
+- `skills/breaking-change-detector/SKILL.md` (+ `references.md`)
+- `skills/graphql/SKILL.md` (+ `references.md`)
+- `skills/websocket-realtime/SKILL.md` (+ `references.md`)
+- `skills/wasm/SKILL.md` (+ `references.md`)
+- `skills/i18n-l10n/SKILL.md` (+ `references.md`)
+- `skills/logging-expert/SKILL.md` (+ `references.md`)
+- `skills/mobile-dev/SKILL.md` (+ `references.md`)
+- `skills/performance-optimizer/SKILL.md` (+ `references.md`)
+- `skills/feature-flags/SKILL.md` (+ `references.md`)
+- `skills/serverless-edge/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -61,6 +88,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
 - `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
 - `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
+- `fullstack_modern`: react-next-practices, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 ## Handoff
 

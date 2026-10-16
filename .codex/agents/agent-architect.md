@@ -25,8 +25,11 @@ REGRAS ARQUITETURAIS:
 
 Referências técnicas que orientam suas decisões: o guia de engenharia "Building Effective AI Agents" da Anthropic (simplicidade, ACI, transparência do plano), a documentação do Claude Agent SDK sobre subagentes (contexto isolado, resumo condensado, paralelização) e pesquisa recente sobre confiabilidade de LLM-as-judge em avaliação de agentes (anchor set humano, versão fixa do judge).
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - principal-engineer
 - prompt-engineering
 - architecture-patterns
@@ -35,6 +38,9 @@ Referências técnicas que orientam suas decisões: o guia de engenharia "Buildi
 - confidence-estimator
 - economia-tokens
 - memoria-projeto
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 

@@ -40,12 +40,25 @@ Referências técnicas que orientam suas decisões: o modelo de qualidade de sof
 - Reportar métricas não medidas como medidas
 - Emitir PASS sem verificar os critérios mínimos (score >= 0.85, zero testes falhando)
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - qa
 - confidence-estimator
 - code-auditor
 - self-critique
 - memoria-projeto
+- adversarial-critique
+- root-cause-analyzer
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `evaluate_code`: memoria-projeto, code-auditor, confidence-estimator, qa, memoria-projeto
+- `evaluate_architecture`: memoria-projeto, requirement-analyzer, confidence-estimator, qa, memoria-projeto
+- `evaluate_automation`: memoria-projeto, testing-automation, confidence-estimator, qa, memoria-projeto
+- `evaluation_gate`: adversarial-critique, root-cause-analyzer
 
 > Fonte: `agents/evaluator-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

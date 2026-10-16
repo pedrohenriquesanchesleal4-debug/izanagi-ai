@@ -45,8 +45,9 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - Assumir que 'funcionou no meu teste manual' substitui uma métrica objetiva de avaliação
 - Confundir esta especialidade com a do senior-engineer: UI, CRUD e backend genérico não são desta fatia
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - ai-agent
 - reference-retrieval
 - prompt-engineering
@@ -56,5 +57,15 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 - qa
 - memoria-projeto
 - economia-tokens
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `feature_llm`: memoria-projeto, reference-retrieval, ai-agent, prompt-engineering, agentic-coding, security-privacy, qa, memoria-projeto
+- `rag_pipeline`: memoria-projeto, ai-agent, prompt-engineering, qa
+- `agent_tooling`: ai-agent, reference-retrieval, agentic-coding, security-privacy, tdd
+- `eval_guardrails`: ai-agent, qa, security-privacy
 
 > Fonte: `agents/ai-engineer-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

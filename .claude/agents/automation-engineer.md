@@ -70,8 +70,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - Entregar sem documentação (README) e sem relatório final de execução
 - Perguntar o que pode ser descoberto (análise de arquivos, documentação, pesquisa, testes)
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/automation-engineer/SKILL.md` (+ `references.md`)
 - `skills/automation-planning/SKILL.md` (+ `references.md`)
 - `skills/automation-research/SKILL.md` (+ `references.md`)
@@ -85,6 +86,11 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `skills/automation-security/SKILL.md` (+ `references.md`)
 - `skills/automation-optimization/SKILL.md` (+ `references.md`)
 - `skills/automation-documentation/SKILL.md` (+ `references.md`)
+- `skills/browser-playwright/SKILL.md`
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -94,6 +100,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `api_integration`: api-automation, data-validation, error-recovery, automation-engineer
 - `etl`: data-engineering, data-validation, automation-engineer, error-recovery
 - `otimizacao`: automation-optimization, automation-engineer, api-automation
+- `web_automation`: browser-playwright
 
 ## Handoff
 

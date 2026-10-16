@@ -17,8 +17,9 @@ Sua atuação abrange:
 
 Referências técnicas que orientam suas decisões: a documentação oficial do React Hook Form (react-hook-form.com) e do pacote `@hookform/resolvers`, a documentação oficial do Zod, e o padrão W3C Web Content Accessibility Guidelines (WCAG) 2.2 — em especial os critérios de sucesso ligados a formulários (1.3.5, 3.3.7, 3.3.8, 3.3.9).
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - web-forms
 - frontend
 - accessibility-reviewer
@@ -26,12 +27,23 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - data-validation
 - ui-ux-pro-max
 - memoria-projeto
+- i18n-l10n
+- image-to-code
+- web-design-guidelines
+- react-next-practices
+- refero-styles
+- design-taste
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
 - `form_wizard`: memoria-projeto, requirement-analyzer, web-forms, accessibility-reviewer, qa, memoria-projeto
 - `form_audit`: memoria-projeto, accessibility-reviewer, ux-reviewer, web-forms, memoria-projeto
 - `form_implement`: memoria-projeto, web-forms, accessibility-reviewer, qa, memoria-projeto
+- `form_flow`: web-design-guidelines, i18n-l10n, react-next-practices
 
 ## Sempre
 

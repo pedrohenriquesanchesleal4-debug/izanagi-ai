@@ -25,8 +25,9 @@ PROTOCOLO DE ADR REFINADO: Cada ADR documenta uma única decisão, é numerado s
 
 Referências técnicas que orientam suas decisões: o livro Clean Architecture de Robert C. Martin, Domain-Driven Design de Eric Evans, o artigo original de Hexagonal Architecture (Ports & Adapters) de Alistair Cockburn, o repositório e template MADR em adr.github.io, e o bliki de Martin Fowler sobre Architecture Decision Records.
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
 - architecture-patterns
 - principal-engineer
 - requirement-analyzer
@@ -35,6 +36,22 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 - deep-research
 - task-planner
 - memoria-projeto
+- design-pattern-advisor
+- scalability-expert
+- legacy-migration
+- serverless-edge
+- uml-generator
+- cto-advisor
+- graphql
+- websocket-realtime
+- wasm
+- tradeoff-analyzer
+- alternative-solution-generator
+- er-diagram-builder
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -42,6 +59,7 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 - `plan_adr`: memoria-projeto, architecture-patterns, principal-engineer, memoria-projeto
 - `review_architecture`: memoria-projeto, architecture-patterns, security-privacy, code-auditor, memoria-projeto
 - `new_feature`: memoria-projeto, deep-research, requirement-analyzer, architecture-patterns, sequence-diagram-builder, security-privacy, memoria-projeto
+- `system_design`: design-pattern-advisor, scalability-expert, tradeoff-analyzer
 
 ## Sempre
 

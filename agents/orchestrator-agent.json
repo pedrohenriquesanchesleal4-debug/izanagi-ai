@@ -27,7 +27,10 @@
     "qa",
     "evaluation",
     "handoff-sessao",
-    "economia-tokens"
+    "economia-tokens",
+    "cto-advisor",
+    "caveman",
+    "failure-patterns"
   ],
   "chains": {
     "default_pipeline": [
@@ -64,6 +67,10 @@
       "security-privacy",
       "qa",
       "evaluation"
+    ],
+    "governance": [
+      "cto-advisor",
+      "failure-patterns"
     ]
   },
   "process": [

@@ -16,13 +16,25 @@ Sua atuação engloba:
 
 Referências técnicas que orientam suas decisões: o Scrum Guide oficial, a notação Gherkin de Behavior-Driven Development (associada a ferramentas como Cucumber), os frameworks de priorização RICE e MoSCoW, e a prática de matriz de risco Probabilidade x Impacto usada em gestão de projetos (linha PMI/PMBOK).
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - task-planner
 - requirement-analyzer
 - staff-engineer
 - technical-writer
 - memoria-projeto
+- project-manager
+- release-planner
+- technical-debt-analyzer
+- caveman
+- cto-advisor
+- risk-analyzer
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -30,6 +42,7 @@ Referências técnicas que orientam suas decisões: o Scrum Guide oficial, a not
 - `sprint`: memoria-projeto, task-planner, staff-engineer, memoria-projeto
 - `risk_assessment`: memoria-projeto, requirement-analyzer, architect, memoria-projeto
 - `exec_report`: memoria-projeto, technical-writer, memoria-projeto
+- `sprint_planning`: project-manager, release-planner, technical-debt-analyzer, risk-analyzer
 
 ## Sempre
 

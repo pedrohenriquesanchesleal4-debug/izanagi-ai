@@ -15,7 +15,11 @@
     "accessibility-reviewer",
     "data-validation",
     "error-recovery",
-    "memoria-projeto"
+    "memoria-projeto",
+    "browser-playwright",
+    "bug-prevention",
+    "chaos-engineering",
+    "adversarial-critique"
   ],
   "chains": {
     "unit": [
@@ -53,6 +57,10 @@
       "testing-automation",
       "qa",
       "memoria-projeto"
+    ],
+    "e2e_testing": [
+      "browser-playwright",
+      "bug-prevention"
     ]
   },
   "always": [

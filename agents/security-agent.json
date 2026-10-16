@@ -13,7 +13,10 @@
     "automation-security",
     "qa",
     "systematic-debugging",
-    "memoria-projeto"
+    "memoria-projeto",
+    "dependency-analyzer",
+    "reverse-engineering",
+    "risk-analyzer"
   ],
   "chains": {
     "full_audit": [
@@ -49,6 +52,10 @@
       "api-automation",
       "defense-in-depth",
       "memoria-projeto"
+    ],
+    "security_audit": [
+      "dependency-analyzer",
+      "risk-analyzer"
     ]
   },
   "always": [

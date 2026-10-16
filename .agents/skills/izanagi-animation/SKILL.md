@@ -37,8 +37,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Deixar loops de renderização WebGL ou ScrollTriggers executando em segundo plano quando os elementos estão fora da viewport
 - Compromover a acessibilidade ou legibilidade de texto em prol de efeitos visuais excessivos
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - animation-web
 - motion-design
 - webgl-3d
@@ -48,5 +49,23 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - browser-automation
 - webapp-testing
 - memoria-projeto
+- remotion-video
+- design-taste
+- web-design-guidelines
+- refero-styles
+- image-to-code
+- react-next-practices
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
+- `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
+- `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
+- `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
+- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `video_generation`: remotion-video
 
 > Fonte: `agents/animation-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

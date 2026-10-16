@@ -378,9 +378,14 @@ ${modelLine}---
 ${dispatchPolicy}
 ${a.identity || a.role}
 
-## Área de atuação
+## Skills Obrigatórias (Uso Mandatório)
 
-${bullet(a.skills, 12) || '- (sem skills declaradas)'}
+Você DEVE consultar e aplicar rigorosamente os procedimentos das seguintes skills atribuídas à sua especialidade:
+${bullet(a.skills) || '- (sem skills declaradas)'}
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO**:
+> É estritamente proibido atuar sem invocar e aplicar suas skills obrigatórias.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -443,9 +448,14 @@ ${a.always.length > 0 ? bullet(a.always) : '- (sem regras sempre)'}
 
 ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 ${skillLines}
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -669,9 +679,13 @@ ${a.identity || a.role}
 
 ${orchestratorPolicy}
 ${hardGates}
-## Skills
+## Skills Obrigatórias (Mandatory Skills)
 
-${bullet(a.skills, 12) || '- (sem skills declaradas)'}
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
+${bullet(a.skills) || '- (sem skills declaradas)'}
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -1045,6 +1059,20 @@ ${a.always.length > 0 ? bullet(a.always) : '- (sem regras sempre)'}
 
 ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE carregar e seguir rigorosamente os procedimentos, diretrizes e checklists das seguintes skills:
+${bullet(a.skills) || '- (sem skills declaradas)'}
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido atuar de forma solta ou ignorar as skills listadas acima.
+> Antes e durante a execução de qualquer tarefa sob sua responsabilidade, consulte e aplique os padrões técnicos
+> e critérios de verificação definidos em suas skills atribuídas. Toda entrega deve evidenciar a aplicação delas.
+
+## Chains (Fluxos de Execução)
+
+${chainList(a.chains) || '- (sem chains)'}
+
 > Fonte: \`agents/${a.file}\` · Gerado pelo Izanagi AI (\`izanagi export --cli opencode\`)
 `;
 }
@@ -1195,9 +1223,17 @@ ${a.always.length > 0 ? bullet(a.always) : '- (seguir convenções do framework)
 
 ${a.never.length > 0 ? bullet(a.never) : '- (sem restrições específicas)'}
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
-${bullet(a.skills, 10) || '- (sem skills declaradas)'}
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
+${bullet(a.skills) || '- (sem skills declaradas)'}
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+${chainList(a.chains) || '- (sem chains)'}
 
 > Fonte: \`agents/${a.file}\` · ${provenanceFooter('antigravity')}
 `;

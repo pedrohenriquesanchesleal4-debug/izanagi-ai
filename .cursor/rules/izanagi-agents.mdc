@@ -34,6 +34,14 @@ Use estes agentes como orquestração de papéis: escolha o agente pelo tipo de 
 | `senior-engineer` | Senior Engineer | Full-Stack Software Engineer High-Craft: implementação profunda de ponta a ponta, Clean Code, TDD estrito,… |
 | `skill-architect` | Skill Architect | Arquitetura de novas skills: Capability Gap → Research → Draft → Examples → Tests → Security Scan →… |
 | `techlead` | Tech Lead | Liderança técnica operacional, Code Review pedagógico em 5 dimensões… |
+| `curto-specialist` | Curto Specialist | orçamento curto |
+| `feature-specialist` | Feature Specialist | minha-feature |
+| `fluxo-specialist` | Fluxo Specialist | executar fluxo |
+| `go-pay-agent` | Go Pay Agent | microservico de pagamentos em Go |
+| `loop-specialist` | Loop Specialist | workflow loop |
+| `paginaco-specialist` | Paginaco Specialist | refatorar paginação |
+| `producer-specialist` | Producer Specialist | falha de producer |
+| `real-specialist` | Real Specialist | produce real |
 
 ## Quando usar
 

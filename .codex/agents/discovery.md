@@ -20,8 +20,9 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 
 
 
-## Skills
+## Skills Obrigatórias (Mandatory Skills)
 
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - brainstorming
 - deep-research
 - design-directions
@@ -34,6 +35,22 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - webgl-3d
 - browser-automation
 - webapp-testing
+- reference-retrieval
+- alternatives
+- tradeoff
+- risk
+- ux
+- a11y
+- architect
+- data-engineering
+- db
+- web-perf-seo
+- design-taste
+- web-design-guidelines
+- refero-styles
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -46,6 +63,7 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - `prompt_rich`: brainstorming, requirements, design-directions, ui-ux-pro-max, architect
 - `webgl_3d`: brainstorming, deep-research, design-directions, webgl-3d, animation-web, motion-design
 - `blueprint`: architect, data-engineering, db, risk, tradeoff
+- `style_selection`: design-taste, refero-styles, web-design-guidelines
 
 ## Sempre
 

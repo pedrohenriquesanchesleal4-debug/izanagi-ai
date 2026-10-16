@@ -41,8 +41,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - Ignorar tratamento de erros, validação de tipos de dados ou deixar exceções silenciosamente capturadas com `catch {}` vazios
 - Narrar a intenção sem executar o código — implementar, testar e relatar o resultado real obtido
 
-## Skills Associadas
+## Skills Obrigatórias (Mandatory Skills)
 
+Ao assumir este papel, você DEVE obrigatoriamente consultar e aplicar os padrões das seguintes skills atribuídas:
 - agentic-coding
 - tdd
 - architecture-patterns
@@ -53,5 +54,41 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - security-privacy
 - qa
 - memoria-projeto
+- economia-tokens
+- browser-playwright
+- design-taste
+- web-design-guidelines
+- image-to-code
+- react-next-practices
+- refero-styles
+- remotion-video
+- reverse-engineering
+- refactoring-specialist
+- solid-validator
+- dry-kiss-yagni-validator
+- senior-code-reviewer
+- breaking-change-detector
+- graphql
+- websocket-realtime
+- wasm
+- i18n-l10n
+- logging-expert
+- mobile-dev
+- performance-optimizer
+- feature-flags
+- serverless-edge
+
+> ⚠️ **DIRETRIZ DE USO MANDATÓRIO**:
+> É expressamente proibido atuar sem consultar as skills associadas. O agente deve cumprir rigorosamente os padrões de engenharia, arquitetura e qualidade exigidos por cada uma delas.
+
+## Chains (Fluxos de Execução)
+
+- `fullstack`: memoria-projeto, architect, database, frontend, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
+- `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
+- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
+- `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
+- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
+- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
+- `fullstack_modern`: react-next-practices, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 > Fonte: `agents/senior-engineer-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

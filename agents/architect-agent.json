@@ -13,7 +13,19 @@
     "security-privacy",
     "deep-research",
     "task-planner",
-    "memoria-projeto"
+    "memoria-projeto",
+    "design-pattern-advisor",
+    "scalability-expert",
+    "legacy-migration",
+    "serverless-edge",
+    "uml-generator",
+    "cto-advisor",
+    "graphql",
+    "websocket-realtime",
+    "wasm",
+    "tradeoff-analyzer",
+    "alternative-solution-generator",
+    "er-diagram-builder"
   ],
   "chains": {
     "design_system": [
@@ -46,6 +58,11 @@
       "sequence-diagram-builder",
       "security-privacy",
       "memoria-projeto"
+    ],
+    "system_design": [
+      "design-pattern-advisor",
+      "scalability-expert",
+      "tradeoff-analyzer"
     ]
   },
   "always": [

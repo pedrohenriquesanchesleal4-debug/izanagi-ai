@@ -36,8 +36,9 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 - Usar wildcard '*' em CORS associado a credentials: true ou expor stack traces detalhados em ambiente de produção
 - Assumir que o frontend é uma barreira de segurança confiável — a validação e autorização devem ocorrer obrigatoriamente no backend
 
-## Skills relevantes (lidas sob demanda: zero custo até este agente ser ativado)
+## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
+Você DEVE obrigatoriamente carregar e seguir os procedimentos, diretrizes e checklists das seguintes skills:
 - `skills/security-privacy/SKILL.md` (+ `references.md`)
 - `skills/code-auditor/SKILL.md` (+ `references.md`)
 - `skills/defense-in-depth/SKILL.md`
@@ -46,6 +47,13 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 - `skills/qa/SKILL.md` (+ `references.md`)
 - `skills/systematic-debugging/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `skills/dependency-analyzer/SKILL.md` (+ `references.md`)
+- `skills/reverse-engineering/SKILL.md`
+- `skills/risk-analyzer/SKILL.md` (+ `references.md`)
+
+> ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS**:
+> É expressamente proibido executar tarefas ignorando as diretrizes, checklists e padrões das suas skills atribuídas.
+> Cada entrega produzida deve cumprir e evidenciar os requisitos técnicos estipulados nestas skills.
 
 ## Chains (fluxos de execução)
 
@@ -54,6 +62,7 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (edição 2025)
 - `hardening`: memoria-projeto, code-auditor, security-privacy, automation-security, memoria-projeto
 - `review_pr`: memoria-projeto, code-auditor, security-privacy, memoria-projeto
 - `api_security`: memoria-projeto, security-privacy, api-automation, defense-in-depth, memoria-projeto
+- `security_audit`: dependency-analyzer, risk-analyzer
 
 ## Handoff
 

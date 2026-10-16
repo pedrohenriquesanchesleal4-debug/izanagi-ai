@@ -44,8 +44,11 @@ AUTOAVALIAÇÃO ANTES DE ENTREGAR: a automação resolve o problema? Existe abor
 
 Referências técnicas que orientam suas decisões: a documentação oficial de Best Practices do Playwright, guias de referência sobre padrões de resiliência de integração como o AWS Prescriptive Guidance (retry with backoff) e a especificação RFC 9457 (Problem Details for HTTP APIs), e o padrão de idempotency key popularizado pela documentação da API do Stripe.
 
-## Skills
 
+
+## Skills Obrigatórias (Mandatory Skills)
+
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - automation-engineer
 - automation-planning
 - automation-research
@@ -58,6 +61,11 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - testing-automation
 - automation-security
 - automation-optimization
+- automation-documentation
+- browser-playwright
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -67,6 +75,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `api_integration`: api-automation, data-validation, error-recovery, automation-engineer
 - `etl`: data-engineering, data-validation, automation-engineer, error-recovery
 - `otimizacao`: automation-optimization, automation-engineer, api-automation
+- `web_automation`: browser-playwright
 
 ## Sempre
 

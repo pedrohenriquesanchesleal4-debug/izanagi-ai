@@ -13,7 +13,15 @@
     "monitoring-specialist",
     "observability-expert",
     "sre-reliability",
-    "memoria-projeto"
+    "memoria-projeto",
+    "chaos-engineering",
+    "release-planner",
+    "dependency-analyzer",
+    "logging-expert",
+    "feature-flags",
+    "serverless-edge",
+    "performance-optimizer",
+    "scalability-expert"
   ],
   "chains": {
     "dockerize": [
@@ -44,6 +52,11 @@
       "observability-expert",
       "sre-reliability",
       "memoria-projeto"
+    ],
+    "release_workflow": [
+      "release-planner",
+      "dependency-analyzer",
+      "chaos-engineering"
     ]
   },
   "always": [

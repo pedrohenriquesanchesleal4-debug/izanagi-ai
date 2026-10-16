@@ -15,8 +15,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 
 
-## Skills
+## Skills Obrigatórias (Mandatory Skills)
 
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - animation-web
 - motion-design
 - webgl-3d
@@ -26,6 +27,15 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - browser-automation
 - webapp-testing
 - memoria-projeto
+- remotion-video
+- design-taste
+- web-design-guidelines
+- refero-styles
+- image-to-code
+- react-next-practices
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -33,6 +43,8 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
 - `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
+- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `video_generation`: remotion-video
 
 ## Sempre
 

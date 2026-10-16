@@ -18,7 +18,8 @@
     "testing-automation",
     "automation-security",
     "automation-optimization",
-    "automation-documentation"
+    "automation-documentation",
+    "browser-playwright"
   ],
   "chains": {
     "automacao": [
@@ -56,6 +57,9 @@
       "automation-optimization",
       "automation-engineer",
       "api-automation"
+    ],
+    "web_automation": [
+      "browser-playwright"
     ]
   },
   "process": [

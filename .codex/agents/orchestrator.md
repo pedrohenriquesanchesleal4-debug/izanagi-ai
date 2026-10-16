@@ -45,8 +45,9 @@ vez de implementar.
 - **Gate final**: security, QA e evaluator precisam emitir evidência independente. Falha
   crítica, capability desconhecida sem fallback ou requisito órfão bloqueia a entrega.
 
-## Skills
+## Skills Obrigatórias (Mandatory Skills)
 
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - memoria-projeto
 - deep-research
 - requirement-analyzer
@@ -59,12 +60,23 @@ vez de implementar.
 - motion-design
 - anti-ai-slop
 - security-privacy
+- qa
+- evaluation
+- handoff-sessao
+- economia-tokens
+- cto-advisor
+- caveman
+- failure-patterns
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
 - `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
 - `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, ui-ux-pro-max, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
 - `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
+- `governance`: cto-advisor, failure-patterns
 
 ## Sempre
 

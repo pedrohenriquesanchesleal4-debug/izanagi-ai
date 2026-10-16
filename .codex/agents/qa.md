@@ -17,8 +17,9 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 
 
 
-## Skills
+## Skills Obrigatórias (Mandatory Skills)
 
+Você DEVE obrigatoriamente consultar e aplicar as diretrizes das seguintes skills atribuídas:
 - qa
 - tdd
 - testing-automation
@@ -29,6 +30,13 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - data-validation
 - error-recovery
 - memoria-projeto
+- browser-playwright
+- bug-prevention
+- chaos-engineering
+- adversarial-critique
+
+> ⚠️ **REGRA DE EXECUÇÃO OBRIGATÓRIA**:
+> Proibido atuar sem aplicar os padrões de suas skills atribuídas. Toda entrega deve cumprir as regras técnicas de cada skill.
 
 ## Chains
 
@@ -37,6 +45,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 - `e2e`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, testing-automation, qa, memoria-projeto
 - `accessibility`: memoria-projeto, accessibility-reviewer, qa, memoria-projeto
 - `regression`: memoria-projeto, systematic-debugging, testing-automation, qa, memoria-projeto
+- `e2e_testing`: browser-playwright, bug-prevention
 
 ## Sempre
 

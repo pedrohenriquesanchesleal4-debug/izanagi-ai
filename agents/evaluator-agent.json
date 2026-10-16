@@ -10,7 +10,9 @@
     "confidence-estimator",
     "code-auditor",
     "self-critique",
-    "memoria-projeto"
+    "memoria-projeto",
+    "adversarial-critique",
+    "root-cause-analyzer"
   ],
   "chains": {
     "evaluate_code": [
@@ -33,6 +35,10 @@
       "confidence-estimator",
       "qa",
       "memoria-projeto"
+    ],
+    "evaluation_gate": [
+      "adversarial-critique",
+      "root-cause-analyzer"
     ]
   },
   "capabilities": [
