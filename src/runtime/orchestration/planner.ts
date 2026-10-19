@@ -77,8 +77,8 @@ export const WORKFLOW_TEMPLATES: Record<string, (ctx: PlannerContext) => GraphNo
 
   /** Frontend/UI: direção de design → design system → componente → perf → avaliação. */
   frontend: (ctx) => [
-    node('design-direction', 'agent', { agent: 'animation', skills: ['design-directions'], outputs: ['direction'], dependencies: [] }),
-    node('design-system', 'skill', { skills: ['ui-ux-pro-max', 'frontend'], outputs: ['design-system'], dependencies: ['design-direction'] }),
+    node('design-direction', 'agent', { agent: 'animation', skills: ['design-directions', 'design-taste', 'refero-styles'], outputs: ['direction'], dependencies: [] }),
+    node('design-system', 'skill', { agent: 'form-engineer', skills: ['ui-ux-pro-max', 'frontend', 'web-design-guidelines'], outputs: ['design-system'], dependencies: ['design-direction'] }),
     node('implementation', 'agent', {
       agent: 'senior-engineer',
       skills: ['anti-ai-slop', 'motion-design', 'frontend'],

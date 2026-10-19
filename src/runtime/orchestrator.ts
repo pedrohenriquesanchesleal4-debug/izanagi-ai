@@ -543,11 +543,12 @@ export class Orchestrator {
     const resolver = new SkillResolver({ baseDir: this.opts.baseDir, memory });
     const agentFactory = new AgentFactory(resolver);
     const agentScore = resolver.rankAgents(this.opts.task, agentIds(this.opts.baseDir), 3);
-    if (agentScore.length === 0 || agentScore[0].finalScore < 0.25) {
+    const needAssessment = agentFactory.assessNeed(this.opts.task);
+    if (needAssessment.needed && (agentScore.length === 0 || agentScore[0].finalScore < 0.25)) {
       try {
-        const drafted = agentFactory.generate({ requirement: this.opts.task });
+        const drafted = agentFactory.generate({ requirement: this.opts.task, persist: false });
         if (drafted.validation.valid && this.opts.verbose) {
-          console.log(`  \x1b[35m⚡\x1b[0m Agent Factory gerou e validou agente especializado: ${drafted.genome.name}`);
+          console.log(`  \x1b[35m⚡\x1b[0m Agent Factory gerou e validou agente efêmero especializado: ${drafted.genome.name}`);
         }
       } catch {
         // Ignora se não for possível gerar automaticamente
@@ -1431,14 +1432,6 @@ export class Orchestrator {
       // limite está declarado em `orchestration/deadline.ts`.
       const deadlineMs = resolveDeadlineMs([contract?.budget?.maxTimeMs, node.timeoutMs]);
       let result = await withDeadline(
-        // `produce` pode ser síncrono (producer headless, teste): `resolve`
-        // normaliza sem mudar o contrato de quem implementa.
-        //
-        // Artefato reaproveitado entra AQUI, no lugar da chamada, e segue o
-        // caminho inteiro a jusante: validação, registro, verificação, A2A.
-        // Devolvê-lo por um atalho pularia a verificação, e um nó que termina
-        // sem veredito é exatamente o que este runtime recusa — o que o reuso
-        // economiza é a chamada, não a prova.
         async () => (reused
           ? { content: reused.content, kind: node.outputs?.[0] ?? 'raw', tokens: 0, model: `reuse:${reused.from}` }
           : isToolNode(node, contract)
@@ -1448,6 +1441,27 @@ export class Orchestrator {
         node.id,
         this.opts.signal,
       );
+      const provenance = node.metadata?.skillProvenance as
+        | {
+            loaded?: Array<string | { alias: string }>;
+            injected?: Array<string | { alias: string }>;
+            dropped?: Array<{ alias: string; reason: string }>;
+            totalTokensInjected?: number;
+          }
+        | undefined;
+      if (provenance?.loaded?.length) {
+        const loadedAliases = provenance.loaded.map((s) => (typeof s === 'string' ? s : s.alias));
+        const injectedAliases = (provenance.injected ?? provenance.loaded).map((s) =>
+          typeof s === 'string' ? s : s.alias,
+        );
+        loadedAliases.forEach((s) => ctx.trace.markSkill(s));
+        ctx.trace.span(`skills:${node.id}`, 'skill', {
+          loaded: loadedAliases,
+          injected: injectedAliases,
+          droppedCount: provenance.dropped?.length ?? 0,
+          tokensInjected: provenance.totalTokensInjected ?? 0,
+        })();
+      }
       if (result.tokens) {
         this.tokensUsed += result.tokens;
         // Retry consome a fase recovery, não execution

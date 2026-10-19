@@ -44,6 +44,7 @@ export const DOC_VERSION_BANNERS: DocVersionBanner[] = [
   { file: 'SYSTEM.md', pattern: /^>\s*Version\s+(\d+\.\d+\.\d+)/m },
   { file: 'RULES.md', pattern: /^>\s*Version\s+(\d+\.\d+\.\d+)/m },
   { file: 'AGENTS.md', pattern: /^>\s*Version\s+(\d+\.\d+\.\d+)/m },
+  { file: 'CHANGELOG.md', pattern: /^##\s*\[(\d+\.\d+\.\d+)\]/m },
 ];
 
 /** `3.18.4` → `3.18`. Comparar por minor é a decisão registrada no topo. */

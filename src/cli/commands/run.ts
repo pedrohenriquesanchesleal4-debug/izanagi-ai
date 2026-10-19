@@ -30,6 +30,8 @@ import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } fro
 import { ARTIFACT_SCHEMAS } from '../../runtime/contracts/artifacts.js';
 import type { ArtifactKind, ArtifactSchema } from '../../runtime/types.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
+import { SkillRuntime, selectRelevantSkillsWithProvenance } from '../../runtime/skills/runtime.js';
+import { inferDesignDirection, renderDesignIntelligenceBlock } from '../../runtime/design/intelligence.js';
 
 interface RunArgs {
   agentId?: string;
@@ -529,10 +531,11 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     fullPrompt += `<!-- AGENT: ${agent.name} (v${agent.version || '1.0.0'}) -->\n`;
     fullPrompt += `<!-- MODE: ${compact ? 'compact (economia de tokens)' : 'full'} -->\n\n`;
 
+    const inferredDir = inferDesignDirection(task).primary;
     fullPrompt += `## 🚨 CRITICAL EXECUTION MANDATE (ZERO CHECKLISTS / FULL-STACK REAL CODE)\n`;
     fullPrompt += `- **ABSOLUTELY FORBIDDEN:** Writing lazy task lists, checklists ([✓]), summary-only responses, or empty stubs/placeholders (TODO, // implement later).\n`;
     fullPrompt += `- **MANDATORY:** Generate 100% real, complete, production-ready code files for every layer requested (Landing Page + Auth + Dashboard/CRUD + Backend/Prisma Schema + README).\n`;
-    fullPrompt += `- **HIGH-CRAFT UI:** Rich dark aesthetics (bg-zinc-950), glassmorphism, bento grids, micro-interactions, and robust TypeScript typing.\n\n`;
+    fullPrompt += `- **HIGH-CRAFT UI (${inferredDir.name} · ${inferredDir.themeMode}):** Bespoke palette (${inferredDir.palette.background} bg, ${inferredDir.palette.accentPrimary} accent), intentional typography (${inferredDir.typography.display} + ${inferredDir.typography.sans}), ${inferredDir.layout.grid}, and complete interactive states (loading, empty, error, success, focus/hover).\n\n`;
 
     // Blueprint Engine: manifiesto de arquivos + contrato de materialização + gates
     const bp = buildBlueprintCtx(task, baseDir);
@@ -1269,62 +1272,26 @@ export function artifactRequirementLine(kind: string): string {
  * Seleciona cirurgicamente apenas as skills relevantes para a tarefa imediata,
  * evitando poluir o contexto e economizando tokens preciosos.
  */
-export function selectRelevantSkills(candidates: string[], task: string, maxSkills = 8): string[] {
-  if (!candidates || candidates.length === 0) return [];
-  if (candidates.length === 1) return candidates;
-
-  const q = (task || '').toLowerCase();
-  const qTerms = q.split(/[^a-z0-9_]+/).filter((t) => t.length >= 3);
-  const genericTerms = new Set(['dev', 'pro', 'max', 'app', 'tool', 'mode', 'code']);
-
-  const scored: Array<{ skill: string; score: number }> = [];
-
-  for (const s of candidates) {
-    const sLower = s.toLowerCase();
-    const sParts = sLower.split(/[-_]+/);
-    let score = 0;
-
-    // Correspondência direta do nome da skill na tarefa
-    if (q.includes(sLower)) {
-      score += 15;
-    }
-
-    // Correspondência de termos individuais da skill
-    for (const part of sParts) {
-      if (genericTerms.has(part)) {
-        // Termos genéricos só pontuam se houver correspondência exata de palavra
-        if (qTerms.includes(part)) {
-          score += 2;
-        }
-        continue;
-      }
-
-      // Palavra exata presente nos termos da tarefa
-      if (qTerms.includes(part)) {
-        score += 8;
-      } else if (part.length >= 4) {
-        // Prefixo ou substring com no mínimo 4 caracteres para evitar falsos positivos
-        for (const qt of qTerms) {
-          if (qt.length >= 4 && (part.startsWith(qt) || qt.startsWith(part))) {
-            score += 4;
-            break;
-          }
-        }
-      }
-    }
-
-    scored.push({ skill: s, score });
-  }
-
-  scored.sort((a, b) => b.score - a.score);
-  const positive = scored.filter((item) => item.score >= 4);
-  if (positive.length > 0) {
-    return positive.slice(0, maxSkills).map((item) => item.skill);
-  }
-
-  // Se nenhum termo específico bateu, pega apenas a primeira skill primária (evita desperdício)
-  return candidates.slice(0, 1);
+export function selectRelevantSkills(
+  candidates: string[],
+  task: string,
+  maxSkills = 8,
+  explicitSkills: string[] = [],
+): string[] {
+  return selectRelevantSkillsWithProvenance(candidates, task, maxSkills, explicitSkills)
+    .selected.map((s) => s.alias);
 }
+
+const VISUAL_SKILL_TRIGGERS = new Set([
+  'design-directions',
+  'design-taste',
+  'anti-ai-slop',
+  'frontend',
+  'ui-ux-pro-max',
+  'editorial-layout',
+  'web-design-guidelines',
+  'refero-styles',
+]);
 
 export function buildNodePrompt(
   node: GraphNode,
@@ -1334,13 +1301,27 @@ export function buildNodePrompt(
 ): string {
   const agent = node.agent ? findAgentJson(node.agent, baseDir) : undefined;
   const identity = agent?.identity || agent?.role || opts.agent.identity || opts.agent.role || `Agente especialista (${node.agent ?? node.id})`;
+  const explicitSkills = (node.skills && node.skills.length > 0) ? node.skills : [];
   const candidateSkills = (node.skills && node.skills.length > 0)
-    ? node.skills
+    ? Array.from(new Set([...node.skills, ...(opts.skillChain ?? [])]))
     : (opts.skillChain && opts.skillChain.length > 0)
       ? opts.skillChain
       : (agent?.skills ?? []);
-  // Carrega cirurgicamente as skills necessárias para a tarefa (Token Economy - até 8 simultâneas)
-  const skills = selectRelevantSkills(candidateSkills, opts.task, 8);
+
+  const skillRuntime = new SkillRuntime({ cwd: process.cwd(), baseDir });
+  const compiled = skillRuntime.compileSkills({
+    candidates: candidateSkills,
+    explicitSkills,
+    task: opts.task,
+    maxSkills: 8,
+    level: 'instructions',
+    maxLinesPerSkill: 80,
+  });
+
+  node.metadata = {
+    ...(node.metadata ?? {}),
+    skillProvenance: compiled.provenance,
+  };
 
   // Corpo volátil compartilhado pelas duas formas do prompt (ordem pré-wave preservada).
   const artifactLine = artifactRequirementLine(node.outputs?.[0] ?? 'raw');
@@ -1351,16 +1332,18 @@ export function buildNodePrompt(
   // insumos resumidos). Sem ele, o nó recebia só a tarefa original do run e
   // nunca via a saída dos predecessores.
   body += flags?.context ? `${flags.context}\n` : `## TAREFA\n${opts.task}\n`;
-  if (skills.length > 0) {
-    body += `\n## SKILLS OBRIGATÓRIAS (MANDATÓRIO SEGUIR E APLICAR)\n`;
-    body += `> ⚠️ **CLÁUSULA DE EXECUÇÃO OBRIGATÓRIA**: O agente em execução é ESTRITAMENTE OBRIGADO a seguir e aplicar os procedimentos, regras e padrões técnicos definidos nas skills abaixo. É expressamente proibido atuar sem invocar seus padrões:\n`;
-    for (const skill of skills) {
-      const sPath = resolveSkillPath(process.cwd(), baseDir, skill);
-      if (sPath && fs.existsSync(sPath)) {
-        const source = findV2Counterpart(process.cwd(), baseDir, sPath) ?? sPath;
-        body += `\n### Skill: ${skill}\n${layeredSkillSummary(source, 80)}\n`;
-      }
-    }
+  if (compiled.renderedPromptBlock) {
+    body += `\n${compiled.renderedPromptBlock}\n`;
+  }
+
+  const isVisualNode =
+    node.outputs?.some((o) => o === 'direction' || o === 'design-system') ||
+    node.agent === 'animation' ||
+    node.agent === 'form-engineer' ||
+    node.agent === 'frontend-designer' ||
+    compiled.provenance.selected.some((s) => VISUAL_SKILL_TRIGGERS.has(s.alias));
+  if (isVisualNode) {
+    body += `\n${renderDesignIntelligenceBlock(opts.task)}\n`;
   }
 
   if (!flags?.noCacheFoundation) {
@@ -1395,5 +1378,14 @@ export function findAgentJson(agentId: string, baseDir: string): any {
       }
     }
   }
+  const resolved = findAgentFile(process.cwd(), baseDir, agentId);
+  if (resolved && fs.existsSync(resolved)) {
+    try {
+      return JSON.parse(fs.readFileSync(resolved, 'utf-8'));
+    } catch {
+      return undefined;
+    }
+  }
   return undefined;
 }
+

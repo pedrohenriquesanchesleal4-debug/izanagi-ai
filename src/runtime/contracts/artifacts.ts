@@ -9,6 +9,7 @@
 import crypto from 'crypto';
 import type { ArtifactKind, ArtifactRef, ArtifactSchema } from '../types.js';
 import { sanitizeText } from '../text/unicode-hygiene.js';
+import { auditVisualQuality } from '../design/intelligence.js';
 
 /**
  * Marcadores de código inacabado.
@@ -89,6 +90,28 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
     required: ['steps', 'files'],
     minSize: 200,
     forbidden: ['TODO', '// implement later'],
+  },
+  direction: {
+    kind: 'direction',
+    required: ['palette', 'typography', 'layout'],
+    minSize: 150,
+    forbidden: ['TODO', 'Build the future', 'Elevate your business'],
+    validate: (c) => {
+      const report = auditVisualQuality(c);
+      return report.tells.filter((t) => t.severity === 'high').map((t) => t.message);
+    },
+    simulationHint: 'palette: #FAF6F0 / #1C1917 · typography: Instrument Serif + Plus Jakarta Sans + JetBrains Mono (tabular-nums) · layout: editorial 12-col grid',
+  },
+  'design-system': {
+    kind: 'design-system',
+    required: ['tokens', 'typography', 'states'],
+    minSize: 150,
+    forbidden: ['TODO', 'Build the future'],
+    validate: (c) => {
+      const report = auditVisualQuality(c);
+      return report.tells.filter((t) => t.severity === 'high').map((t) => t.message);
+    },
+    simulationHint: 'tokens: --bg-primary, --text-primary, --accent · typography: serif display + sans body + mono tabular-nums · states: hover, focus-visible, active, disabled, loading, empty, error',
   },
   evaluation: {
     kind: 'evaluation',

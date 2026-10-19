@@ -74,7 +74,122 @@ export interface AgentCapability {
    * mesmo estabelece.
    */
   evaluation?: { metrics: string[]; minScore?: number };
+  /**
+   * Perfil central de execução consolidado (separa responsabilidade de execução
+   * de competência de domínio, que vive nas skills).
+   */
+  profile: CoreProfileId;
   file: string;
+}
+
+export type CoreProfileId =
+  | 'commander'
+  | 'builder'
+  | 'frontend-designer'
+  | 'researcher'
+  | 'reviewer'
+  | 'security-reviewer'
+  | 'educator-docs';
+
+export interface CoreExecutionProfile {
+  id: CoreProfileId;
+  name: string;
+  role: AgentRole;
+  purpose: string;
+  canonicalAgentId: string;
+  memberAgents: string[];
+  coreSkills: string[];
+  allowedTools: string[];
+  defaultTokenBudget: number;
+}
+
+export const CORE_EXECUTION_PROFILES: Record<CoreProfileId, CoreExecutionProfile> = {
+  commander: {
+    id: 'commander',
+    name: 'Commander / Planner',
+    role: 'commander',
+    purpose: 'Classificação determinística, contratos de tarefa, estratégia, arquitetura, requisitos e orçamento.',
+    canonicalAgentId: 'orchestrator',
+    memberAgents: ['orchestrator', 'discovery', 'product-reasoner', 'architect', 'pm', 'agent-architect', 'skill-architect'],
+    coreSkills: ['requirement-analyzer', 'software-architect', 'architecture-patterns', 'task-planner', 'economia-tokens'],
+    allowedTools: ['fs:read', 'search'],
+    defaultTokenBudget: 6144,
+  },
+  builder: {
+    id: 'builder',
+    name: 'Builder (Full-Stack & Systems)',
+    role: 'specialist',
+    purpose: 'Implementação geral de código, backend, banco de dados, IA/LLM, automação e infraestrutura guiada por skills.',
+    canonicalAgentId: 'senior-engineer',
+    memberAgents: ['senior-engineer', 'database', 'ai-engineer', 'devops', 'automation-engineer'],
+    coreSkills: ['agentic-coding', 'tdd', 'clean-code-validator', 'data-engineering', 'ai-agent', 'cloud-infra', 'automation-engineer'],
+    allowedTools: ['fs:read', 'fs:write', 'shell', 'test'],
+    defaultTokenBudget: 8192,
+  },
+  'frontend-designer': {
+    id: 'frontend-designer',
+    name: 'Frontend & Design Intelligence',
+    role: 'specialist',
+    purpose: 'Direção visual bespoke, design system, UI/UX high-craft, formulários, motion/scrollytelling e eliminação de AI-slop.',
+    canonicalAgentId: 'form-engineer',
+    memberAgents: ['animation', 'form-engineer'],
+    coreSkills: ['design-directions', 'design-taste', 'anti-ai-slop', 'frontend', 'ui-ux-pro-max', 'editorial-layout', 'web-forms', 'motion-design', 'accessibility-reviewer'],
+    allowedTools: ['fs:read', 'fs:write', 'browser'],
+    defaultTokenBudget: 8192,
+  },
+  researcher: {
+    id: 'researcher',
+    name: 'Researcher',
+    role: 'specialist',
+    purpose: 'Pesquisa técnica multi-fonte, recuperação de referências verificáveis e síntese baseada em evidências (FACT/ASSUMPTION/UNKNOWN).',
+    canonicalAgentId: 'researcher',
+    memberAgents: ['researcher'],
+    coreSkills: ['deep-research', 'reference-retrieval', 'confidence-estimator', 'hallucination-detection'],
+    allowedTools: ['fs:read', 'web:search', 'web:fetch'],
+    defaultTokenBudget: 5000,
+  },
+  reviewer: {
+    id: 'reviewer',
+    name: 'Reviewer / QA & Verification',
+    role: 'specialist',
+    purpose: 'Testes automatizados (unit/integration/E2E), depuração sistemática (RCA), revisão de código, crítica adversarial e avaliação.',
+    canonicalAgentId: 'qa',
+    memberAgents: ['qa', 'bug-hunter', 'techlead', 'evaluator', 'adversarial-critic'],
+    coreSkills: ['qa', 'tdd', 'systematic-debugging', 'senior-code-reviewer', 'adversarial-critique', 'evaluation', 'accessibility-reviewer'],
+    allowedTools: ['fs:read', 'shell', 'test', 'browser'],
+    defaultTokenBudget: 6144,
+  },
+  'security-reviewer': {
+    id: 'security-reviewer',
+    name: 'Security Reviewer',
+    role: 'specialist',
+    purpose: 'Auditoria OWASP Top 10 / LLM Top 10, modelagem de ameaças STRIDE, autenticação/autorização, segredos e defense-in-depth.',
+    canonicalAgentId: 'security',
+    memberAgents: ['security'],
+    coreSkills: ['security-privacy', 'code-auditor', 'defense-in-depth', 'dependency-analyzer'],
+    allowedTools: ['fs:read', 'shell'],
+    defaultTokenBudget: 6144,
+  },
+  'educator-docs': {
+    id: 'educator-docs',
+    name: 'Technical Writer & Educator',
+    role: 'worker',
+    purpose: 'Documentação técnica estruturada (Diátaxis, README, diagramas Mermaid) e ensino adaptativo pós-entrega.',
+    canonicalAgentId: 'docs',
+    memberAgents: ['docs', 'professor'],
+    coreSkills: ['technical-writer', 'readme-generator', 'sequence-diagram-builder', 'professor-modo'],
+    allowedTools: ['fs:read', 'fs:write'],
+    defaultTokenBudget: 4096,
+  },
+};
+
+export function profileForAgent(agentId: string): CoreProfileId {
+  for (const profile of Object.values(CORE_EXECUTION_PROFILES)) {
+    if (profile.memberAgents.includes(agentId) || profile.id === agentId) {
+      return profile.id;
+    }
+  }
+  return 'builder';
 }
 
 export interface CapabilityMatch {
@@ -255,12 +370,32 @@ export class AgentCapabilityRegistry {
       ...(typeof raw.model === 'string' && raw.model ? { modelHint: raw.model } : {}),
       declaredPermissions: Array.isArray(raw.permissions) ? (raw.permissions as string[]) : [],
       ...parseEvaluation(raw.evaluation),
+      profile: profileForAgent(id),
       file,
     };
   }
 
   get(id: string): AgentCapability | undefined {
-    return this.list().find((a) => a.id === id);
+    const direct = this.list().find((a) => a.id === id);
+    if (direct) return direct;
+    // Se id for um dos 7 perfis centrais (ex.: 'builder', 'frontend-designer', 'security-reviewer'),
+    // resolve para o agente canônico do perfil mantendo compatibilidade reversa.
+    if (id in CORE_EXECUTION_PROFILES) {
+      const canonical = CORE_EXECUTION_PROFILES[id as CoreProfileId].canonicalAgentId;
+      return this.list().find((a) => a.id === canonical);
+    }
+    return undefined;
+  }
+
+  /** Lista os 7 perfis centrais de execução consolidados. */
+  listProfiles(): CoreExecutionProfile[] {
+    return Object.values(CORE_EXECUTION_PROFILES);
+  }
+
+  /** Resolve o perfil central a partir de um id de perfil ou id de agente especializado. */
+  resolveProfile(idOrAlias: string): CoreExecutionProfile {
+    const profileId = profileForAgent(idOrAlias);
+    return CORE_EXECUTION_PROFILES[profileId];
   }
 
   ids(): string[] {

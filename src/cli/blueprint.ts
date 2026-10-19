@@ -34,8 +34,8 @@ const ARCHETYPES: ScaffoldArchetype[] = [
     keywords: ['saas', 'product', 'produto', 'application', 'aplicação', 'aplicacao', 'app', 'plataforma', 'startup', 'dashboard'],
     fileTree: `app/
   layout.tsx                 # Root layout: fontes, ThemeProvider, Navbar, headers de segurança/SEO
-  page.tsx                   # LANDING PAGE cinematográfica (bg-zinc-950, glassmorphism, bento, scrollytelling)
-  globals.css                # Design tokens: paleta dark, tipografia, utilidades cinemáticas
+  page.tsx                   # LANDING PAGE de alto craft (direção visual bespoke ao nicho, tipografia expressiva, ritmo editorial)
+  globals.css                # Design tokens semânticos da marca, tipografia pareada e estados interativos
   (auth)/
     login/page.tsx           # página de login (form real + validação + estado de erro/loading)
     register/page.tsx        # página de cadastro
@@ -158,6 +158,8 @@ export function matchArchetype(task: string): ScaffoldArchetype | null {
   return bestHits > 0 ? best : null;
 }
 
+import { renderDesignIntelligenceBlock } from '../runtime/design/intelligence.js';
+
 /** Gera o bloco de MANIFESTO obrigatório (file-tree) + contrato de materialização. */
 export function buildBlueprintCtx(task: string, baseDir: string): { archetype: ScaffoldArchetype | null; scope: Scope; blueprint: string } {
   const scope = detectScope(task);
@@ -182,7 +184,11 @@ export function buildBlueprintCtx(task: string, baseDir: string): { archetype: S
   blueprint += `1. Para CADA arquivo do manifesto: escreva o arquivo COMPLETO em disco, com código de produção 100% implementado (tipagem estrita, estados reais, tratamento de erros, lógica funcional). Nenhum placeholder.\n`;
   blueprint += `2. PROIBIDO: arquivo vazio, stub, \`TODO\`, \`// implement later\`, \`FIXME\`, função sem corpo real, \`console.log\` de teste.\n`;
   blueprint += `3. Depois de escrever todos os arquivos, execute o GATE de verificação (STUB/TODO scan + build) e corrija o que falhar.\n`;
-  blueprint += `4. UI de alto craft: estética dark \`bg-zinc-950\`, glassmorphism, bento grids, micro-interações, tipografia precisa. Use as referências abaixo como vocabulário.\n\n`;
+  blueprint += `4. UI de alto craft bespoke à marca/nicho: aplique a direção visual, paleta semântica, par tipográfico (Display/Serif + Sans + Mono tabular) e todos os estados interativos (hover, focus-visible, loading, empty, error) abaixo. Proibido visual genérico de IA.\n\n`;
+
+  if (scope === 'frontend' || scope === 'fullstack') {
+    blueprint += `${renderDesignIntelligenceBlock(task)}\n`;
+  }
 
   blueprint += `### GATE DE VERIFICAÇÃO (execute até passar)\n`;
   blueprint += `1. Stub/TODO scan: procure por \`TODO\`, \`FIXME\`, \`implement later\`, arquivos vazios — se encontrar QUALQUER um, pare e implemente. Só prossiga com ZERO ocorrências.\n`;
@@ -199,3 +205,4 @@ export function buildBlueprintCtx(task: string, baseDir: string): { archetype: S
 
   return { archetype, scope, blueprint };
 }
+

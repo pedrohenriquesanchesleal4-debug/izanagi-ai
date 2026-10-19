@@ -91,6 +91,8 @@ export type ArtifactKind =
   | 'security-report'
   | 'test-plan'
   | 'implementation-plan'
+  | 'direction'
+  | 'design-system'
   | 'evaluation'
   | 'benchmark-report'
   | 'research'

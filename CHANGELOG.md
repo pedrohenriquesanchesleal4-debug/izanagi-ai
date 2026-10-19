@@ -4,6 +4,23 @@
 
 ---
 
+## [3.24.14]: 2026-10-19
+
+### Added
+- **Consolidação em 7 Perfis Centrais de Execução (`CORE_EXECUTION_PROFILES`)**: mapeamento formal dos 23 agentes especializados em 7 perfis canônicos (`commander`, `builder`, `frontend-designer`, `researcher`, `reviewer`, `security-reviewer`, `educator-docs`) em `src/runtime/registry/capabilities.ts`, preservando 100% da retrocompatibilidade por aliases na CLI, SDK e adapters.
+- **Skill Runtime Centralizado com Progressive Disclosure em 3 Níveis e Proveniência (`src/runtime/skills/runtime.ts`)**: carregamento sob demanda em 3 níveis (`metadata`, `instructions`, `references`), cache em memória com hash `SHA-256`, vocabulário de sinônimos de domínio (`DOMAIN_SKILL_SYNONYMS`), proteção contra path traversal e relatório completo de proveniência (`candidate` → `selected` → `resolved` → `loaded` → `injected` → `validated` / `dropped`) registrado no nó e no trace.
+- **Design Intelligence Pipeline & Auditor Visual Anti-AI-Slop (`src/runtime/design/intelligence.ts`)**: inferência de direção estética bespoke por nicho (`editorial-warm`, `clinical-swiss`, `fintech-institutional`, `devtools-oled`, `kinetic-creative`, `ecommerce-atelier`, `modern-product`), `TasteMatrix` com 8 estados obrigatórios de componentes, substituição do template único forçado `bg-zinc-950` no Blueprint/CLI e validador determinístico `auditVisualQuality()` integrado aos schemas de artefato `direction` e `design-system`.
+- **Governança Estrita na Agent Factory (`src/runtime/factories/agent-factory.ts`)**: método `assessNeed()` que verifica cobertura pelos perfis/agentes e skills existentes antes de criar novos agentes, sanitização de permissões (`least-privilege`) e modo efêmero (`persist: false`) no `Orchestrator` para impedir poluição de `agents/generated/` durante execuções e testes.
+
+### Fixed
+- **Preservação de Skills Explícitas do Nó em `buildNodePrompt`**: skills atribuídas explicitamente pelo `Planner`/`Commander` (`explicitSkills`) têm prioridade `node-contract` e nunca mais são descartadas silenciosamente quando o prompt do usuário não contém o slug literal da skill.
+- **Reconciliação de Versões Documentais (`3.24.14`)**: sincronização de `README.md`, `CHANGELOG.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `SYSTEM.md`, `RULES.md` e `AGENTS.md` com `package.json`, além de inclusão do `CHANGELOG.md` em `DOC_VERSION_BANNERS`.
+
+## [3.24.3 – 3.24.13]: 2026-10-01 a 2026-10-18
+
+### Added & Fixed
+- Suporte ao adaptador Antigravity (`GEMINI.md`, `.agents/rules/`, `.agents/skills/`), memória vetorial híbrida local, cláusulas de execução obrigatória de skills nos adapters multi-CLI e carregamento cirúrgico de até 8 skills simultâneas por tarefa.
+
 ## [3.24.2]: 2026-09-23
 
 ### Fixed
