@@ -30,6 +30,7 @@ import { buildNotification, exitCodeFor, notifyWebhook, validateWebhookUrl } fro
 import { ARTIFACT_SCHEMAS } from '../../runtime/contracts/artifacts.js';
 import type { ArtifactKind, ArtifactSchema } from '../../runtime/types.js';
 import { isExecutionMode, type ExecutionMode } from '../../runtime/contracts/task-contract.js';
+import { resolveModeAlias } from '../../runtime/orchestration/execution-controller.js';
 import { SkillRuntime, selectRelevantSkillsWithProvenance } from '../../runtime/skills/runtime.js';
 import { inferDesignDirection, renderDesignIntelligenceBlock } from '../../runtime/design/intelligence.js';
 
@@ -172,8 +173,9 @@ export function parseRunArgs(args: string[]): RunArgs {
       const read = readValue(arg, '--mode', args[i + 1]);
       if (read.consumed) i++;
       const value = (read.value ?? '').toLowerCase();
-      if (isExecutionMode(value)) mode = value;
-      else if (value) console.error(`\x1b[33mAviso:\x1b[0m modo desconhecido "${value}" — ignorado (use direct|assisted|orchestrated|autonomous).`);
+      const resolvedMode = resolveModeAlias(value);
+      if (resolvedMode) mode = resolvedMode;
+      else if (value) console.error(`\x1b[33mAviso:\x1b[0m modo desconhecido "${value}" — ignorado (use direct|assisted|orchestrated|autonomous ou fast|standard|deep).`);
     } else if (arg === '--budget' || arg.startsWith('--budget=')) {
       const read = readValue(arg, '--budget', args[i + 1]);
       if (read.consumed) i++;
@@ -290,15 +292,21 @@ interface TaskClassification {
   agent: string;
 }
 
+const DIRECT_QUESTION_SIGNALS =
+  /^\s*(qual|quais|quanto|quando|onde|quem|como|por que|porque|o que|what|which|how much|how many|when|where|who)\b/i;
+
 export function classifyTask(desc: string): TaskClassification {
   const lower = desc.toLowerCase();
 
+  if (lower.includes('saas') || lower.includes('app completo') || lower.includes('sistema completo') || lower.includes('fullstack') || lower.includes('full-stack')) {
+    return { category: 'fullstack', agent: 'senior-engineer' };
+  }
   if (
     lower.includes('animation') || lower.includes('animação') || lower.includes('animado') ||
     lower.includes('scrollytelling') || lower.includes('scroll animation') || lower.includes('scroll-driven') ||
     lower.includes('cinematic') || lower.includes('gsap') || lower.includes('anime.js') || lower.includes('animejs') ||
     lower.includes('framer motion') || lower.includes('lottie') || lower.includes('motion design') ||
-    lower.includes('3d') || lower.includes('webgl') || lower.includes('three.js') || lower.includes('threejs') ||
+    /\b3d\b/i.test(lower) || lower.includes('webgl') || lower.includes('three.js') || lower.includes('threejs') ||
     lower.includes('efeito ao rolar') || lower.includes('efeito de scroll') || lower.includes('site que parece vídeo') ||
     lower.includes('frames que passam') || lower.includes('hero animado') || lower.includes('partículas') || lower.includes('particulas')
   ) {
@@ -307,55 +315,84 @@ export function classifyTask(desc: string): TaskClassification {
   if (lower.includes('architect') || lower.includes('microservice') || lower.includes('clean arch') || lower.includes('estrutura') || lower.includes('arquitet')) {
     return { category: 'architecture', agent: 'architect' };
   }
-  // Páginas/componentes de UI vêm antes de security: "login page" é frontend, não auditoria
-  if (lower.includes('frontend') || lower.includes('react') || lower.includes('page') || lower.includes('component') || lower.includes('css') || lower.includes('tailwind')) {
+  // Páginas/componentes de UI vêm antes de security: "login page" é frontend, não auditoria.
+  // Usa fronteira de palavra em termos curtos (page, css) para não casar com "propagation" ou "access".
+  if (
+    lower.includes('frontend') ||
+    /\breact\b/i.test(lower) ||
+    /\b(page|pages|página|pagina|landing)\b/i.test(lower) ||
+    lower.includes('component') ||
+    /\bcss\b/i.test(lower) ||
+    lower.includes('tailwind')
+  ) {
     return { category: 'frontend', agent: 'senior-engineer' };
   }
-  if (lower.includes('security') || lower.includes('owasp') || lower.includes('vulnerab') || lower.includes('audit') || lower.includes('lgpd') || lower.includes('pentest')) {
+  if (lower.includes('security') || lower.includes('owasp') || lower.includes('vulnerab') || /\baudit(oria)?\b/i.test(lower) || /\blgpd\b/i.test(lower) || lower.includes('pentest')) {
     return { category: 'security_audit', agent: 'security' };
   }
-  if (lower.includes('bug') || lower.includes('fix') || lower.includes('error') || lower.includes('crash') || lower.includes('debug')) {
+  if (/\bbug(s|fix)?\b/i.test(lower) || /\bfix(es|ar)?\b/i.test(lower) || /\berro(r|s)?\b/i.test(lower) || /\bcrash\b/i.test(lower) || /\bdebug(ging|ar)?\b/i.test(lower)) {
     return { category: 'debugging', agent: 'bug-hunter' };
   }
-  if (lower.includes('db') || lower.includes('database') || lower.includes('sql') || lower.includes('postgres') || lower.includes('migration') || lower.includes('mysql')) {
+  if (/\bdb\b/i.test(lower) || lower.includes('database') || /\bsql\b/i.test(lower) || lower.includes('postgres') || lower.includes('migration') || lower.includes('mysql')) {
     return { category: 'database_design', agent: 'database' };
   }
-  if (lower.includes('docker') || lower.includes('ci/cd') || lower.includes('pipeline') || lower.includes('deploy') || lower.includes('k8s') || lower.includes('kubernetes')) {
+  if (lower.includes('docker') || lower.includes('ci/cd') || lower.includes('pipeline') || lower.includes('deploy') || /\bk8s\b/i.test(lower) || lower.includes('kubernetes')) {
     return { category: 'devops_infra', agent: 'devops' };
   }
   if (
     lower.includes('automation') || lower.includes('automa') || lower.includes('automatiz') ||
-    lower.includes('planilha') || lower.includes('spreadsheet') || lower.includes('excel') ||
-    lower.includes('scrap') || lower.includes('etl') || lower.includes('playwright') ||
+    lower.includes('planilha') || lower.includes('spreadsheet') || /\bexcel\b/i.test(lower) ||
+    lower.includes('scrap') || /\betl\b/i.test(lower) || lower.includes('playwright') ||
     lower.includes('selenium') || lower.includes('robô') || lower.includes('em massa') ||
     lower.includes('preencher formulário') || lower.includes('webhook')
   ) {
     return { category: 'automacao', agent: 'automation-engineer' };
   }
-  if (lower.includes('test') || lower.includes('qa')) {
+  if (/\btest(e|es|s|ing|ar)?\b/i.test(lower) || /\bqa\b/i.test(lower)) {
     return { category: 'testing', agent: 'qa' };
   }
-  if (lower.includes('backend') || lower.includes('api') || lower.includes('endpoint') || lower.includes('laravel') || lower.includes('node')) {
+  // Fronteira de palavra em `api` e `node`: evita que "capital" case com "api".
+  if (lower.includes('backend') || /\bapi(s)?\b/i.test(lower) || lower.includes('endpoint') || lower.includes('laravel') || /\bnode(\.js|js)?\b/i.test(lower)) {
     return { category: 'backend', agent: 'senior-engineer' };
   }
-  if (lower.includes('login') || lower.includes('auth') || lower.includes('authentication')) {
+  if (/\blogin\b/i.test(lower) || /\bauth(entication|enticação)?\b/i.test(lower)) {
     return { category: 'implementation', agent: 'senior-engineer' };
   }
-  if (lower.includes('create') || lower.includes('build') || lower.includes('feature') || lower.includes('implement')) {
+  if (/\b(create|build|feature|implement|criar|implementar|construir)\b/i.test(lower)) {
     return { category: 'implementation', agent: 'senior-engineer' };
   }
-  if (lower.includes('saas') || lower.includes('app completo') || lower.includes('sistema completo') || lower.includes('fullstack')) {
-    return { category: 'fullstack', agent: 'senior-engineer' };
+  // Perguntas diretas curtas sem domínio técnico explícito: evita carregar a
+  // chain pesada de SaaS/arquitetura para consultas triviais.
+  const wordCount = desc.trim().split(/\s+/).filter(Boolean).length;
+  if (DIRECT_QUESTION_SIGNALS.test(desc) && wordCount <= 20) {
+    return { category: 'question', agent: 'senior-engineer' };
   }
 
   return { category: 'implementation', agent: 'senior-engineer' };
 }
 
 export function resolveChainForCategory(agent: any, category: string): string[] {
+  if (category === 'question') {
+    return ['conciseness'];
+  }
   if (agent.chains && agent.chains[category] && Array.isArray(agent.chains[category])) {
     return agent.chains[category];
   }
   if (agent.chains && typeof agent.chains === 'object') {
+    // Mapeia categorias equivalentes antes de cair na primeira chave do objeto
+    // (em senior-engineer, a primeira chave é `saas` com 6 skills pesadas).
+    const aliasMap: Record<string, string[]> = {
+      implementation: ['feature', 'implementation', 'backend'],
+      backend: ['backend', 'feature', 'implementation'],
+      frontend: ['frontend', 'feature'],
+      debugging: ['bugfix', 'debugging'],
+      fullstack: ['saas', 'fullstack'],
+    };
+    for (const candidateKey of aliasMap[category] ?? []) {
+      if (Array.isArray(agent.chains[candidateKey])) {
+        return agent.chains[candidateKey];
+      }
+    }
     const first = Object.values(agent.chains)[0];
     if (Array.isArray(first)) return first;
   }
@@ -623,7 +660,7 @@ export async function runCommand(baseDir: string, args: string[], stateDir = bas
     // olhar para ele é o comportamento surpreendente, não o contrário. Fora de
     // um projeto (sem manifesto reconhecido) não há o que levantar, então não
     // se paga o nó. `--survey` força, `--no-survey` desliga.
-    survey: parsed.noSurvey ? false : parsed.survey || looksLikeProject(cwd),
+    survey: parsed.noSurvey ? false : parsed.survey || (category !== 'question' && looksLikeProject(cwd)),
     ...(parsed.acceptance ? { acceptance: parsed.acceptance } : {}),
     ...(parsed.allowedTools ? { allowedTools: parsed.allowedTools } : {}),
     ...(parsed.verifyTests ? { verifyTests: true } : {}),

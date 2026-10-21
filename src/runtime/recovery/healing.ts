@@ -15,6 +15,14 @@
 
 import type { ExhaustedLimit, FailureCategory, FailureKind, HealingAction, HealingActionKind } from '../types.js';
 import type { MemoryStore } from '../memory/store.js';
+import {
+  classifyDetailedError,
+  computeBackoffWithJitter,
+  parseRetryAfterMs,
+  type DetailedErrorCategory,
+} from '../orchestration/execution-controller.js';
+
+export { classifyDetailedError, computeBackoffWithJitter, parseRetryAfterMs, type DetailedErrorCategory };
 
 export interface HealingInput {
   nodeId: string;
@@ -47,6 +55,10 @@ export interface HealingDecision {
   replacement?: { agent?: string; skill?: string };
   /** Se abort: motivo estruturado. */
   abortReason?: string;
+  /** Backoff sugerido em ms (com jitter / Retry-After) quando retryNow = true. */
+  backoffMs?: number;
+  /** Categoria detalhada de erro (Fase 7.1). */
+  detailedCategory?: DetailedErrorCategory;
 }
 
 const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
@@ -70,6 +82,7 @@ const KIND_RULES: Array<{ regex: RegExp; kind: FailureKind }> = [
   // e cada retentativa custa tempo do usuário para chegar ao mesmo lugar. O
   // caso é do PROCESSO, não do trabalho do nó, e a mensagem diz isso.
   { regex: /executor indispon[íi]vel/i, kind: 'non-recoverable' },
+  { regex: /oauth.*expired|invalid api.?key|unauthorized|401\b|403\b|authentication failed|failed to authenticate|loop detectado|estagna[çc][ãa]o detectada|circuit.?breaker/i, kind: 'non-recoverable' },
   { regex: /timeout|timed out|etimedout|timeout/i, kind: 'recoverable' },
   { regex: /429|rate.?limit|too many requests/i, kind: 'recoverable' },
   { regex: /5\d\d|internal server|unavailable/i, kind: 'recoverable' },
@@ -156,7 +169,7 @@ export class Healer {
 
   /**
    * Decide a ação de cura. Ordem:
-   *  1. Limites excedidos (tokens/tempo/attempts) → abort (não-recuperável).
+   *  1. Não-recuperável por natureza ou limites excedidos (tokens/tempo/attempts) → abort.
    *  2. Padrão de falha conhecido na memória → local_repair guiado + retry.
    *  3. Falha transitória recuperável → retry com backoff.
    *  4. Falha de validação → skill replacement (skill corretiva) + retry.
@@ -168,7 +181,19 @@ export class Healer {
     const category = categorizeFailure(kind, input.error);
     const id = `heal-${Date.now().toString(36)}-${input.nodeId}`;
 
-    // 1. Hard limits — nunca loops infinitos.
+    // 1a. Não-recuperável por natureza: permissão negada, teto de run estourado,
+    // run cancelado, credencial inválida/OAuth expirado. Nenhum desses muda entre
+    // tentativas, e o passo 2 abaixo (padrão de falha conhecido na memória)
+    // devolve `retryNow: true` — então, sem este corte, uma permissão negada
+    // que casasse com um padrão da memória era RETENTADA, contra a regra que a
+    // própria `KIND_RULES` declara no topo do arquivo. Avaliado antes de
+    // `attempt >= maxAttempts` para não confundir falha irrecuperável na 1ª
+    // tentativa em modo `direct` (`maxAttempts = 1`) com esgotamento de tentativas.
+    if (kind === 'non-recoverable') {
+      return this.abort(id, kind, `falha não-recuperável: ${input.error.slice(0, 200)}`, input);
+    }
+
+    // 1b. Hard limits — nunca loops infinitos.
     //
     // Os quatro marcam `exhausted`: um run que ESGOTOU o limite declarado é
     // outra coisa que um run que falhou por bug, e quem lê o resultado precisa
@@ -195,17 +220,6 @@ export class Healer {
         input,
         'cost',
       );
-    }
-
-    // 1b. Não-recuperável por natureza: permissão negada, teto de run estourado,
-    // run cancelado. Nenhum dos três muda entre tentativas, e o passo 2 abaixo
-    // (padrão de falha conhecido na memória) devolve `retryNow: true` — então,
-    // sem este corte, uma permissão negada que casasse com um padrão da memória
-    // era RETENTADA, contra a regra que a própria `KIND_RULES` declara no topo
-    // do arquivo. Cancelamento é o caso mais claro: curar seria desobedecer
-    // quem cancelou.
-    if (kind === 'non-recoverable') {
-      return this.abort(id, kind, `falha não-recuperável: ${input.error.slice(0, 200)}`, input);
     }
 
     // 2. Padrões de falha conhecidos — local repair guiado
@@ -241,6 +255,13 @@ export class Healer {
 
     // 3. Transitória → retry
     if (kind === 'recoverable') {
+      const detailedCategory = classifyDetailedError(input.error).category;
+      const backoffMs = computeBackoffWithJitter(500, input.attempt, {
+        factor: 1.6,
+        maxMs: 60_000,
+        retryAfterMs: parseRetryAfterMs(input.error),
+        jitterRatio: 0,
+      });
       return {
         action: {
           id,
@@ -252,6 +273,8 @@ export class Healer {
           createdAt: new Date().toISOString(),
         },
         retryNow: true,
+        backoffMs,
+        detailedCategory,
       };
     }
 

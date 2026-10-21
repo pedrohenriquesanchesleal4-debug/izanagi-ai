@@ -53,6 +53,27 @@ export function printTrace(t: RunTrace): void {
   console.log(`  \x1b[90mAgentes:\x1b[0m ${t.agents.join(', ') || '—'}`);
   console.log(`  \x1b[90mSkills:\x1b[0m ${t.skills.join(', ') || '—'}`);
   console.log(`  \x1b[90mTools:\x1b[0m ${t.tools.join(', ') || '—'}`);
+  const ec = (t.telemetry as Record<string, unknown> | undefined)?.executionController as
+    | {
+        strategy?: string;
+        phaseDurationsMs?: Record<string, number>;
+        circuitBreakerLevel?: number;
+        stagnationCount?: number;
+        toolRepeatsAvoided?: number;
+        interrupted?: boolean;
+      }
+    | undefined;
+  if (ec) {
+    const phases = ec.phaseDurationsMs
+      ? Object.entries(ec.phaseDurationsMs)
+          .filter(([, ms]) => ms > 0)
+          .map(([p, ms]) => `${p}=${ms}ms`)
+          .join(', ')
+      : '';
+    console.log(
+      `  \x1b[90mExecution Controller:\x1b[0m strategy=${ec.strategy ?? '—'} | circuitBreaker=${ec.circuitBreakerLevel ?? 0} | estagnações=${ec.stagnationCount ?? 0} | toolRepeatsAvoided=${ec.toolRepeatsAvoided ?? 0}${phases ? ` | fases(${phases})` : ''}`,
+    );
+  }
 
   if (t.evaluation) {
     const e = t.evaluation;

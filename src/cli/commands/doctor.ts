@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { checkMemory, checkTraces, checkBenchmarkSuite, checkSkillSecurityScan, checkSkillManifest, checkSkillLifecycle, checkNestedDuplicate } from '../checks.js';
 import { LLMClient, agentCLIStatus, AGENT_CLI_PROVIDERS } from '../../runtime/llm/client.js';
+import { DEFAULT_STRATEGY_LIMITS } from '../../runtime/orchestration/execution-controller.js';
 
 /**
  * Decide a raiz do framework para auditoria.
@@ -250,6 +251,11 @@ function runDeepChecks(baseDir: string, stateDir: string): number {
 
   const lifecycle = checkSkillLifecycle(manifest.skills);
   console.log(` \x1b[32m✔\x1b[0m Skill lifecycle: ${lifecycle.detail}`);
+
+  const limitsSummary = Object.entries(DEFAULT_STRATEGY_LIMITS)
+    .map(([s, l]) => `${s}(iter=${l.maxIterations}, tools=${l.maxToolCalls}, retries=${l.maxRetriesPerStage}, timeout=${Math.round(l.maxTimeMs / 1000)}s)`)
+    .join(' · ');
+  console.log(` \x1b[32m✔\x1b[0m Execution Controller & Loop Guard: ${limitsSummary}`);
 
   return errors;
 }

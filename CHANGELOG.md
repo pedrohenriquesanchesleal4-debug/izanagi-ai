@@ -4,6 +4,19 @@
 
 ---
 
+## [3.24.15]: 2026-10-21
+
+### Added
+- **Execution Controller Central (`src/runtime/orchestration/execution-controller.ts`)**: estado explícito da execução (`ExecutionStateSnapshot`), separação explícita de fases (`planning`, `execution`, `validation`, `recovery`, `finalization`), estratégias proporcionais (`fast | standard | deep` + suporte a `--mode fast|standard|deep`), detector de estagnação baseado em evidências observáveis e Circuit Breaker progressivo em 5 níveis.
+- **Deduplicação e Cache de Tool Calls por Revisão do Workspace**: normalização recursiva de argumentos (`normalizeToolArgs`, `hashToolArgs`), reuso automático de leituras idempotentes (`fs.read`, `project.survey`) enquanto o workspace não sofre mutação, invalidação imediata após `fs.write`/`project.materialize` e bloqueio de repetições idênticas de tools que falharam.
+- **Classificação Detalhada de Erros (14 Categorias) e Backoff com Jitter / `Retry-After`**: `classifyDetailedError()`, `parseRetryAfterMs()` e `computeBackoffWithJitter()` integrados ao `Healer` e ao `Orchestrator`.
+- **Observabilidade de Controle de Execução**: novos eventos estruturados (`plan.created`, `tool.started`, `tool.completed`, `tool.repeated`, `agent.handoff`, `progress.detected`, `stagnation.detected`, `retry.scheduled`, `budget.warning`, `budget.exhausted`, `validation.failed`, `run.cancelled`) e telemetria no `izanagi trace` e `izanagi doctor --deep`.
+
+### Fixed
+- **Convergência de Retentativas de Validação/Verificação (`formatValidationCorrection`)**: reprovações de schema e da `VerificationEngine` agora injetam os critérios exatos reprovados em `node.metadata.correction` antes do retry, eliminando retentativas cegas com o mesmo prompt.
+- **Classificação Léxica Sem Falsos-Positivos de Substring (`classifyTask` e `resolveChainForCategory`)**: fronteiras de palavra (`\b`) impedem que termos como `"capital"` acionem a categoria `backend` (`"api"`), perguntas diretas desativam `project.survey` desnecessário, e tarefas comuns de `senior-engineer` mapeiam para `chains.feature` (3 skills) em vez de cair no fallback `chains.saas` (6 skills).
+- **Proteção da Memória e do `DecisionJournal` Contra Falhas de Infraestrutura/OAuth**: erros exclusivos de autenticação/ambiente externo (`401 OAuth session expired`, `executor indisponível`) abortam imediatamente na 1ª tentativa sem contaminar estatísticas de agentes/modelos na memória e sem injetar `testResults=1` sintético quando todos os nós obrigatórios falharam.
+
 ## [3.24.14]: 2026-10-19
 
 ### Added

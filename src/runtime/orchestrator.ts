@@ -58,6 +58,12 @@ import {
 } from './orchestration/subgraph.js';
 import type { PolicyEnvironment, TrustTier } from './security/policy.js';
 import { formatCorrection, isBlocking, parseCritique, worstSeverity, type Critique } from './protocol/messages.js';
+import {
+  ExecutionController,
+  formatValidationCorrection,
+  type ExecutionStateSnapshot,
+  type StrategyLimits,
+} from './orchestration/execution-controller.js';
 
 /**
  * Kinds resolvidos sem chamar modelo: o orchestrator os executa contra o
@@ -216,6 +222,8 @@ export interface OrchestratorOptions {
    * tokens, mas o custo fica em 0 (não inventa preço de modelo desconhecido).
    */
   costOf?: (modelId: string, inputTokens: number, outputTokens: number) => number;
+  /** Limites explícitos para o ExecutionController (Fases 2 & 3). */
+  strategyLimits?: Partial<StrategyLimits>;
 }
 
 /** O que um producer devolve para um nó do grafo. */
@@ -276,6 +284,8 @@ export interface ExecuteCtx {
    * uma sub-tarefa aberta por decomposição roda em 1.
    */
   depth: number;
+  /** Controlador central de execução (estado explícito, estagnação, deduplicação). */
+  controller?: ExecutionController;
 }
 
 export interface OrchestrationResult {
@@ -307,6 +317,8 @@ export interface OrchestrationResult {
   verification?: Array<{ nodeId: string; result: VerificationResult }>;
   /** Log do protocolo agente-a-agente (task/result/critique/correction). */
   conversation?: ConversationEntry[];
+  /** Snapshot do estado explícito de execução (Fase 2.1). */
+  executionState?: ExecutionStateSnapshot;
 }
 
 export class Orchestrator {
@@ -336,6 +348,7 @@ export class Orchestrator {
   private verifier?: VerificationEngine;
   private contextResolver?: ContextResolver;
   private toolRegistry?: ToolRegistry;
+  private controller?: ExecutionController;
   /** Verificação por nó (Verification Engine 2.0), preenchida durante a execução. */
   private readonly verifications = new Map<string, VerificationResult>();
   /**
@@ -637,6 +650,32 @@ export class Orchestrator {
     }
     this.verifier = new VerificationEngine();
     this.contextResolver = new ContextResolver();
+    const controller = new ExecutionController({
+      runId: trace.runId,
+      objective: this.opts.task,
+      mode: this.opts.plan?.mode ?? 'orchestrated',
+      complexity: this.opts.plan?.classification.complexity,
+      graphId: graph.id,
+      nodeIds: graph.nodes.map((n) => n.id),
+      acceptanceCriteria: graph.nodes.flatMap((n) => (contractOf(n)?.acceptance ?? []).map((a) => a.id)),
+      startedAt,
+      limits: {
+        ...this.opts.strategyLimits,
+        maxTokens: Math.min(graph.budget.maxTokens, this.opts.budgetLimits?.maxTokens ?? Number.POSITIVE_INFINITY),
+        maxTimeMs: this.opts.budgetLimits?.maxTimeMs ?? graph.budget.maxTimeMs,
+        ...(this.opts.budgetLimits?.maxCostUsd !== undefined ? { maxCostUsd: this.opts.budgetLimits.maxCostUsd } : {}),
+        ...(this.opts.budgetLimits?.maxToolCalls !== undefined ? { maxToolCalls: this.opts.budgetLimits.maxToolCalls } : {}),
+        ...(this.opts.budgetLimits?.maxConcurrency !== undefined ? { maxConcurrency: this.opts.budgetLimits.maxConcurrency } : {}),
+      },
+    });
+    this.controller = controller;
+    trace.events.emit('plan.created', {
+      mode: this.opts.plan?.mode ?? 'legacy',
+      strategy: controller.strategy,
+      nodes: graph.nodes.length,
+      batches: graph.parallelBatches.length,
+    });
+    controller.enterPhase('execution');
     const ctx: ExecuteCtx = {
       runId: trace.runId,
       task: this.opts.task,
@@ -657,6 +696,7 @@ export class Orchestrator {
       conversation,
       critiques: new Map(),
       depth: 0,
+      controller,
       ...(this.opts.signal ? { signal: this.opts.signal } : {}),
     };
 
@@ -668,6 +708,7 @@ export class Orchestrator {
 
     while (attempts < maxAttempts) {
       attempts++;
+      controller.enterPhase('execution');
       const currentAttempt = attempts;
       const failure = await this.executeBatches(workingGraph, ctx, (batchGraph) => {
         checkpoints.save(this.captureCheckpoint(trace.runId, batchGraph, ctx, currentAttempt));
@@ -709,11 +750,30 @@ export class Orchestrator {
             ? { verification: Array.from(this.verifications.entries()).map(([nodeId, result]) => ({ nodeId, result })) }
             : {}),
           ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
+          executionState: controller.snapshot(),
         };
+      }
+
+      if (this.opts.signal?.aborted) {
+        controller.markInterrupted(failure.error, 'cancelled');
+        trace.events.emit('run.cancelled', { nodeId: failure.nodeId, reason: failure.error });
+      }
+
+      controller.enterPhase('recovery');
+      const errReport = controller.recordStageError(failure.nodeId, attempts, failure.error);
+      if (errReport.stagnation) {
+        trace.events.emit('stagnation.detected', {
+          nodeId: failure.nodeId,
+          reason: errReport.stagnation.kind,
+          detail: errReport.stagnation.detail,
+          circuitBreakerLevel: errReport.circuitBreakerLevel,
+        });
       }
 
       // Token Budget 2.0: fase de recovery esgotada → aborta (impede loop)
       if (phaseBudget.exhausted('recovery')) {
+        controller.markInterrupted('orçamento de tokens da fase recovery esgotado', 'budget_exhausted');
+        trace.events.emit('budget.exhausted', { nodeId: failure.nodeId, exhausted: 'tokens', phase: 'recovery' });
         const node = workingGraph.nodes.find((n) => n.id === failure.nodeId);
         if (node) {
           node.status = 'failed';
@@ -769,6 +829,15 @@ export class Orchestrator {
         message: decision.action.message,
       });
 
+      if (decision.action.exhausted) {
+        controller.markInterrupted(decision.action.message, 'budget_exhausted');
+        trace.events.emit('budget.exhausted', {
+          nodeId: failure.nodeId,
+          exhausted: decision.action.exhausted,
+          message: decision.action.message,
+        });
+      }
+
       if (decision.action.kind === 'abort' || !decision.retryNow && !decision.replacement && decision.action.kind !== 'replan') {
         closeHeal(false, decision.abortReason ?? 'abort');
         // marca nó como falho e segue para avaliação
@@ -779,6 +848,28 @@ export class Orchestrator {
 
       // skill_replacement / handoff: aplica a substituição ao nó antes de reprocessar
       if ((decision.action.kind === 'skill_replacement' || decision.action.kind === 'handoff') && decision.replacement) {
+        if (decision.action.kind === 'handoff' && decision.replacement.agent) {
+          const fromAgent = failure.agent ?? this.opts.primaryAgent;
+          const handoffCheck = controller.recordHandoff(fromAgent, decision.replacement.agent, failure.nodeId, decision.action.message);
+          trace.events.emit('agent.handoff', {
+            nodeId: failure.nodeId,
+            from: fromAgent,
+            to: decision.replacement.agent,
+            allowed: handoffCheck.allowed,
+            ...(handoffCheck.reason ? { reason: handoffCheck.reason } : {}),
+          });
+          if (!handoffCheck.allowed) {
+            trace.events.emit('stagnation.detected', {
+              nodeId: failure.nodeId,
+              reason: 'handoff_cycle',
+              detail: handoffCheck.reason,
+            });
+            closeHeal(false, handoffCheck.reason);
+            const node = workingGraph.nodes.find((n) => n.id === failure.nodeId);
+            if (node) node.status = 'failed';
+            break;
+          }
+        }
         const node = workingGraph.nodes.find((n) => n.id === failure.nodeId);
         if (node) {
           if (decision.replacement.agent) node.agent = decision.replacement.agent;
@@ -830,14 +921,36 @@ export class Orchestrator {
         } else {
           workingGraph = planner.replan(workingGraph, failure.nodeId);
         }
+        const planCheck = controller.recordPlanUpdate(
+          workingGraph.id,
+          this.opts.plan?.mode ?? 'orchestrated',
+          workingGraph.nodes.map((n) => ({ id: n.id, agent: n.agent, status: n.status })),
+        );
+        if (!planCheck.changed && !replanned?.changes?.length) {
+          trace.events.emit('stagnation.detected', {
+            nodeId: failure.nodeId,
+            reason: 'repeated_plan',
+            detail: planCheck.stagnation?.detail,
+          });
+        }
         closeHeal();
         continue;
+      }
+      if (decision.retryNow) {
+        trace.events.emit('retry.scheduled', {
+          nodeId: failure.nodeId,
+          attempt: attempts + 1,
+          maxAttempts,
+          kind: decision.action.kind,
+          backoffMs: decision.backoffMs ?? 0,
+        });
       }
       closeHeal();
     }
 
     // Evaluation final (também serve como Verification Loop: nenhum healing é dado como
     // bem-sucedido sem essa reavaliação — ver seção 5.7 do roadmap).
+    controller.enterPhase('validation');
     const closeEval = trace.span('evaluation', 'evaluation');
     trace.events.emit('evaluation.started', {});
     trace.events.emit('verification.started', { healingRounds: healing.length });
@@ -868,12 +981,18 @@ export class Orchestrator {
     const testRunContent = testRun?.content as { passed?: boolean; exitCode?: number | null; command?: string } | undefined;
     const executedTests = testRunContent?.passed;
     const testResults = Array.from(ctx.artifacts.values()).find((a) => a.kind === 'test-results');
+    const hasAnyTestArtifact = executedTests !== undefined || Boolean(testResults);
     const testsFailed = executedTests !== undefined
       ? (executedTests ? 0 : 1)
       : testResults
         ? (testResults.content as { failed?: number }).failed ?? 0
         : 0;
     const scoredArtifacts = Array.from(ctx.artifacts.values()).filter((a) => a.valid);
+    const requiredProductNodes = workingGraph.nodes.filter(
+      (n) => contractOf(n)?.optional !== true && !ZERO_TOKEN_NODE_KINDS.has(n.kind ?? 'agent'),
+    );
+    const allRequiredNodesFailed =
+      requiredProductNodes.length > 0 && requiredProductNodes.every((n) => n.status === 'failed');
 
     // Quando há Verification Engine em jogo, a correctness deixa de ser um
     // proxy do validador de schema e passa a refletir a fração de critérios de
@@ -897,7 +1016,12 @@ export class Orchestrator {
         artifactValidity: artifacts.length > 0 ? artifacts.filter((a) => a.valid).length / artifacts.length : 0.3,
         security: this.opts.category === 'security_audit' ? 0.9 : undefined,
       },
-      tests: { passed: testsFailed > 0 ? 0 : 1, failed: testsFailed },
+      // Só inclui testResults sintético quando ao menos um nó produziu entrega
+      // ou quando houve artefato real de teste: se todos os nós falharam sem
+      // rodar testes, injetar `passed: 1` inflaria artificialmente o score.
+      ...(!allRequiredNodesFailed || hasAnyTestArtifact
+        ? { tests: { passed: testsFailed > 0 ? 0 : 1, failed: testsFailed } }
+        : {}),
       regressions: [
         ...(testsFailed > 0
           ? [
@@ -907,6 +1031,13 @@ export class Orchestrator {
             ]
           : []),
         ...unverified.map((v) => `verificação não conclusiva: ${v.reason}`),
+        // Fase 3.5: execução interrompida por loop, estagnação, orçamento ou
+        // cancelamento NUNCA pode ser marcada como concluída com sucesso.
+        ...(controller.isInterrupted &&
+        controller.interruption &&
+        controller.interruption.category !== 'non_recoverable_error'
+          ? [`execução interrompida (${controller.interruption.category}): ${controller.interruption.reason}`]
+          : []),
         // Nó que terminou em falha SEM produzir artefato era invisível para a
         // avaliação: `correctness` é a média das verificações registradas e
         // `artifactValidity` a razão dos artefatos existentes — as duas
@@ -925,6 +1056,7 @@ export class Orchestrator {
       recommendations: this.critiqueRecommendations(ctx),
     });
     closeEval();
+    controller.enterPhase('finalization');
     trace.events.emit('evaluation.completed', { verdict: finalEvaluation.verdict, score: finalEvaluation.score });
     trace.events.emit('verification.completed', { verdict: finalEvaluation.verdict, score: finalEvaluation.score });
     trace.events.emit(
@@ -932,26 +1064,40 @@ export class Orchestrator {
       { verdict: finalEvaluation.verdict, score: finalEvaluation.score },
     );
 
-    // Histórico de performance do modelo roteado (alimenta futuras decisões do router)
-    memory.recordModelRun(modelId, {
-      success: finalEvaluation.verdict === 'PASS' || finalEvaluation.verdict === 'PASS_WITH_WARNINGS',
-      score: finalEvaluation.score,
-      tokens: tokensUsed(),
-    });
+    // Fase 7.2 / 8.5: Falha exclusiva de infraestrutura/autenticação do executor
+    // (ex.: OAuth expirado, falta de credencial ou CLI indisponível) NÃO é falha
+    // de competência do agente/skill nem "implementação divergente dos requisitos".
+    // Registrar isso na memória queimava o agente/modelo para os próximos runs.
+    const skipMemoryPenalty =
+      controller.failedOnlyByInfrastructure &&
+      (finalEvaluation.verdict === 'FAIL' || finalEvaluation.verdict === 'BLOCKED');
 
-    // Learning
-    const closeLearn = trace.span('learning', 'memory');
-    const learning = new LearningEngine(memory);
-    learning.process(finalEvaluation, {
-      agentId: this.opts.primaryAgent,
-      skillIds: this.opts.skillChain,
-      tokens: tokensUsed(),
-      // Domínios classificados pelo Commander: sem eles a estatística do agente
-      // fica só global, e o planejamento não consegue distinguir "vai mal
-      // nisto" de "vai mal em tudo".
-      ...(this.opts.plan ? { domains: this.opts.plan.classification.domains } : {}),
-    });
-    closeLearn();
+    if (!skipMemoryPenalty) {
+      // Histórico de performance do modelo roteado (alimenta futuras decisões do router)
+      memory.recordModelRun(modelId, {
+        success: finalEvaluation.verdict === 'PASS' || finalEvaluation.verdict === 'PASS_WITH_WARNINGS',
+        score: finalEvaluation.score,
+        tokens: tokensUsed(),
+      });
+
+      // Learning
+      const closeLearn = trace.span('learning', 'memory');
+      const learning = new LearningEngine(memory);
+      learning.process(finalEvaluation, {
+        agentId: this.opts.primaryAgent,
+        skillIds: this.opts.skillChain,
+        tokens: tokensUsed(),
+        // Domínios classificados pelo Commander: sem eles a estatística do agente
+        // fica só global, e o planejamento não consegue distinguir "vai mal
+        // nisto" de "vai mal em tudo".
+        ...(this.opts.plan ? { domains: this.opts.plan.classification.domains } : {}),
+      });
+      closeLearn();
+    } else {
+      trace.span('learning:skipped-infra-failure', 'memory', {
+        reason: 'falha exclusiva de autenticação/infraestrutura do executor — agente e skills preservados sem penalidade',
+      })();
+    }
 
     // Trajetória: o caminho que ESTE run percorreu. O simétrico de converter
     // falha em padrão — sucesso também é conhecimento, e até aqui se perdia.
@@ -975,7 +1121,8 @@ export class Orchestrator {
       checkpoints.delete(trace.runId);
     }
 
-    // Trace persistido (com telemetria de economia e verificação por nó)
+    // Trace persistido (com telemetria de economia, verificação por nó e estado do ExecutionController)
+    const executionState = controller.snapshot();
     const telemetry = execBudget.telemetry();
     const verificationSummary = Array.from(this.verifications.entries()).map(([nodeId, r]) => ({
       nodeId,
@@ -992,7 +1139,17 @@ export class Orchestrator {
       model: modelId,
       budget: phaseBudget.summary(),
       ...(this.opts.plan ? { mode: this.opts.plan.mode } : {}),
-      telemetry: telemetry as unknown as Record<string, unknown>,
+      telemetry: {
+        ...(telemetry as unknown as Record<string, unknown>),
+        executionController: {
+          strategy: executionState.strategy,
+          phaseDurationsMs: executionState.phaseDurationsMs,
+          circuitBreakerLevel: executionState.circuitBreakerLevel,
+          stagnationCount: executionState.stagnationSignals.length,
+          toolRepeatsAvoided: executionState.toolRepeatsAvoided,
+          interrupted: executionState.interrupted,
+        },
+      },
       ...(verificationSummary.length > 0 ? { verification: verificationSummary } : {}),
       ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
     });
@@ -1031,23 +1188,24 @@ export class Orchestrator {
       ? ('HUMAN_REQUIRED' as const)
       : finalEvaluation.verdict;
 
-    // Resultado carimbado nas decisões DESTE run. Sem isto o journal registra
-    // escolhas e nunca as consequências delas, e uma escolha sem consequência
-    // conhecida é log, não memória: não há como um planejamento futuro
-    // aprender que aquela escolha, para aquele objetivo, não deu certo.
-    const verifiedResults = Array.from(this.verifications.values());
-    decisions.recordOutcome(trace.runId, {
-      status,
-      score: finalEvaluation.score,
-      ...(verifiedResults.length > 0
-        ? {
-            verified: {
-              passed: verifiedResults.filter((v) => v.status === 'VERIFIED').length,
-              total: verifiedResults.length,
-            },
-          }
-        : {}),
-    });
+    // Resultado carimbado nas decisões DESTE run (exceto quando abortou por
+    // falha exclusiva de infraestrutura/credencial do executor, para não
+    // queimar a escolha de agente para os próximos runs).
+    if (!skipMemoryPenalty) {
+      const verifiedResults = Array.from(this.verifications.values());
+      decisions.recordOutcome(trace.runId, {
+        status,
+        score: finalEvaluation.score,
+        ...(verifiedResults.length > 0
+          ? {
+              verified: {
+                passed: verifiedResults.filter((v) => v.status === 'VERIFIED').length,
+                total: verifiedResults.length,
+              },
+            }
+          : {}),
+      });
+    }
 
     return {
       trace: finalTrace,
@@ -1063,6 +1221,7 @@ export class Orchestrator {
         ? { verification: Array.from(this.verifications.entries()).map(([nodeId, result]) => ({ nodeId, result })) }
         : {}),
       ...(conversation.size > 0 ? { conversation: conversation.all() } : {}),
+      executionState,
     };
   }
 
@@ -1241,6 +1400,7 @@ export class Orchestrator {
     node.status = 'running';
     node.startedAt = new Date().toISOString();
     node.attempts = (node.attempts ?? 0) + 1;
+    ctx.controller?.markStageStarted(node.id, node.skills);
 
     // Retentativa: reexecução de um nó que já rodou e falhou. Contada ANTES de
     // gastar a chamada, pelo mesmo motivo do teto de tool calls: recusar por
@@ -1431,6 +1591,9 @@ export class Orchestrator {
       // O menor dos dois vale. Interrompe a ESPERA, não o trabalho em voo — o
       // limite está declarado em `orchestration/deadline.ts`.
       const deadlineMs = resolveDeadlineMs([contract?.budget?.maxTimeMs, node.timeoutMs]);
+      if (!reused && !isToolNode(node, contract)) {
+        ctx.controller?.recordLlmTurn();
+      }
       let result = await withDeadline(
         async () => (reused
           ? { content: reused.content, kind: node.outputs?.[0] ?? 'raw', tokens: 0, model: `reuse:${reused.from}` }
@@ -1454,6 +1617,7 @@ export class Orchestrator {
         const injectedAliases = (provenance.injected ?? provenance.loaded).map((s) =>
           typeof s === 'string' ? s : s.alias,
         );
+        ctx.controller?.markStageStarted(node.id, loadedAliases);
         loadedAliases.forEach((s) => ctx.trace.markSkill(s));
         ctx.trace.span(`skills:${node.id}`, 'skill', {
           loaded: loadedAliases,
@@ -1489,10 +1653,15 @@ export class Orchestrator {
           ? ctx.execBudget.spend({ phase, tokens: result.tokens, costUsd, model: modelId })
           : { ok: ctx.budget.spend(phase, result.tokens), reason: `orçamento de tokens da fase ${phase} excedido` };
         if (!spend.ok) {
+          ctx.trace.events.emit('budget.exhausted', { nodeId: node.id, phase, reason: spend.reason });
           node.status = 'failed';
           node.error = spend.reason ?? `orçamento de tokens da fase ${phase} excedido`;
           closeSpan(false, node.error);
           return { status: 'error', nodeId: node.id, agent: node.agent, skill: node.skills?.[0], error: node.error };
+        }
+        const pressure = ctx.execBudget?.pressure() ?? 0;
+        if (pressure >= 0.8) {
+          ctx.trace.events.emit('budget.warning', { nodeId: node.id, pressure });
         }
         // Aplica TODOS os degraus que a pressão atual justifica, de uma vez.
         for (const step of ctx.execBudget?.pendingDegradations() ?? []) {
@@ -1549,6 +1718,16 @@ export class Orchestrator {
       // faria a mesma reprovação acontecer duas vezes e esconderia o relatório
       // de verificação justamente no caso em que ele é mais útil.
       if (!validation.valid && !contract) {
+        ctx.trace.events.emit('validation.failed', { nodeId: node.id, issues: validation.issues });
+        const valCorrection = formatValidationCorrection({
+          nodeId: node.id,
+          attempt: node.attempts ?? 1,
+          errorCategory: 'incorrect_model_output',
+          unmetCriteria: validation.issues,
+          errorMessage: `validação falhou: ${validation.issues.slice(0, 3).join('; ')}`,
+          plannedChange: 'incluir todos os campos e seções obrigatórios do schema do artefato',
+        });
+        node.metadata = { ...node.metadata, correction: valCorrection };
         node.status = 'failed';
         node.error = `validação falhou: ${validation.issues.slice(0, 3).join('; ')}`;
         closeSpan(false, node.error);
@@ -1617,6 +1796,23 @@ export class Orchestrator {
           },
         );
         if (verification.status === 'FAILED') {
+          ctx.trace.events.emit('validation.failed', {
+            nodeId: node.id,
+            unmet: verification.unmet,
+            score: verification.score,
+          });
+          // Injeta feedback estruturado com os critérios exatos que falharam:
+          // a retentativa recebe a entrega anterior + o delta que falta, em
+          // vez de repetir o mesmo prompt no escuro.
+          const verCorrection = formatValidationCorrection({
+            nodeId: node.id,
+            attempt: node.attempts ?? 1,
+            errorCategory: 'incorrect_model_output',
+            unmetCriteria: verification.unmet.length > 0 ? verification.unmet : [verification.reason],
+            errorMessage: `verificação falhou: ${verification.unmet.slice(0, 3).join('; ')}`,
+            plannedChange: 'atender integralmente aos critérios de aceitação reprovados na entrega anterior',
+          });
+          node.metadata = { ...node.metadata, correction: verCorrection };
           node.status = 'failed';
           node.error = `verificação falhou: ${verification.unmet.slice(0, 3).join('; ')}`;
           closeSpan(false, node.error);
@@ -1671,6 +1867,22 @@ export class Orchestrator {
       // A correção já foi aplicada nesta rodada: mantê-la faria a próxima
       // execução do nó pedir de novo um conserto que já aconteceu.
       if (correction && node.metadata) delete node.metadata.correction;
+      const stageOutcome = ctx.controller?.recordStageOutcome({
+        nodeId: node.id,
+        attempt: node.attempts ?? 1,
+        kind: result.kind,
+        contentHash: hashContent(artifactText),
+        valid: validation.valid,
+        score: verification?.score ?? validation.score,
+        unmetCriteria: verification?.unmet ?? validation.issues,
+      });
+      if (stageOutcome?.progressed) {
+        ctx.trace.events.emit('progress.detected', {
+          nodeId: node.id,
+          reasons: stageOutcome.evidence.map((e) => e.detail),
+          score: verification?.score ?? validation.score,
+        });
+      }
       closeSpan(true);
 
       ctx.conversation.record({
@@ -2046,13 +2258,6 @@ export class Orchestrator {
 
     const registry = (this.toolRegistry ??= new ToolRegistry());
 
-    // Teto de tool calls do Budget Controller, ANTES de executar: estourar o
-    // teto e só descobrir depois seria contabilizar um efeito colateral já
-    // aplicado no disco.
-    if (ctx.execBudget && !ctx.execBudget.recordToolCall()) {
-      throw new Error(`teto de tool calls do run excedido antes de executar "${spec.id}"`);
-    }
-
     const trustTier: TrustTier = node.agent
       ? this.opts.trustTierOf?.(node.agent) ?? 'community'
       : // Nó de tool sem agente foi declarado no plano por quem chamou o
@@ -2102,7 +2307,71 @@ export class Orchestrator {
       throw new Error(`nó "${node.id}": ${e instanceof Error ? e.message : String(e)}`);
     }
 
+    // Fase 5.2 / 5.3: Deduplicação de tool calls e cache de leitura idempotente.
+    // Avaliado ANTES de cobrar `recordToolCall()`: reuso de leitura idempotente
+    // não executa a tool de novo nem consome cota.
+    const dedup = ctx.controller?.checkToolCall(spec.id, input, node.id);
+    if (dedup?.reusable) {
+      ctx.trace.events.emit('tool.repeated', {
+        nodeId: node.id,
+        tool: spec.id,
+        reused: true,
+        reason: dedup.reason,
+      });
+      ctx.trace.span(`tool:${spec.id}:cached`, 'tool', {
+        node: node.id,
+        cached: true,
+        reason: dedup.reason,
+      })(true);
+      return {
+        content: dedup.cachedResult,
+        kind: node.outputs?.[0] ?? 'raw',
+        tokens: 0,
+        model: `tool:${spec.id}:cached`,
+      };
+    }
+    if (dedup?.stagnantRepeat) {
+      ctx.trace.events.emit('tool.repeated', {
+        nodeId: node.id,
+        tool: spec.id,
+        reused: false,
+        reason: dedup.reason,
+      });
+      ctx.trace.events.emit('stagnation.detected', {
+        nodeId: node.id,
+        reason: 'repeated_tool_call',
+        detail: dedup.reason,
+      });
+      throw new Error(`loop detectado em "${node.id}": ${dedup.reason}`);
+    }
+
+    // Teto de tool calls do Budget Controller, ANTES de executar: estourar o
+    // teto e só descobrir depois seria contabilizar um efeito colateral já
+    // aplicado no disco.
+    if (ctx.execBudget && !ctx.execBudget.recordToolCall()) {
+      ctx.trace.events.emit('budget.exhausted', { nodeId: node.id, exhausted: 'toolCalls', tool: spec.id });
+      throw new Error(`teto de tool calls do run excedido antes de executar "${spec.id}"`);
+    }
+
+    ctx.trace.events.emit('tool.started', { nodeId: node.id, tool: spec.id });
+    const toolStartedAt = Date.now();
     const outcome = await registry.execute(spec.id, input, toolCtx);
+    const toolDurationMs = Math.max(0, Date.now() - toolStartedAt);
+    ctx.controller?.recordToolExecution({
+      toolId: spec.id,
+      rawArgs: input,
+      nodeId: node.id,
+      ok: outcome.ok,
+      result: outcome.result,
+      error: outcome.error,
+      durationMs: toolDurationMs,
+    });
+    ctx.trace.events.emit('tool.completed', {
+      nodeId: node.id,
+      tool: spec.id,
+      ok: outcome.ok,
+      durationMs: toolDurationMs,
+    });
     ctx.trace.markTool(`tool:${spec.id}`);
     ctx.trace.span(`tool:${spec.id}`, 'tool', {
       node: node.id,

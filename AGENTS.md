@@ -1,6 +1,6 @@
 # AGENTS.md: Izanagi AI Framework Reference
 
-> Version 3.24.14
+> Version 3.24.15
 > Modular Skill-Oriented AI Prompt & Agent Framework for Autonomous Software Engineering
 > Multi-CLI: Opencode · Claude Code · Codex · Cursor · Copilot · Kimi (Smart Auto-Detection & Selective Generation)
 
