@@ -66,7 +66,7 @@ export const CLAUDE_AGENT_TOOLS_DEFAULT = ['Read', 'Grep', 'Glob', 'Edit', 'Writ
  * ("Use PROACTIVELY quando/para..."), não descritivo de marketing.
  */
 export const CLAUDE_AGENT_TRIGGERS: Record<string, string> = {
-  orchestrator: 'Use PROACTIVELY como coordenador orchestration-only para decompor, delegar e auditar tarefas multiagente; nunca para editar implementação.',
+  orchestrator: 'Use PROACTIVELY como orquestrador central para planejar, delegar para especialistas em paralelo e executar implementação e escrita direta no repositório.',
   'adversarial-critic': 'Use PROACTIVELY depois que algo já parecer pronto, quando o pedido é caçar pontos cegos que o autor pode ter deixado passar: não para confirmar o que a revisão já cobriu.',
   'agent-architect': 'Use quando faltar um agente especializado para uma lacuna real do time e for preciso desenhar um novo agente.',
   'ai-engineer': 'Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM: RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA (isso é `senior-engineer`).',
@@ -1218,16 +1218,57 @@ ${chainList(a.chains) || '- (sem chains)'}
 `;
 }
 
+function antigravityOrchestratorAgentTemplate(
+  orch: IzanagiAgentInfo,
+  specialists: IzanagiAgentInfo[]
+): string {
+  const specialistLines = specialists
+    .map(
+      (s) =>
+        `- **\`${s.slug}\`** (${s.name}): ${s.role}. Trigger: ${CLAUDE_AGENT_TRIGGERS[s.slug] || s.role}`
+    )
+    .join('\n');
+
+  return `---
+name: orchestrator
+description: Izanagi Orchestrator — Orquestrador central: planeja, delega para especialistas em paralelo e executa implementação direta no repositório.
+model: inherit
+---
+
+# Izanagi Agent: Izanagi Orchestrator
+
+**Papel:** Orquestrador e coordenador central do framework: analisa, planeja, delega para especialistas em paralelo e executa implementação direta
+
+Você é o ORCHESTRATOR do Izanagi AI, o coordenador e líder técnico central do framework. Sua responsabilidade é conduzir a engenharia de software de ponta a ponta: analisar o problema, decompor em frentes, delegar para agentes especializados em paralelo e atuar diretamente na análise, escrita, modificação e refatoração de código, testes e configurações sempre que necessário para garantir que a entrega seja 100% funcional, completa e sem pendências. Você e seus agentes possuem autorização total para ler, criar, editar e executar arquivos no repositório.
+
+## Autorização e Modificação Direta
+- **Autorização Total**: Você e todos os especialistas têm autorização completa para inspecionar, criar, editar e alterar código, testes e configurações no repositório. Nunca recuse modificar arquivos.
+- **Implementação Real (Zero Chatbot Passivo)**: Você não é um chatbot consultivo. Você analisa o repositório, coordena os especialistas, escreve e altera arquivos diretamente, integra o trabalho dos subagentes e roda validações e testes até a entrega completa de produção.
+- **Zero Stubs / Zero Checklists**: Entregue código real, tipado, completo e funcional em todos os arquivos. Proibido TODOs ou stubs vazios.
+
+## Roster de Especialistas Internos (Delegação via invoke_subagent)
+Você conta com 22 especialistas nativos para delegar frentes em paralelo:
+${specialistLines}
+
+## Como Delegar via invoke_subagent
+1. Analise o escopo e decomponha a tarefa em frentes independentes.
+2. Para cada frente que demande especialidade (arquitetura, frontend, segurança, testes, banco de dados, etc.), invoque o subagente correspondente usando a tool nativa \`invoke_subagent\` (definindo com \`define_subagent\` quando aplicável).
+3. Monitore os resultados, consolide a integração no repositório e execute os testes de verificação até a conclusão final com evidências.
+
+> Fonte: \`agents/${orch.file}\` · ${provenanceFooter('antigravity')}
+`;
+}
+
 function antigravitySubagentTemplate(a: IzanagiAgentInfo): string {
   const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas especializadas de ${(a.role || a.name).toLowerCase()}.`;
-  const isOrchestrator = a.slug === 'orchestrator';
   return `---
 name: ${a.slug}
 description: ${truncate(`${a.name} — ${trigger}`, 200)}
 model: inherit
-${isOrchestrator ? '' : 'subagent: true\n'}---
+subagent: true
+---
 
-# Izanagi Agent: ${a.name}
+# Izanagi Subagent: ${a.name}
 
 **Papel:** ${a.role}
 
@@ -1277,6 +1318,8 @@ export function exportToAntigravity(baseDir: string): string[] {
   const created: string[] = [];
   const source = resolveSourceDir(baseDir);
   const agents = loadIzanagiAgents(source);
+  const orchestrator = agents.find((a) => a.slug === 'orchestrator') || agents[0];
+  const specialists = agents.filter((a) => a.slug !== 'orchestrator');
 
   // 1. .agents/skills.json: Configuração nativa do Antigravity para descobrir skills externas sem duplicar
   const skillsJsonContent = JSON.stringify(
@@ -1322,12 +1365,27 @@ ${provenanceFooter('antigravity')}
   const geminiCmdToml = writeIfAbsent(baseDir, '.gemini/commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
   if (geminiCmdToml) created.push(geminiCmdToml);
 
-  // 5. Subagentes nativos em .gemini/agents/<slug>.md e .agents/agents/<slug>.md para invoke_subagent
-  for (const agent of agents) {
+  // 5. Orquestrador como ÚNICO agente público em .gemini/agents/orchestrator.md
+  // Especialistas como subagentes internos em .gemini/subagents/<slug>.md
+  const orchMd = antigravityOrchestratorAgentTemplate(orchestrator, specialists);
+  const gOrch = writeIfAbsent(baseDir, '.gemini/agents/orchestrator.md', orchMd);
+  if (gOrch) created.push(gOrch);
+
+  // Limpeza de especialistas legados de .gemini/agents/ para que o agy exiba apenas o Orchestrator
+  const geminiAgentsDir = path.join(baseDir, '.gemini', 'agents');
+  if (fs.existsSync(geminiAgentsDir)) {
+    for (const file of fs.readdirSync(geminiAgentsDir)) {
+      if (file.endsWith('.md') && file !== 'orchestrator.md') {
+        try { fs.unlinkSync(path.join(geminiAgentsDir, file)); } catch { /* ignore */ }
+      }
+    }
+  }
+
+  for (const s of specialists) {
     const subRel = writeIfAbsent(
       baseDir,
-      `.gemini/agents/${agent.slug}.md`,
-      antigravitySubagentTemplate(agent)
+      `.gemini/subagents/${s.slug}.md`,
+      antigravitySubagentTemplate(s)
     );
     if (subRel) created.push(subRel);
   }
@@ -1342,13 +1400,20 @@ ${provenanceFooter('antigravity')}
     if (rel) created.push(rel);
   }
 
-  // 7. Slash command /agents como skill raiz de projeto
+  // 7. Slash command /agents e /orchestrator como skills raiz de projeto
   const rootSkill = writeIfAbsent(
     baseDir,
     '.agents/skills/agents/SKILL.md',
     antigravityOrchestratorSkillTemplate()
   );
   if (rootSkill) created.push(rootSkill);
+
+  const orchSkill = writeIfAbsent(
+    baseDir,
+    '.agents/skills/orchestrator/SKILL.md',
+    antigravityOrchestratorSkillTemplate()
+  );
+  if (orchSkill) created.push(orchSkill);
 
   // 8. Plugin nativo do Izanagi para o Antigravity (.agents/plugins/izanagi/)
   const pluginManifest = JSON.stringify(
@@ -1372,11 +1437,36 @@ ${provenanceFooter('antigravity')}
   );
   if (pSkill) created.push(pSkill);
 
-  for (const agent of agents) {
+  const pOrchSkill = writeIfAbsent(
+    baseDir,
+    '.agents/plugins/izanagi/skills/orchestrator/SKILL.md',
+    antigravityOrchestratorSkillTemplate()
+  );
+  if (pOrchSkill) created.push(pOrchSkill);
+
+  // No plugin, APENAS orchestrator.md fica em agents/ para que a CLI agy e o comando /agents
+  // mostrem SOMENTE o Orquestrador, enquanto os 22 especialistas ficam em subagents/
+  const pOrch = writeIfAbsent(
+    baseDir,
+    '.agents/plugins/izanagi/agents/orchestrator.md',
+    orchMd
+  );
+  if (pOrch) created.push(pOrch);
+
+  const pluginAgentsDir = path.join(baseDir, '.agents', 'plugins', 'izanagi', 'agents');
+  if (fs.existsSync(pluginAgentsDir)) {
+    for (const file of fs.readdirSync(pluginAgentsDir)) {
+      if (file.endsWith('.md') && file !== 'orchestrator.md') {
+        try { fs.unlinkSync(path.join(pluginAgentsDir, file)); } catch { /* ignore */ }
+      }
+    }
+  }
+
+  for (const s of specialists) {
     const pSub = writeIfAbsent(
       baseDir,
-      `.agents/plugins/izanagi/agents/${agent.slug}.md`,
-      antigravitySubagentTemplate(agent)
+      `.agents/plugins/izanagi/subagents/${s.slug}.md`,
+      antigravitySubagentTemplate(s)
     );
     if (pSub) created.push(pSub);
   }

@@ -88,6 +88,13 @@ test('Antigravity export: cria .agents/skills.json, GEMINI.md, rules e agent-ski
     const agentSkillContent = fs.readFileSync(agentSkillPath, 'utf-8');
     assert.match(agentSkillContent, /name: izanagi-architect/);
     assert.match(agentSkillContent, /System design and software architecture/);
+
+    // 5. Plugin Antigravity expõe APENAS o orchestrator em agents/ e especialistas em subagents/
+    const pluginAgentsDir = path.join(dir, '.agents', 'plugins', 'izanagi', 'agents');
+    assert.ok(fs.existsSync(path.join(pluginAgentsDir, 'orchestrator.md')), 'orchestrator.md existe no plugin');
+    const agentFiles = fs.readdirSync(pluginAgentsDir).filter((f) => f.endsWith('.md'));
+    assert.deepEqual(agentFiles, ['orchestrator.md'], 'apenas orchestrator.md deve estar exposto em agents/');
+    assert.ok(fs.existsSync(path.join(dir, '.agents', 'plugins', 'izanagi', 'subagents', 'architect.md')), 'especialistas residem em subagents/');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
