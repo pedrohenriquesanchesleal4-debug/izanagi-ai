@@ -1359,11 +1359,15 @@ ${provenanceFooter('antigravity')}
   const coreRule = writeIfAbsent(baseDir, '.agents/rules/izanagi-core.md', antigravityCoreRuleTemplate());
   if (coreRule) created.push(coreRule);
 
-  // 4. Comandos slash para o Antigravity: /agents
+  // 4. Comandos slash para o Antigravity: /agents e /orchestrator
   const cmdToml = writeIfAbsent(baseDir, 'commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
   if (cmdToml) created.push(cmdToml);
+  const orchCmdToml = writeIfAbsent(baseDir, 'commands/orchestrator.toml', ANTIGRAVITY_AGENTS_COMMAND);
+  if (orchCmdToml) created.push(orchCmdToml);
   const geminiCmdToml = writeIfAbsent(baseDir, '.gemini/commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
   if (geminiCmdToml) created.push(geminiCmdToml);
+  const geminiOrchCmdToml = writeIfAbsent(baseDir, '.gemini/commands/orchestrator.toml', ANTIGRAVITY_AGENTS_COMMAND);
+  if (geminiOrchCmdToml) created.push(geminiOrchCmdToml);
 
   // 5. Orquestrador como ÚNICO agente público em .gemini/agents/orchestrator.md
   // Especialistas como subagentes internos em .gemini/subagents/<slug>.md
@@ -1443,6 +1447,20 @@ ${provenanceFooter('antigravity')}
     antigravityOrchestratorSkillTemplate()
   );
   if (pOrchSkill) created.push(pOrchSkill);
+
+  const pCmdAgents = writeIfAbsent(
+    baseDir,
+    '.agents/plugins/izanagi/commands/agents.toml',
+    ANTIGRAVITY_AGENTS_COMMAND
+  );
+  if (pCmdAgents) created.push(pCmdAgents);
+
+  const pCmdOrch = writeIfAbsent(
+    baseDir,
+    '.agents/plugins/izanagi/commands/orchestrator.toml',
+    ANTIGRAVITY_AGENTS_COMMAND
+  );
+  if (pCmdOrch) created.push(pCmdOrch);
 
   // No plugin, APENAS orchestrator.md fica em agents/ para que a CLI agy e o comando /agents
   // mostrem SOMENTE o Orquestrador, enquanto os 22 especialistas ficam em subagents/
