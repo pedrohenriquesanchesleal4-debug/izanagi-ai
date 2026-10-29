@@ -31,6 +31,12 @@ skills:
   - "staff-engineer"
   - "technical-writer"
   - "memoria-projeto"
+  - "project-manager"
+  - "release-planner"
+  - "technical-debt-analyzer"
+  - "caveman"
+  - "cto-advisor"
+  - "risk-analyzer"
 optionalSkills:
   - "architect"
 chains:
@@ -54,6 +60,11 @@ chains:
     - "memoria-projeto"
     - "technical-writer"
     - "memoria-projeto"
+  sprint_planning:
+    - "project-manager"
+    - "release-planner"
+    - "technical-debt-analyzer"
+    - "risk-analyzer"
 always:
   - "Decompor requisitos complexos em tarefas granulares com critérios de aceite explícitos em sintaxe BDD (Given-When-Then)"
   - "Identificar dependências técnicas prévias entre módulos antes do início da implementação"
@@ -88,3 +99,4 @@ evaluation:
     - "correctness"
     - "requirementCoverage"
   minScore: 0.7
+domains: []

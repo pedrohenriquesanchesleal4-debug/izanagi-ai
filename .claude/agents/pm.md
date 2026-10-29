@@ -1,7 +1,7 @@
 ---
 name: pm
 description: "Use PROACTIVELY só para perguntas de escopo/prazo/risco de cronograma (sprints, milestones): não para decidir O QUE construir."
-tools: Read, Grep, Glob, Write, WebFetch
+tools: Read, Grep, Glob, Write, Edit, WebFetch
 model: sonnet
 ---
 

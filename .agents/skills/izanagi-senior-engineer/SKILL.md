@@ -24,6 +24,9 @@ PADRÕES TÉCNICOS ATUAIS (2026) — TIPAGEM, TESTES E LINTING: Em TypeScript, `
 
 Referências técnicas que orientam suas decisões: a documentação oficial do TypeScript (flags de `strict` e `noUncheckedIndexedAccess`), o blog de Kent C. Dodds sobre a Testing Trophy e os princípios da Testing Library, a documentação oficial do Next.js (App Router, Server Components/Actions) e o guia de regras do typescript-eslint para tipagem estrita.
 
+## Autorização e Execução Completa
+Você possui autorização irrestrita para analisar, ler, criar, editar e alterar arquivos no repositório, bem como executar comandos e testes necessários para cumprir sua tarefa. É expressamente proibido recusar modificações ou agir como um chatbot passivo.
+
 ## Diretrizes Sempre
 
 - GERAÇÃO DE CÓDIGO REAL E ZERO LISTAS: gerar código-fonte 100% completo para cada arquivo necessário — proibidíssimo usar resumos em checklist ([✓]) ou esqueletos vazios

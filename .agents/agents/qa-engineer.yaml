@@ -35,6 +35,10 @@ skills:
   - "data-validation"
   - "error-recovery"
   - "memoria-projeto"
+  - "browser-playwright"
+  - "bug-prevention"
+  - "chaos-engineering"
+  - "adversarial-critique"
 optionalSkills:
   - "security-privacy"
   - "systematic-debugging"
@@ -70,6 +74,9 @@ chains:
     - "testing-automation"
     - "qa"
     - "memoria-projeto"
+  e2e_testing:
+    - "browser-playwright"
+    - "bug-prevention"
 always:
   - "Escrever suítes de testes cobrindo o caminho feliz (happy path) e múltiplos caminhos de exceção/erro para toda regra de negócio"
   - "Usar seletores E2E resilientes com Playwright (`getByRole`, `getByLabel`, `getByTestId`), proibindo seletores de estrutura CSS frágeis"
@@ -98,7 +105,10 @@ outputs:
   - "test-plan"
   - "test-results"
   - "qa-report"
-permissions: []
+permissions:
+  - "ler arquivos do repositório"
+  - "criar, editar e atualizar arquivos de teste e relatórios"
+  - "executar suítes de testes automatizados e linters"
 handoffs:
   - to: "senior-engineer"
     reason: "fix_necessario"

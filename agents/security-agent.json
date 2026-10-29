@@ -90,7 +90,11 @@
     "security-report",
     "recomendações"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "escrever correções de segurança e políticas",
+    "executar scans e verificações de segurança"
+  ],
   "handoffs": [
     {
       "to": "senior-engineer",

@@ -1,7 +1,7 @@
 ---
 name: form-engineer
 description: "Use PROACTIVELY para formulários complexos (wizards, validação Zod/RHF, acessibilidade)."
-tools: Read, Grep, Glob, Edit, Write
+tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 ---
 

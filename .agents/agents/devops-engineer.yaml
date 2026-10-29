@@ -31,6 +31,14 @@ skills:
   - "observability-expert"
   - "sre-reliability"
   - "memoria-projeto"
+  - "chaos-engineering"
+  - "release-planner"
+  - "dependency-analyzer"
+  - "logging-expert"
+  - "feature-flags"
+  - "serverless-edge"
+  - "performance-optimizer"
+  - "scalability-expert"
 optionalSkills:
   - "qa"
   - "architect"
@@ -60,6 +68,10 @@ chains:
     - "observability-expert"
     - "sre-reliability"
     - "memoria-projeto"
+  release_workflow:
+    - "release-planner"
+    - "dependency-analyzer"
+    - "chaos-engineering"
 always:
   - "Utilizar Dockerfiles multi-stage compilando em imagens enxutas (alpine/distroless) rodando como usuário não-root"
   - "Garantir pipelines de CI/CD automatizadas com validação de linters, scanners de vulnerabilidade e testes automatizados antes do deploy"
@@ -86,7 +98,10 @@ outputs:
   - "infra as code"
   - "pipelines"
   - "dashboards"
-permissions: []
+permissions:
+  - "ler arquivos do repositório"
+  - "criar e editar Dockerfiles, CI/CD, Terraform e manifests"
+  - "executar comandos de build, container e validação"
 handoffs:
   - to: "security"
     reason: "hardening"

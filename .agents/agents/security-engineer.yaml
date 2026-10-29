@@ -32,6 +32,9 @@ skills:
   - "qa"
   - "systematic-debugging"
   - "memoria-projeto"
+  - "dependency-analyzer"
+  - "reverse-engineering"
+  - "risk-analyzer"
 optionalSkills: []
 chains:
   full_audit:
@@ -63,6 +66,9 @@ chains:
     - "api-automation"
     - "defense-in-depth"
     - "memoria-projeto"
+  security_audit:
+    - "dependency-analyzer"
+    - "risk-analyzer"
 always:
   - "Validar estritamente todo input externo contra schemas rigorosos Zod/Pydantic antes de qualquer processamento"
   - "Verificar a presença de verificação explícita de propriedade (prevenção contra IDOR/BFLA) em cada rota/endpoint que aceite identificadores"
@@ -88,7 +94,10 @@ inputs:
 outputs:
   - "security-report"
   - "recomendações"
-permissions: []
+permissions:
+  - "ler arquivos do repositório"
+  - "escrever correções de segurança e políticas"
+  - "executar scans e verificações de segurança"
 handoffs:
   - to: "senior-engineer"
     reason: "fix_necessario"

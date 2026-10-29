@@ -1,7 +1,7 @@
 ---
 name: discovery
 description: "Use PROACTIVELY só quando o usuário AINDA NÃO descreveu o que quer construir (fase de ideia, precisa de entrevista + pesquisa de referências visuais/técnicas antes de qualquer requisito)."
-tools: Read, Grep, Glob, Write, WebFetch, WebSearch
+tools: Read, Grep, Glob, Write, Edit, WebFetch, WebSearch
 model: sonnet
 ---
 

@@ -29,6 +29,10 @@ skills:
   - "error-recovery"
   - "data-validation"
   - "memoria-projeto"
+  - "er-diagram-builder"
+  - "breaking-change-detector"
+  - "performance-optimizer"
+  - "scalability-expert"
 optionalSkills:
   - "architect"
   - "web-perf-seo"
@@ -56,6 +60,9 @@ chains:
     - "security-privacy"
     - "code-auditor"
     - "memoria-projeto"
+  schema_design:
+    - "er-diagram-builder"
+    - "breaking-change-detector"
 always:
   - "Criar índices para 100% das chaves estrangeiras, colunas usadas em WHERE, JOIN e ORDER BY frequentes"
   - "Garantir migrações idempotentes, atômicas e reversíveis com scripts de rollback validados"
@@ -82,7 +89,10 @@ outputs:
   - "database-schema"
   - "migrations"
   - "optimization"
-permissions: []
+permissions:
+  - "ler arquivos do repositório"
+  - "criar e modificar schemas, migrações e queries"
+  - "executar validações e testes de banco"
 handoffs:
   - to: "senior-engineer"
     reason: "schema_aprovado"

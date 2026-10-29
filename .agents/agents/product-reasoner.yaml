@@ -37,6 +37,8 @@ skills:
   - "economia-tokens"
   - "task-planner"
   - "memoria-projeto"
+  - "alternative-solution-generator"
+  - "tradeoff-analyzer"
 optionalSkills:
   - "design-directions"
 chains:
@@ -58,6 +60,9 @@ chains:
     - "requirement-analyzer"
     - "task-planner"
     - "memoria-projeto"
+  requirements_reasoning:
+    - "alternative-solution-generator"
+    - "tradeoff-analyzer"
 always:
   - "Rotular suposições de produto explicitamente como ASSUMPTION ou UNKNOWN com nível de confiança — nunca apresentá-las como fato"
   - "Entregar o artefato `requirements` com title, functional e acceptance (critérios BDD Given-When-Then) antes de repassar ao architect"

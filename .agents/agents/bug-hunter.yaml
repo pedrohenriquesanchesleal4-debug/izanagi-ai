@@ -33,6 +33,12 @@ skills:
   - "self-correction"
   - "qa"
   - "memoria-projeto"
+  - "bug-hunter"
+  - "bug-prevention"
+  - "debug-specialist"
+  - "root-cause-analyzer"
+  - "failure-patterns"
+  - "reverse-engineering"
 optionalSkills:
   - "continuous-improvement"
 chains:
@@ -55,6 +61,11 @@ chains:
     - "qa"
     - "continuous-improvement"
     - "memoria-projeto"
+  investigate:
+    - "bug-hunter"
+    - "debug-specialist"
+    - "root-cause-analyzer"
+    - "failure-patterns"
 always:
   - "Inspeção silenciosa e completa do log de erro un-truncated antes de formular qualquer diagnóstico ou hipótese"
   - "Criar ou executar um teste de regressão que FALHE comprovadamente no estado atual antes de alterar o código de produção"
@@ -80,7 +91,10 @@ outputs:
   - "diagnóstico"
   - "fix"
   - "regression test"
-permissions: []
+permissions:
+  - "ler arquivos do repositório"
+  - "criar testes de reprodução e aplicar correções de bugs"
+  - "executar testes e comandos de diagnóstico"
 handoffs:
   - to: "senior-engineer"
     reason: "implementacao"

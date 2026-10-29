@@ -143,7 +143,11 @@
     "testes",
     "migration"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "escrever, criar e alterar código e testes de implementação",
+    "executar comandos de build e testes"
+  ],
   "handoffs": [
     {
       "to": "qa",

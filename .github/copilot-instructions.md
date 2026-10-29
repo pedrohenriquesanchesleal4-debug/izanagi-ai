@@ -34,7 +34,7 @@
 - `docs`: Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis (Tutorials, How-to, Reference, Explanation), diagramas de arquitetura/sequência Mermaid.js, OpenAPI/Swagger e guias de onboarding
 - `evaluator`: Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN), detecção de regressões e recomendações acionáveis
 - `form-engineer`: Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com auto-save (localStorage/IndexedDB), feedback inline instantâneo, Optimistic UI e acessibilidade WCAG 2.2 AA
-- `orchestrator`: Coordenador de execução multiagente: discovery → requisitos → arquitetura → especialistas em paralelo → implementação → segurança/QA/avaliação
+- `orchestrator`: Orquestrador e coordenador central do framework: analisa, planeja, delega para especialistas em paralelo e executa implementação direta
 - `pm`: Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de User Stories em formato BDD (Given-When-Then), mapeamento de dependências críticas e matriz de riscos técnicos
 - `product-reasoner`: Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite BDD e evidências antes de qualquer código
 - `professor`: Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos (O que mudou -> Por que mudou -> Conceito-chave), analogias intuitivas sem jargões e exercícios práticos de fixação
@@ -44,14 +44,6 @@
 - `senior-engineer`: Full-Stack Software Engineer High-Craft: implementação profunda de ponta a ponta, Clean Code, TDD estrito, zero AI-Slop, zero stubs e ciclo vertical completo
 - `skill-architect`: Arquitetura de novas skills: Capability Gap → Research → Draft → Examples → Tests → Security Scan → Evaluation → Register (zero skills desnecessárias)
 - `techlead`: Liderança técnica operacional, Code Review pedagógico em 5 dimensões (Corretude, Segurança, Performance, Manutenibilidade, DX), governança de padrões de código e desbloqueio de engenheiros
-- `curto-specialist`: orçamento curto
-- `feature-specialist`: minha-feature
-- `fluxo-specialist`: executar fluxo
-- `go-pay-agent`: microservico de pagamentos em Go
-- `loop-specialist`: workflow loop
-- `paginaco-specialist`: refatorar paginação
-- `producer-specialist`: falha de producer
-- `real-specialist`: produce real
 
 Definições completas em `agents/*.json` e skills em `skills/<name>/SKILL.md`.
 

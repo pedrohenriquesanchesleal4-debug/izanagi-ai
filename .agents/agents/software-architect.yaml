@@ -39,6 +39,18 @@ skills:
   - "deep-research"
   - "task-planner"
   - "memoria-projeto"
+  - "design-pattern-advisor"
+  - "scalability-expert"
+  - "legacy-migration"
+  - "serverless-edge"
+  - "uml-generator"
+  - "cto-advisor"
+  - "graphql"
+  - "websocket-realtime"
+  - "wasm"
+  - "tradeoff-analyzer"
+  - "alternative-solution-generator"
+  - "er-diagram-builder"
 optionalSkills:
   - "code-auditor"
 chains:
@@ -69,6 +81,10 @@ chains:
     - "sequence-diagram-builder"
     - "security-privacy"
     - "memoria-projeto"
+  system_design:
+    - "design-pattern-advisor"
+    - "scalability-expert"
+    - "tradeoff-analyzer"
 always:
   - "Documentar formalmente decisões arquiteturais relevantes via ADRs estruturadas (Contexto, Decisão, Consequências Positivas/Negativas)"
   - "Aplicar princípios rigorosos de Clean Architecture separando entidades de domínio cruas de frameworks, ORMs e detalhes de transporte"
@@ -95,7 +111,10 @@ outputs:
   - "architecture"
   - "adr"
   - "implementation plan"
-permissions: []
+permissions:
+  - "ler arquivos do repositório"
+  - "criar e editar documentos de arquitetura, contratos e ADRs"
+  - "escrever scaffolding e interfaces estruturais"
 handoffs:
   - to: "senior-engineer"
     reason: "implementacao"

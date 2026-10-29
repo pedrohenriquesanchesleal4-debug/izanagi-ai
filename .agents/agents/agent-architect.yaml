@@ -5,7 +5,7 @@
 source: "agents/agent-architect-agent.json"
 name: "Agent Architect"
 version: "2.11.0"
-model: "opus"
+model: "sonnet"
 compatibility: ">=2.0.0"
 token_budget: 8192
 tokenBudget: 8192
@@ -109,3 +109,4 @@ evaluation:
     - "architecture"
     - "maintainability"
   minScore: 0.75
+domains: []

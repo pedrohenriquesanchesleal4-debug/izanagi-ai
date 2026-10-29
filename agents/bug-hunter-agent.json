@@ -84,7 +84,11 @@
     "fix",
     "regression test"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "criar testes de reprodução e aplicar correções de bugs",
+    "executar testes e comandos de diagnóstico"
+  ],
   "handoffs": [
     {
       "to": "senior-engineer",

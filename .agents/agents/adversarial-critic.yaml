@@ -43,6 +43,8 @@ skills:
   - "complexity-analyzer"
   - "qa"
   - "self-critique"
+  - "adversarial-critique"
+  - "reverse-engineering"
 optionalSkills:
   - "memoria-projeto"
   - "ux-reviewer"
@@ -55,7 +57,7 @@ chains:
     - "security-privacy"
     - "anti-ai-slop"
     - "qa"
-    - "memoria-projeto"
+    - "adversarial-critique"
   critique_ui:
     - "memoria-projeto"
     - "anti-ai-slop"
@@ -106,3 +108,4 @@ evaluation:
     - "security"
     - "performance"
   minScore: 0.75
+domains: []

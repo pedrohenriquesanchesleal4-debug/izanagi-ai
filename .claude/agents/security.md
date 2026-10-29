@@ -1,7 +1,7 @@
 ---
 name: security
 description: "Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível: OWASP Top 10, LGPD."
-tools: Read, Grep, Glob, Bash, WebFetch
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch
 model: sonnet
 ---
 

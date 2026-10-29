@@ -100,7 +100,11 @@
     "adr",
     "implementation plan"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "criar e editar documentos de arquitetura, contratos e ADRs",
+    "escrever scaffolding e interfaces estruturais"
+  ],
   "handoffs": [
     {
       "to": "senior-engineer",

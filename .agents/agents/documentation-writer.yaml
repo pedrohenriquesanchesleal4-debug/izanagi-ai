@@ -33,6 +33,8 @@ skills:
   - "sequence-diagram-builder"
   - "automation-documentation"
   - "memoria-projeto"
+  - "uml-generator"
+  - "caveman"
 optionalSkills:
   - "qa"
 chains:
@@ -56,6 +58,9 @@ chains:
     - "sequence-diagram-builder"
     - "technical-writer"
     - "memoria-projeto"
+  architecture_docs:
+    - "uml-generator"
+    - "caveman"
 always:
   - "Estruturar documentação seguindo a separação do framework Diátaxis (Tutorial, How-To, Reference, Explanation)"
   - "Fornecer instruções de instalação, variáveis de ambiente `.env.example` e comandos de build/teste 100% copiáveis"
@@ -89,3 +94,5 @@ evaluation:
     - "correctness"
     - "requirementCoverage"
   minScore: 0.7
+domains:
+  - "docs"

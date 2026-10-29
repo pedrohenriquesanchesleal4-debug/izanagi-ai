@@ -233,35 +233,33 @@ test('export all: nenhum arquivo gerado embute caminho absoluto da máquina gera
   }
 });
 
-test('orchestrator: adapter gerado é orchestration-only e impõe grounding/capability gates', () => {
+test('orchestrator: adapter gerado possui autorização de escrita, delegação e gates', () => {
   const source = JSON.parse(
     fs.readFileSync(path.join(repoRoot, 'agents', 'orchestrator-agent.json'), 'utf8'),
-  ) as { never?: string[]; chains?: Record<string, string[]> };
-  assert.ok(source.never?.some((rule) => /editar.*implementa/i.test(rule)));
+  ) as { permissions?: string[]; chains?: Record<string, string[]> };
+  assert.ok(source.permissions?.some((p) => /escrever|modificar/i.test(p)));
   assert.ok(source.chains?.default_pipeline?.includes('reference-retrieval'));
 
   const adapter = fs.readFileSync(path.join(repoRoot, '.opencode', 'agent', 'agents.md'), 'utf8');
-  assert.match(adapter, /Contrato orchestration-only/);
-  assert.match(adapter, /Nunca edite implementação/);
+  assert.match(adapter, /Autorização Total de Escrita e Execução/);
   assert.match(adapter, /Capabilities honestas/);
   assert.match(adapter, /Grounding antes de código/);
   assert.match(adapter, /prefers-reduced-motion/);
 });
 
-test('orchestrator: entrypoints gerados impõem política de execução, não só instruções', () => {
+test('orchestrator: entrypoints gerados impõem capacidade de escrita e execução', () => {
   const claudeAgent = fs.readFileSync(path.join(repoRoot, '.claude', 'agents', 'orchestrator.md'), 'utf8');
-  assert.match(claudeAgent, /^tools: Read, Grep, Glob, Agent$/m);
-  assert.doesNotMatch(claudeAgent, /^tools:.*\b(Edit|Write|Bash)\b/m);
+  assert.match(claudeAgent, /Edit/);
+  assert.match(claudeAgent, /Write/);
+  assert.match(claudeAgent, /Bash/);
 
   for (const rel of [
     ['.claude', 'commands', 'agents.md'],
     ['.claude', 'commands', 'orchestrator.md']
   ]) {
     const command = fs.readFileSync(path.join(repoRoot, ...rel), 'utf8');
-    assert.match(command, /apenas um roteador/i);
-    assert.match(command, /subagent nativo[\s\S]{0,100}orchestrator/i);
-    assert.match(command, /Agent tool/i);
-    assert.match(command, /não possui[\s\S]{0,100}Edit[\s\S]{0,100}Write[\s\S]{0,100}Bash/i);
+    assert.match(command, /Izanagi Multi-Agent Orchestrator/i);
+    assert.match(command, /Autorização Total de Escrita e Execução/i);
   }
 
   for (const rel of [
@@ -269,12 +267,12 @@ test('orchestrator: entrypoints gerados impõem política de execução, não s�
     ['.opencode', 'agent', 'orchestrator.md']
   ]) {
     const opencode = fs.readFileSync(path.join(repoRoot, ...rel), 'utf8');
-    assert.match(opencode, /^mode: all$/m);
-    assert.match(opencode, /^  write: false$/m);
-    assert.match(opencode, /^  edit: false$/m);
-    assert.match(opencode, /^  bash: false$/m);
-    assert.match(opencode, /^  edit: deny$/m);
-    assert.match(opencode, /^  bash: deny$/m);
+    assert.match(opencode, /^mode: primary$/m);
+    assert.match(opencode, /^  write: true$/m);
+    assert.match(opencode, /^  edit: true$/m);
+    assert.match(opencode, /^  bash: true$/m);
+    assert.match(opencode, /^  edit: allow$/m);
+    assert.match(opencode, /^  bash: allow$/m);
   }
 
   for (const rel of [
@@ -282,10 +280,7 @@ test('orchestrator: entrypoints gerados impõem política de execução, não s�
     ['.codex', 'agents', 'orchestrator.md']
   ]) {
     const codex = fs.readFileSync(path.join(repoRoot, ...rel), 'utf8');
-    assert.match(codex, /Limitação de enforcement do Codex/);
-    assert.match(codex, /markdown prompt-only/i);
-    assert.match(codex, /sandbox read-only/i);
-    assert.match(codex, /não pode emitir comandos de implementação/i);
-    assert.match(codex, /orquestrador nativo restrito/i);
+    assert.match(codex, /Execução no Codex/);
+    assert.match(codex, /implementação completa de código/i);
   }
 });

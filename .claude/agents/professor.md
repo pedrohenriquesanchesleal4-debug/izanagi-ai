@@ -1,7 +1,7 @@
 ---
 name: professor
 description: "Use quando o usuário pedir explicação, ensino ou mentoria adaptativa sobre um conceito técnico."
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Grep, Glob, Edit, Write, WebFetch, WebSearch
 model: sonnet
 ---
 

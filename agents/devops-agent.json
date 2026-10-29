@@ -95,7 +95,11 @@
     "pipelines",
     "dashboards"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "criar e editar Dockerfiles, CI/CD, Terraform e manifests",
+    "executar comandos de build, container e validação"
+  ],
   "handoffs": [
     {
       "to": "security",

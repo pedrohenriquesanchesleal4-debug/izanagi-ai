@@ -5,7 +5,7 @@
 source: "agents/skill-architect-agent.json"
 name: "Skill Architect"
 version: "2.11.0"
-model: "opus"
+model: "sonnet"
 compatibility: ">=2.0.0"
 token_budget: 6144
 tokenBudget: 6144
@@ -111,3 +111,4 @@ evaluation:
     - "maintainability"
     - "artifactValidity"
   minScore: 0.7
+domains: []

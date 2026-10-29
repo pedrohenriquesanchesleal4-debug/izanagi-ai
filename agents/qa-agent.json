@@ -101,7 +101,11 @@
     "test-results",
     "qa-report"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "criar, editar e atualizar arquivos de teste e relatórios",
+    "executar suítes de testes automatizados e linters"
+  ],
   "handoffs": [
     {
       "to": "senior-engineer",

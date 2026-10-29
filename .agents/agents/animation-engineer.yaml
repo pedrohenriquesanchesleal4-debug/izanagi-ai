@@ -32,6 +32,12 @@ skills:
   - "browser-automation"
   - "webapp-testing"
   - "memoria-projeto"
+  - "remotion-video"
+  - "design-taste"
+  - "web-design-guidelines"
+  - "refero-styles"
+  - "image-to-code"
+  - "react-next-practices"
 optionalSkills:
   - "editorial-layout"
   - "conversion-copywriting"
@@ -60,6 +66,12 @@ chains:
     - "animation-web"
     - "motion-design"
     - "memoria-projeto"
+  motion_ui:
+    - "design-taste"
+    - "web-design-guidelines"
+    - "refero-styles"
+  video_generation:
+    - "remotion-video"
 always:
   - "Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps"
   - "Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa"

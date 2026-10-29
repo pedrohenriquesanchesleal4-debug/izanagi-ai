@@ -24,7 +24,7 @@ Use estes agentes como orquestração de papéis: escolha o agente pelo tipo de 
 | `docs` | Documentation Writer | Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis… |
 | `evaluator` | Evaluator | Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict… |
 | `form-engineer` | Form & UI Engineer | Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com… |
-| `orchestrator` | Izanagi Orchestrator | Coordenador de execução multiagente: discovery → requisitos → arquitetura → especialistas em paralelo →… |
+| `orchestrator` | Izanagi Orchestrator | Orquestrador e coordenador central do framework: analisa, planeja, delega para especialistas em paralelo e… |
 | `pm` | Project Manager | Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de… |
 | `product-reasoner` | Product Reasoner | Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite… |
 | `professor` | Professor / Mentor | Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos… |
@@ -34,14 +34,6 @@ Use estes agentes como orquestração de papéis: escolha o agente pelo tipo de 
 | `senior-engineer` | Senior Engineer | Full-Stack Software Engineer High-Craft: implementação profunda de ponta a ponta, Clean Code, TDD estrito,… |
 | `skill-architect` | Skill Architect | Arquitetura de novas skills: Capability Gap → Research → Draft → Examples → Tests → Security Scan →… |
 | `techlead` | Tech Lead | Liderança técnica operacional, Code Review pedagógico em 5 dimensões… |
-| `curto-specialist` | Curto Specialist | orçamento curto |
-| `feature-specialist` | Feature Specialist | minha-feature |
-| `fluxo-specialist` | Fluxo Specialist | executar fluxo |
-| `go-pay-agent` | Go Pay Agent | microservico de pagamentos em Go |
-| `loop-specialist` | Loop Specialist | workflow loop |
-| `paginaco-specialist` | Paginaco Specialist | refatorar paginação |
-| `producer-specialist` | Producer Specialist | falha de producer |
-| `real-specialist` | Real Specialist | produce real |
 
 ## Quando usar
 

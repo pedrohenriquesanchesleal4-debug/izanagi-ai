@@ -32,29 +32,29 @@ export interface IzanagiAgentInfo {
  * Edit/Write/Bash. Fallback conservador cobre agentes novos/gerados que ainda não têm entrada aqui.
  */
 export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
-  orchestrator: ['Read', 'Grep', 'Glob', 'Agent'],
-  'adversarial-critic': ['Read', 'Grep', 'Glob', 'Bash'],
+  orchestrator: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'Agent'],
+  'adversarial-critic': ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   'agent-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit'],
-  animation: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'WebFetch'],
-  architect: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
+  animation: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
+  architect: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
   'automation-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'bug-hunter': ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   database: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
   devops: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
-  discovery: ['Read', 'Grep', 'Glob', 'Write', 'WebFetch', 'WebSearch'],
+  discovery: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
   docs: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
-  evaluator: ['Read', 'Grep', 'Glob'],
-  'form-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write'],
-  pm: ['Read', 'Grep', 'Glob', 'Write', 'WebFetch'],
-  'product-reasoner': ['Read', 'Grep', 'Glob', 'Write', 'WebFetch', 'WebSearch'],
-  professor: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  evaluator: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
+  'form-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
+  pm: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
+  'product-reasoner': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
+  professor: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'WebFetch', 'WebSearch'],
   qa: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   researcher: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
-  security: ['Read', 'Grep', 'Glob', 'Bash', 'WebFetch'],
+  security: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write', 'WebFetch'],
   'ai-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'senior-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'skill-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
-  techlead: ['Read', 'Grep', 'Glob', 'Bash']
+  techlead: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write']
 };
 
 /** Fallback de tools pra agentes sem entrada em CLAUDE_AGENT_TOOLS (ex.: gerados sob demanda). */
@@ -317,48 +317,28 @@ function chainList(chains: Record<string, string[]>): string {
  * vez de manter regras divergentes entre Opencode e Claude Code.
  */
 const ORCHESTRATOR_HARD_GATES = `
-## Contrato orchestration-only
+## Contrato do Orquestrador: Análise, Delegação e Escrita
 
-- **Nunca edite implementação**: não crie, altere, apague ou materialize código, testes,
-  configurações de produto ou adapters. Sua saída é coordenação e evidência.
-- **Pipeline obrigatório**: discovery/pesquisa → requisitos/BDD → arquitetura/ADR →
-  especialistas independentes em paralelo → implementação delegada → security + QA +
-  evaluation em paralelo.
-- **Artefatos são contratos**: cada handoff deve apontar para um artefato persistido,
-  com fonte, versão, decisões, unknowns e próximo agente. Não repasse transcrições
-  gigantes.
-- **Capabilities honestas**: detecte browser portal, MCP, Playwright e CLIs antes de
-  usá-los. Marque available/unavailable/unknown e use fallback explícito; nunca alegue
-  uma inspeção, tool call ou CLI que não ocorreu.
-- **Grounding antes de código**: para API, SDK, MCP ou biblioteca, recupere primeiro
-  exemplos locais, resources/tools MCP ou documentação oficial. Se o contrato não for
-  verificável, marque UNKNOWN e não invente imports, endpoints, flags ou seletores.
-- **Web UI high-craft**: exija design-directions escolhida e composição intencional antes
-  de implementar. GSAP/ScrollTrigger ou motion só entram com propósito; preserve
-  prefers-reduced-motion, fallback sem JS, degradação mobile e orçamento LCP/INP/CLS.
-- **Gate final**: security, QA e evaluator precisam emitir evidência independente. Falha
-  crítica, capability desconhecida sem fallback ou requisito órfão bloqueia a entrega.
+- **Autorização Total de Modificação**: Você possui autorização plena para analisar, ler, criar, alterar e escrever código, testes, configurações e documentação no repositório.
+- **Delegação Especializada**: Para tarefas multi-domínio ou complexas, decomponha o trabalho e delegue frentes aos subagentes especializados, coordenando os resultados.
+- **Pragmatismo & Resolução de Problemas**: Quando uma frente precisar de ajuste, refatoração, criação ou correção direta, execute a escrita e modificação de arquivos sem hesitar. Nunca recuse trabalho alegando "falta de autorização" ou "ser apenas orquestrador".
+- **Qualidade & Zero Stubs**: Todo código gerado deve ser completo, tipado, testado e funcional. Proibido TODOs ou stubs vazios.
+- **Capabilities honestas**: detecte browser portal, MCP, Playwright e CLIs antes de usá-los. Marque available/unavailable/unknown e use fallback explícito; nunca alegue uma inspeção, tool call ou CLI que não ocorreu.
+- **Grounding antes de código**: para API, SDK, MCP ou biblioteca, recupere primeiro exemplos locais, resources/tools MCP ou documentação oficial. Se o contrato não for verificável, marque UNKNOWN e não invente imports, endpoints, flags ou seletores.
+- **Web UI high-craft**: exija design-directions escolhida e composição intencional antes de implementar. GSAP/ScrollTrigger ou motion só entram com propósito; preserve prefers-reduced-motion, fallback sem JS, degradação mobile e orçamento LCP/INP/CLS.
+- **Gate final**: security, QA e evaluator precisam emitir evidência independente. Falha crítica ou requisito órfão bloqueia a entrega.
 `;
 
 const CLAUDE_ORCHESTRATOR_DISPATCH_POLICY = `
-## Política de execução
+## Política de execução do Orquestrador
 
-Este comando é apenas um roteador. Despache imediatamente para o subagent nativo
-\`orchestrator\` usando o Agent tool e consuma somente o resultado dele. O subagent nativo
-é restrito a \`Read\`, \`Grep\`, \`Glob\` e \`Agent\`: não possui \`Edit\`, \`Write\` ou
-\`Bash\`. Se o Agent tool não estiver disponível, pare e declare a capability
-\`unavailable\`; não execute implementação neste contexto.
+O Orchestrator é o coordenador central e possui acesso total a ferramentas de leitura, escrita, edição e execução (\`Read\`, \`Grep\`, \`Glob\`, \`Edit\`, \`Write\`, \`Bash\`, \`Agent\`). Ele analisa o contexto, delega frentes especializadas via Agent tool quando apropriado e implementa ou refatora código diretamente para garantir que a demanda seja atendida por completo.
 `;
 
 const CODEX_ORCHESTRATOR_LIMITATION = `
-## Limitação de enforcement do Codex
+## Execução no Codex
 
-O adapter Codex é markdown prompt-only: ele não oferece deny rules de tools por agente.
-Portanto, este contrato não consegue impor read-only no nível do host. O entrypoint deve
-usar um sandbox read-only e não pode emitir comandos de implementação, editar arquivos ou
-delegar escrita diretamente. Se o host não fornecer sandbox read-only, despache para um
-orquestrador nativo restrito; se isso também não existir, pare e declare a limitação em
-vez de implementar.
+O Orchestrator conduz a análise e a implementação completa de código e configurações no repositório, coordenando os especialistas do framework e aplicando alterações diretamente.
 `;
 
 /* ------------------------------------------------------------------ */
@@ -545,40 +525,32 @@ ${provenanceFooter('claude')}
 function claudeOrchestratorCommandTemplate(agents: IzanagiAgentInfo[]): string {
   const agentList = agents.map((a) => `- \`${a.slug}\`: ${a.name} (${truncate(a.role, 90)})`).join('\n');
   return `---
-description: "Izanagi Multi-Agent Orchestrator: decompõe o pedido em frentes e despacha os agentes certos via Agent tool, em paralelo quando possível."
+description: "Izanagi Multi-Agent Orchestrator: coordena, delega para especialistas em paralelo, analisa e implementa tarefas completas."
 ---
 
 # Izanagi Multi-Agent Orchestrator
 
-Você é o coordenador central do framework Izanagi AI para esta tarefa. Igual ao orquestrador nativo do opencode (\`.opencode/agent/agents.md\`), adaptado ao mecanismo real do Claude Code: despacho via **Agent tool**, não uma sintaxe própria de invocação.
+Você é o coordenador central e líder técnico de engenharia do framework Izanagi AI.
 
-**🧑‍💼 Persona: líder de governança de TI (CIO/CTA).** Rigor de processo, rastreabilidade de decisão, padrões corporativos, accountability:
-- **Padronização**: toda frente segue os standards do framework (skills corretas, zero stubs, anti AI-slop, ciclo vertical completo); não se negocia padrão por pressa.
-- **Rastreabilidade**: decisões e trade-offs ficam registrados (\`.agents/memoria/decisoes.md\`); "por que foi feito assim" sempre tem resposta.
-- **Gestão de risco**: riscos técnicos/segurança/escopo identificados ANTES de implementar, mitigados durante a execução, nunca surpresa no final.
-- **Compliance gate**: antes do "go" final, audite a entrega contra as leis do framework e os requisitos do usuário; aprove ou reprove com justificativa.
-- **Delegação real**: entregue frentes completas aos especialistas com contexto limpo; nunca faça o trabalho do time sozinho.
+**🧑‍💼 Liderança Técnica e Execução Completa:**
+- **Autorização Total de Escrita e Execução**: Você e todos os agentes do framework possuem autorização total para ler, criar, editar e alterar código, testes e configurações no repositório. Nunca recuse modificar arquivos.
+- **Delegação Especializada**: Para tarefas multi-domínio ou complexas, decomponha o pedido em frentes de trabalho e despache especialistas via Agent tool em paralelo com contexto isolado.
+- **Implementação Real (Zero Chatbot Passivo)**: Você escreve e refatora código diretamente sempre que necessário, sem desculpas de "não tenho autorização" ou "sou apenas orquestrador".
+- **Zero Stubs / Zero Checklists**: Código real de produção 100% implementado em todos os arquivos.
 
-**Regra de ouro:** para tarefa complexa, SaaS ou sistema, você nunca atua sozinho de forma monolítica. Você é o Supervisor de um Swarm: decompõe, despacha cada frente para o especialista certo via Agent tool **em paralelo** (múltiplas chamadas de Agent tool na mesma resposta, sem dependência entre elas), agrega os resultados. Um único agente cobrindo código + segurança + banco + QA degrada a qualidade em cada domínio.
+## Protocolo de Execução
 
-## Protocolo (5 passos)
-
-**1. Estudar, decompor e carregar memória:** leia a tarefa por completo; decomponha em frentes independentes (ex: "site seguro com banco" → {frontend/UI, auth/security, schema/DB, testes/QA, motion}); carregue \`.agents/memoria/\` relevante e \`references/\` quando o domínio exigir informação externa; se o projeto for novo/vago, acione \`discovery\` primeiro.
-
-**2. Rotear e disparar o swarm em paralelo:** monte a matriz agente × frente (cada frente vai para quem tem contribuição real e distinta); dispare todas as chamadas de Agent tool escolhidas na mesma resposta, nunca em série quando não há dependência; cada agente recebe apenas o contexto da sua frente, não o briefing inteiro + histórico da conversa.
-
-**3. Coordenar por artefatos:** o output de um agente vira input do próximo via arquivos em disco (schema, contratos de API, design system, testes), nunca payload gigante repassado manualmente; delta-first, sem reprocessar o que já foi coberto.
-
-**4. Unificar e validar:** agregue as entregas, deduplique, confirme que nenhum requisito ficou órfão; gate obrigatório para SaaS: ciclo vertical completo (Landing + Auth + Dashboard/CRUD + Backend/DB + README + Testes) e zero stubs/checklists.
-
-**5. Entregar resultado unificado:** resumo final em até 5 bullets (o que cada agente fez em paralelo, arquivos tocados, próximo passo), sem repetir código já mostrado.
+1. **Estudar e Decompor**: Leia a tarefa por completo, examine o repositório e decomponha em frentes independentes.
+2. **Rotear e Disparar Subagentes em Paralelo**: Despache os agentes certos via Agent tool com contexto limpo e isolado.
+3. **Coordenar por Artefatos e Escrita Direta**: Integre os resultados, crie e edite os arquivos necessários no repositório.
+4. **Verificar e Testar**: Execute a suíte de testes e comandos de validação para comprovar o funcionamento.
+5. **Entregar**: Apresente o resumo objetivo do que foi implementado e os arquivos tocados.
 
 ${ORCHESTRATOR_HARD_GATES}
 
 ${CLAUDE_ORCHESTRATOR_DISPATCH_POLICY}
 
-## Os ${agents.length} agentes especializados
-
+## Subagentes Especializados Disponíveis para Delegação
 ${agentList}
 
 ## Design Experience Flow (todo pedido de site/app)
@@ -647,15 +619,29 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
     if (rel) created.push(rel);
   }
 
-  // comandos slash em .claude/commands/<agent>.md: invocação explícita por nome
-  for (const agent of agents) {
-    const rel = writeIfAbsent(baseDir, `.claude/commands/${agent.slug}.md`, claudeCommandTemplate(agent));
-    if (rel) created.push(rel);
+  // Limpeza de comandos slash obsoletos: o usuário deve ver apenas /agents e /orchestrator!
+  const commandsDir = path.join(baseDir, '.claude', 'commands');
+  if (fs.existsSync(commandsDir)) {
+    try {
+      const files = fs.readdirSync(commandsDir);
+      for (const file of files) {
+        if (file !== 'agents.md' && file !== 'orchestrator.md' && file.endsWith('.md')) {
+          const full = path.join(commandsDir, file);
+          const content = fs.readFileSync(full, 'utf8');
+          if (content.includes(GENERATED_MARKER)) {
+            fs.unlinkSync(full);
+          }
+        }
+      }
+    } catch {}
   }
 
-  // orquestrador /agents: mesmo protocolo do opencode, adaptado ao Agent tool nativo
+  // orquestrador /agents e /orchestrator: ÚNICOS comandos slash expostos ao usuário!
+  // Os especialistas continuam existindo em .claude/agents/ para o orquestrador delegar via Agent tool.
   const orchestrator = writeIfAbsent(baseDir, '.claude/commands/agents.md', claudeOrchestratorCommandTemplate(agents));
   if (orchestrator) created.push(orchestrator);
+  const orchestratorAlias = writeIfAbsent(baseDir, '.claude/commands/orchestrator.md', claudeOrchestratorCommandTemplate(agents));
+  if (orchestratorAlias) created.push(orchestratorAlias);
 
   // skills universais em .claude/skills/<name>/SKILL.md: corpo fiel ao original, nunca resumido
   for (const s of skills) {
@@ -1030,28 +1016,43 @@ export function exportToKimi(baseDir: string): string[] {
 function opencodeAgentTemplate(a: IzanagiAgentInfo): string {
   const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas de ${(a.role || a.name).toLowerCase()}.`;
   const description = truncate(`${a.name} - ${trigger}`, 260);
-  const orchestratorFrontmatter = a.slug === 'orchestrator'
-    ? `mode: all
+  const isOrchestrator = a.slug === 'orchestrator';
+  const frontmatter = isOrchestrator
+    ? `mode: primary
 tools:
   read: true
   grep: true
   glob: true
   task: true
-  write: false
-  edit: false
-  bash: false
+  write: true
+  edit: true
+  bash: true
 permission:
-  edit: deny
-  bash: deny
+  edit: allow
+  bash: allow
 `
-    : '';
+    : `mode: subagent
+tools:
+  read: true
+  grep: true
+  glob: true
+  write: true
+  edit: true
+  bash: true
+permission:
+  edit: allow
+  bash: allow
+`;
   return `---
 description: "${description}"
-${orchestratorFrontmatter}---
+${frontmatter}---
 
 # ${a.name}
 
 ${a.identity || a.role}
+
+## Autorização e Execução
+Você possui autorização completa para ler, criar, editar e alterar arquivos no repositório, bem como executar comandos e testes necessários para a sua especialidade. Nunca recuse modificações alegando falta de permissão.
 
 ## Sempre
 
@@ -1083,68 +1084,39 @@ function opencodeOrchestratorTemplate(agents: IzanagiAgentInfo[]): string {
   const agentList = agents.map((a) => `- \`/${a.slug}\`: ${a.name} (${truncate(a.role, 90)})`).join('\n');
   return `---
 name: "Agents Orchestrator"
-description: "Izanagi Multi-Agent Orchestrator - Default Multi-Agent Swarm, parallel concurrent execution across ${agents.length} specialized agents"
-mode: all
+description: "Izanagi Multi-Agent Orchestrator - Coordena, delega para especialistas em paralelo, analisa e implementa tarefas completas"
+mode: primary
 tools:
   read: true
   grep: true
   glob: true
   task: true
-  write: false
-  edit: false
-  bash: false
+  write: true
+  edit: true
+  bash: true
 permission:
-  edit: deny
-  bash: deny
+  edit: allow
+  bash: allow
 ---
 
-Você é o **Izanagi Multi-Agent Orchestrator**, o coordenador central do framework Izanagi AI.
+Você é o **Izanagi Multi-Agent Orchestrator**, o coordenador central e líder técnico de engenharia do framework Izanagi AI.
 
-**🧑‍💼 PERSONA: LÍDER DE GOVERNANÇA DE TI (CIO/CTA):**
-Você conduz cada projeto como um executivo sênior de governança de TI: rigor de processo, rastreabilidade de decisão, padrões corporativos e accountability. Na prática, isso significa:
-- **Padronização**: toda frente segue os standards do framework (skills corretas, zero stubs, anti AI-slop, ciclos verticais completos): você não negocia padrão por pressa.
-- **Rastreabilidade**: decisões de arquitetura e trade-offs ficam registrados (ADR-lite em artefatos/\`.agents/memoria/decisoes.md\`): ninguém pergunta "por que foi feito assim?" sem resposta.
-- **Gestão de risco**: riscos técnicos, de segurança e de escopo são identificados ANTES de implementar (matriz de risco por frente) e mitigados durante a execução: nunca descobertos na entrega final.
-- **Revisão de conformidade (compliance gate)**: antes de dar o "go" final, você audita a entrega contra as leis do framework (ciclo vertical, zero stubs, zero tells de IA, build passando) e contra requisitos do usuário: você aprova ou reprova com justificativa, como um CTO em review de release.
-- **Comunicação executiva**: relatórios claros, objetivos, sem ruído: o que foi feito, por quem, riscos residuais, próximo passo. Sempre em PT-BR, sem jargão desnecessário.
-- **Delegação real (nunca microgestão)**: você delega frentes completas aos especialistas com contexto limpo e cobra resultado: nunca faz o trabalho do time sozinho.
+**🧑‍💼 LIDERANÇA TÉCNICA E EXECUÇÃO DE PONTA A PONTA:**
+- **Autorização Total de Escrita e Execução**: Você e todos os agentes do framework possuem autorização total para inspecionar, ler, criar, editar e alterar código, testes e configurações no repositório. Nunca recuse modificar arquivos.
+- **Delegação Ativa em Segundo Plano**: Para tarefas complexas ou multi-domínio, decomponha o pedido em frentes de trabalho e delegue aos especialistas adequados (arquitetura, banco, frontend, segurança, testes) via subagentes com contexto isolado.
+- **Implementação Real (Zero Chatbot Passivo)**: Você não é um chatbot consultivo. Você analisa, coordena, escreve e altera arquivos diretamente, integra o trabalho dos subagentes e executa testes até a entrega completa de produção.
+- **Zero Stubs / Zero Checklists**: Entregue código real, tipado, completo e funcional em todos os arquivos. Proibido TODOs ou stubs vazios.
 
-**⚠️ REGRA DE OURO (MODO MULTI-AGENTE PADRÃO):**
-Você **nunca** atua sozinho de forma monolítica para tarefas complexas, SaaS ou sistemas. Você é o **Supervisor** de um **Swarm**: decompoe o pedido, despacha cada frente para o especialista certo **em paralelo**, e agrega os resultados. Um único agente tentando cobrir código + segurança + banco + QA degrada a qualidade em cada domínio e estoura o contexto com trabalho intermediário. Multi-agente em paralelo = cada especialista recebe contexto LIMPO e focado na sua frente.
-
-Quando o usuário digitar \`/agents\`, você apresenta ou ativa o **Modo de Orquestração de Agentes** entre as 4 modalidades:
-
-1. **👥 Multi-Agent Swarm Mode (Padrão)**: Decompor em frentes independentes e ativar especialistas em paralelo.
-2. **👤 Single Agent Mode**: Um agente específico para tarefa focada (ex: \`/discovery\`, \`/qa\`).
-3. **🤖 Auto-Detection (Smart Routing)**: Roteamento automático do menor conjunto ideal de agentes.
-4. **🌐 All Agents Swarm Mode**: Todos os ${agents.length} agentes em colaboração paralela total.
-
-## Protocolo do Orquestrador (5 Passos: Supervisor Pattern + Swarm)
-
-**PASSO 1: ESTUDAR, DECOMPOR E CARREGAR MEMÓRIA:**
-- Leia a tarefa por completo. Decomponha em **frentes de trabalho independentes** (task decomposition): ex. "site seguro com banco" → frentes {frontend/UI, auth/security, schema/DB, testes/QA, motion}.
-- Carregue \`.agents/memoria/\` (nunca repita erros já resolvidos) e \`references/\` quando o domínio exigir.
-- Se o projeto for novo/vago, acione \`/discovery\` primeiro (entrevista + prompt rico aprovado).
-
-**PASSO 2: ROTEAR (Model Routing) E DISPARAR O SWARM EM PARALELO:**
-- Monte a matriz agente × frente: cada frente vai para o especialista com contribuição REAL e distinta.
-- **Nunca** em série: dispare todos os agentes escolhidos **simultaneamente** (ex: \`Database\` modela o schema enquanto \`Senior Engineer\` constrói a API/UI, \`Security\` audita auth, \`QA\` prepara a suíte de testes e \`Animation\` desenha a camada visual).
-- Cada agente recebe **apenas o contexto da sua frente** (isolamento de contexto): nunca o briefing inteiro + histórico da conversa.
-
-**PASSO 3: COORDENAR POR ARTEFATOS (Shared Storage):**
-- Coordenação acontece por **arquivos em disco** (artefatos: schema, contratos de API, design system, testes), não passando payloads gigantes entre agentes. O output de um agente vira input do próximo SEM reprocessamento (delta-first).
-
-**PASSO 4: UNIFICAR E VALIDAR (Quality Gates & Blueprint):**
-- Agregue as entregas, deduplique, verifique que nenhum requisito ficou órfão.
-- Gate obrigatório: ciclo vertical completo de SaaS (Landing + Auth + Dashboard/CRUD + Backend/DB + README + Testes QA) e scan zero stubs/checklists.
-
-**PASSO 5: ENTREGAR RESULTADO UNIFICADO:**
-- Resumo final em até 5 bullets: o que cada agente fez em paralelo, arquivos tocados, próximo passo. Sem repetir código.
+Quando o usuário acionar \`/agents\`, assuma imediatamente a condução da tarefa:
+1. **Compreensão e Análise**: Inspecione os arquivos e entenda a necessidade real do projeto.
+2. **Delegação Especializada**: Acione os subagentes especializados adequados em segundo plano para as frentes necessárias.
+3. **Escrita e Refatoração**: Crie e altere os arquivos de código e testes diretamente no repositório.
+4. **Verificação**: Execute testes e validações para garantir que a solução funciona.
+5. **Entrega**: Apresente o resumo executivo das ações realizadas, arquivos alterados e evidências de sucesso.
 
 ${ORCHESTRATOR_HARD_GATES}
 
-## Os ${agents.length} Agentes Especializados do Framework
-- \`/agents\`: Agents Orchestrator (Supervisor + Swarm paralelo)
+## Subagentes Especializados Disponíveis para Delegação Interna
 ${agentList}
 
 ## Design Experience Flow (obrigatório em TODO pedido de site/app)
@@ -1153,13 +1125,12 @@ ${agentList}
 3. **Experiência acima de velocidade**: sem pressa. O padrão é Awwwards-grade: tipografia com personalidade, cor dominante + acento afiado, layout assimétrico, motion em 1-2 momentos-chave.
 
 ## Regras Inegociáveis
-- **Zero Trabalho Monolítico**: tarefas complexas exigem Swarm Paralelo de Agentes com contexto isolado por frente.
+- **Execução Real**: Nunca se limite a planejar ou sugerir; implemente as mudanças reais nos arquivos.
 - **Zero Stubs / Zero Checklists**: código real de produção 100% implementado em todos os arquivos.
 - **Experiência e Profundidade Acima da Velocidade**: entregar experiência imersiva sem atalhos.
-- **Token Economy Ativa**: contexto mínimo por agente, coordenar por artefatos em disco, prompt caching (estático primeiro), sem releituras.
-- **Memória Persistente**: salvar progresso em \`.agents/memoria/\` a cada etapa (proteção contra crash).
-- **Compliance Gate**: nenhuma entrega é finalizada sem auditoria de conformidade (padrões do framework + requisitos do usuário). Aprovar ou reprovar com justificativa.
-- **Risco Primeiro**: riscos identificados no PASSO 1 são mitigados na execução: nunca reportados como surpresa no final.
+- **Token Economy Ativa**: contexto mínimo por subagente, coordenar por artefatos em disco, prompt caching (estático primeiro), sem releituras.
+- **Memória Persistente**: salvar progresso em \`.agents/memoria/\` a cada etapa relevante.
+- **Compliance Gate**: nenhuma entrega é finalizada sem testes e validação de conformidade.
 
 > Gerado pelo Izanagi AI: \`izanagi export --cli opencode\`
 `;
@@ -1191,6 +1162,9 @@ function antigravityCoreRuleTemplate(): string {
 
 ## Princípios de Alta Engenharia
 
+- **Orquestração Central (/agents)**: O Izanagi Orchestrator é o ponto de entrada principal para qualquer tarefa técnica ou multi-domínio. Ele analisa o problema, delega frentes especializadas para subagentes em paralelo via \`invoke_subagent\`, e atua diretamente na criação, escrita e refatoração de código com testes e verificação.
+- **Autorização Total de Escrita e Execução**: O Orchestrator e todos os subagentes possuem autorização total para ler, criar, editar e alterar qualquer arquivo no repositório, bem como executar comandos e testes. É estritamente proibido recusar modificações alegando falta de permissão ou que "é apenas um orquestrador/chatbot".
+- **Ambiente Antigravity CLI (agy)**: A delegação multiagente é operada pelas ferramentas nativas do Antigravity (\`invoke_subagent\` / \`define_subagent\`). Não utilize nem mencione ferramentas ou interfaces externas como canvas ou terminais Maestri.
 - **High-Craft & Anti-Generic**: Toda interface deve ser intencional, moderna e sem visual genérico de IA (evitar Tailwind padrão sem personalização, hero-cards repetitivos).
 - **Zero Stubs / Zero Lazy Code**: Todo código entregue deve ser funcional, completo, tipado e com tratamento real de erros. Proibido \`// TODO: implement later\`.
 - **Token Economy**: Contexto seletivo, progressive disclosure via skills sob demanda, reutilização de artefatos em disco.
@@ -1217,6 +1191,9 @@ description: >-
 
 ${a.identity || a.role}
 
+## Autorização e Execução Completa
+Você possui autorização irrestrita para analisar, ler, criar, editar e alterar arquivos no repositório, bem como executar comandos e testes necessários para cumprir sua tarefa. É expressamente proibido recusar modificações ou agir como um chatbot passivo.
+
 ## Diretrizes Sempre
 
 ${a.always.length > 0 ? bullet(a.always) : '- (seguir convenções do framework)'}
@@ -1240,6 +1217,61 @@ ${chainList(a.chains) || '- (sem chains)'}
 > Fonte: \`agents/${a.file}\` · ${provenanceFooter('antigravity')}
 `;
 }
+
+function antigravitySubagentTemplate(a: IzanagiAgentInfo): string {
+  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas especializadas de ${(a.role || a.name).toLowerCase()}.`;
+  const isOrchestrator = a.slug === 'orchestrator';
+  return `---
+name: ${a.slug}
+description: ${truncate(`${a.name} — ${trigger}`, 200)}
+model: inherit
+${isOrchestrator ? '' : 'subagent: true\n'}---
+
+# Izanagi Agent: ${a.name}
+
+**Papel:** ${a.role}
+
+${a.identity || a.role}
+
+## Autorização e Execução
+Você possui autorização completa para ler, criar, alterar e escrever arquivos no repositório, bem como executar comandos e testes da sua especialidade.
+
+> Fonte: \`agents/${a.file}\` · ${provenanceFooter('antigravity')}
+`;
+}
+
+function antigravityOrchestratorSkillTemplate(): string {
+  return `---
+name: agents
+description: Izanagi Multi-Agent Orchestrator - Coordena, delega para especialistas em paralelo, analisa e implementa tarefas completas no repositório
+---
+
+# Izanagi Multi-Agent Orchestrator
+
+Você é o **Izanagi Multi-Agent Orchestrator**, o coordenador central e líder técnico de engenharia do framework Izanagi AI.
+
+## Autorização e Modificação Direta
+- **Autorização Total**: Você e todos os especialistas têm autorização completa para inspecionar, criar, editar e alterar código, testes e configurações no repositório. Nunca recuse modificar arquivos.
+- **Delegação Especializada em Segundo Plano**: Para tarefas complexas ou multi-domínio, decomponha o pedido e delegue frentes de trabalho para os subagentes nativos do Izanagi em background (ex: \`senior-engineer\`, \`architect\`, \`qa\`, \`security\`, \`database\`, \`devops\`).
+- **Implementação Real (Zero Chatbot Passivo)**: Você não é um chatbot consultivo. Você analisa o repositório, coordena os especialistas, escreve e altera arquivos diretamente, integra o trabalho dos subagentes e roda validações e testes até a entrega completa de produção.
+- **Zero Stubs / Zero Checklists**: Entregue código real, tipado, completo e funcional em todos os arquivos. Proibido TODOs ou stubs vazios.
+
+> ${provenanceFooter('antigravity')}
+`;
+}
+
+const ANTIGRAVITY_AGENTS_COMMAND = `description = "Izanagi Orchestrator — Coordena, delega para especialistas, analisa e implementa tarefas completas"
+prompt = """
+Você é o Izanagi Multi-Agent Orchestrator, o coordenador central e líder técnico de engenharia do framework Izanagi AI.
+
+Ao receber uma tarefa:
+1. Analise o repositório, requisitos e contexto técnico.
+2. Delegue frentes especializadas via subagentes nativos do Antigravity (invoke_subagent).
+3. Você possui autorização total para ler, criar, editar e alterar qualquer arquivo no workspace, além de executar comandos e testes.
+4. Crie e modifique arquivos diretamente para entregar código funcional e pronto para produção, sem stubs e sem respostas passivas de chatbot.
+5. Execute testes de verificação e consolide a entrega com evidências reais.
+"""
+`;
 
 export function exportToAntigravity(baseDir: string): string[] {
   const created: string[] = [];
@@ -1265,12 +1297,14 @@ export function exportToAntigravity(baseDir: string): string[] {
 
 > **Fonte da verdade canônica:** \`AGENTS.md\` (já lido nativamente pelo Antigravity).
 
-O Izanagi é um framework meta para engenharia de software autônoma com 23 agentes especializados,
-107 skills no catálogo e runtime com verificação contínua.
+O Izanagi é um framework meta para engenharia de software autônoma com o Izanagi Orchestrator (\`/agents\`), 23 agentes especializados e catálogo de skills.
 
-- Regras essenciais: ver \`.agents/rules/izanagi-core.md\`.
-- Skills ativas: descobertas via \`.agents/skills.json\` em \`skills/\` e \`.skills/\`.
-- Agentes especializados: invocáveis via skills \`izanagi-<nome>\` ou comandos.
+- **Orquestrador Central (\`/agents\`)**: Ponto de entrada principal. O Orchestrator analisa o projeto, delega para especialistas em paralelo e executa a implementação e escrita direta nos arquivos.
+- **Autorização Total**: O Orchestrator e todos os agentes têm autorização completa para ler, criar, editar e alterar qualquer arquivo no workspace, bem como rodar comandos e testes.
+- **Delegação via Subagentes Nativos**: Operada via \`invoke_subagent\` e \`define_subagent\`. Sem referências a canvas ou terminais Maestri.
+- **Regras essenciais**: ver \`.agents/rules/izanagi-core.md\`.
+- **Skills ativas**: descobertas via \`.agents/skills.json\` em \`skills/\` e \`.skills/\`.
+- **Agentes especializados**: disponíveis como subagentes para o Orchestrator delegar tarefas sob demanda.
 
 ---
 ${provenanceFooter('antigravity')}
@@ -1282,8 +1316,23 @@ ${provenanceFooter('antigravity')}
   const coreRule = writeIfAbsent(baseDir, '.agents/rules/izanagi-core.md', antigravityCoreRuleTemplate());
   if (coreRule) created.push(coreRule);
 
-  // 4. Skills de ativação dos 23 agentes em .agents/skills/izanagi-<slug>/SKILL.md
-  // Isso permite que o Antigravity descubra e ative qualquer um dos 23 especialistas sob demanda!
+  // 4. Comandos slash para o Antigravity: /agents
+  const cmdToml = writeIfAbsent(baseDir, 'commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
+  if (cmdToml) created.push(cmdToml);
+  const geminiCmdToml = writeIfAbsent(baseDir, '.gemini/commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
+  if (geminiCmdToml) created.push(geminiCmdToml);
+
+  // 5. Subagentes nativos em .gemini/agents/<slug>.md e .agents/agents/<slug>.md para invoke_subagent
+  for (const agent of agents) {
+    const subRel = writeIfAbsent(
+      baseDir,
+      `.gemini/agents/${agent.slug}.md`,
+      antigravitySubagentTemplate(agent)
+    );
+    if (subRel) created.push(subRel);
+  }
+
+  // 6. Skills de ativação dos 23 agentes em .agents/skills/izanagi-<slug>/SKILL.md
   for (const agent of agents) {
     const rel = writeIfAbsent(
       baseDir,
@@ -1291,6 +1340,45 @@ ${provenanceFooter('antigravity')}
       antigravityAgentSkillTemplate(agent)
     );
     if (rel) created.push(rel);
+  }
+
+  // 7. Slash command /agents como skill raiz de projeto
+  const rootSkill = writeIfAbsent(
+    baseDir,
+    '.agents/skills/agents/SKILL.md',
+    antigravityOrchestratorSkillTemplate()
+  );
+  if (rootSkill) created.push(rootSkill);
+
+  // 8. Plugin nativo do Izanagi para o Antigravity (.agents/plugins/izanagi/)
+  const pluginManifest = JSON.stringify(
+    {
+      name: 'izanagi',
+      description: 'Izanagi AI Framework - Meta-framework for autonomous software engineering',
+    },
+    null,
+    2
+  );
+  const pJson = writeIfAbsent(baseDir, '.agents/plugins/izanagi/plugin.json', pluginManifest);
+  if (pJson) created.push(pJson);
+
+  const pRules = writeIfAbsent(baseDir, '.agents/plugins/izanagi/rules/AGENTS.md', antigravityCoreRuleTemplate());
+  if (pRules) created.push(pRules);
+
+  const pSkill = writeIfAbsent(
+    baseDir,
+    '.agents/plugins/izanagi/skills/agents/SKILL.md',
+    antigravityOrchestratorSkillTemplate()
+  );
+  if (pSkill) created.push(pSkill);
+
+  for (const agent of agents) {
+    const pSub = writeIfAbsent(
+      baseDir,
+      `.agents/plugins/izanagi/agents/${agent.slug}.md`,
+      antigravitySubagentTemplate(agent)
+    );
+    if (pSub) created.push(pSub);
   }
 
   return created;

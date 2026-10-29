@@ -86,7 +86,11 @@
     "migrations",
     "optimization"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler arquivos do repositório",
+    "criar e modificar schemas, migrações e queries",
+    "executar validações e testes de banco"
+  ],
   "handoffs": [
     {
       "to": "senior-engineer",

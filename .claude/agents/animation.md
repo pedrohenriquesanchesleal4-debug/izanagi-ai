@@ -1,7 +1,7 @@
 ---
 name: animation
 description: "Use PROACTIVELY para scrollytelling, motion design, WebGL 3D ou qualquer interação cinematográfica de UI."
-tools: Read, Grep, Glob, Edit, Write, WebFetch
+tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch
 model: sonnet
 ---
 

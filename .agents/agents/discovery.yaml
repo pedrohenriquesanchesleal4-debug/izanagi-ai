@@ -50,6 +50,9 @@ skills:
   - "data-engineering"
   - "db"
   - "web-perf-seo"
+  - "design-taste"
+  - "web-design-guidelines"
+  - "refero-styles"
 optionalSkills: []
 chains:
   new_project:
@@ -111,6 +114,10 @@ chains:
     - "db"
     - "risk"
     - "tradeoff"
+  style_selection:
+    - "design-taste"
+    - "refero-styles"
+    - "web-design-guidelines"
 always:
   - "HARD-GATE: nunca codificar, nunca criar/scaffoldar arquivos de código; entregar prompt rico somente após aprovação do norte, A MENOS que o usuário dispense explicitamente (registre a dispensa)"
   - "Uma pergunta por vez — entrevista em 3 fases (~15 perguntas mapeadas: 5 visão/contexto, 5 produto/conteúdo, 5+ experiência/técnica), nunca questionário-descarga"

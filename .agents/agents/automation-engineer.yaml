@@ -67,6 +67,7 @@ skills:
   - "automation-security"
   - "automation-optimization"
   - "automation-documentation"
+  - "browser-playwright"
 optionalSkills:
   - "data-engineering"
 chains:
@@ -100,6 +101,8 @@ chains:
     - "automation-optimization"
     - "automation-engineer"
     - "api-automation"
+  web_automation:
+    - "browser-playwright"
 always:
   - "NUNCA except: pass — erros nunca são silenciosamente ignorados; sempre registre motivo"
   - "NUNCA assumir sucesso sem verificar o resultado esperado (anti-falhas: Executar → Esperar → Verificar → Registrar)"

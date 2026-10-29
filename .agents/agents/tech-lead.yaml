@@ -40,6 +40,13 @@ skills:
   - "qa"
   - "memoria-projeto"
   - "professor-modo"
+  - "senior-code-reviewer"
+  - "solid-validator"
+  - "dry-kiss-yagni-validator"
+  - "refactoring-specialist"
+  - "technical-debt-analyzer"
+  - "breaking-change-detector"
+  - "clean-code-validator"
 optionalSkills:
   - "systematic-debugging"
   - "agentic-coding"
@@ -69,6 +76,12 @@ chains:
     - "systematic-debugging"
     - "agentic-coding"
     - "memoria-projeto"
+  strict_review:
+    - "senior-code-reviewer"
+    - "solid-validator"
+    - "dry-kiss-yagni-validator"
+    - "clean-code-validator"
+    - "technical-debt-analyzer"
 always:
   - "Aplicar a Rubrica de Code Review em 5 Dimensões em toda revisão de código ou PR"
   - "Fornecer o FIX exato em diff/código 100% funcional para qualquer problema apontado na revisão"
@@ -105,3 +118,4 @@ evaluation:
     - "correctness"
     - "requirementCoverage"
   minScore: 0.7
+domains: []

@@ -30,6 +30,12 @@ skills:
   - "data-validation"
   - "ui-ux-pro-max"
   - "memoria-projeto"
+  - "i18n-l10n"
+  - "image-to-code"
+  - "web-design-guidelines"
+  - "react-next-practices"
+  - "refero-styles"
+  - "design-taste"
 optionalSkills:
   - "requirement-analyzer"
   - "qa"
@@ -53,6 +59,10 @@ chains:
     - "accessibility-reviewer"
     - "qa"
     - "memoria-projeto"
+  form_flow:
+    - "web-design-guidelines"
+    - "i18n-l10n"
+    - "react-next-practices"
 always:
   - "Construir formulários utilizando schemas Zod rigorosos integrados ao React Hook Form para type-safety absoluta"
   - "Garantir feedback de erro inline imediato próximo ao input afetado e foco no primeiro campo com erro no submit"

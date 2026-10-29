@@ -1,7 +1,7 @@
 ---
 name: techlead
 description: "Use PROACTIVELY quando o pedido é revisão pedagógica de código/padrão (o "porquê" de uma mudança) ou governança de convenções: não para veredito de aprovar/reprovar."
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, Edit, Write
 model: sonnet
 ---
 

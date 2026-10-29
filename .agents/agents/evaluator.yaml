@@ -35,6 +35,8 @@ skills:
   - "code-auditor"
   - "self-critique"
   - "memoria-projeto"
+  - "adversarial-critique"
+  - "root-cause-analyzer"
 optionalSkills:
   - "requirement-analyzer"
   - "testing-automation"
@@ -57,6 +59,9 @@ chains:
     - "confidence-estimator"
     - "qa"
     - "memoria-projeto"
+  evaluation_gate:
+    - "adversarial-critique"
+    - "root-cause-analyzer"
 always:
   - "Produzir Evaluation Report estruturado (verdict, score, confidence, metrics, tests, regressions, recommendations)"
   - "Exigir evidência real (logs de build/testes) antes de aceitar claims de sucesso"
@@ -95,3 +100,4 @@ evaluation:
     - "testResults"
     - "confidence"
   minScore: 0.8
+domains: []

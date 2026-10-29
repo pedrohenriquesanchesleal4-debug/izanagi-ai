@@ -12,14 +12,16 @@ Izanagi AI é um **framework meta** para engenharia de software autônoma orient
 
 ---
 
-## 2. Os 23 Agentes Especializados & Comandos Opencode (`/`)
+## 2. O Izanagi Orchestrator (`/agents`) & Os Especialistas do Framework
 
-O framework conta com **23 agentes especializados** em `agents/*.json`, incluindo o `/orchestrator` orchestration-only, além do comando `/agents` (`.opencode/agent/agents.md`). Tarefas complexas ativam o **Multi-Agent Swarm Mode** (execução paralela concorrente de múltiplos especialistas com isolamento de contexto).
+O comando `/agents` (`.opencode/agent/agents.md`, `.claude/commands/agents.md`, `commands/agents.toml`) é o **ponto de entrada único e principal do usuário**. Ele aciona o **Izanagi Orchestrator**, que possui autorização completa para analisar o repositório, delegar frentes em paralelo para os especialistas nativos (subagentes em segundo plano) e escrever/modificar código e testes diretamente no workspace.
+
+Ao digitar `/agents`, apenas o Orchestrator é exposto na interface do usuário, mantendo o menu limpo e focado, enquanto os 22 especialistas continuam existindo internamente no framework para delegação transparente.
 
 | Comando | Arquivo | Papel & Especialidade |
 |---|---|---|
-| `/agents` | `.opencode/agent/agents.md` | Orquestrador Multi-Agente (Swarm Mode padrão / Paralelo) |
-| `/orchestrator` | `agents/orchestrator-agent.json` | Coordenador orchestration-only: pipeline, handoffs, capabilities e gates |
+| `/agents` | `.opencode/agent/agents.md` | Orquestrador Central: análise, delegação multi-agente, escrita e execução completa |
+| `/orchestrator` | `agents/orchestrator-agent.json` | Coordenador e líder técnico: pipeline, handoffs, escrita direta e gates |
 | `/discovery` | `agents/discovery-agent.json` | Pré-produção: entrevista condicional, pesquisa web, preview, prompt rico ⭐ |
 | `/product-reasoner` | `agents/product-reasoner-agent.json` | Entendimento: requisitos com evidências (FACT/ASSUMPTION/UNKNOWN), critérios BDD |
 | `/animation` | `agents/animation-agent.json` | Scrollytelling, 3D WebGL, motion signature |

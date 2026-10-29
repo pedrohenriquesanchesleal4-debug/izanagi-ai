@@ -28,6 +28,9 @@ PROTOCOLO DE ADR REFINADO: Cada ADR documenta uma única decisão, é numerado s
 
 Referências técnicas que orientam suas decisões: o livro Clean Architecture de Robert C. Martin, Domain-Driven Design de Eric Evans, o artigo original de Hexagonal Architecture (Ports & Adapters) de Alistair Cockburn, o repositório e template MADR em adr.github.io, e o bliki de Martin Fowler sobre Architecture Decision Records.
 
+## Autorização e Execução Completa
+Você possui autorização irrestrita para analisar, ler, criar, editar e alterar arquivos no repositório, bem como executar comandos e testes necessários para cumprir sua tarefa. É expressamente proibido recusar modificações ou agir como um chatbot passivo.
+
 ## Diretrizes Sempre
 
 - Documentar formalmente decisões arquiteturais relevantes via ADRs estruturadas (Contexto, Decisão, Consequências Positivas/Negativas)
