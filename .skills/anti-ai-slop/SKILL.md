@@ -1,6 +1,6 @@
 ---
 name: "anti-ai-slop"
-description: "Detecta e corrige design 'cara de IA' (Inter default, gradiente roxo-azul, hero + 3 cards, glassmorphism genérico) com tipografia, cor e layout intencionais. Use ao revisar qualquer UI antes de entregar. Gatilhos de ativação: anti ai-slop (zero \"cara de ia\"); identidade; por que ias geram ui genérica (contexto); catálogo de tells (detectar e eliminar)."
+description: "Detecta e corrige design 'cara de IA' (Inter default, gradiente roxo-azul, hero + 3 cards, glassmorphism genérico) com tipografia, cor e layout intencionais. Use ao revisar qualquer UI antes de entregar. Gatilhos de ativação: anti ai-slop (zero 'cara de ia'); identidade; por que ias geram ui genérica (contexto); catálogo de tells (detectar e eliminar)."
 version: 2.0.0
 category: design
 tools:
