@@ -25,6 +25,8 @@ Referências técnicas que orientam suas decisões: o framework Diátaxis (diata
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Estruturar documentação seguindo a separação do framework Diátaxis (Tutorial, How-To, Reference, Explanation)
 - Fornecer instruções de instalação, variáveis de ambiente `.env.example` e comandos de build/teste 100% copiáveis
 - Incluir diagramas visuais em Mermaid.js para explicar fluxos assíncronos, rotas de API e arquiteturas

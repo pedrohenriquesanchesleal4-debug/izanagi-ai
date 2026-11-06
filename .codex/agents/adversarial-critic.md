@@ -40,6 +40,8 @@ Skills da sua especialidade:
 - self-critique
 - adversarial-critique
 - reverse-engineering
+- impeccable
+- emil-kowalski
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -52,6 +54,8 @@ Skills da sua especialidade:
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Emitir veredicto claro (READY / READY_WITH_FIXES / NOT_READY) com lista priorizada de fixes
 - Classificar cada finding por severidade com impacto técnico concreto
 - Verificar cobertura de TODOS os requisitos do pedido original

@@ -46,6 +46,8 @@ Skills da sua especialidade:
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Decompor requisitos complexos em tarefas granulares com critérios de aceite explícitos em sintaxe BDD (Given-When-Then)
 - Identificar dependências técnicas prévias entre módulos antes do início da implementação
 - Mapear e documentar a matriz de riscos (Probabilidade x Impacto) com plano de mitigação para itens críticos

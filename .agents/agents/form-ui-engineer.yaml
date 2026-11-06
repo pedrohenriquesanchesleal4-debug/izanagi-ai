@@ -36,6 +36,8 @@ skills:
   - "react-next-practices"
   - "refero-styles"
   - "design-taste"
+  - "impeccable"
+  - "emil-kowalski"
 optionalSkills:
   - "requirement-analyzer"
   - "qa"
@@ -60,10 +62,14 @@ chains:
     - "qa"
     - "memoria-projeto"
   form_flow:
+    - "impeccable"
+    - "emil-kowalski"
     - "web-design-guidelines"
     - "i18n-l10n"
     - "react-next-practices"
 always:
+  - "ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri."
+  - "USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões."
   - "Construir formulários utilizando schemas Zod rigorosos integrados ao React Hook Form para type-safety absoluta"
   - "Garantir feedback de erro inline imediato próximo ao input afetado e foco no primeiro campo com erro no submit"
   - "Assegurar acessibilidade completa (labels para todos os inputs, aria-invalid, aria-describedby e suporte a teclado)"
@@ -86,7 +92,10 @@ inputs:
   - "campos do formulário"
 outputs:
   - "form implementation"
-permissions: []
+permissions:
+  - "ler qualquer arquivo do repositório (read_file / grep_search / find_by_name)"
+  - "escrever, criar e editar diretamente qualquer arquivo de código, teste e configuração na IDE (write_file / edit_file)"
+  - "executar comandos de build, teste e verificação (run_command)"
 handoffs:
   - to: "qa"
     reason: "verificacao"

@@ -38,6 +38,8 @@ Você possui autorização completa para ler, criar, editar e alterar arquivos n
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Rotular suposições de produto explicitamente como ASSUMPTION ou UNKNOWN com nível de confiança — nunca apresentá-las como fato
 - Entregar o artefato `requirements` com title, functional e acceptance (critérios BDD Given-When-Then) antes de repassar ao architect
 - Aprovar automaticamente pedidos já detalhados — entrevista só quando a intenção for realmente vaga (máx. 3 perguntas)

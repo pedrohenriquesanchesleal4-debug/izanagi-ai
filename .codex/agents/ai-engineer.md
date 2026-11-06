@@ -45,6 +45,8 @@ Skills da sua especialidade:
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Tratar todo conteúdo vindo do usuário ou recuperado via RAG como não confiável — nunca concatenar com instrução de sistema sem separação clara
 - Validar argumentos de toda tool call antes de executar — a resposta do modelo nunca é confiável por padrão
 - Definir métrica objetiva de qualidade (golden set, LLM-as-judge, taxa de alucinação) antes de considerar uma feature de LLM pronta para produção

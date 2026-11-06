@@ -42,6 +42,8 @@ Skills da sua especialidade:
 - technical-debt-analyzer
 - breaking-change-detector
 - clean-code-validator
+- impeccable
+- emil-kowalski
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -56,6 +58,8 @@ Skills da sua especialidade:
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Aplicar a Rubrica de Code Review em 5 Dimensões em toda revisão de código ou PR
 - Fornecer o FIX exato em diff/código 100% funcional para qualquer problema apontado na revisão
 - Explicar o racional técnico (o 'porquê') em termos de latência, manutenibilidade, segurança ou DX

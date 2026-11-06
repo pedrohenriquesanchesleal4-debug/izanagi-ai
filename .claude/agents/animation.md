@@ -20,6 +20,8 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps
 - Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa
 - Descarte rigoroso de recursos WebGL (`dispose()` em geometrias, materiais e texturas) e cancelamento de `requestAnimationFrame` em unmount
@@ -53,6 +55,8 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/refero-styles/SKILL.md`
 - `skills/image-to-code/SKILL.md`
 - `skills/react-next-practices/SKILL.md`
+- `skills/impeccable/SKILL.md` (+ `references.md`)
+- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -63,9 +67,9 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 - `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
-- `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
+- `motion_signature`: memoria-projeto, emil-kowalski, impeccable, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
-- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `motion_ui`: impeccable, emil-kowalski, design-taste, web-design-guidelines, refero-styles
 - `video_generation`: remotion-video
 
 ## Handoff

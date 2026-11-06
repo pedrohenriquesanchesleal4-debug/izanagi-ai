@@ -34,7 +34,7 @@
 - `docs`: Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada no framework Diátaxis (Tutorials, How-to, Reference, Explanation), diagramas de arquitetura/sequência Mermaid.js, OpenAPI/Swagger e guias de onboarding
 - `evaluator`: Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict (PASS/PASS_WITH_WARNINGS/FAIL/BLOCKED/UNKNOWN), detecção de regressões e recomendações acionáveis
 - `form-engineer`: Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards multi-step com auto-save (localStorage/IndexedDB), feedback inline instantâneo, Optimistic UI e acessibilidade WCAG 2.2 AA
-- `orchestrator`: Orquestrador e coordenador central do framework: analisa, planeja, delega para especialistas em paralelo e executa implementação direta
+- `orchestrator`: Orquestrador e líder técnico executor do framework: analisa, carrega skills reais, escreve e edita código diretamente na IDE e coordena especialistas sem travar
 - `pm`: Technical Product & Project Management: decomposição de épicos em entregáveis granulares (WBS), escrita de User Stories em formato BDD (Given-When-Then), mapeamento de dependências críticas e matriz de riscos técnicos
 - `product-reasoner`: Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado, critérios de aceite BDD e evidências antes de qualquer código
 - `professor`: Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código em 3 blocos (O que mudou -> Por que mudou -> Conceito-chave), analogias intuitivas sem jargões e exercícios práticos de fixação

@@ -34,6 +34,8 @@ Skills da sua especialidade:
 - bug-prevention
 - chaos-engineering
 - adversarial-critique
+- impeccable
+- emil-kowalski
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -49,6 +51,8 @@ Skills da sua especialidade:
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Escrever suítes de testes cobrindo o caminho feliz (happy path) e múltiplos caminhos de exceção/erro para toda regra de negócio
 - Usar seletores E2E resilientes com Playwright (`getByRole`, `getByLabel`, `getByTestId`), proibindo seletores de estrutura CSS frágeis
 - Auditar e garantir acessibilidade de interface (WCAG 2.2 AA) incluindo foco via teclado e descrições para leitores de tela

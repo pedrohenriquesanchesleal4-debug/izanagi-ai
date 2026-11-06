@@ -73,6 +73,8 @@ chains:
     - "dependency-analyzer"
     - "chaos-engineering"
 always:
+  - "ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri."
+  - "USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões."
   - "Utilizar Dockerfiles multi-stage compilando em imagens enxutas (alpine/distroless) rodando como usuário não-root"
   - "Garantir pipelines de CI/CD automatizadas com validação de linters, scanners de vulnerabilidade e testes automatizados antes do deploy"
   - "Definir `requests` e `limits` de CPU e Memória para todos os containers em Kubernetes"

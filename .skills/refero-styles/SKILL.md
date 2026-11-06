@@ -1,25 +1,83 @@
 ---
-name: refero-styles
+name: "refero-styles"
+description: "Padrões de design de interfaces extraídos de produtos reais de alto nível (Refero Styles, Mobbin e Real-world SaaS/DevTools/FinTech) para fundamentar decisões de frontend, fluxos complexos, paletas tonais e arquitetura de componentes. Gatilhos de ativação: refero styles — padrões visuais & componentes de produtos reais; 1. princípios de decisão baseados em referência; 2. catálogo de arquitetura de componentes reais; 3. paletas tonais e elevação (dark & light)."
 version: 2.0.0
-description: Padrões de design de interfaces extraídos de produtos reais de alto nível (Refero Styles, Mobbin e Real-world SaaS/DevTools/FinTech) para fundamentar decisões de frontend, fluxos complexos, paletas tonais e arquitetura de componentes.
-category: frontend
-risk: low
-token_budget: 1200
-stacks: [all, react, nextjs, vue, tailwind, css]
+category: engineering
 tools:
-  mcp: [refero]
-capabilities:
-  - real-world-ui-patterns
-  - component-architecture
-  - design-system-foundations
-  - tonal-elevation
-  - interactive-states
-triggers:
-  - projetar fluxos de produtos reais (SaaS, DevTools, FinTech, E-commerce, Dashboards)
-  - estruturar componentes complexos como Command Palettes, Data Tables e Settings Pages
-  - selecionar paletas de cores tonais baseadas em produtos de referência (Linear, Vercel, Stripe, Raycast)
-  - consultar padrões visuais do Refero Styles ou catálogo de referência de UI
+  mcp:
+    - mcp:fs_write
+    - mcp:execute_command
 ---
+
+# Refero Styles — Padrões Visuais & Componentes de Produtos Reais
+
+> Migrado deterministicamente de `skills/refero-styles/SKILL.md` (v1) pelo skill-migrator (ADR-004). Corpo original preservado íntegro em **Legacy Reference (v1)**.
+
+## Triggering Criteria
+
+- **Domínio:** Engenharia (`engineering`)
+- **Resumo:** Padrões de design de interfaces extraídos de produtos reais de alto nível (Refero Styles, Mobbin e Real-world SaaS/DevTools/FinTech) para fundamentar decisões de frontend, fluxos complexos, paletas tonais e arquitetura de componentes.
+
+- **Escopo canônico:** Refero Styles — Padrões Visuais & Componentes de Produtos Reais
+- **Seções do corpo original:** 1. Princípios de Decisão Baseados em Referência · 2. Catálogo de Arquitetura de Componentes Reais · 3. Paletas Tonais e Elevação (Dark & Light) · 4. Checklist de Validação Refero
+- **Ferramentas MCP esperadas:** mcp:fs_write, mcp:execute_command
+
+## Step-by-Step Workflow
+
+<!-- estratégia de extração: top-level-ordered -->
+
+### Passo 1 — Evidência Real vs.
+
+**Evidência Real vs. Imaginação Genérica**:
+
+- Cada decisão de layout deve se ancorar em produtos testados no mundo real.
+   - Dashboards analíticos: padrão Stripe / Datadog (métricas com sparklines, filtros de data relativos, dados tabulares com paginação resiliente).
+   - DevTools / Workspaces: padrão Linear / Raycast / Supabase (paleta de comando `Cmd+K`, atalhos de teclado, navegação por painéis recolhíveis, densidade compacta).
+   - E-commerce / Marketplaces: padrão Apple / Shopify (respiro generoso, fotografia imersiva, tipografia editorial, sticky cart actions).
+
+### Passo 2 — Integração com Refero (Local-First com Fallback):
+
+**Integração com Refero (Local-First com Fallback)**:
+
+- Se o servidor MCP `refero` estiver configurado no workspace, consulte os estilos via MCP (`refero_search_styles` ou `refero_get_component`).
+   - Se o MCP não estiver disponível ou for offline, utilize o catálogo embutido nesta skill (seção 2 e 3) sem falhar ou travar a execução.
+
+---
+
+## Verification Steps
+
+<!-- fonte da verificação: fallback-honesto:engineering -->
+
+- Executar a skill conforme o escopo de Triggering Criteria no caso real (não hipotético).
+- Percorrer cada passo do Step-by-Step Workflow e confirmar evidência verificável de conclusão (não apenas ausência de erro).
+- Confirmar que nenhum Red Flag listado está presente no artefato produzido.
+- Registrar resultado (sucesso/falha + motivo) antes de considerar a skill cumprida.
+
+## Common Rationalizations
+
+- **"É só um protótipo, refatoro depois."**
+  - Verdade: Protótipo sem testes vira produção por acidente. O 'depois' não existe: quem paga a dívida é o próximo commit. Regra do framework: código esparso ou stub (`TODO`, `implement later`) é entrega proibida.
+- **"Compila (ou rodou uma vez), então funciona."**
+  - Verdade: Compilar valida sintaxe, não comportamento. Anti-falhas é lei: Executar → Esperar → Verificar resultado esperado → Registrar. Sem verificação, sucesso é suposição.
+- **"Caso extremo nunca vai acontecer."**
+  - Verdade: Vazio, duplicado, timeout e dado inválido acontecem no primeiro lote real. Validação antes de ação irreversível não é opcional — é pré-condição de execução.
+- **"Abstraio agora que depois fica fácil trocar."**
+  - Verdade: Abstração especulativa é complexidade desnecessária com custo imediato e benefício imaginário. Simples que resolve > flexível que ninguém entende.
+- **"Copiei de um projeto que funcionava, deve servir."**
+  - Verdade: Contexto diferente invalida solução copiada. Pesquisa é referência técnica, nunca cópia cega — adaptar exige entender o porquê de cada linha.
+- **"Sem tempo para tratar erro, lanço exceção genérica."**
+  - Verdade: `except: pass` e erro engolido são proibidos. Falha silenciosa transforma bug de 5 minutos em incidente de 5 horas. Registrar motivo é mais barato que depurar às cegas.
+
+## Red Flags
+
+- Arquivo único gigante misturando I/O, regra de negócio e apresentação.
+- Bloco catch vazio, `except: pass` ou erro logado sem motivo/actionável.
+- Stub, `TODO` ou função que retorna valor fixo em caminho de produção.
+- Credencial, token ou path sensível hardcoded no fonte.
+- Sucesso assumido sem verificar o resultado esperado da operação.
+- Reexecução unsafe: roda duas vezes e duplica efeito (sem idempotência/checkpoint).
+
+## Legacy Reference (v1)
 
 # Refero Styles — Padrões Visuais & Componentes de Produtos Reais
 

@@ -33,6 +33,8 @@ Skills da sua especialidade:
 - refero-styles
 - image-to-code
 - react-next-practices
+- impeccable
+- emil-kowalski
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -41,13 +43,15 @@ Skills da sua especialidade:
 
 - `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
-- `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
+- `motion_signature`: memoria-projeto, emil-kowalski, impeccable, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
-- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `motion_ui`: impeccable, emil-kowalski, design-taste, web-design-guidelines, refero-styles
 - `video_generation`: remotion-video
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps
 - Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa
 - Descarte rigoroso de recursos WebGL (`dispose()` em geometrias, materiais e texturas) e cancelamento de `requestAnimationFrame` em unmount

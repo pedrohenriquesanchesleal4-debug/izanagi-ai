@@ -1,25 +1,88 @@
 ---
-name: web-design-guidelines
+name: "web-design-guidelines"
+description: "Diretrizes essenciais de web design e interface de usuário moderna (Vercel Web Design Guidelines e Awesome Design) com foco em tipografia intencional, ritmo visual, espaçamento de 4px/8px, acessibilidade WCAG 2.2 AA e eliminação de AI-slop. Gatilhos de ativação: web design guidelines — interfaces modernas & anti-generic; 1. princípios fundamentais; 2. estados de componentes interativos; 3. workflow de implementação de telas."
 version: 2.0.0
-description: Diretrizes essenciais de web design e interface de usuário moderna (Vercel Web Design Guidelines e Awesome Design) com foco em tipografia intencional, ritmo visual, espaçamento de 4px/8px, acessibilidade WCAG 2.2 AA e eliminação de AI-slop.
-category: frontend
-risk: low
-token_budget: 1200
-stacks: [all, react, nextjs, html, css, vue]
+category: design
 tools:
-  mcp: []
-capabilities:
-  - design-systems
-  - typography-pairing
-  - responsive-layouts
-  - accessibility-wcag
-  - micro-interactions
-triggers:
-  - projetar ou estilizar páginas e componentes web
-  - definir tokens de design, cores, tipografia e espaçamento
-  - revisar design para garantir acessibilidade e hierarquia visual
-  - eliminar estética genérica de IA (gradientes roxos sem propósito, hero-cards repetitivos)
+  mcp:
+    - mcp:fs_read
+    - mcp:fs_write
 ---
+
+# Web Design Guidelines — Interfaces Modernas & Anti-Generic
+
+> Migrado deterministicamente de `skills/web-design-guidelines/SKILL.md` (v1) pelo skill-migrator (ADR-004). Corpo original preservado íntegro em **Legacy Reference (v1)**.
+
+## Triggering Criteria
+
+- **Domínio:** Design & UI (`design`)
+- **Resumo:** Diretrizes essenciais de web design e interface de usuário moderna (Vercel Web Design Guidelines e Awesome Design) com foco em tipografia intencional, ritmo visual, espaçamento de 4px/8px, acessibilidade WCAG 2.2 AA e eliminação de AI-slop.
+
+- **Escopo canônico:** Web Design Guidelines — Interfaces Modernas & Anti-Generic
+- **Seções do corpo original:** 1. Princípios Fundamentais · 2. Estados de Componentes Interativos · 3. Workflow de Implementação de Telas
+- **Ferramentas MCP esperadas:** mcp:fs_read, mcp:fs_write
+
+## Step-by-Step Workflow
+
+<!-- estratégia de extração: workflow-section-ordered -->
+
+### Passo 1 — Definição de Layout & Grid:
+
+**Definição de Layout & Grid**: Escolher entre layout editorial assimétrico, bento grid modular ou split-screen.
+
+### Passo 2 — Construção de Tokens:
+
+**Construção de Tokens**: Configurar CSS Variables ou Tailwind config com tokens semânticos (`--bg-canvas`, `--surface-elevated`, `--text-primary`, `--border-subtle`).
+
+### Passo 3 — Composição Visual:
+
+**Composição Visual**:
+
+- Criar profundidade com camadas sobrepostas (*z-index layering*).
+   - Utilizar divisores com máscaras de fade (`mask-image: linear-gradient(...)`).
+
+### Passo 4 — Auditoria de Acessibilidade & Responsividade:
+
+**Auditoria de Acessibilidade & Responsividade**:
+
+- Testar em 320px (mobile pequeno), 768px (tablet), 1280px (laptop) e 1920px (ultrawide).
+   - Validar contraste com leitor de tela e navegação por Tab.
+
+## Verification Steps
+
+<!-- fonte da verificação: fallback-honesto:design -->
+
+- Comparar o artefato com a direção de design acordada (paleta, tipografia, layout, motion) item a item.
+- Executar auditoria anti-AI-slop: zero tells da lista de Red Flags presentes.
+- Verificar estados interativos (hover/focus/error/loading) e contraste WCAG AA nos componentes tocados.
+- Registrar screenshots/evidência do estado final para revisão.
+
+## Common Rationalizations
+
+- **"Design system a gente monta depois do launch."**
+  - Verdade: Sem tokens decididos antes, cada componente nasce com escala própria e o 'depois' vira reescrita total. Direção de design primeiro é HARD-GATE do framework, não preferência.
+- **"Inter serve, é neutra."**
+  - Verdade: Inter default é o tell nº 1 de 'cara de IA'. Tipografia é decisão de identidade; neutra aqui significa sem intenção — e sem intenção é proibido.
+- **"Responsivo eu ajusto no final, primeiro o desktop."**
+  - Verdade: Layout pensado só em desktop quebra estruturalmente no mobile: grid, hierarquia e touch targets não se 'ajustam', se redesenham. Mobile-first é mais barato desde a primeira linha.
+- **"Acessibilidade a gente adiciona quando tiver demanda."**
+  - Verdade: Contraste, foco visível e ARIA são requisitos WCAG, não feature request. Retrofitar acessibilidade custa ordens de magnitude mais que nascer com ela.
+- **"O cliente pediu hero com 3 cards, é isso que ele conhece."**
+  - Verdade: O cliente pediu resultado, não template estatístico. Cabe ao craft traduzir o pedido em composição com identidade — hero+3cards+gradiente roxo é anti-padrão explícito do framework.
+- **"Animação entra no fim, se sobrar tempo."**
+  - Verdade: Motion signature decide-se no design, não decorase no deploy. Animação adicionada tarde é ornamento; planejada cedo é comunicação de hierarquia e estado.
+
+## Red Flags
+
+- Hero centralizado + fileira de 3 cards idênticos (composição estatística de IA).
+- Gradiente roxo-azul como identidade visual principal.
+- border-radius uniforme em todos os elementos, sem hierarquia formal.
+- Contraste abaixo de WCAG AA em texto primário.
+- Sem estados hover/focus/loading/error definidos nos componentes interativos.
+- Tipografia default sem escolha declarada (peso, escala, par de fontes).
+- Motion decorativo aleatório em vez de 1–2 momentos-chave com assinatura.
+
+## Legacy Reference (v1)
 
 # Web Design Guidelines — Interfaces Modernas & Anti-Generic
 

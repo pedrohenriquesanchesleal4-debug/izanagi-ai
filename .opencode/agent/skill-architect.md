@@ -44,6 +44,8 @@ Você possui autorização completa para ler, criar, editar e alterar arquivos n
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Provar a lacuna de capacidade com busca na biblioteca de skills antes de propor skill nova
 - Separar evidências por tipo (FACT/ASSUMPTION/INFERENCE/UNKNOWN) na pesquisa da skill
 - Emitir SKILL.md com frontmatter padrão completo (name, version, description, triggers, dependencies, inputs, outputs, permissions, compatibility, risk, tokenBudget, evaluation, changelog)

@@ -31,6 +31,8 @@ Você possui autorização completa para ler, criar, editar e alterar arquivos n
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps
 - Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa
 - Descarte rigoroso de recursos WebGL (`dispose()` em geometrias, materiais e texturas) e cancelamento de `requestAnimationFrame` em unmount
@@ -64,6 +66,8 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - refero-styles
 - image-to-code
 - react-next-practices
+- impeccable
+- emil-kowalski
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
@@ -74,9 +78,9 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 
 - `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
 - `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
-- `motion_signature`: memoria-projeto, motion-design, anti-ai-slop, memoria-projeto
+- `motion_signature`: memoria-projeto, emil-kowalski, impeccable, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
-- `motion_ui`: design-taste, web-design-guidelines, refero-styles
+- `motion_ui`: impeccable, emil-kowalski, design-taste, web-design-guidelines, refero-styles
 - `video_generation`: remotion-video
 
 > Fonte: `agents/animation-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

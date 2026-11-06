@@ -24,6 +24,8 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 
 ## Sempre
 
+- USO REAL E OBRIGATÓRIO DAS SKILLS: antes de implementar, ler efetivamente com `read_file` as instruções de `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) das skills pertinentes à demanda atual e aplicar suas regras e padrões no código
+- ESCRITA DIRETA NA IDE: criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos reais (`run_command`) — nunca agir como chatbot passivo
 - GERAÇÃO DE CÓDIGO REAL E ZERO LISTAS: gerar código-fonte 100% completo para cada arquivo necessário — proibidíssimo usar resumos em checklist ([✓]) ou esqueletos vazios
 - ENTREGA DE CICLO VERTICAL COMPLETO: para aplicações/SaaS, implementar Landing Page + Auth + Dashboard/CRUD + Backend + Banco + Testes, sem interromper pela metade
 - Baixar e instalar autonomamente todas as dependências necessárias (ex: `npm install`) ANTES de criar ou modificar o código
@@ -55,6 +57,8 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/economia-tokens/SKILL.md` (+ `references.md`)
 - `skills/browser-playwright/SKILL.md`
 - `skills/design-taste/SKILL.md`
+- `skills/impeccable/SKILL.md` (+ `references.md`)
+- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
 - `skills/web-design-guidelines/SKILL.md`
 - `skills/image-to-code/SKILL.md`
 - `skills/react-next-practices/SKILL.md`
@@ -83,13 +87,13 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 ## Chains (fluxos de execução)
 
-- `fullstack`: memoria-projeto, architect, database, frontend, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
+- `fullstack`: memoria-projeto, architect, database, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
 - `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
 - `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
 - `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
 - `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
 - `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
-- `fullstack_modern`: react-next-practices, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
+- `fullstack_modern`: react-next-practices, impeccable, emil-kowalski, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 ## Handoff
 

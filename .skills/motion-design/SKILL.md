@@ -36,12 +36,27 @@ Especialista em escolher e aplicar a biblioteca certa para cada animação. Moti
 
 **Motion v12 (mar/2026)**: projeto independente (renomeado de "Framer Motion" pra "Motion" em 2025); import path é `motion/react` (não `framer-motion`). Motor híbrido: roda nativo via Web Animations API + `ScrollTimeline` do browser quando possível (até 120fps, fora da main thread), e cai pra JS só quando precisa de recurso que WAAPI não cobre (spring física, keyframes interrompíveis, gestos). As APIs de scroll (`useScroll`, `whileInView`) que eram experimentais em v10 hoje são o caminho padrão para qualquer coisa reativa a scroll.
 
+### Passo 3 — pedir escala, preservando a origem espacial e evitando o efeito de elemento que nasce d...
+
+pedir escala, preservando a origem espacial e evitando o efeito de elemento que nasce do nada.
+
+### Passo 4 — equivalente), sem deslocar layout.
+
+equivalente), sem deslocar layout. Popovers devem animar a partir do elemento que os abriu,
+  usando `transform-origin` contextual.
+
+### Passo 5 — para prefers-reduced-motion.
+
+para `prefers-reduced-motion`. Sem esse contrato, a animação é decorativa e deve ser removida.
+
 ## Verification Steps
 
 <!-- fonte da verificação: checklist-original -->
 
 - [ ] Biblioteca escolhida pela decision tree (não pelo hype)
 - [ ] Easing/timing com intenção (nunca default `ease`)
+- [ ] Nenhuma entrada usa `scale(0)`; controles têm feedback de pressão sem layout shift
+- [ ] Popovers usam origem contextual e a cena tem contrato de intenção
 - [ ] Stagger limitado e consistente
 - [ ] ScrollTrigger registrado (`registerPlugin`) e limpo (useGSAP/kill)
 - [ ] Reduced motion tratado
@@ -192,6 +207,13 @@ const container = { show: { transition: { staggerChildren: 0.08 } } };
 - Timing: micro-interações 150-300ms; reveals 500-900ms; narrativas 1s+.
 - Easing com personalidade: `cubic-bezier(0.22, 1, 0.36, 1)` (expo-ish) é o default premium; evitar `linear` em reveals e `ease-in` em entradas.
 - Stagger: 30-80ms entre itens; nunca > 200ms (parece travado).
+- Entrada nunca parte de `scale(0)`: use no máximo `scale(0.95)` quando a física do componente
+  pedir escala, preservando a origem espacial e evitando o efeito de elemento que nasce do nada.
+- Botões e controles devem ter feedback tátil explícito (`:active` próximo de `scale(0.97)` ou
+  equivalente), sem deslocar layout. Popovers devem animar a partir do elemento que os abriu,
+  usando `transform-origin` contextual.
+- Cada cena deve declarar trigger, intenção, duração, easing, propriedades animadas e fallback
+  para `prefers-reduced-motion`. Sem esse contrato, a animação é decorativa e deve ser removida.
 - Só `transform` + `opacity` (GPU); `will-change` pontual.
 - `prefers-reduced-motion`: `gsap.matchMedia()` / `useReducedMotion` / CSS media query → versão estática.
 - Uma lib por projeto quando possível; tree-shaking no import.
@@ -201,6 +223,8 @@ const container = { show: { transition: { staggerChildren: 0.08 } } };
 
 - [ ] Biblioteca escolhida pela decision tree (não pelo hype)
 - [ ] Easing/timing com intenção (nunca default `ease`)
+- [ ] Nenhuma entrada usa `scale(0)`; controles têm feedback de pressão sem layout shift
+- [ ] Popovers usam origem contextual e a cena tem contrato de intenção
 - [ ] Stagger limitado e consistente
 - [ ] ScrollTrigger registrado (`registerPlugin`) e limpo (useGSAP/kill)
 - [ ] Reduced motion tratado

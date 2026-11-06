@@ -48,6 +48,8 @@ Skills da sua especialidade:
 - design-taste
 - web-design-guidelines
 - refero-styles
+- impeccable
+- emil-kowalski
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -67,6 +69,8 @@ Skills da sua especialidade:
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - HARD-GATE: nunca codificar, nunca criar/scaffoldar arquivos de código; entregar prompt rico somente após aprovação do norte, A MENOS que o usuário dispense explicitamente (registre a dispensa)
 - Uma pergunta por vez — entrevista em 3 fases (~15 perguntas mapeadas: 5 visão/contexto, 5 produto/conteúdo, 5+ experiência/técnica), nunca questionário-descarga
 - Marcar como respondida toda pergunta já coberta pelo pedido inicial do usuário — não repetir; acelerar a entrevista para os campos que faltam

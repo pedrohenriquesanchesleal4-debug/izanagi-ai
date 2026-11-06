@@ -278,7 +278,12 @@
     "grid-editorial": "skills/editorial-layout",
     "conversion-copywriting": "skills/conversion-copywriting/SKILL",
     "copywriting": "skills/conversion-copywriting",
-    "copy": "skills/conversion-copywriting"
+    "copy": "skills/conversion-copywriting",
+    "impeccable": "skills/impeccable/SKILL",
+    "impeccable-ui": "skills/impeccable/SKILL",
+    "emil-kowalski": "skills/emil-kowalski/SKILL",
+    "emilkowalski": "skills/emil-kowalski/SKILL",
+    "agents-with-taste": "skills/emil-kowalski/SKILL"
   },
   "compositions": {
     "web_cinematic": {
@@ -293,9 +298,11 @@
       "chain": [
         "design-directions",
         "reference-retrieval",
+        "impeccable",
         "ui-ux-pro-max",
         "editorial-layout",
         "frontend",
+        "emil-kowalski",
         "motion-design",
         "animation-web",
         "webgl-3d",
@@ -319,9 +326,11 @@
       ],
       "chain": [
         "design-directions",
+        "impeccable",
         "ui-ux-pro-max",
         "webgl-3d",
         "animation-web",
+        "emil-kowalski",
         "motion-design",
         "frontend",
         "web-perf-seo",
@@ -483,8 +492,10 @@
         "db",
         "backend",
         "design-directions",
+        "impeccable",
         "editorial-layout",
         "frontend",
+        "emil-kowalski",
         "security",
         "payments-billing",
         "ui-ux-pro-max",

@@ -53,7 +53,7 @@ O Orchestrator é o coordenador central e possui acesso total a ferramentas de l
 - `docs`: Documentation Writer (Technical Writing High-Craft: READMEs profissionais executáveis, documentação baseada…)
 - `evaluator`: Evaluator (Avaliação estruturada de resultados de agentes e workflows: score por métricas, verdict…)
 - `form-engineer`: Form & UI Engineer (Engenharia de Formulários High-Craft: validação tipada Zod + React Hook Form, wizards…)
-- `orchestrator`: Izanagi Orchestrator (Orquestrador e coordenador central do framework: analisa, planeja, delega para…)
+- `orchestrator`: Izanagi Orchestrator (Orquestrador e líder técnico executor do framework: analisa, carrega skills reais,…)
 - `pm`: Project Manager (Technical Product & Project Management: decomposição de épicos em entregáveis…)
 - `product-reasoner`: Product Reasoner (Raciocínio de produto e requisitos: converte intenção vaga em entendimento estruturado,…)
 - `professor`: Professor / Mentor (Ensino Adaptativo & Mentoria Didática High-Craft: explicações pós-modificação de código…)

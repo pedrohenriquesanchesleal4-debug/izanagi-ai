@@ -20,7 +20,9 @@
     "web-design-guidelines",
     "refero-styles",
     "image-to-code",
-    "react-next-practices"
+    "react-next-practices",
+    "impeccable",
+    "emil-kowalski"
   ],
   "chains": {
     "scrollytelling": [
@@ -41,6 +43,8 @@
     ],
     "motion_signature": [
       "memoria-projeto",
+      "emil-kowalski",
+      "impeccable",
       "motion-design",
       "anti-ai-slop",
       "memoria-projeto"
@@ -52,6 +56,8 @@
       "memoria-projeto"
     ],
     "motion_ui": [
+      "impeccable",
+      "emil-kowalski",
       "design-taste",
       "web-design-guidelines",
       "refero-styles"
@@ -61,6 +67,8 @@
     ]
   },
   "always": [
+    "ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.",
+    "USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.",
     "Animar exclusivamente propriedades aceleradas por GPU (`transform` e `opacity`) garantindo taxa de quadros constante de 60fps",
     "Implementar suporte completo a `prefers-reduced-motion: reduce` desativando parallax/motion intenso de forma graciosa",
     "Descarte rigoroso de recursos WebGL (`dispose()` em geometrias, materiais e texturas) e cancelamento de `requestAnimationFrame` em unmount",
@@ -96,7 +104,11 @@
     "implementação animada",
     "motion signature"
   ],
-  "permissions": [],
+  "permissions": [
+    "ler qualquer arquivo do repositório (read_file / grep_search / find_by_name)",
+    "escrever, criar e editar diretamente qualquer arquivo de código, teste e configuração na IDE (write_file / edit_file)",
+    "executar comandos de build, teste e verificação (run_command)"
+  ],
   "handoffs": [
     {
       "to": "qa",

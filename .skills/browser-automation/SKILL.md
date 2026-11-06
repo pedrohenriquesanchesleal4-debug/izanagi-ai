@@ -1,6 +1,6 @@
 ---
 name: "browser-automation"
-description: "Automação de navegador com Playwright: navegação, formulários, upload/download, extração de tabelas e seletores resilientes. Use quando não existir API e a automação web for necessária. Gatilhos de ativação: browser automation; quando usar; stack recomendada; workflow (6 passos)."
+description: "Automação de navegador com Playwright: navegação, formulários, upload/download, extração de tabelas e seletores resilientes. Use quando não existir API e a automação web for necessária. Gatilhos de ativação: browser automation; capability detection e portal ao vivo; quando usar; stack recomendada."
 version: 2.0.0
 category: engineering
 tools:
@@ -21,7 +21,7 @@ references:
 - **Resumo:** Automação de navegador com Playwright: navegação, formulários, upload/download, extração de tabelas e seletores resilientes.
 - **Ativar quando:** Use quando não existir API e a automação web for necessária.
 - **Escopo canônico:** Browser Automation
-- **Seções do corpo original:** Quando usar · Stack recomendada · Workflow (6 passos) · Regras de ouro · Checklist de qualidade (antes de entregar)
+- **Seções do corpo original:** Capability detection e portal ao vivo · Quando usar · Stack recomendada · Workflow (6 passos) · Regras de ouro
 - **Ferramentas MCP esperadas:** mcp:fs_write, mcp:execute_command
 
 ## Step-by-Step Workflow
@@ -42,13 +42,6 @@ with sync_playwright() as p:
     page.get_by_label("Senha").fill(os.environ["SENHA"])
     page.get_by_role("button", name="Entrar").click()
 ```
-
-### Passo 0 — Capability detection honesta
-
-Antes da navegação, verifique portal de navegador, MCP/browser, Playwright e acesso HTTP.
-Registre `available`, `unavailable` ou `unknown` para cada um. Só chame uma ferramenta
-depois de confirmar que ela existe; se nenhuma estiver disponível, use referências locais
-ou documentação oficial e declare o fallback, sem afirmar inspeção live.
 
 ### Passo 2 — Waits inteligentes (não `sleep` cego)
 
@@ -137,6 +130,26 @@ browser.close()
 # Browser Automation
 
 Automação de navegador com **Playwright** (preferência; Selenium só em legado) para quando não existe API: navegação, formulários, autenticação, upload/download, extração e validação — com seletores resilientes e waits que não flakam.
+
+## Capability detection e portal ao vivo
+
+Antes de afirmar que uma referência foi inspecionada ou que um fluxo foi verificado,
+detecte explicitamente as capabilities do ambiente:
+
+- `browser_portal`: portal de navegador conectado e autorizado para navegação visual;
+- `mcp_browser`: servidor MCP com resources/tools de navegador ou documentação;
+- `playwright`: pacote e browser instalados para execução local;
+- `web_fetch`: acesso HTTP sem inspeção interativa.
+
+Registre cada item como `available`, `unavailable` ou `unknown`. Se o portal ou MCP não
+estiver disponível, use Playwright local quando detectado; se também não estiver, use
+documentação/referências curadas e declare que a inspeção live não foi feita. Nunca
+transforme a existência desta skill em alegação de capability.
+
+Quando houver portal, use-o para estudar referências visuais, estados renderizados e
+interações reais. Quando houver apenas Playwright, capture screenshot, DOM e console
+como evidência versionada no projeto. Em qualquer fallback, preserve URLs/caminhos e
+separe FACT, INFERENCE e UNKNOWN.
 
 ## Quando usar
 

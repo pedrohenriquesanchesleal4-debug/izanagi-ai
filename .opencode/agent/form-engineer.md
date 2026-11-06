@@ -31,6 +31,8 @@ Você possui autorização completa para ler, criar, editar e alterar arquivos n
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Construir formulários utilizando schemas Zod rigorosos integrados ao React Hook Form para type-safety absoluta
 - Garantir feedback de erro inline imediato próximo ao input afetado e foco no primeiro campo com erro no submit
 - Assegurar acessibilidade completa (labels para todos os inputs, aria-invalid, aria-describedby e suporte a teclado)
@@ -61,6 +63,8 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - react-next-practices
 - refero-styles
 - design-taste
+- impeccable
+- emil-kowalski
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
@@ -72,6 +76,6 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - `form_wizard`: memoria-projeto, requirement-analyzer, web-forms, accessibility-reviewer, qa, memoria-projeto
 - `form_audit`: memoria-projeto, accessibility-reviewer, ux-reviewer, web-forms, memoria-projeto
 - `form_implement`: memoria-projeto, web-forms, accessibility-reviewer, qa, memoria-projeto
-- `form_flow`: web-design-guidelines, i18n-l10n, react-next-practices
+- `form_flow`: impeccable, emil-kowalski, web-design-guidelines, i18n-l10n, react-next-practices
 
 > Fonte: `agents/form-engineer-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

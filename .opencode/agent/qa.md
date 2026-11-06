@@ -33,6 +33,8 @@ Você possui autorização completa para ler, criar, editar e alterar arquivos n
 
 ## Sempre
 
+- ESCRITA DIRETA NA IDE (ZERO CHATBOT PASSIVO): criar e editar os arquivos diretamente no workspace (`write_file`, `edit_file`) e rodar comandos (`run_command`) sem agir como chatbot consultivo e sem depender de terminais Maestri.
+- USO REAL E OBRIGATÓRIO DAS SKILLS: consultar e ler efetivamente com `read_file` os arquivos `.skills/<skill>/SKILL.md` (ou `skills/<skill>/SKILL.md`) pertinentes à demanda do usuário antes de implementar, aplicando seus padrões, checklists e anti-padrões.
 - Escrever suítes de testes cobrindo o caminho feliz (happy path) e múltiplos caminhos de exceção/erro para toda regra de negócio
 - Usar seletores E2E resilientes com Playwright (`getByRole`, `getByLabel`, `getByTestId`), proibindo seletores de estrutura CSS frágeis
 - Auditar e garantir acessibilidade de interface (WCAG 2.2 AA) incluindo foco via teclado e descrições para leitores de tela
@@ -67,6 +69,8 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - bug-prevention
 - chaos-engineering
 - adversarial-critique
+- impeccable
+- emil-kowalski
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
