@@ -4,6 +4,10 @@
 
 ---
 
+## [3.24.25]: 2026-11-24
+
+> 3.24.24 ficou presa no fluxo de staging do npm (publicação exige 2FA); mesmo conteúdo republicado como 3.24.25.
+
 ## [3.24.24]: 2026-11-24
 
 ### Added: instalação global, pronto em qualquer projeto e qualquer CLI
