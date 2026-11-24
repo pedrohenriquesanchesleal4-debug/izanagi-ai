@@ -171,6 +171,37 @@ Formato de cada receita: **Efeito** · **Quando usar** · **Técnica** · **Par�
 - Fallback: mapa completo estático com todos os pontos acesos.
 - Prova: quadros no ponto 1, 3 e final.
 
+## E7 · Figura de partículas que segue o mouse e se desfaz em poeira
+- Quando: portfólio, estúdio, tecnologia, IA; herói com presença humana sem foto de banco.
+- Técnica: malha (busto/objeto) amostrada em pontos (`MeshSurfaceSampler`, 20 a 60 mil pontos) renderizada como `Points` com shader; a cabeça gira suavemente para o ponteiro; perto do cursor (ou ao rolar) os pontos se deslocam por ruído e "viram poeira", voltando com mola.
+- Parâmetros: tamanho do ponto 1 a 2px; cor única da marca sobre fundo claro ou escuro; dissipação 0 a 1 ligada ao scroll do herói.
+- Fallback: imagem do busto pontilhado (pontilhismo exportado em PNG/SVG).
+- Prova: 2 quadros, figura inteira e dissolvendo.
+
+## E8 · Cursor com rastro de caracteres
+- Quando: estúdio criativo, tecnologia, marca com voz forte (o rastro pode usar o nome da marca).
+- Técnica: `pointermove` + `requestAnimationFrame`; a cada N px emite um caractere (do nome da marca ou glifos) que desvanece em 600 a 900ms; pool de 40 nós DOM reaproveitados.
+- Parâmetros: só em ponteiro fino (`@media (pointer: fine)`); nunca sobre campos de formulário.
+- Fallback: cursor nativo.
+- Prova: 1 quadro com o rastro visível atrás do cursor.
+
+## E9 · Botão principal com shader próprio
+- Quando: o CTA é o momento mais importante da página.
+- Técnica: `<canvas>` atrás do texto do botão com fragment shader (líquido, metal, ruído) reagindo ao hover (velocidade, distorção) e ao clique (onda); texto continua sendo `<button>` real, acessível.
+- Parâmetros: 1 botão só com shader; contraste do texto conferido.
+- Fallback: degradê da marca animado por CSS.
+- Prova: 2 quadros, repouso e hover.
+
+# Briefing de página em 1 parágrafo (o formato que gera sites extraordinários)
+
+Antes de codar uma landing, escreva (e mostre ao usuário) um parágrafo neste molde. É o formato dos prompts das bibliotecas comerciais, e um parágrafo assim com 3 ou 4 interações nomeadas produz mais identidade do que 3 páginas de regras:
+
+```
+<Nome>: <tipo de página> de <quem> para <público>. Na abertura, <efeito de assinatura concreto, com o que acontece com o mouse/scroll>. <Interação 2>. <Interação 3>. <Interação 4 opcional>. Paleta <cores da marca>, tipografia <display + texto>, fotos <reais/tratamento>. Usa <bibliotecas>.
+```
+
+Exemplo do molde (analisado num vídeo de biblioteca de prompts): "Portfólio de uma designer de produto e marca para fintechs, jogos, IA e Web3. Na abertura, um manequim de malha pontilhada segue o mouse e se desfaz em poeira; o botão principal tem shader próprio; o cursor deixa um rastro de caracteres; um objeto 3D acompanha a rolagem. Usa GSAP e ScrollTrigger." Cada frase corresponde a uma receita (E7, E9, E8, E1).
+
 ## Como pedir (formato que o agente executa)
 ```
 Seção: <hero|processo|galeria|oferta> · Efeito: E<n> · Conceito: <frase do negócio>

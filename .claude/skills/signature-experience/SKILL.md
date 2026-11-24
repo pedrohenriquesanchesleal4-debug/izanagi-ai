@@ -26,7 +26,7 @@ Regra: se o conceito serviria para outro negócio do mesmo setor, ele ainda é g
 
 ## Passo 2: o momento de assinatura
 
-Uma interação, de preferência na primeira dobra, que realiza o conceito. Para pedir ou executar um efeito sem improvisar, use a **biblioteca de receitas E1 a E6** no fim de `references.md` (objeto 3D de produto, matéria com granulado, tipografia cinética, ladrilhos diagonais, orbe de elementos, retrato com mapa técnico). Exatamente **uma** principal e no máximo **duas** de apoio na página. Exemplos por técnica:
+Uma interação, de preferência na primeira dobra, que realiza o conceito. Para pedir ou executar um efeito sem improvisar, use a **biblioteca de receitas E1 a E9** no fim de `references.md` (objeto 3D de produto, matéria com granulado, tipografia cinética, ladrilhos diagonais, orbe de elementos, retrato com mapa técnico, figura de partículas que vira poeira, cursor com rastro de caracteres, botão com shader). **Antes de codar, escreva o briefing de página em 1 parágrafo** (molde no mesmo arquivo) e mostre ao usuário. Exatamente **uma** principal e no máximo **duas** de apoio na página. Exemplos por técnica:
 
 | Técnica | Quando serve | Implementação |
 |---|---|---|

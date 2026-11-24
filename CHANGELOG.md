@@ -6,6 +6,9 @@
 
 ## [3.24.25]: 2026-11-24
 
+### Added
+- `signature-experience`: receitas E7 (figura de partículas que segue o mouse e vira poeira), E8 (cursor com rastro de caracteres), E9 (botão com shader próprio) e o "briefing de página em 1 parágrafo", formato observado nos prompts de bibliotecas comerciais: conceito + 3 a 4 interações nomeadas, escrito e mostrado ao usuário antes de codar.
+
 > 3.24.24 ficou presa no fluxo de staging do npm (publicação exige 2FA); mesmo conteúdo republicado como 3.24.25.
 
 ## [3.24.24]: 2026-11-24
