@@ -76,7 +76,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - design-directions
 - ui-ux-pro-max
 - anti-ai-slop
-- requirements
+- requirement-analyzer
 - frontend
 - animation-web
 - motion-design
@@ -84,14 +84,13 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - browser-automation
 - webapp-testing
 - reference-retrieval
-- alternatives
-- tradeoff
-- risk
-- ux
-- a11y
-- architect
+- alternative-solution-generator
+- tradeoff-analyzer
+- risk-analyzer
+- ux-reviewer
+- accessibility-reviewer
+- software-architect
 - data-engineering
-- db
 - web-perf-seo
 - design-taste
 - web-design-guidelines
@@ -102,6 +101,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - design-md
 - web-design-vocabulary
 - lead-finder
+- signature-experience
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
@@ -110,15 +110,15 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 
 ## Chains (Fluxos de Execução)
 
-- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirements, frontend
-- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, anti-ai-slop
-- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirements
-- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirements
-- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff
+- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirement-analyzer, frontend
+- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, signature-experience, anti-ai-slop
+- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirement-analyzer
+- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirement-analyzer
+- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff-analyzer
 - `app_ui`: brainstorming, design-directions, ui-ux-pro-max, frontend, motion-design
-- `prompt_rich`: brainstorming, requirements, design-directions, ui-ux-pro-max, architect
+- `prompt_rich`: brainstorming, requirement-analyzer, design-directions, ui-ux-pro-max, software-architect
 - `webgl_3d`: brainstorming, deep-research, design-directions, webgl-3d, animation-web, motion-design
-- `blueprint`: architect, data-engineering, db, risk, tradeoff
+- `blueprint`: software-architect, data-engineering, risk-analyzer, tradeoff-analyzer
 - `style_selection`: design-taste, refero-styles, web-design-guidelines
 
 > Fonte: `agents/discovery-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

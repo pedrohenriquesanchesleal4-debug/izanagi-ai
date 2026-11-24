@@ -33,7 +33,7 @@ skills:
   - "design-directions"
   - "ui-ux-pro-max"
   - "anti-ai-slop"
-  - "requirements"
+  - "requirement-analyzer"
   - "frontend"
   - "animation-web"
   - "motion-design"
@@ -41,14 +41,13 @@ skills:
   - "browser-automation"
   - "webapp-testing"
   - "reference-retrieval"
-  - "alternatives"
-  - "tradeoff"
-  - "risk"
-  - "ux"
-  - "a11y"
-  - "architect"
+  - "alternative-solution-generator"
+  - "tradeoff-analyzer"
+  - "risk-analyzer"
+  - "ux-reviewer"
+  - "accessibility-reviewer"
+  - "software-architect"
   - "data-engineering"
-  - "db"
   - "web-perf-seo"
   - "design-taste"
   - "web-design-guidelines"
@@ -59,6 +58,7 @@ skills:
   - "design-md"
   - "web-design-vocabulary"
   - "lead-finder"
+  - "signature-experience"
 optionalSkills: []
 chains:
   new_project:
@@ -66,7 +66,7 @@ chains:
     - "deep-research"
     - "design-directions"
     - "ui-ux-pro-max"
-    - "requirements"
+    - "requirement-analyzer"
     - "frontend"
   website:
     - "brainstorming"
@@ -77,6 +77,7 @@ chains:
     - "ui-ux-pro-max"
     - "animation-web"
     - "frontend"
+    - "signature-experience"
     - "anti-ai-slop"
   live_reference:
     - "memoria-projeto"
@@ -84,17 +85,17 @@ chains:
     - "browser-automation"
     - "webapp-testing"
     - "deep-research"
-    - "requirements"
+    - "requirement-analyzer"
   new_feature:
     - "brainstorming"
     - "design-directions"
     - "ui-ux-pro-max"
-    - "requirements"
+    - "requirement-analyzer"
   research:
     - "deep-research"
     - "design-directions"
     - "ui-ux-pro-max"
-    - "tradeoff"
+    - "tradeoff-analyzer"
   app_ui:
     - "brainstorming"
     - "design-directions"
@@ -103,10 +104,10 @@ chains:
     - "motion-design"
   prompt_rich:
     - "brainstorming"
-    - "requirements"
+    - "requirement-analyzer"
     - "design-directions"
     - "ui-ux-pro-max"
-    - "architect"
+    - "software-architect"
   webgl_3d:
     - "brainstorming"
     - "deep-research"
@@ -115,11 +116,10 @@ chains:
     - "animation-web"
     - "motion-design"
   blueprint:
-    - "architect"
+    - "software-architect"
     - "data-engineering"
-    - "db"
-    - "risk"
-    - "tradeoff"
+    - "risk-analyzer"
+    - "tradeoff-analyzer"
   style_selection:
     - "design-taste"
     - "refero-styles"

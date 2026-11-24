@@ -28,30 +28,26 @@
       "memoria-projeto",
       "cloud-infra",
       "security-privacy",
-      "automation-security",
-      "memoria-projeto"
+      "automation-security"
     ],
     "cicd": [
       "memoria-projeto",
       "cloud-infra",
       "qa",
-      "security-privacy",
-      "memoria-projeto"
+      "security-privacy"
     ],
     "infra": [
       "memoria-projeto",
-      "architect",
+      "software-architect",
       "iac-terraform",
       "cloud-infra",
-      "security-privacy",
-      "memoria-projeto"
+      "security-privacy"
     ],
     "deploy": [
       "memoria-projeto",
       "cloud-infra",
       "observability-expert",
-      "sre-reliability",
-      "memoria-projeto"
+      "sre-reliability"
     ],
     "release_workflow": [
       "release-planner",

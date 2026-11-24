@@ -22,6 +22,25 @@ GROUNDING FIRST: quando a tarefa envolve uma API, SDK, framework, componente ou 
 
 Para pedidos de web UI / Frontend, carregue e aplique a cadeia: `design-directions` → `impeccable` → `ui-ux-pro-max` → `frontend` / `react-next-practices` → `emil-kowalski` / `motion-design` / `animation-web` → `web-perf-seo` → `accessibility-reviewer` (`a11y`) → `anti-ai-slop` → `qa`. Sempre inclua reduced motion, fallback sem JS, degradação mobile e limites de performance.
 
+
+## Política de execução do Orquestrador
+
+O Orchestrator é o coordenador central e possui acesso total a ferramentas de leitura, escrita, edição e execução (`Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `Agent`). Ele analisa o contexto, delega frentes especializadas via Agent tool quando apropriado e implementa ou refatora código diretamente para garantir que a demanda seja atendida por completo.
+
+**Nunca encerre a resposta com subagente ainda rodando.** Se despachou em segundo plano, espere o resultado (Yield/notificação) antes de responder; em sessão não interativa (`claude -p`) o turno termina e a entrega se perde. Ao receber o resultado, confira os arquivos alterados e rode a verificação antes de reportar.
+
+### Briefing ao delegar (o subagente começa sem contexto)
+
+```
+Objetivo: <resultado em 1 a 2 frases> · Pronto quando: <teste/comando/critério verificável>
+Onde olhar: <arquivos e pastas exatos; o que já se sabe para ele não reinvestigar>
+Decidido: <respostas que o usuário já deu; o que NÃO mudar>
+Exemplo do padrão: <arquivo ou trecho que mostra como é bom>
+Skills: <1 a 3 nomes para ler antes de codar>
+Devolva: arquivos alterados, verificação rodada com resultado, pendências
+```
+
+
 ## Sempre
 
 - ESCRITA DIRETA E IMEDIATA NA IDE: usar `write_file`, `edit_file` e `run_command` na thread principal para criar e alterar os arquivos de código — nunca ficar parado esperando subagentes terminarem sem produzir código.
@@ -42,38 +61,39 @@ Para pedidos de web UI / Frontend, carregue e aplique a cadeia: `design-directio
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/deep-research/SKILL.md` (+ `references.md`)
-- `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
-- `skills/software-architect/SKILL.md` (+ `references.md`)
-- `skills/parallel-agents/SKILL.md`
-- `skills/reference-retrieval/SKILL.md` (+ `references.md`)
-- `skills/browser-automation/SKILL.md` (+ `references.md`)
-- `skills/webapp-testing/SKILL.md` (+ `references.md`)
-- `skills/design-directions/SKILL.md` (+ `references.md`)
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
-- `skills/frontend/SKILL.md` (+ `references.md`)
-- `skills/react-next-practices/SKILL.md`
-- `skills/motion-design/SKILL.md` (+ `references.md`)
-- `skills/anti-ai-slop/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/evaluation/SKILL.md`
-- `skills/handoff-sessao/SKILL.md` (+ `references.md`)
-- `skills/economia-tokens/SKILL.md` (+ `references.md`)
-- `skills/cto-advisor/SKILL.md` (+ `references.md`)
-- `skills/caveman/SKILL.md`
-- `skills/failure-patterns/SKILL.md`
-- `skills/find-skills/SKILL.md`
-- `skills/grilling/SKILL.md`
-- `skills/plan-cold-review/SKILL.md`
-- `skills/codebase-map/SKILL.md`
-- `skills/task-playbook/SKILL.md`
-- `skills/setup-recommender/SKILL.md`
-- `skills/lead-finder/SKILL.md`
-- `skills/obsidian-vault-ops/SKILL.md`
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/deep-research/SKILL.md` (+ `references.md`)
+- `.claude/skills/requirement-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/software-architect/SKILL.md` (+ `references.md`)
+- `.claude/skills/parallel-agents/SKILL.md`
+- `.claude/skills/reference-retrieval/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/webapp-testing/SKILL.md` (+ `references.md`)
+- `.claude/skills/design-directions/SKILL.md` (+ `references.md`)
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
+- `.claude/skills/frontend/SKILL.md` (+ `references.md`)
+- `.claude/skills/react-next-practices/SKILL.md`
+- `.claude/skills/motion-design/SKILL.md` (+ `references.md`)
+- `.claude/skills/anti-ai-slop/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/evaluation/SKILL.md`
+- `.claude/skills/handoff-sessao/SKILL.md` (+ `references.md`)
+- `.claude/skills/economia-tokens/SKILL.md` (+ `references.md`)
+- `.claude/skills/cto-advisor/SKILL.md` (+ `references.md`)
+- `.claude/skills/caveman/SKILL.md`
+- `.claude/skills/failure-patterns/SKILL.md`
+- `.claude/skills/find-skills/SKILL.md`
+- `.claude/skills/grilling/SKILL.md`
+- `.claude/skills/plan-cold-review/SKILL.md`
+- `.claude/skills/codebase-map/SKILL.md`
+- `.claude/skills/task-playbook/SKILL.md`
+- `.claude/skills/setup-recommender/SKILL.md`
+- `.claude/skills/lead-finder/SKILL.md`
+- `.claude/skills/obsidian-vault-ops/SKILL.md`
+- `.claude/skills/signature-experience/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -83,7 +103,7 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 ## Chains (fluxos de execução)
 
 - `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
-- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, impeccable, ui-ux-pro-max, frontend, react-next-practices, emil-kowalski, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
+- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, impeccable, ui-ux-pro-max, frontend, react-next-practices, emil-kowalski, motion-design, browser-automation, webapp-testing, web-perf-seo, accessibility-reviewer, signature-experience, anti-ai-slop, qa
 - `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
 - `governance`: cto-advisor, failure-patterns
 

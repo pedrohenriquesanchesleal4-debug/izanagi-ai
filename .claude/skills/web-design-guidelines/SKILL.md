@@ -21,13 +21,13 @@ Esta skill condensa as melhores práticas de design de produto e engenharia de i
 ### 1.2 Tipografia com Intenção & Escala Modular
 - **Font Pairing Intencional**:
   - Evitar o padrão genérico cego (Inter puro em tudo).
-  - Use contrastes expressivos: Display serif ou grotesk com personalidade para títulos (`Plus Jakarta Sans`, `Cabinet Grotesk`, `Instrument Serif`, `Clash Display`, `Satoshi`) pareado com corpo neutro e legível (`Inter`, `Geist`, `Geist Mono`).
+  - Use contrastes expressivos: Display serif ou grotesk com personalidade para títulos escolhido pelo conceito da marca (ex.: grotescas condensadas, display experimentais, fontes variáveis), pareado com corpo legível. Não use como default os pares que viraram assinatura de IA (ver `anti-ai-slop` Geração 2).
 - **Escala Tipográfica Proporcional**:
   - Display / H1: 2.5rem a 4rem (font-bold, tracking-tight, lineHeight 1.1)
   - H2: 1.75rem a 2.25rem (font-semibold, tracking-tight, lineHeight 1.2)
   - H3: 1.25rem a 1.5rem (font-medium, lineHeight 1.3)
   - Body: 0.875rem a 1rem (font-normal, lineHeight 1.6)
-  - Caption / Label: 0.75rem (font-medium, uppercase, tracking-wider, text-muted)
+  - Caption / Label: 0.75rem (font-medium, text-muted). Caixa-alta espaçada acima de todo título é padrão de IA em landing: use só onde o rótulo é informação (tabela, dashboard).
 - **Comprimento de Linha (Measure)**: Máximo de 65 a 75 caracteres por linha em blocos de texto (`max-w-prose` ou `max-w-2xl`).
 
 ### 1.3 Cores, Contraste e Superfícies

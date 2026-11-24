@@ -52,7 +52,7 @@ Você possui autorização completa para ler, criar, editar e alterar arquivos n
 Você possui as seguintes skills especializadas atribuídas à sua função:
 - professor-modo
 - technical-writer
-- clean-code
+- clean-code-validator
 - systematic-debugging
 - memoria-projeto
 
@@ -63,9 +63,9 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 
 ## Chains (Fluxos de Execução)
 
-- `explain`: memoria-projeto, professor-modo, technical-writer, memoria-projeto
-- `teach`: memoria-projeto, professor-modo, technical-writer, memoria-projeto
-- `review_learning`: memoria-projeto, professor-modo, qa, memoria-projeto
-- `exercise`: memoria-projeto, professor-modo, memoria-projeto
+- `explain`: memoria-projeto, professor-modo, technical-writer
+- `teach`: memoria-projeto, professor-modo, technical-writer
+- `review_learning`: memoria-projeto, professor-modo, qa
+- `exercise`: memoria-projeto, professor-modo
 
 > Fonte: `agents/professor-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

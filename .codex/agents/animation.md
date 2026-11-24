@@ -37,6 +37,7 @@ Skills da sua especialidade:
 - emil-kowalski
 - site-launch-checklist
 - web-design-vocabulary
+- signature-experience
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -44,7 +45,7 @@ Skills da sua especialidade:
 ## Chains
 
 - `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
-- `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
+- `webgl_scene`: memoria-projeto, webgl-3d, signature-experience, anti-ai-slop, memoria-projeto
 - `motion_signature`: memoria-projeto, emil-kowalski, impeccable, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
 - `motion_ui`: impeccable, emil-kowalski, design-taste, web-design-guidelines, refero-styles

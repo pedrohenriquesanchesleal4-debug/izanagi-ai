@@ -24,7 +24,8 @@
     "impeccable",
     "emil-kowalski",
     "site-launch-checklist",
-    "web-design-vocabulary"
+    "web-design-vocabulary",
+    "signature-experience"
   ],
   "chains": {
     "scrollytelling": [
@@ -40,6 +41,7 @@
     "webgl_scene": [
       "memoria-projeto",
       "webgl-3d",
+      "signature-experience",
       "anti-ai-slop",
       "memoria-projeto"
     ],

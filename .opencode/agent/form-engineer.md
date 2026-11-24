@@ -66,6 +66,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - impeccable
 - emil-kowalski
 - design-md
+- signature-experience
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.

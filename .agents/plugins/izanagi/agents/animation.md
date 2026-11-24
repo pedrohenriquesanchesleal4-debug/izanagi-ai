@@ -68,5 +68,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `emil-kowalski`
 - `site-launch-checklist`
 - `web-design-vocabulary`
+- `signature-experience`
 
 > Fonte: `agents/animation-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

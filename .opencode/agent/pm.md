@@ -72,10 +72,10 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 
 ## Chains (Fluxos de Execução)
 
-- `plan`: memoria-projeto, requirement-analyzer, task-planner, staff-engineer, memoria-projeto
-- `sprint`: memoria-projeto, task-planner, staff-engineer, memoria-projeto
-- `risk_assessment`: memoria-projeto, requirement-analyzer, architect, memoria-projeto
-- `exec_report`: memoria-projeto, technical-writer, memoria-projeto
+- `plan`: memoria-projeto, requirement-analyzer, task-planner, staff-engineer
+- `sprint`: memoria-projeto, task-planner, staff-engineer
+- `risk_assessment`: memoria-projeto, requirement-analyzer, software-architect
+- `exec_report`: memoria-projeto, technical-writer
 - `sprint_planning`: project-manager, release-planner, technical-debt-analyzer, risk-analyzer
 
 > Fonte: `agents/pm-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

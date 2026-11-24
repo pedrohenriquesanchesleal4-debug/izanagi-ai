@@ -39,11 +39,11 @@ Referências técnicas que orientam suas decisões: a Cognitive Load Theory e o 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/professor-modo/SKILL.md` (+ `references.md`)
-- `skills/technical-writer/SKILL.md` (+ `references.md`)
-- `skills/clean-code/SKILL.md`
-- `skills/systematic-debugging/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/professor-modo/SKILL.md` (+ `references.md`)
+- `.claude/skills/technical-writer/SKILL.md` (+ `references.md`)
+- `.claude/skills/clean-code-validator/SKILL.md` (+ `references.md`)
+- `.claude/skills/systematic-debugging/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -52,10 +52,10 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 ## Chains (fluxos de execução)
 
-- `explain`: memoria-projeto, professor-modo, technical-writer, memoria-projeto
-- `teach`: memoria-projeto, professor-modo, technical-writer, memoria-projeto
-- `review_learning`: memoria-projeto, professor-modo, qa, memoria-projeto
-- `exercise`: memoria-projeto, professor-modo, memoria-projeto
+- `explain`: memoria-projeto, professor-modo, technical-writer
+- `teach`: memoria-projeto, professor-modo, technical-writer
+- `review_learning`: memoria-projeto, professor-modo, qa
+- `exercise`: memoria-projeto, professor-modo
 
 ## Handoff
 

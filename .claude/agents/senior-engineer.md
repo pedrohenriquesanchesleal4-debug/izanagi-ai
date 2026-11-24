@@ -44,46 +44,47 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/agentic-coding/SKILL.md` (+ `references.md`)
-- `skills/tdd/SKILL.md` (+ `references.md`)
-- `skills/architecture-patterns/SKILL.md` (+ `references.md`)
-- `skills/frontend/SKILL.md` (+ `references.md`)
-- `skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
-- `skills/anti-ai-slop/SKILL.md` (+ `references.md`)
-- `skills/systematic-debugging/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/economia-tokens/SKILL.md` (+ `references.md`)
-- `skills/browser-playwright/SKILL.md`
-- `skills/design-taste/SKILL.md`
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/web-design-guidelines/SKILL.md`
-- `skills/image-to-code/SKILL.md`
-- `skills/react-next-practices/SKILL.md`
-- `skills/refero-styles/SKILL.md`
-- `skills/remotion-video/SKILL.md`
-- `skills/reverse-engineering/SKILL.md`
-- `skills/refactoring-specialist/SKILL.md` (+ `references.md`)
-- `skills/solid-validator/SKILL.md` (+ `references.md`)
-- `skills/dry-kiss-yagni-validator/SKILL.md` (+ `references.md`)
-- `skills/senior-code-reviewer/SKILL.md` (+ `references.md`)
-- `skills/breaking-change-detector/SKILL.md` (+ `references.md`)
-- `skills/graphql/SKILL.md` (+ `references.md`)
-- `skills/websocket-realtime/SKILL.md` (+ `references.md`)
-- `skills/wasm/SKILL.md` (+ `references.md`)
-- `skills/i18n-l10n/SKILL.md` (+ `references.md`)
-- `skills/logging-expert/SKILL.md` (+ `references.md`)
-- `skills/mobile-dev/SKILL.md` (+ `references.md`)
-- `skills/performance-optimizer/SKILL.md` (+ `references.md`)
-- `skills/feature-flags/SKILL.md` (+ `references.md`)
-- `skills/serverless-edge/SKILL.md` (+ `references.md`)
-- `skills/find-skills/SKILL.md`
-- `skills/codebase-map/SKILL.md`
-- `skills/site-launch-checklist/SKILL.md`
-- `skills/web-design-vocabulary/SKILL.md`
-- `skills/design-md/SKILL.md`
+- `.claude/skills/agentic-coding/SKILL.md` (+ `references.md`)
+- `.claude/skills/tdd/SKILL.md` (+ `references.md`)
+- `.claude/skills/architecture-patterns/SKILL.md` (+ `references.md`)
+- `.claude/skills/frontend/SKILL.md` (+ `references.md`)
+- `.claude/skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
+- `.claude/skills/anti-ai-slop/SKILL.md` (+ `references.md`)
+- `.claude/skills/systematic-debugging/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/economia-tokens/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-playwright/SKILL.md`
+- `.claude/skills/design-taste/SKILL.md`
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/web-design-guidelines/SKILL.md`
+- `.claude/skills/image-to-code/SKILL.md`
+- `.claude/skills/react-next-practices/SKILL.md`
+- `.claude/skills/refero-styles/SKILL.md`
+- `.claude/skills/remotion-video/SKILL.md`
+- `.claude/skills/reverse-engineering/SKILL.md`
+- `.claude/skills/refactoring-specialist/SKILL.md` (+ `references.md`)
+- `.claude/skills/solid-validator/SKILL.md` (+ `references.md`)
+- `.claude/skills/dry-kiss-yagni-validator/SKILL.md` (+ `references.md`)
+- `.claude/skills/senior-code-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/breaking-change-detector/SKILL.md` (+ `references.md`)
+- `.claude/skills/graphql/SKILL.md` (+ `references.md`)
+- `.claude/skills/websocket-realtime/SKILL.md` (+ `references.md`)
+- `.claude/skills/wasm/SKILL.md` (+ `references.md`)
+- `.claude/skills/i18n-l10n/SKILL.md` (+ `references.md`)
+- `.claude/skills/logging-expert/SKILL.md` (+ `references.md`)
+- `.claude/skills/mobile-dev/SKILL.md` (+ `references.md`)
+- `.claude/skills/performance-optimizer/SKILL.md` (+ `references.md`)
+- `.claude/skills/feature-flags/SKILL.md` (+ `references.md`)
+- `.claude/skills/serverless-edge/SKILL.md` (+ `references.md`)
+- `.claude/skills/find-skills/SKILL.md`
+- `.claude/skills/codebase-map/SKILL.md`
+- `.claude/skills/site-launch-checklist/SKILL.md`
+- `.claude/skills/web-design-vocabulary/SKILL.md`
+- `.claude/skills/design-md/SKILL.md`
+- `.claude/skills/signature-experience/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -92,12 +93,12 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 ## Chains (fluxos de execução)
 
-- `fullstack`: memoria-projeto, architect, database, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
-- `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
-- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
-- `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
-- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
-- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
+- `fullstack`: memoria-projeto, software-architect, data-engineering, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, signature-experience, anti-ai-slop, security-privacy, payments-billing, qa
+- `implement`: memoria-projeto, tdd, agentic-coding, qa
+- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding
+- `refactor`: memoria-projeto, systematic-debugging, tdd, qa
+- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa
+- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa
 - `fullstack_modern`: react-next-practices, impeccable, emil-kowalski, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 ## Handoff

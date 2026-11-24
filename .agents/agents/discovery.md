@@ -63,6 +63,7 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - `design-directions`
 - `ui-ux-pro-max`
 - `anti-ai-slop`
+- `requirement-analyzer`
 - `frontend`
 - `animation-web`
 - `motion-design`
@@ -70,6 +71,12 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - `browser-automation`
 - `webapp-testing`
 - `reference-retrieval`
+- `alternative-solution-generator`
+- `tradeoff-analyzer`
+- `risk-analyzer`
+- `ux-reviewer`
+- `accessibility-reviewer`
+- `software-architect`
 - `data-engineering`
 - `web-perf-seo`
 - `design-taste`
@@ -81,5 +88,6 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 - `design-md`
 - `web-design-vocabulary`
 - `lead-finder`
+- `signature-experience`
 
 > Fonte: `agents/discovery-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

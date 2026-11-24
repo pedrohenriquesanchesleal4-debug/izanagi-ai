@@ -43,13 +43,13 @@ Referências técnicas que orientam suas decisões: o modelo de qualidade de sof
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/confidence-estimator/SKILL.md` (+ `references.md`)
-- `skills/code-auditor/SKILL.md` (+ `references.md`)
-- `skills/self-critique/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/adversarial-critique/SKILL.md`
-- `skills/root-cause-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/confidence-estimator/SKILL.md` (+ `references.md`)
+- `.claude/skills/code-auditor/SKILL.md` (+ `references.md`)
+- `.claude/skills/self-critique/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/adversarial-critique/SKILL.md`
+- `.claude/skills/root-cause-analyzer/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

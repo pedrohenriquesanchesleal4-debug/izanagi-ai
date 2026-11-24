@@ -59,6 +59,7 @@ skills:
   - "setup-recommender"
   - "lead-finder"
   - "obsidian-vault-ops"
+  - "signature-experience"
 optionalSkills: []
 chains:
   default_pipeline:
@@ -86,7 +87,8 @@ chains:
     - "browser-automation"
     - "webapp-testing"
     - "web-perf-seo"
-    - "a11y"
+    - "accessibility-reviewer"
+    - "signature-experience"
     - "anti-ai-slop"
     - "qa"
   ai_or_mcp:

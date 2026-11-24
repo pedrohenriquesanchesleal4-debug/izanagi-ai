@@ -48,26 +48,22 @@ chains:
     - "cloud-infra"
     - "security-privacy"
     - "automation-security"
-    - "memoria-projeto"
   cicd:
     - "memoria-projeto"
     - "cloud-infra"
     - "qa"
     - "security-privacy"
-    - "memoria-projeto"
   infra:
     - "memoria-projeto"
-    - "architect"
+    - "software-architect"
     - "iac-terraform"
     - "cloud-infra"
     - "security-privacy"
-    - "memoria-projeto"
   deploy:
     - "memoria-projeto"
     - "cloud-infra"
     - "observability-expert"
     - "sre-reliability"
-    - "memoria-projeto"
   release_workflow:
     - "release-planner"
     - "dependency-analyzer"

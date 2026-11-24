@@ -75,21 +75,21 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/automation-engineer/SKILL.md` (+ `references.md`)
-- `skills/automation-planning/SKILL.md` (+ `references.md`)
-- `skills/automation-research/SKILL.md` (+ `references.md`)
-- `skills/technology-selection/SKILL.md` (+ `references.md`)
-- `skills/spreadsheet-automation/SKILL.md` (+ `references.md`)
-- `skills/browser-automation/SKILL.md` (+ `references.md`)
-- `skills/api-automation/SKILL.md` (+ `references.md`)
-- `skills/data-validation/SKILL.md` (+ `references.md`)
-- `skills/error-recovery/SKILL.md` (+ `references.md`)
-- `skills/testing-automation/SKILL.md` (+ `references.md`)
-- `skills/automation-security/SKILL.md` (+ `references.md`)
-- `skills/automation-optimization/SKILL.md` (+ `references.md`)
-- `skills/automation-documentation/SKILL.md` (+ `references.md`)
-- `skills/browser-playwright/SKILL.md`
-- `skills/obsidian-vault-ops/SKILL.md`
+- `.claude/skills/automation-engineer/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-planning/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-research/SKILL.md` (+ `references.md`)
+- `.claude/skills/technology-selection/SKILL.md` (+ `references.md`)
+- `.claude/skills/spreadsheet-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/api-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/data-validation/SKILL.md` (+ `references.md`)
+- `.claude/skills/error-recovery/SKILL.md` (+ `references.md`)
+- `.claude/skills/testing-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-security/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-optimization/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-documentation/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-playwright/SKILL.md`
+- `.claude/skills/obsidian-vault-ops/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

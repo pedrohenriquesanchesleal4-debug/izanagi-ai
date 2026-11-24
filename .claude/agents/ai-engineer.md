@@ -48,18 +48,18 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/ai-agent/SKILL.md` (+ `references.md`)
-- `skills/reference-retrieval/SKILL.md` (+ `references.md`)
-- `skills/prompt-engineering/SKILL.md` (+ `references.md`)
-- `skills/agentic-coding/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/tdd/SKILL.md` (+ `references.md`)
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/economia-tokens/SKILL.md` (+ `references.md`)
-- `skills/find-skills/SKILL.md`
-- `skills/codebase-map/SKILL.md`
-- `skills/setup-recommender/SKILL.md`
+- `.claude/skills/ai-agent/SKILL.md` (+ `references.md`)
+- `.claude/skills/reference-retrieval/SKILL.md` (+ `references.md`)
+- `.claude/skills/prompt-engineering/SKILL.md` (+ `references.md`)
+- `.claude/skills/agentic-coding/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/tdd/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/economia-tokens/SKILL.md` (+ `references.md`)
+- `.claude/skills/find-skills/SKILL.md`
+- `.claude/skills/codebase-map/SKILL.md`
+- `.claude/skills/setup-recommender/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

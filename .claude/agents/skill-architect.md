@@ -52,16 +52,16 @@ Referências técnicas que orientam suas decisões: a documentação oficial da 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/prompt-engineering/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/hallucination-detection/SKILL.md` (+ `references.md`)
-- `skills/confidence-estimator/SKILL.md` (+ `references.md`)
-- `skills/deep-research/SKILL.md` (+ `references.md`)
-- `skills/economia-tokens/SKILL.md` (+ `references.md`)
-- `skills/evaluation/SKILL.md`
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/find-skills/SKILL.md`
-- `skills/setup-recommender/SKILL.md`
+- `.claude/skills/prompt-engineering/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/hallucination-detection/SKILL.md` (+ `references.md`)
+- `.claude/skills/confidence-estimator/SKILL.md` (+ `references.md`)
+- `.claude/skills/deep-research/SKILL.md` (+ `references.md`)
+- `.claude/skills/economia-tokens/SKILL.md` (+ `references.md`)
+- `.claude/skills/evaluation/SKILL.md`
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/find-skills/SKILL.md`
+- `.claude/skills/setup-recommender/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

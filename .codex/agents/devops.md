@@ -40,10 +40,10 @@ Skills da sua especialidade:
 
 ## Chains
 
-- `dockerize`: memoria-projeto, cloud-infra, security-privacy, automation-security, memoria-projeto
-- `cicd`: memoria-projeto, cloud-infra, qa, security-privacy, memoria-projeto
-- `infra`: memoria-projeto, architect, iac-terraform, cloud-infra, security-privacy, memoria-projeto
-- `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability, memoria-projeto
+- `dockerize`: memoria-projeto, cloud-infra, security-privacy, automation-security
+- `cicd`: memoria-projeto, cloud-infra, qa, security-privacy
+- `infra`: memoria-projeto, software-architect, iac-terraform, cloud-infra, security-privacy
+- `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability
 - `release_workflow`: release-planner, dependency-analyzer, chaos-engineering
 
 ## Sempre

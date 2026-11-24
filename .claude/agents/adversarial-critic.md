@@ -50,18 +50,18 @@ Referências técnicas que orientam suas decisões: OWASP Top 10 (e OWASP Top 10
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/code-auditor/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/anti-ai-slop/SKILL.md` (+ `references.md`)
-- `skills/complexity-analyzer/SKILL.md` (+ `references.md`)
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/self-critique/SKILL.md` (+ `references.md`)
-- `skills/adversarial-critique/SKILL.md`
-- `skills/reverse-engineering/SKILL.md`
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/plan-cold-review/SKILL.md`
-- `skills/security-swarm-audit/SKILL.md`
+- `.claude/skills/code-auditor/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/anti-ai-slop/SKILL.md` (+ `references.md`)
+- `.claude/skills/complexity-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/self-critique/SKILL.md` (+ `references.md`)
+- `.claude/skills/adversarial-critique/SKILL.md`
+- `.claude/skills/reverse-engineering/SKILL.md`
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/plan-cold-review/SKILL.md`
+- `.claude/skills/security-swarm-audit/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

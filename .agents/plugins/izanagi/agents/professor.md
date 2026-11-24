@@ -51,6 +51,7 @@ Referências técnicas que orientam suas decisões: a Cognitive Load Theory e o 
 
 - `professor-modo`
 - `technical-writer`
+- `clean-code-validator`
 - `systematic-debugging`
 - `memoria-projeto`
 

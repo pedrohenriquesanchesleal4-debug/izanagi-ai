@@ -43,13 +43,13 @@ Referências técnicas que orientam suas decisões: o framework Diátaxis (diata
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/technical-writer/SKILL.md` (+ `references.md`)
-- `skills/readme-generator/SKILL.md` (+ `references.md`)
-- `skills/sequence-diagram-builder/SKILL.md` (+ `references.md`)
-- `skills/automation-documentation/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/uml-generator/SKILL.md` (+ `references.md`)
-- `skills/caveman/SKILL.md`
+- `.claude/skills/technical-writer/SKILL.md` (+ `references.md`)
+- `.claude/skills/readme-generator/SKILL.md` (+ `references.md`)
+- `.claude/skills/sequence-diagram-builder/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-documentation/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/uml-generator/SKILL.md` (+ `references.md`)
+- `.claude/skills/caveman/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

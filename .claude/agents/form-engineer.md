@@ -39,22 +39,23 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/web-forms/SKILL.md` (+ `references.md`)
-- `skills/frontend/SKILL.md` (+ `references.md`)
-- `skills/accessibility-reviewer/SKILL.md` (+ `references.md`)
-- `skills/ux-reviewer/SKILL.md` (+ `references.md`)
-- `skills/data-validation/SKILL.md` (+ `references.md`)
-- `skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/i18n-l10n/SKILL.md` (+ `references.md`)
-- `skills/image-to-code/SKILL.md`
-- `skills/web-design-guidelines/SKILL.md`
-- `skills/react-next-practices/SKILL.md`
-- `skills/refero-styles/SKILL.md`
-- `skills/design-taste/SKILL.md`
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/design-md/SKILL.md`
+- `.claude/skills/web-forms/SKILL.md` (+ `references.md`)
+- `.claude/skills/frontend/SKILL.md` (+ `references.md`)
+- `.claude/skills/accessibility-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/ux-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/data-validation/SKILL.md` (+ `references.md`)
+- `.claude/skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/i18n-l10n/SKILL.md` (+ `references.md`)
+- `.claude/skills/image-to-code/SKILL.md`
+- `.claude/skills/web-design-guidelines/SKILL.md`
+- `.claude/skills/react-next-practices/SKILL.md`
+- `.claude/skills/refero-styles/SKILL.md`
+- `.claude/skills/design-taste/SKILL.md`
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/design-md/SKILL.md`
+- `.claude/skills/signature-experience/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

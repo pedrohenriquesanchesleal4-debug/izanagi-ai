@@ -48,25 +48,25 @@ Referências técnicas que orientam suas decisões: o guia oficial de revisão d
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/tech-lead/SKILL.md` (+ `references.md`)
-- `skills/principal-engineer/SKILL.md` (+ `references.md`)
-- `skills/staff-engineer/SKILL.md` (+ `references.md`)
-- `skills/code-auditor/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/professor-modo/SKILL.md` (+ `references.md`)
-- `skills/senior-code-reviewer/SKILL.md` (+ `references.md`)
-- `skills/solid-validator/SKILL.md` (+ `references.md`)
-- `skills/dry-kiss-yagni-validator/SKILL.md` (+ `references.md`)
-- `skills/refactoring-specialist/SKILL.md` (+ `references.md`)
-- `skills/technical-debt-analyzer/SKILL.md` (+ `references.md`)
-- `skills/breaking-change-detector/SKILL.md` (+ `references.md`)
-- `skills/clean-code-validator/SKILL.md` (+ `references.md`)
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/plan-cold-review/SKILL.md`
-- `skills/design-md/SKILL.md`
+- `.claude/skills/tech-lead/SKILL.md` (+ `references.md`)
+- `.claude/skills/principal-engineer/SKILL.md` (+ `references.md`)
+- `.claude/skills/staff-engineer/SKILL.md` (+ `references.md`)
+- `.claude/skills/code-auditor/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/professor-modo/SKILL.md` (+ `references.md`)
+- `.claude/skills/senior-code-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/solid-validator/SKILL.md` (+ `references.md`)
+- `.claude/skills/dry-kiss-yagni-validator/SKILL.md` (+ `references.md`)
+- `.claude/skills/refactoring-specialist/SKILL.md` (+ `references.md`)
+- `.claude/skills/technical-debt-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/breaking-change-detector/SKILL.md` (+ `references.md`)
+- `.claude/skills/clean-code-validator/SKILL.md` (+ `references.md`)
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/plan-cold-review/SKILL.md`
+- `.claude/skills/design-md/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

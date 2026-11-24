@@ -86,6 +86,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - setup-recommender
 - lead-finder
 - obsidian-vault-ops
+- signature-experience
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
@@ -95,7 +96,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 ## Chains (Fluxos de Execução)
 
 - `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
-- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, impeccable, ui-ux-pro-max, frontend, react-next-practices, emil-kowalski, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
+- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, impeccable, ui-ux-pro-max, frontend, react-next-practices, emil-kowalski, motion-design, browser-automation, webapp-testing, web-perf-seo, accessibility-reviewer, signature-experience, anti-ai-slop, qa
 - `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
 - `governance`: cto-advisor, failure-patterns
 

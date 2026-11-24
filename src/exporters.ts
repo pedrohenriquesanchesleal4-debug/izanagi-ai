@@ -352,6 +352,8 @@ const CLAUDE_ORCHESTRATOR_DISPATCH_POLICY = `
 
 O Orchestrator é o coordenador central e possui acesso total a ferramentas de leitura, escrita, edição e execução (\`Read\`, \`Grep\`, \`Glob\`, \`Edit\`, \`Write\`, \`Bash\`, \`Agent\`). Ele analisa o contexto, delega frentes especializadas via Agent tool quando apropriado e implementa ou refatora código diretamente para garantir que a demanda seja atendida por completo.
 
+**Nunca encerre a resposta com subagente ainda rodando.** Se despachou em segundo plano, espere o resultado (Yield/notificação) antes de responder; em sessão não interativa (\`claude -p\`) o turno termina e a entrega se perde. Ao receber o resultado, confira os arquivos alterados e rode a verificação antes de reportar.
+
 ${SUBAGENT_BRIEF_FORMAT}`;
 
 const CODEX_ORCHESTRATOR_LIMITATION = `
@@ -448,8 +450,9 @@ function claudeAgentTemplate(baseDir: string, a: IzanagiAgentInfo): string {
   const modelLine = a.model ? `model: ${a.model}\n` : '';
   const description = truncate(trigger, 260);
   const skillLines = a.skills.length > 0
-    ? a.skills.map((s) => `- \`skills/${s}/SKILL.md\`${hasReferences(baseDir, s) ? ' (+ `references.md`)' : ''}`).join('\n')
+    ? a.skills.map((s) => `- \`.claude/skills/${s}/SKILL.md\`${hasReferences(baseDir, s) ? ' (+ `references.md`)' : ''}`).join('\n')
     : '- (sem skills declaradas)';
+  const dispatchPolicy = a.slug === 'orchestrator' ? `\n${CLAUDE_ORCHESTRATOR_DISPATCH_POLICY}\n` : '';
 
   return `---
 name: ${a.slug}
@@ -460,7 +463,7 @@ ${modelLine}---
 # ${a.name}
 
 ${a.identity || a.role}
-
+${dispatchPolicy}
 ## Sempre
 
 ${a.always.length > 0 ? bullet(a.always) : '- (sem regras sempre)'}
@@ -687,6 +690,17 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
   for (const s of skills) {
     const rel = writeIfAbsent(baseDir, `.claude/skills/${s.name}/SKILL.md`, claudeSkillTemplate(s));
     if (rel) created.push(rel);
+    // O corpo das skills cita "references.md nesta pasta": sem a cópia, o link fica quebrado.
+    // Arquivo separado mantém o progressive disclosure (só é lido se a skill mandar).
+    if (hasReferences(baseDir, s.name)) {
+      const src = path.join(resolveSourceDir(baseDir), 'skills', s.name, 'references.md');
+      const refRel = writeIfAbsent(
+        baseDir,
+        `.claude/skills/${s.name}/references.md`,
+        `${fs.readFileSync(src, 'utf-8').trimEnd()}\n\n> ${GENERATED_MARKER}: cópia fiel de \`skills/${s.name}/references.md\` (fonte da verdade).\n`
+      );
+      if (refRel) created.push(refRel);
+    }
   }
 
   return created;

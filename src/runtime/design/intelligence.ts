@@ -83,7 +83,8 @@ export interface VisualQualityFinding {
     | 'missing-typography-hierarchy'
     | 'missing-interactive-states'
     | 'card-soup-monotony'
-    | 'missing-accessibility-semantics';
+    | 'missing-accessibility-semantics'
+    | 'ai-tasteful-default-cluster';
   severity: 'low' | 'medium' | 'high';
   message: string;
   match?: string;
@@ -111,40 +112,43 @@ const DIRECTIONS_BY_NICHE: Record<DesignNiche, {
 }> = {
   'editorial-warm': {
     primary: {
-      id: 'editorial-tactile-warmth',
-      name: 'Editorial Tactile Warmth',
+      // Antes: papel creme + serif de alto contraste + palavra em itálico + terracota +
+      // divisores de 1px + 01/02/03. Em 2026 esse conjunto é o "Claude look" (ver
+      // skill anti-ai-slop, Geração 2): passava no auditor e ainda parecia IA.
+      id: 'tactile-material-motion',
+      name: 'Tactile Material Motion',
       niche: 'editorial-warm',
-      themeMode: 'light-first',
-      rationale: 'Superfícies orgânicas em tom papel/linho (#FAF6F0), tinta café/carvão (#1C1917) e tipografia serifada editorial combinada com sans humanista.',
+      themeMode: 'dual-adaptive',
+      rationale: 'A matéria-prima é a interface: cor, textura e movimento derivados do produto real (fotografia macro do grão, da massa, do tecido), com um momento de assinatura que encena o processo de fazer.',
       palette: {
-        background: '#FAF6F0 (stone-50 / warm alabaster)',
-        surface: '#F2ECE1 (warm linen card/section)',
-        textPrimary: '#1C1917 (stone-900 / espresso ink)',
-        textMuted: '#57534E (stone-600)',
-        accentPrimary: '#9A3412 (terracotta / burnt sienna)',
-        accentSecondary: '#3F6212 (botanical olive)',
-        border: '#E7E0D3 (1px warm hairline)',
+        background: 'cor dominante da fotografia do produto (ex.: #2A1810 casca tostada), nunca creme/papel genérico',
+        surface: 'tom do interior do produto (ex.: #EED9B4 miolo) usado em blocos de cor cheios, não em cards',
+        textPrimary: 'contraste máximo sobre a cor de fundo escolhida (checar WCAG AA)',
+        textMuted: 'mesma matiz do fundo, 55% de luminância',
+        accentPrimary: 'cor de um detalhe real do produto (ex.: #F0A202 crosta dourada); evitar terracota, a cor da marca do Claude',
+        accentSecondary: 'contraponto natural do produto (ex.: verde de erva fresca)',
+        border: 'evitar divisores de 1px; separar por blocos de cor e escala',
         semantic: { success: '#15803D', warning: '#B45309', danger: '#B91C1C' },
       },
       typography: {
-        display: 'Instrument Serif / Playfair Display / Fraunces (tracking -0.03em, line-height 1.05)',
-        sans: 'Plus Jakarta Sans / DM Sans (body 16px-18px, line-height 1.6)',
-        mono: 'JetBrains Mono (origem, lote, preços, metadados)',
-        scaleRatio: '1.333 (Perfect Fourth)',
+        display: 'display escolhida pelo conceito (ex.: grotesca condensada pesada ou fonte variável com eixo de peso animável); proibido serif de alto contraste como default',
+        sans: 'sans humanista legível para corpo (16px-18px, line-height 1.6)',
+        mono: 'só onde for dado real (preço, horário de fornada), sem rótulos mono em caixa-alta acima de títulos',
+        scaleRatio: '1.5 (contraste dramático entre display e corpo)',
         rules: [
-          'Títulos em serif de alto contraste com palavras-chave em itálico editorial',
-          'Números de preços, datas e lotes sempre com font-variant-numeric: tabular-nums',
-          'Zero uso de Inter puro em títulos',
+          'Sem palavra do título em itálico colorido',
+          'Sem rótulo pequeno em caixa-alta espaçada acima de cada seção',
+          'Números de preços e horários com font-variant-numeric: tabular-nums',
         ],
       },
       layout: {
-        grid: 'Grid editorial assimétrico de 12 colunas com divisores de 1px visíveis e ritmo 60/40',
-        spacingBase: '8px base com respiro generoso entre seções (96px–128px)',
-        maxWidth: '1360px',
-        signaturePattern: 'Split-screen manifesto + vitrine numerada estilo revista impressa (01, 02, 03) sem cards genéricos',
+        grid: 'Composição em blocos de cor cheia e fotografia sangrando a borda; escala exagerada de um elemento por seção',
+        spacingBase: '8px base, seções com alturas diferentes (ritmo, não grade uniforme)',
+        maxWidth: '1440px',
+        signaturePattern: 'Processo do produto contado em seção pinada (scroll scrub) em vez de vitrine numerada 01/02/03',
       },
       motion: {
-        signature: 'Reveal suave de linha editorial + parallax sutil em fotografia real',
+        signature: 'Momento de assinatura que encena o fazer: título que "cresce" como massa (eixo de peso/largura ligado ao scroll) ou sequência de imagens do produto sendo feito',
         easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
         duration: '450ms–700ms',
         reducedMotionRule: 'Desativar parallax e manter apenas fade de opacidade 200ms sob prefers-reduced-motion',
@@ -152,7 +156,7 @@ const DIRECTIONS_BY_NICHE: Record<DesignNiche, {
     },
     alternatives: [
       { id: 'kinfolk-minimal', name: 'Kinfolk Minimalist Atelier', summary: 'Foco absoluto em fotografia macro, espaço negativo amplo (40%+) e tipografia serifada fina.' },
-      { id: 'brutalist-craft', name: 'Artisanal Swiss Grid', summary: 'Bordas expostas de 1px em preto carvão sobre fundo creme, fichas técnicas em monospace.' },
+      { id: 'process-film', name: 'Process Film', summary: 'Sequência de imagens do produto sendo feito, controlada pelo scroll, com tipografia condensada sobreposta.' },
       { id: 'nocturnal-roast', name: 'Nocturnal Espresso Club', summary: 'Modo escuro quente (#14110F) com acentos cobre/âmbar (#D97706) e atmosfera intimista.' },
     ],
     taste: {
@@ -323,7 +327,7 @@ const DIRECTIONS_BY_NICHE: Record<DesignNiche, {
         surface: '#141419',
         textPrimary: '#F5F5F0 (warm bone white)',
         textMuted: '#8E8E99',
-        accentPrimary: '#E11D48 (crimson signal) ou #D9F99D (acid lime)',
+        accentPrimary: '#E11D48 (crimson signal) ou acento derivado do conceito (evitar verde-ácido sobre preto, padrão de IA)',
         accentSecondary: '#38BDF8',
         border: 'rgba(245, 245, 240, 0.12)',
         semantic: { success: '#22C55E', warning: '#F59E0B', danger: '#EF4444' },
@@ -334,7 +338,7 @@ const DIRECTIONS_BY_NICHE: Record<DesignNiche, {
         mono: 'Space Mono (índices de cena, timecodes, coordenadas)',
         scaleRatio: '1.414 (Augmented Fourth)',
         rules: [
-          'Contraste extremo de escala entre títulos display e metadados técnicos (12px uppercase tracking 0.12em)',
+          'Contraste extremo de escala entre títulos display e metadados (sem rótulo em caixa-alta espaçada acima de todo título)',
         ],
       },
       layout: {
@@ -664,6 +668,35 @@ export function auditVisualQuality(
       severity: 'medium',
       message: `Repetição monótona de cards idênticos (${cardMatches.length}x "rounded-2xl shadow-lg/xl") — diversifique a composição com grid editorial, tabelas ou seções assimétricas.`,
     });
+  }
+
+  // 6. Geração 2: o "bom gosto padrão" de IA (creme + serif de alto contraste + palavra
+  //    em itálico + terracota + rótulos em caixa-alta espaçada + 01/02/03 + linhas de 1px).
+  //    Cada sinal isolado é aceitável; 3 ou mais juntos são o template de 2026.
+  if (looksLikeMarkupOrStyle) {
+    const gen2: Array<[string, boolean]> = [
+      ['fundo creme/papel', /#(?:FAF6F0|F5F0E8|FAF7F2|F4EFE5|F7F3EC|FBF8F3|F5F1EA|F2ECE1|FAF6EF)\b|oklch\(\s*0\.9[5-9]\d*\s+0\.0[01]\d*\s+(?:[6-9]\d)\b/i.test(text)],
+      ['serif de alto contraste no display', /Fraunces|Instrument\s*Serif|Playfair|Cormorant|Newsreader|EB\s*Garamond|DM\s*Serif|Libre\s*Caslon|Iowan\s*Old\s*Style/i.test(text)],
+      ['palavra do título em itálico/acento', /<h1[^>]*>[^<]*<(?:em|i)\b/i.test(text)],
+      ['acento terracota', /#(?:9A3412|C2410C|B4532A|A0522D|C1502E|B5482A|9C3D1F|C65D3B|D9622B)\b/i.test(text)],
+      ['rótulos em caixa-alta espaçada', (text.match(/uppercase[^;}\n]{0,80}(?:letter-spacing|tracking)|(?:letter-spacing|tracking)[^;}\n]{0,80}uppercase/gi) ?? []).length >= 1 && (text.match(/uppercase/gi) ?? []).length >= 3],
+      ['seções numeradas 01/02/03', (text.match(/>\s*0[1-9]\s*(?:·|\/|—|<)/g) ?? []).length >= 3],
+      ['divisores de 1px por toda parte', (text.match(/border(?:-top|-bottom)?\s*:\s*1px/gi) ?? []).length >= 6],
+      ['ponto médio como separador', (text.match(/·/g) ?? []).length >= 4],
+    ];
+    const hits = gen2.filter(([, hit]) => hit).map(([label]) => label);
+    // Rótulos, numeração e divisores podem ser decisão (ex.: Premium Noir & Gold); o que
+    // denuncia o template é o pacote tipográfico sem foto real e sem movimento próprio.
+    const hasRealImagery = /<(?:img|video|picture)\b[^>]*\bsrc=["'](?![^"']*\.svg)/i.test(text);
+    const hasOwnMotion = /ScrollTrigger|animation-timeline|requestAnimationFrame|<canvas\b|startViewTransition/i.test(text);
+    if (hits.length >= 3 && !(hasRealImagery && hasOwnMotion)) {
+      tells.push({
+        rule: 'ai-tasteful-default-cluster',
+        severity: 'high',
+        message: `Visual de "bom gosto padrão" de IA (${hits.length} sinais juntos: ${hits.join(', ')}). Troque o conceito, não a cor: skill signature-experience.`,
+        match: hits.join(', '),
+      });
+    }
   }
 
   const hasSemanticTokensOrPalette =

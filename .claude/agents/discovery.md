@@ -60,37 +60,37 @@ Referências técnicas que orientam suas decisões: "Continuous Discovery Habits
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/brainstorming/SKILL.md` (+ `references.md`)
-- `skills/deep-research/SKILL.md` (+ `references.md`)
-- `skills/design-directions/SKILL.md` (+ `references.md`)
-- `skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
-- `skills/anti-ai-slop/SKILL.md` (+ `references.md`)
-- `skills/requirements/SKILL.md`
-- `skills/frontend/SKILL.md` (+ `references.md`)
-- `skills/animation-web/SKILL.md` (+ `references.md`)
-- `skills/motion-design/SKILL.md` (+ `references.md`)
-- `skills/webgl-3d/SKILL.md` (+ `references.md`)
-- `skills/browser-automation/SKILL.md` (+ `references.md`)
-- `skills/webapp-testing/SKILL.md` (+ `references.md`)
-- `skills/reference-retrieval/SKILL.md` (+ `references.md`)
-- `skills/alternatives/SKILL.md`
-- `skills/tradeoff/SKILL.md`
-- `skills/risk/SKILL.md`
-- `skills/ux/SKILL.md`
-- `skills/a11y/SKILL.md`
-- `skills/architect/SKILL.md`
-- `skills/data-engineering/SKILL.md` (+ `references.md`)
-- `skills/db/SKILL.md`
-- `skills/web-perf-seo/SKILL.md` (+ `references.md`)
-- `skills/design-taste/SKILL.md`
-- `skills/web-design-guidelines/SKILL.md`
-- `skills/refero-styles/SKILL.md`
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/grilling/SKILL.md`
-- `skills/design-md/SKILL.md`
-- `skills/web-design-vocabulary/SKILL.md`
-- `skills/lead-finder/SKILL.md`
+- `.claude/skills/brainstorming/SKILL.md` (+ `references.md`)
+- `.claude/skills/deep-research/SKILL.md` (+ `references.md`)
+- `.claude/skills/design-directions/SKILL.md` (+ `references.md`)
+- `.claude/skills/ui-ux-pro-max/SKILL.md` (+ `references.md`)
+- `.claude/skills/anti-ai-slop/SKILL.md` (+ `references.md`)
+- `.claude/skills/requirement-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/frontend/SKILL.md` (+ `references.md`)
+- `.claude/skills/animation-web/SKILL.md` (+ `references.md`)
+- `.claude/skills/motion-design/SKILL.md` (+ `references.md`)
+- `.claude/skills/webgl-3d/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/webapp-testing/SKILL.md` (+ `references.md`)
+- `.claude/skills/reference-retrieval/SKILL.md` (+ `references.md`)
+- `.claude/skills/alternative-solution-generator/SKILL.md` (+ `references.md`)
+- `.claude/skills/tradeoff-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/risk-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/ux-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/accessibility-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/software-architect/SKILL.md` (+ `references.md`)
+- `.claude/skills/data-engineering/SKILL.md` (+ `references.md`)
+- `.claude/skills/web-perf-seo/SKILL.md` (+ `references.md`)
+- `.claude/skills/design-taste/SKILL.md`
+- `.claude/skills/web-design-guidelines/SKILL.md`
+- `.claude/skills/refero-styles/SKILL.md`
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/grilling/SKILL.md`
+- `.claude/skills/design-md/SKILL.md`
+- `.claude/skills/web-design-vocabulary/SKILL.md`
+- `.claude/skills/lead-finder/SKILL.md`
+- `.claude/skills/signature-experience/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -99,15 +99,15 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 ## Chains (fluxos de execução)
 
-- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirements, frontend
-- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, anti-ai-slop
-- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirements
-- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirements
-- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff
+- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirement-analyzer, frontend
+- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, signature-experience, anti-ai-slop
+- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirement-analyzer
+- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirement-analyzer
+- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff-analyzer
 - `app_ui`: brainstorming, design-directions, ui-ux-pro-max, frontend, motion-design
-- `prompt_rich`: brainstorming, requirements, design-directions, ui-ux-pro-max, architect
+- `prompt_rich`: brainstorming, requirement-analyzer, design-directions, ui-ux-pro-max, software-architect
 - `webgl_3d`: brainstorming, deep-research, design-directions, webgl-3d, animation-web, motion-design
-- `blueprint`: architect, data-engineering, db, risk, tradeoff
+- `blueprint`: software-architect, data-engineering, risk-analyzer, tradeoff-analyzer
 - `style_selection`: design-taste, refero-styles, web-design-guidelines
 
 ## Handoff

@@ -94,5 +94,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `site-launch-checklist`
 - `web-design-vocabulary`
 - `design-md`
+- `signature-experience`
 
 > Fonte: `agents/senior-engineer-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

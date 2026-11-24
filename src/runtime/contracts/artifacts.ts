@@ -100,7 +100,7 @@ export const ARTIFACT_SCHEMAS: Record<ArtifactKind, ArtifactSchema> = {
       const report = auditVisualQuality(c);
       return report.tells.filter((t) => t.severity === 'high').map((t) => t.message);
     },
-    simulationHint: 'palette: #FAF6F0 / #1C1917 · typography: Instrument Serif + Plus Jakarta Sans + JetBrains Mono (tabular-nums) · layout: editorial 12-col grid',
+    simulationHint: 'palette: derivada da foto do produto (#2A1810 / #EED9B4 / #F0A202) · typography: display condensada variável + sans humanista (tabular-nums em preços) · layout: blocos de cor cheia + seção pinada do processo',
   },
   'design-system': {
     kind: 'design-system',

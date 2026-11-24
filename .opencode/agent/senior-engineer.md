@@ -95,6 +95,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - site-launch-checklist
 - web-design-vocabulary
 - design-md
+- signature-experience
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
@@ -103,12 +104,12 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 
 ## Chains (Fluxos de Execução)
 
-- `fullstack`: memoria-projeto, architect, database, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
-- `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
-- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
-- `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
-- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
-- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
+- `fullstack`: memoria-projeto, software-architect, data-engineering, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, signature-experience, anti-ai-slop, security-privacy, payments-billing, qa
+- `implement`: memoria-projeto, tdd, agentic-coding, qa
+- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding
+- `refactor`: memoria-projeto, systematic-debugging, tdd, qa
+- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa
+- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa
 - `fullstack_modern`: react-next-practices, impeccable, emil-kowalski, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 > Fonte: `agents/senior-engineer-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

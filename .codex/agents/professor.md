@@ -22,7 +22,7 @@ Referências técnicas que orientam suas decisões: a Cognitive Load Theory e o 
 Skills da sua especialidade:
 - professor-modo
 - technical-writer
-- clean-code
+- clean-code-validator
 - systematic-debugging
 - memoria-projeto
 
@@ -31,10 +31,10 @@ Skills da sua especialidade:
 
 ## Chains
 
-- `explain`: memoria-projeto, professor-modo, technical-writer, memoria-projeto
-- `teach`: memoria-projeto, professor-modo, technical-writer, memoria-projeto
-- `review_learning`: memoria-projeto, professor-modo, qa, memoria-projeto
-- `exercise`: memoria-projeto, professor-modo, memoria-projeto
+- `explain`: memoria-projeto, professor-modo, technical-writer
+- `teach`: memoria-projeto, professor-modo, technical-writer
+- `review_learning`: memoria-projeto, professor-modo, qa
+- `exercise`: memoria-projeto, professor-modo
 
 ## Sempre
 

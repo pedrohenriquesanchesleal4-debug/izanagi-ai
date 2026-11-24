@@ -45,60 +45,56 @@
     "codebase-map",
     "site-launch-checklist",
     "web-design-vocabulary",
-    "design-md"
+    "design-md",
+    "signature-experience"
   ],
   "chains": {
     "fullstack": [
       "memoria-projeto",
-      "architect",
-      "database",
+      "software-architect",
+      "data-engineering",
       "impeccable",
       "frontend",
       "emil-kowalski",
       "editorial-layout",
       "conversion-copywriting",
       "ui-ux-pro-max",
+      "signature-experience",
       "anti-ai-slop",
       "security-privacy",
       "payments-billing",
-      "qa",
-      "memoria-projeto"
+      "qa"
     ],
     "implement": [
       "memoria-projeto",
       "tdd",
       "agentic-coding",
-      "qa",
-      "memoria-projeto"
+      "qa"
     ],
     "bug": [
       "memoria-projeto",
       "systematic-debugging",
       "tdd",
-      "agentic-coding",
-      "memoria-projeto"
+      "agentic-coding"
     ],
     "refactor": [
       "memoria-projeto",
       "systematic-debugging",
       "tdd",
-      "qa",
-      "memoria-projeto"
+      "qa"
     ],
     "review": [
       "memoria-projeto",
       "code-auditor",
       "security-privacy",
       "anti-ai-slop",
-      "qa",
-      "memoria-projeto"
+      "qa"
     ],
     "optimize": [
       "memoria-projeto",
       "web-perf-seo",
       "agentic-coding",
-      "qa",
-      "memoria-projeto"
+      "qa"
     ],
     "fullstack_modern": [
       "react-next-practices",

@@ -69,6 +69,7 @@ Skills da sua especialidade:
 - setup-recommender
 - lead-finder
 - obsidian-vault-ops
+- signature-experience
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
@@ -76,7 +77,7 @@ Skills da sua especialidade:
 ## Chains
 
 - `default_pipeline`: memoria-projeto, deep-research, reference-retrieval, requirement-analyzer, software-architect, parallel-agents, handoff-sessao, security-privacy, qa, evaluation
-- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, impeccable, ui-ux-pro-max, frontend, react-next-practices, emil-kowalski, motion-design, browser-automation, webapp-testing, web-perf-seo, a11y, anti-ai-slop, qa
+- `web_experience`: memoria-projeto, deep-research, reference-retrieval, design-directions, impeccable, ui-ux-pro-max, frontend, react-next-practices, emil-kowalski, motion-design, browser-automation, webapp-testing, web-perf-seo, accessibility-reviewer, signature-experience, anti-ai-slop, qa
 - `ai_or_mcp`: memoria-projeto, reference-retrieval, ai-agent, mcp-server-dev, security-privacy, qa, evaluation
 - `governance`: cto-advisor, failure-patterns
 

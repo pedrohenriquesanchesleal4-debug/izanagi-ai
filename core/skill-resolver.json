@@ -323,7 +323,12 @@
     "lead-finder": "skills/lead-finder/SKILL",
     "prospeccao": "skills/lead-finder/SKILL",
     "achar-clientes": "skills/lead-finder/SKILL",
-    "leads": "skills/lead-finder/SKILL"
+    "leads": "skills/lead-finder/SKILL",
+    "signature-experience": "skills/signature-experience/SKILL",
+    "site-extraordinario": "skills/signature-experience/SKILL",
+    "awwwards": "skills/signature-experience/SKILL",
+    "momento-de-assinatura": "skills/signature-experience/SKILL",
+    "creative-direction": "skills/signature-experience/SKILL"
   },
   "compositions": {
     "web_cinematic": {

@@ -39,16 +39,16 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/data-engineering/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/architecture-patterns/SKILL.md` (+ `references.md`)
-- `skills/error-recovery/SKILL.md` (+ `references.md`)
-- `skills/data-validation/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/er-diagram-builder/SKILL.md` (+ `references.md`)
-- `skills/breaking-change-detector/SKILL.md` (+ `references.md`)
-- `skills/performance-optimizer/SKILL.md` (+ `references.md`)
-- `skills/scalability-expert/SKILL.md` (+ `references.md`)
+- `.claude/skills/data-engineering/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/architecture-patterns/SKILL.md` (+ `references.md`)
+- `.claude/skills/error-recovery/SKILL.md` (+ `references.md`)
+- `.claude/skills/data-validation/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/er-diagram-builder/SKILL.md` (+ `references.md`)
+- `.claude/skills/breaking-change-detector/SKILL.md` (+ `references.md`)
+- `.claude/skills/performance-optimizer/SKILL.md` (+ `references.md`)
+- `.claude/skills/scalability-expert/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -57,10 +57,10 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 ## Chains (fluxos de execução)
 
-- `model`: memoria-projeto, architect, data-engineering, security-privacy, memoria-projeto
-- `migrate`: memoria-projeto, data-engineering, error-recovery, memoria-projeto
-- `optimize_query`: memoria-projeto, data-engineering, web-perf-seo, memoria-projeto
-- `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor, memoria-projeto
+- `model`: memoria-projeto, software-architect, data-engineering, security-privacy
+- `migrate`: memoria-projeto, data-engineering, error-recovery
+- `optimize_query`: memoria-projeto, data-engineering, web-perf-seo
+- `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor
 - `schema_design`: er-diagram-builder, breaking-change-detector
 
 ## Handoff

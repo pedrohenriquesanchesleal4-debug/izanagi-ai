@@ -27,7 +27,8 @@ O catálogo tem mais de 100 skills. Ler todas custa caro e não ajuda; não ler 
 |---|---|---|
 | Feature / bugfix de código | `agentic-coding` ou `tdd` | `self-critique` |
 | Bug difícil ou reincidente | `systematic-debugging` | `tdd` (teste de regressão) |
-| UI, landing, site | `impeccable` ou `design-taste` | `anti-ai-slop`, `site-launch-checklist` |
+| Landing, site, portfólio, lançamento | `signature-experience` (conceito + momento de assinatura) | `anti-ai-slop` (scanner Geração 1 e 2), `site-launch-checklist` |
+| UI de produto, dashboard, app | `impeccable` ou `design-taste` | `anti-ai-slop` |
 | Design system / marca de referência | `design-md` | `anti-ai-slop` |
 | Pedido visual vago, efeito de scroll, hero | `web-design-vocabulary` | `animation-web` |
 | Motion, animação | `emil-kowalski` ou `motion-design` | `web-perf-seo` |

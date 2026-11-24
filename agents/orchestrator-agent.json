@@ -43,7 +43,8 @@
     "task-playbook",
     "setup-recommender",
     "lead-finder",
-    "obsidian-vault-ops"
+    "obsidian-vault-ops",
+    "signature-experience"
   ],
   "chains": {
     "default_pipeline": [
@@ -72,7 +73,8 @@
       "browser-automation",
       "webapp-testing",
       "web-perf-seo",
-      "a11y",
+      "accessibility-reviewer",
+      "signature-experience",
       "anti-ai-slop",
       "qa"
     ],

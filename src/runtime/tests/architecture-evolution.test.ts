@@ -194,7 +194,7 @@ test('Phase 2 & 6 — buildNodePrompt: registra skillProvenance no nó e injeta 
   assert.match(prompt, /### Skill: design-taste/);
   assert.match(prompt, /### Skill: anti-ai-slop/);
   assert.match(prompt, /DESIGN INTELLIGENCE & ANTI-AI-SLOP PIPELINE/, 'deve injetar pipeline de Design Intelligence em nó visual');
-  assert.match(prompt, /Editorial Tactile Warmth/, 'cafeteria artesanal deve inferir direção editorial-warm (light-first), não bg-zinc-950 forçado');
+  assert.match(prompt, /Tactile Material Motion/, 'cafeteria artesanal deve inferir direção editorial-warm baseada no material do produto, não o clichê creme+serif');
 });
 
 test('Phase 6 — DesignIntelligence: infere direções distintas por nicho e quebra monocultura bg-zinc-950', () => {
@@ -206,7 +206,7 @@ test('Phase 6 — DesignIntelligence: infere direções distintas por nicho e qu
   const luxury = inferDesignDirection('E-commerce atelier de alta joalheria, moda editorial e relojoaria');
 
   assert.equal(cafe.niche, 'editorial-warm');
-  assert.equal(cafe.primary.themeMode, 'light-first');
+  assert.equal(cafe.primary.themeMode, 'dual-adaptive');
 
   assert.equal(clinic.niche, 'clinical-swiss');
   assert.equal(clinic.primary.themeMode, 'light-first');

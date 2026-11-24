@@ -20,29 +20,25 @@
   "chains": {
     "model": [
       "memoria-projeto",
-      "architect",
+      "software-architect",
       "data-engineering",
-      "security-privacy",
-      "memoria-projeto"
+      "security-privacy"
     ],
     "migrate": [
       "memoria-projeto",
       "data-engineering",
-      "error-recovery",
-      "memoria-projeto"
+      "error-recovery"
     ],
     "optimize_query": [
       "memoria-projeto",
       "data-engineering",
-      "web-perf-seo",
-      "memoria-projeto"
+      "web-perf-seo"
     ],
     "review_schema": [
       "memoria-projeto",
       "data-engineering",
       "security-privacy",
-      "code-auditor",
-      "memoria-projeto"
+      "code-auditor"
     ],
     "schema_design": [
       "er-diagram-builder",

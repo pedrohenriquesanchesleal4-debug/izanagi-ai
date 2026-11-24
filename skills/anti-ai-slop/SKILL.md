@@ -27,13 +27,13 @@ Modelos são treinados em milhões de sites e devolvem a média estatística: In
 ## Catálogo de Tells (detectar e eliminar)
 
 ### Tipografia
-- [ ] Inter como fonte única (o tell #1). Fix: trocar por pairing com personalidade (ex: Space Grotesk + Inter Tight, Fraunces + Archivo, JetBrains Mono + Sora, Instrument Serif + General Sans).
+- [ ] Inter como fonte única (o tell #1). Fix: escolher a fonte pelo conceito do negócio (ver `signature-experience`). Não trocar Inter por outro par que também virou assinatura de IA (serif de alto contraste + mono, Space Grotesk + Instrument Serif, Fraunces em tudo).
 - [ ] Peso/tamanho uniforme em todos os títulos. Fix: hierarquia agressiva (display 96-160px vs body 16px).
 
 ### Cor
 - [ ] Gradiente roxo→azul / violeta / fuchsia / pink (via-purple-*, to-pink-*, from-fuchsia-*). Fix: uma cor dominante forte + um acento afiado, sem gradiente tímido (ou gradiente sutil da MESMA família).
 - [ ] Paleta default do Tailwind sem modificação. Fix: tokens customizados por nicho.
-- [ ] Fundo #f9fafb + cards brancos + sombra sutil. Fix: superfícies com mais caráter (off-white quente, dark OLED, tons terrosos, papel).
+- [ ] Fundo #f9fafb + cards brancos + sombra sutil. Fix: superfície derivada do material do negócio (foto, textura, cor da matéria-prima). Atenção: creme/papel quente e dark OLED com acento ácido já são os novos padrões de IA (Geração 2 abaixo).
 
 ### Layout
 - [ ] Hero centralizado + 3 feature cards idênticos em grid. Fix: layout assimétrico, grade editorial, composição não-card (tabelas, listas numeradas, tipografia gigante, diagonais).
@@ -109,6 +109,63 @@ Antes do catálogo detalhado, conte quantos destes a tela tem. Nenhum é proibid
 | 20 | Granulado sobre degradê | Textura só se for da marca |
 
 **Leitura do placar:** 0 a 4 ok · 5 a 9 revisar os itens marcados · 10 ou mais: a tela é template, refaça a direção visual (`design-directions`) antes de polir.
+
+## Geração 2: o "bom gosto padrão" (o que a IA faz quando tenta não ser genérica)
+
+Fugir do roxo não basta. Em 2026 o novo template reconhecível é o estilo que modelos produzem quando querem parecer sofisticados. Passa no placar de cima e ainda grita "feito com IA". **Três ou mais destes juntos numa página sem foto real e sem movimento próprio = reprovar e refazer o conceito**, não polir. Os mesmos elementos (rótulos, numeração, linhas) usados com fotografia real e scroll narrativo podem ser decisão legítima: ver direção Premium Noir & Gold em `signature-experience`.
+
+| # | Sinal (cluster "Claude look") | Como detectar |
+|---|---|---|
+| G1 | Fundo creme/papel quente (#f5f0e8, #faf6ef, oklch ~0.96 0.01 80) | cor de fundo do `body` quente e quase branca |
+| G2 | H1 serifado enorme de alto contraste | `font-family` serif no h1, tamanho > 64px |
+| G3 | Uma palavra do título em itálico e/ou cor de acento | `<em>`/`<span>` estilizado dentro do h1 |
+| G4 | Acento terracota/ferrugem/laranja queimado (é a cor da marca do próprio Claude) | acento com matiz 20 a 45 e saturação média |
+| G5 | Rótulo pequeno em caixa-alta, espaçado, muitas vezes mono, acima de cada título | `text-transform: uppercase` + `letter-spacing` ≥ .08em em 3+ rótulos |
+| G6 | Separador "·" entre detalhes e "→" em links | contagem de `·` e `→` no texto |
+| G7 | Seções numeradas 01 / 02 / 03 sem ser sequência | numerais com zero à esquerda antes de títulos |
+| G8 | Linhas finas de 1px separando tudo, cantos retos, ar de jornal | 5+ `border-*: 1px` como divisores |
+| G9 | Fileira de números grandes com legenda pequena | 3 ou 4 numerais grandes lado a lado |
+| G10 | Ilustração em traço fino/SVG simples no lugar de imagem real | nenhum `<img>`/`<video>` real; só SVG de linha |
+| G11 | Página parada: nada acontece além de hover | sem animação ligada a scroll, sem interação própria |
+| G12 | Preto azulado + um acento ácido (verde-limão, vermelhão) | fundo ~#0b0b0c com 1 acento saturado |
+
+Cluster "Codex look" (mesma regra dos 3): painéis flutuando com sombra pesada, vidro fosco, grade de cards de estatística, bolinhas coloridas de status sem status real, pills em tudo, cards que sobem no hover, logos de "confiam em nós".
+
+Hábitos de movimento que também denunciam: fade-up igual em toda seção, número contando a partir de zero, título digitado letra a letra, brilho atrás do input, cards aparecendo um a um com a grade vazia na chegada.
+
+**Saída da Geração 2 não é trocar a cor.** É ter um conceito visual que só serve para aquele negócio e um momento de interação memorável: use a skill `signature-experience`.
+
+### Scanner (colar no console do navegador ou rodar via Playwright `page.evaluate`)
+
+```js
+(() => {
+  const cs = (el) => getComputedStyle(el), h1 = document.querySelector('h1');
+  const bg = cs(document.body).backgroundColor.match(/\d+/g)?.map(Number) || [255,255,255];
+  const warmPaper = bg[0] > 235 && bg[0] >= bg[2] + 6;
+  const all = [...document.querySelectorAll('body *')];
+  const eyebrows = all.filter(e => cs(e).textTransform === 'uppercase' && parseFloat(cs(e).letterSpacing) / parseFloat(cs(e).fontSize) >= 0.08 && parseFloat(cs(e).fontSize) <= 14).length;
+  const hair = all.filter(e => ['Top','Bottom'].some(s => cs(e)[`border${s}Width`] === '1px' && cs(e)[`border${s}Style`] !== 'none')).length;
+  const txt = document.body.innerText;
+  const g = {
+    G1_papel_creme: warmPaper,
+    G2_h1_serif: !!h1 && /serif/i.test(cs(h1).fontFamily) && !/sans/i.test(cs(h1).fontFamily) || (!!h1 && parseFloat(cs(h1).fontSize) > 64 && /Fraunces|Instrument Serif|Playfair|Cormorant|Newsreader|EB Garamond|Libre Caslon|DM Serif/i.test(cs(h1).fontFamily)),
+    G3_palavra_destacada: !!h1?.querySelector('em,i,span'),
+    G5_rotulos_caixa_alta: eyebrows >= 3,
+    G6_ponto_medio: (txt.match(/·/g) || []).length >= 3,
+    G7_secoes_01: (txt.match(/\b0[1-9]\b/g) || []).length >= 3,
+    G8_linhas_finas: hair >= 6,
+    G10_sem_imagem_real: !document.querySelector('img[src]:not([src$=".svg"]), video, canvas'),
+    G11_pagina_parada: !document.getAnimations().length && !document.querySelector('canvas'),
+  };
+  const hits = Object.entries(g).filter(([, v]) => v).map(([k]) => k);
+  // Rótulos, numeração e linhas podem ser decisão de design (ex.: Premium Noir & Gold).
+  // O que denuncia é o pacote tipográfico SEM foto real e SEM movimento próprio.
+  const semVida = g.G10_sem_imagem_real || g.G11_pagina_parada;
+  return { hits, total: hits.length, veredito: hits.length >= 3 && semVida ? 'REPROVADO: bom gosto padrão de IA' : hits.length >= 5 ? 'REVISAR: muitos sinais juntos' : 'ok' };
+})();
+```
+
+Rode também com a página rolada até o meio (animações ligadas a scroll só existem depois que a timeline começa).
 
 ## Processo
 

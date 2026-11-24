@@ -48,12 +48,12 @@ Referências técnicas que orientam suas decisões: o método GRADE (Grading of 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/deep-research/SKILL.md` (+ `references.md`)
-- `skills/confidence-estimator/SKILL.md` (+ `references.md`)
-- `skills/hallucination-detection/SKILL.md` (+ `references.md`)
-- `skills/documentation-writer/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/lead-finder/SKILL.md`
+- `.claude/skills/deep-research/SKILL.md` (+ `references.md`)
+- `.claude/skills/confidence-estimator/SKILL.md` (+ `references.md`)
+- `.claude/skills/hallucination-detection/SKILL.md` (+ `references.md`)
+- `.claude/skills/documentation-writer/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/lead-finder/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

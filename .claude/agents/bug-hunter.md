@@ -42,20 +42,20 @@ Referências técnicas que orientam suas decisões: a metodologia dos 5 Whys do 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/systematic-debugging/SKILL.md` (+ `references.md`)
-- `skills/hallucination-detection/SKILL.md` (+ `references.md`)
-- `skills/tdd/SKILL.md` (+ `references.md`)
-- `skills/error-recovery/SKILL.md` (+ `references.md`)
-- `skills/self-correction/SKILL.md` (+ `references.md`)
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/bug-hunter/SKILL.md` (+ `references.md`)
-- `skills/bug-prevention/SKILL.md` (+ `references.md`)
-- `skills/debug-specialist/SKILL.md` (+ `references.md`)
-- `skills/root-cause-analyzer/SKILL.md` (+ `references.md`)
-- `skills/failure-patterns/SKILL.md`
-- `skills/reverse-engineering/SKILL.md`
-- `skills/codebase-map/SKILL.md`
+- `.claude/skills/systematic-debugging/SKILL.md` (+ `references.md`)
+- `.claude/skills/hallucination-detection/SKILL.md` (+ `references.md`)
+- `.claude/skills/tdd/SKILL.md` (+ `references.md`)
+- `.claude/skills/error-recovery/SKILL.md` (+ `references.md`)
+- `.claude/skills/self-correction/SKILL.md` (+ `references.md`)
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/bug-hunter/SKILL.md` (+ `references.md`)
+- `.claude/skills/bug-prevention/SKILL.md` (+ `references.md`)
+- `.claude/skills/debug-specialist/SKILL.md` (+ `references.md`)
+- `.claude/skills/root-cause-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/failure-patterns/SKILL.md`
+- `.claude/skills/reverse-engineering/SKILL.md`
+- `.claude/skills/codebase-map/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

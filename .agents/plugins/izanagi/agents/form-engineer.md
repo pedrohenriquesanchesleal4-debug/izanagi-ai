@@ -65,5 +65,6 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `impeccable`
 - `emil-kowalski`
 - `design-md`
+- `signature-experience`
 
 > Fonte: `agents/form-engineer-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

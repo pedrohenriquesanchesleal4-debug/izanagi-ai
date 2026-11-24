@@ -40,26 +40,22 @@ optionalSkills:
 chains:
   model:
     - "memoria-projeto"
-    - "architect"
+    - "software-architect"
     - "data-engineering"
     - "security-privacy"
-    - "memoria-projeto"
   migrate:
     - "memoria-projeto"
     - "data-engineering"
     - "error-recovery"
-    - "memoria-projeto"
   optimize_query:
     - "memoria-projeto"
     - "data-engineering"
     - "web-perf-seo"
-    - "memoria-projeto"
   review_schema:
     - "memoria-projeto"
     - "data-engineering"
     - "security-privacy"
     - "code-auditor"
-    - "memoria-projeto"
   schema_design:
     - "er-diagram-builder"
     - "breaking-change-detector"

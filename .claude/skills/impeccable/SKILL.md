@@ -22,8 +22,8 @@ Antes de escolher qualquer classe Tailwind ou componente, classifique o que o us
 | Modo | Objetivo do Usuário | Densidade & Espaço | Tipografia & Hierarquia | Superfície & Cor |
 |---|---|---|---|---|
 | **1. Persuade** *(Landing, Pricing, Checkout)* | Decidir e agir com confiança | Generosa (`py-24` a `py-36`), foco em 1 narrativa por dobra | Contraste dramático: Display (`clamp(2.75rem, 6vw, 5.5rem)`, `leading-[0.98]`, `tracking-tighter`) vs Body `16-18px` | Paleta expressiva com 1 acento de alta conversão; zero ruído lateral |
-| **2. Operate** *(Dashboards, DevTools, Editores)* | Executar tarefas complexas rapidamente | Alta densidade (`p-3` a `p-5`, `gap-2` a `gap-4`), aproveitamento total da viewport | Escala contida (`12px-14px` base), `tabular-nums` obrigatório em dados, labels `font-mono uppercase` | Neutros escuros ou claros tonalizados em OKLCH; bordas de 1px sutis; atalhos `<kbd>` visíveis |
-| **3. Read** *(Docs, Artigos, Relatórios)* | Absorver conteúdo longo sem fadiga | Medida de linha estrita (`60ch-75ch` / `max-w-prose`), margens amplas | Ritmo vertical cadenciado (`leading-[1.65]` a `1.75`), subtítulos com ancoragem clara | Contraste confortável (não use `#fff` puro sobre `#000` puro; prefira papel quente ou ardósia suave) |
+| **2. Operate** *(Dashboards, DevTools, Editores)* | Executar tarefas complexas rapidamente | Alta densidade (`p-3` a `p-5`, `gap-2` a `gap-4`), aproveitamento total da viewport | Escala contida (`12px-14px` base), `tabular-nums` obrigatório em dados, labels curtos legíveis (caixa-alta espaçada só em dashboard denso, nunca em landing) | Neutros escuros ou claros tonalizados em OKLCH; bordas de 1px sutis; atalhos `<kbd>` visíveis |
+| **3. Read** *(Docs, Artigos, Relatórios)* | Absorver conteúdo longo sem fadiga | Medida de linha estrita (`60ch-75ch` / `max-w-prose`), margens amplas | Ritmo vertical cadenciado (`leading-[1.65]` a `1.75`), subtítulos com ancoragem clara | Contraste confortável (não use `#fff` puro sobre `#000` puro; prefira neutro tonalizado pela cor da marca; papel creme é padrão de IA em landing) |
 | **4. Experience** *(Portfólios, Showcases, WebGL)* | Sentir imersão e memorabilidade | Assimetria editorial, sangria (*bleed*) até a borda da tela | Tipografia como elemento gráfico estrutural | Iluminação direcional, profundidade em camadas e coreografia de scroll |
 
 ---
@@ -33,14 +33,14 @@ Antes de escolher qualquer classe Tailwind ou componente, classifique o que o us
 IAs geram interfaces "mortas" porque usam cinzas puros sem matiz (`#808080`, `gray-500`) combinados com gradientes saturados demais. O padrão **Impeccable** exige **neutros tonalizados (Tinted Neutrals)** no espaço **OKLCH**, onde a luminosidade (`L`) é perceptualmente uniforme:
 
 ```css
-/* globals.css — Tokens Perceptuais OKLCH (Matiz 260 = Azul/Indigo Frio; Matiz 80 = Papel Quente) */
+/* globals.css: Tokens Perceptuais OKLCH. Neutros tonalizados pela matiz da MARCA (não use papel creme como default) */
 :root {
   --hue-brand: 255;
 
-  /* Light Mode com Neutros Tonalizados Quentes */
-  --surface-canvas: oklch(0.985 0.004 85);
+  /* Light Mode com neutros tonalizados pela marca */
+  --surface-canvas: oklch(0.985 0.004 var(--hue-brand));
   --surface-card: oklch(1 0 0);
-  --surface-subtle: oklch(0.955 0.006 85);
+  --surface-subtle: oklch(0.955 0.006 var(--hue-brand));
   --border-hairline: oklch(0.20 0.01 255 / 0.08);
   --text-primary: oklch(0.18 0.015 255);
   --text-secondary: oklch(0.45 0.015 255);

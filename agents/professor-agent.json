@@ -8,7 +8,7 @@
   "skills": [
     "professor-modo",
     "technical-writer",
-    "clean-code",
+    "clean-code-validator",
     "systematic-debugging",
     "memoria-projeto"
   ],
@@ -16,25 +16,21 @@
     "explain": [
       "memoria-projeto",
       "professor-modo",
-      "technical-writer",
-      "memoria-projeto"
+      "technical-writer"
     ],
     "teach": [
       "memoria-projeto",
       "professor-modo",
-      "technical-writer",
-      "memoria-projeto"
+      "technical-writer"
     ],
     "review_learning": [
       "memoria-projeto",
       "professor-modo",
-      "qa",
-      "memoria-projeto"
+      "qa"
     ],
     "exercise": [
       "memoria-projeto",
-      "professor-modo",
-      "memoria-projeto"
+      "professor-modo"
     ]
   },
   "always": [

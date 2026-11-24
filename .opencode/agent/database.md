@@ -68,10 +68,10 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 
 ## Chains (Fluxos de Execução)
 
-- `model`: memoria-projeto, architect, data-engineering, security-privacy, memoria-projeto
-- `migrate`: memoria-projeto, data-engineering, error-recovery, memoria-projeto
-- `optimize_query`: memoria-projeto, data-engineering, web-perf-seo, memoria-projeto
-- `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor, memoria-projeto
+- `model`: memoria-projeto, software-architect, data-engineering, security-privacy
+- `migrate`: memoria-projeto, data-engineering, error-recovery
+- `optimize_query`: memoria-projeto, data-engineering, web-perf-seo
+- `review_schema`: memoria-projeto, data-engineering, security-privacy, code-auditor
 - `schema_design`: er-diagram-builder, breaking-change-detector
 
 > Fonte: `agents/database-agent.json` · Gerado pelo Izanagi AI (`izanagi export --cli opencode`)

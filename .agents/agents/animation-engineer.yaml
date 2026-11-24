@@ -42,6 +42,7 @@ skills:
   - "emil-kowalski"
   - "site-launch-checklist"
   - "web-design-vocabulary"
+  - "signature-experience"
 optionalSkills:
   - "editorial-layout"
   - "conversion-copywriting"
@@ -58,6 +59,7 @@ chains:
   webgl_scene:
     - "memoria-projeto"
     - "webgl-3d"
+    - "signature-experience"
     - "anti-ai-slop"
     - "memoria-projeto"
   motion_signature:

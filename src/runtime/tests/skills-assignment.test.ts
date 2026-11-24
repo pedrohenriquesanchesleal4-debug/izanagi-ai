@@ -3,6 +3,20 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 
+test('Skills Assignment: toda skill citada por agente (skills e chains) existe no catálogo', () => {
+  // Nome curto ("architect", "db", "a11y") vira caminho quebrado no adapter do Claude Code
+  // e some em silêncio no Antigravity. O nome no agente tem que ser a pasta real.
+  const missing: string[] = [];
+  for (const f of fs.readdirSync('agents').filter((x) => x.endsWith('-agent.json'))) {
+    const j = JSON.parse(fs.readFileSync(path.join('agents', f), 'utf-8'));
+    const names: string[] = [...(j.skills ?? []), ...Object.values<string[]>(j.chains ?? {}).flat()];
+    for (const s of names) {
+      if (!fs.existsSync(path.join('.skills', s, 'SKILL.md'))) missing.push(`${f}:${s}`);
+    }
+  }
+  assert.deepEqual(missing, []);
+});
+
 test('Skills Assignment: zero unreferenced skills across the framework', () => {
   const getSkills = (dir: string) => {
     if (!fs.existsSync(dir)) return [];

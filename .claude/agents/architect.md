@@ -47,28 +47,28 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/architecture-patterns/SKILL.md` (+ `references.md`)
-- `skills/principal-engineer/SKILL.md` (+ `references.md`)
-- `skills/requirement-analyzer/SKILL.md` (+ `references.md`)
-- `skills/sequence-diagram-builder/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/deep-research/SKILL.md` (+ `references.md`)
-- `skills/task-planner/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/design-pattern-advisor/SKILL.md` (+ `references.md`)
-- `skills/scalability-expert/SKILL.md` (+ `references.md`)
-- `skills/legacy-migration/SKILL.md` (+ `references.md`)
-- `skills/serverless-edge/SKILL.md` (+ `references.md`)
-- `skills/uml-generator/SKILL.md` (+ `references.md`)
-- `skills/cto-advisor/SKILL.md` (+ `references.md`)
-- `skills/graphql/SKILL.md` (+ `references.md`)
-- `skills/websocket-realtime/SKILL.md` (+ `references.md`)
-- `skills/wasm/SKILL.md` (+ `references.md`)
-- `skills/tradeoff-analyzer/SKILL.md` (+ `references.md`)
-- `skills/alternative-solution-generator/SKILL.md` (+ `references.md`)
-- `skills/er-diagram-builder/SKILL.md` (+ `references.md`)
-- `skills/grilling/SKILL.md`
-- `skills/plan-cold-review/SKILL.md`
+- `.claude/skills/architecture-patterns/SKILL.md` (+ `references.md`)
+- `.claude/skills/principal-engineer/SKILL.md` (+ `references.md`)
+- `.claude/skills/requirement-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/sequence-diagram-builder/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/deep-research/SKILL.md` (+ `references.md`)
+- `.claude/skills/task-planner/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/design-pattern-advisor/SKILL.md` (+ `references.md`)
+- `.claude/skills/scalability-expert/SKILL.md` (+ `references.md`)
+- `.claude/skills/legacy-migration/SKILL.md` (+ `references.md`)
+- `.claude/skills/serverless-edge/SKILL.md` (+ `references.md`)
+- `.claude/skills/uml-generator/SKILL.md` (+ `references.md`)
+- `.claude/skills/cto-advisor/SKILL.md` (+ `references.md`)
+- `.claude/skills/graphql/SKILL.md` (+ `references.md`)
+- `.claude/skills/websocket-realtime/SKILL.md` (+ `references.md`)
+- `.claude/skills/wasm/SKILL.md` (+ `references.md`)
+- `.claude/skills/tradeoff-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/alternative-solution-generator/SKILL.md` (+ `references.md`)
+- `.claude/skills/er-diagram-builder/SKILL.md` (+ `references.md`)
+- `.claude/skills/grilling/SKILL.md`
+- `.claude/skills/plan-cold-review/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

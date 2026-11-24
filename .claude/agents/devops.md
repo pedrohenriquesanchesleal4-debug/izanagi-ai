@@ -39,22 +39,22 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/cloud-infra/SKILL.md` (+ `references.md`)
-- `skills/iac-terraform/SKILL.md` (+ `references.md`)
-- `skills/security-privacy/SKILL.md` (+ `references.md`)
-- `skills/automation-security/SKILL.md` (+ `references.md`)
-- `skills/monitoring-specialist/SKILL.md` (+ `references.md`)
-- `skills/observability-expert/SKILL.md` (+ `references.md`)
-- `skills/sre-reliability/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/chaos-engineering/SKILL.md` (+ `references.md`)
-- `skills/release-planner/SKILL.md` (+ `references.md`)
-- `skills/dependency-analyzer/SKILL.md` (+ `references.md`)
-- `skills/logging-expert/SKILL.md` (+ `references.md`)
-- `skills/feature-flags/SKILL.md` (+ `references.md`)
-- `skills/serverless-edge/SKILL.md` (+ `references.md`)
-- `skills/performance-optimizer/SKILL.md` (+ `references.md`)
-- `skills/scalability-expert/SKILL.md` (+ `references.md`)
+- `.claude/skills/cloud-infra/SKILL.md` (+ `references.md`)
+- `.claude/skills/iac-terraform/SKILL.md` (+ `references.md`)
+- `.claude/skills/security-privacy/SKILL.md` (+ `references.md`)
+- `.claude/skills/automation-security/SKILL.md` (+ `references.md`)
+- `.claude/skills/monitoring-specialist/SKILL.md` (+ `references.md`)
+- `.claude/skills/observability-expert/SKILL.md` (+ `references.md`)
+- `.claude/skills/sre-reliability/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/chaos-engineering/SKILL.md` (+ `references.md`)
+- `.claude/skills/release-planner/SKILL.md` (+ `references.md`)
+- `.claude/skills/dependency-analyzer/SKILL.md` (+ `references.md`)
+- `.claude/skills/logging-expert/SKILL.md` (+ `references.md`)
+- `.claude/skills/feature-flags/SKILL.md` (+ `references.md`)
+- `.claude/skills/serverless-edge/SKILL.md` (+ `references.md`)
+- `.claude/skills/performance-optimizer/SKILL.md` (+ `references.md`)
+- `.claude/skills/scalability-expert/SKILL.md` (+ `references.md`)
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
@@ -63,10 +63,10 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 
 ## Chains (fluxos de execução)
 
-- `dockerize`: memoria-projeto, cloud-infra, security-privacy, automation-security, memoria-projeto
-- `cicd`: memoria-projeto, cloud-infra, qa, security-privacy, memoria-projeto
-- `infra`: memoria-projeto, architect, iac-terraform, cloud-infra, security-privacy, memoria-projeto
-- `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability, memoria-projeto
+- `dockerize`: memoria-projeto, cloud-infra, security-privacy, automation-security
+- `cicd`: memoria-projeto, cloud-infra, qa, security-privacy
+- `infra`: memoria-projeto, software-architect, iac-terraform, cloud-infra, security-privacy
+- `deploy`: memoria-projeto, cloud-infra, observability-expert, sre-reliability
 - `release_workflow`: release-planner, dependency-analyzer, chaos-engineering
 
 ## Handoff

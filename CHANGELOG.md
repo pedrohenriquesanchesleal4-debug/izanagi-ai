@@ -4,6 +4,19 @@
 
 ---
 
+## [3.24.22]: 2026-11-24
+
+### Fixed (design genérico)
+- **As próprias skills empurravam o visual de IA.** `anti-ai-slop`, `design-directions`, `impeccable` e `web-design-guidelines` recomendavam Fraunces/Instrument Serif, fundo creme/papel quente e rótulos mono em caixa-alta: o "Claude look" de 2026. Removido e substituído por escolha pelo conceito do negócio.
+- **Runtime:** a direção `editorial-warm` (#FAF6F0 + serif + terracota + 01/02/03) virou `Tactile Material Motion`, derivada do material do produto. `auditVisualQuality` ganhou a regra `ai-tasteful-default-cluster` (3+ sinais da geração 2 sem foto real e sem movimento próprio reprova).
+- **Claude Code:** agentes citavam skills em `skills/<nome>/SKILL.md`, caminho que não existe em projeto consumidor; agora `.claude/skills/<nome>/SKILL.md`. Os 103 `references.md` citados pelas skills passam a ser exportados. O agente `orchestrator` recebe a política de despacho (não encerrar com subagente rodando) e o formato de briefing.
+- 9 nomes de skill quebrados em agentes (`requirements`, `architect`, `db`, `a11y`...) trocados pelos nomes reais; teste novo impede regressão.
+
+### Added
+- Skill `signature-experience`: conceito visual próprio + momento de assinatura + técnicas de movimento (scroll scrub, caminho SVG, odômetro, WebGL, cards empilháveis) + prova por screenshot. `references.md` com a direção **Premium Noir & Gold**, estudada quadro a quadro em duas landings brasileiras de alto ticket, com receitas de código.
+- `anti-ai-slop`: tabela da Geração 2 (G1 a G12), cluster Codex, hábitos de movimento e scanner executável no navegador.
+- Conferido com run real no Claude Code: landing de masterclass gerada pelo orquestrador saiu no estilo Noir & Gold, com trilha dourada desenhada pelo scroll, odômetro, contagem regressiva e faixa diagonal; scanner com 1 sinal, sem erro de console.
+
 ## [3.24.21]: 2026-11-24
 
 ### Added (2ª rodada, a partir dos vídeos salvos)

@@ -62,18 +62,19 @@ Skills da sua especialidade:
 - site-launch-checklist
 - web-design-vocabulary
 - design-md
+- signature-experience
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
 
 ## Chains
 
-- `fullstack`: memoria-projeto, architect, database, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, anti-ai-slop, security-privacy, payments-billing, qa, memoria-projeto
-- `implement`: memoria-projeto, tdd, agentic-coding, qa, memoria-projeto
-- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding, memoria-projeto
-- `refactor`: memoria-projeto, systematic-debugging, tdd, qa, memoria-projeto
-- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa, memoria-projeto
-- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa, memoria-projeto
+- `fullstack`: memoria-projeto, software-architect, data-engineering, impeccable, frontend, emil-kowalski, editorial-layout, conversion-copywriting, ui-ux-pro-max, signature-experience, anti-ai-slop, security-privacy, payments-billing, qa
+- `implement`: memoria-projeto, tdd, agentic-coding, qa
+- `bug`: memoria-projeto, systematic-debugging, tdd, agentic-coding
+- `refactor`: memoria-projeto, systematic-debugging, tdd, qa
+- `review`: memoria-projeto, code-auditor, security-privacy, anti-ai-slop, qa
+- `optimize`: memoria-projeto, web-perf-seo, agentic-coding, qa
 - `fullstack_modern`: react-next-practices, impeccable, emil-kowalski, web-design-guidelines, design-taste, browser-playwright, refactoring-specialist
 
 ## Sempre

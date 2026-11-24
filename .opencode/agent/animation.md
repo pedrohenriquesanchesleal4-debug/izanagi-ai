@@ -70,6 +70,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - emil-kowalski
 - site-launch-checklist
 - web-design-vocabulary
+- signature-experience
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
@@ -79,7 +80,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 ## Chains (Fluxos de Execução)
 
 - `scrollytelling`: memoria-projeto, reference-retrieval, animation-web, motion-design, browser-automation, webapp-testing, anti-ai-slop, memoria-projeto
-- `webgl_scene`: memoria-projeto, webgl-3d, anti-ai-slop, memoria-projeto
+- `webgl_scene`: memoria-projeto, webgl-3d, signature-experience, anti-ai-slop, memoria-projeto
 - `motion_signature`: memoria-projeto, emil-kowalski, impeccable, motion-design, anti-ai-slop, memoria-projeto
 - `preloader`: memoria-projeto, animation-web, motion-design, memoria-projeto
 - `motion_ui`: impeccable, emil-kowalski, design-taste, web-design-guidelines, refero-styles

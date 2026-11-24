@@ -44,23 +44,23 @@ Referências técnicas que orientam suas decisões: a documentação oficial de 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
-- `skills/qa/SKILL.md` (+ `references.md`)
-- `skills/tdd/SKILL.md` (+ `references.md`)
-- `skills/testing-automation/SKILL.md` (+ `references.md`)
-- `skills/webapp-testing/SKILL.md` (+ `references.md`)
-- `skills/browser-automation/SKILL.md` (+ `references.md`)
-- `skills/reference-retrieval/SKILL.md` (+ `references.md`)
-- `skills/accessibility-reviewer/SKILL.md` (+ `references.md`)
-- `skills/data-validation/SKILL.md` (+ `references.md`)
-- `skills/error-recovery/SKILL.md` (+ `references.md`)
-- `skills/memoria-projeto/SKILL.md` (+ `references.md`)
-- `skills/browser-playwright/SKILL.md`
-- `skills/bug-prevention/SKILL.md` (+ `references.md`)
-- `skills/chaos-engineering/SKILL.md` (+ `references.md`)
-- `skills/adversarial-critique/SKILL.md`
-- `skills/impeccable/SKILL.md` (+ `references.md`)
-- `skills/emil-kowalski/SKILL.md` (+ `references.md`)
-- `skills/site-launch-checklist/SKILL.md`
+- `.claude/skills/qa/SKILL.md` (+ `references.md`)
+- `.claude/skills/tdd/SKILL.md` (+ `references.md`)
+- `.claude/skills/testing-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/webapp-testing/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-automation/SKILL.md` (+ `references.md`)
+- `.claude/skills/reference-retrieval/SKILL.md` (+ `references.md`)
+- `.claude/skills/accessibility-reviewer/SKILL.md` (+ `references.md`)
+- `.claude/skills/data-validation/SKILL.md` (+ `references.md`)
+- `.claude/skills/error-recovery/SKILL.md` (+ `references.md`)
+- `.claude/skills/memoria-projeto/SKILL.md` (+ `references.md`)
+- `.claude/skills/browser-playwright/SKILL.md`
+- `.claude/skills/bug-prevention/SKILL.md` (+ `references.md`)
+- `.claude/skills/chaos-engineering/SKILL.md` (+ `references.md`)
+- `.claude/skills/adversarial-critique/SKILL.md`
+- `.claude/skills/impeccable/SKILL.md` (+ `references.md`)
+- `.claude/skills/emil-kowalski/SKILL.md` (+ `references.md`)
+- `.claude/skills/site-launch-checklist/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

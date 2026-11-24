@@ -38,7 +38,7 @@ Para cada direção, entregue:
 1. **Nome da direção** (ex: "Quantum Terminal", "Editorial Paper", "Brutalist Grid", "OLED Precision", "Mono Data", "Liquid Neo"...).
 2. **Conceito** (1 frase: a metáfora visual que guia tudo).
 3. **Paleta exata** (hex codes da base, superfície, texto, acento — 4-6 cores, sem roxo genérico).
-4. **Tipografia com personalidade** (headline display + body; ex: Space Grotesk + Inter Tight, Fraunces + Archivo, JetBrains Mono + Sora, Instrument Serif + General Sans — via Google Fonts / fontsource).
+4. **Tipografia com personalidade escolhida pelo conceito** (headline display + body). Proibido como default: Inter sozinho, serif de alto contraste + rótulos mono em caixa-alta, Space Grotesk + Instrument Serif, Fraunces em tudo. Considere grotescas condensadas, display experimentais, fontes variáveis animáveis e letreiramento próprio.
 5. **Layout signature** (o que torna a composição distinta: grade editorial assimétrica, grid brutalista com bordas, mono-data tables, seções em diagonais, tipografia gigante, bento irregular...).
 6. **Motion signature** (1-2 momentos de movimento com propósito: hero letter-spacing reveal, número contador, cursor-follow, scroll scrub, parallax seletivo — nada de fade genérico em tudo).
 7. **Referências reais** (sites/estilos que exemplificam — use `references/` e conhecimento de sites premiados; nunca invente URLs).
@@ -51,14 +51,14 @@ Formate as direções de forma comparável (tabela resumo + detalhe de cada uma)
 | Nicho | Direções fortes (exemplos) |
 |---|---|
 | Tech / AI / SaaS | OLED Precision (dark #0a0a0a, cyan/emerald fino, mono), Quantum Terminal (grid + scanlines + glitch sutil), Editorial Data (light, tipografia grande, tabelas de dados) |
-| FinTech | Mono Data (verde financeiro #10b981 + dark, tabelas densas), Institutional (serifada sóbria + azul profundo, trust), Ledger (papel claro, linhas finas, numerais tabulares) |
-| Luxury / Fashion | Editorial Serif (Fraunces/Instrument Serif, espaço em branco, monocromático), Gallery (quase sem UI, fotografia domina), Monogram (iniciais gigantes, gold/cream) |
-| Health / Wellness | Organic Calm (off-white #f5f5f0, verde sálvia, curvas generosas), Clinical Light (branco + teal, tipografia humanista), Botanical (verde profundo + tons terrosos) |
+| FinTech | Mono Data (verde financeiro #10b981 + dark, tabelas densas), Institutional (serifada sóbria + azul profundo, trust), Ledger Motion (numerais tabulares que se reorganizam, valores com física) |
+| Luxury / Fashion | Couture Motion (tipografia condensada gigante que se move com o scroll, fotografia em recorte), Gallery (quase sem UI, fotografia domina), Monogram (iniciais gigantes animadas, preto + metal) |
+| Health / Wellness | Organic Calm (cor da planta/fruto real, curvas que respiram com o scroll), Clinical Light (branco + teal, tipografia humanista), Botanical (verde profundo + tons terrosos) |
 | Food / Restaurante | Appetite Editorial (tipografia display pesada + cores quentes, fotografia em full-bleed), Menu Paper (estética de carta/impresso, kraft), Night Market (dark + neon âmbar/vermelho, street) |
 | E-commerce | Showroom (dark, produtos em escala gigante), Marketplace (grid denso limpo, altíssima densidade de info), Editorial Shop (lookbook, storytelling antes do grid) |
 | Portfolio / Agency | Brutalist Grid (bordas, cores planas, sem sombras), Type-Only (tipografia como única UI), Cursor Playground (interações ousadas de cursor/hover) |
 | Games / Entertainment | Arcade Neon (dark + neon âmbar/cyan, CRT vibes), Cinematic (letterbox, créditos, scroll épico), Comic Pop (cores planas vibrantes, halftone) |
-| Educação / Learning | Study Paper (claro, linhas, margens generosas), Focus (dark calmo, sem distrações, progresso), Campus Bold (cores institucionais + grid editorial) |
+| Educação / Learning | Study Path (progresso como caminho visual, recompensa animada), Focus (dark calmo, sem distrações, progresso), Campus Bold (cores institucionais + grid editorial) |
 | Imobiliário / Arquitetura | Blueprint (linhas técnicas, azul em cyan, grid de planta), Architectural (serifada + betão/preto, fotografia brutalista), Estate Lux (dark + dourado sóbrio, espaçamento premium) |
 
 ## Anti-padrões a evitar em TODAS as direções

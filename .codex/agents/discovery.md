@@ -28,7 +28,7 @@ Skills da sua especialidade:
 - design-directions
 - ui-ux-pro-max
 - anti-ai-slop
-- requirements
+- requirement-analyzer
 - frontend
 - animation-web
 - motion-design
@@ -36,14 +36,13 @@ Skills da sua especialidade:
 - browser-automation
 - webapp-testing
 - reference-retrieval
-- alternatives
-- tradeoff
-- risk
-- ux
-- a11y
-- architect
+- alternative-solution-generator
+- tradeoff-analyzer
+- risk-analyzer
+- ux-reviewer
+- accessibility-reviewer
+- software-architect
 - data-engineering
-- db
 - web-perf-seo
 - design-taste
 - web-design-guidelines
@@ -54,21 +53,22 @@ Skills da sua especialidade:
 - design-md
 - web-design-vocabulary
 - lead-finder
+- signature-experience
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
 
 ## Chains
 
-- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirements, frontend
-- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, anti-ai-slop
-- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirements
-- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirements
-- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff
+- `new_project`: brainstorming, deep-research, design-directions, ui-ux-pro-max, requirement-analyzer, frontend
+- `website`: brainstorming, deep-research, reference-retrieval, browser-automation, design-directions, ui-ux-pro-max, animation-web, frontend, signature-experience, anti-ai-slop
+- `live_reference`: memoria-projeto, reference-retrieval, browser-automation, webapp-testing, deep-research, requirement-analyzer
+- `new_feature`: brainstorming, design-directions, ui-ux-pro-max, requirement-analyzer
+- `research`: deep-research, design-directions, ui-ux-pro-max, tradeoff-analyzer
 - `app_ui`: brainstorming, design-directions, ui-ux-pro-max, frontend, motion-design
-- `prompt_rich`: brainstorming, requirements, design-directions, ui-ux-pro-max, architect
+- `prompt_rich`: brainstorming, requirement-analyzer, design-directions, ui-ux-pro-max, software-architect
 - `webgl_3d`: brainstorming, deep-research, design-directions, webgl-3d, animation-web, motion-design
-- `blueprint`: architect, data-engineering, db, risk, tradeoff
+- `blueprint`: software-architect, data-engineering, risk-analyzer, tradeoff-analyzer
 - `style_selection`: design-taste, refero-styles, web-design-guidelines
 
 ## Sempre
