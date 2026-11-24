@@ -22,7 +22,8 @@
     "breaking-change-detector",
     "clean-code-validator",
     "impeccable",
-    "emil-kowalski"
+    "emil-kowalski",
+    "plan-cold-review"
   ],
   "chains": {
     "review_teach": [

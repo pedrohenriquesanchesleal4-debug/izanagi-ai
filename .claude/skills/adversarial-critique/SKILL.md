@@ -1,6 +1,6 @@
 ---
 name: adversarial-critique
-description: "Crítica adversarial de implementações: caça bugs, falhas de segurança, arquitetura e edge cases, com veredicto READY/READY_WITH_FIXES/NOT_READY. Use após qualquer implementação e antes da avaliação final."
+description: "Crítica adversarial de implementações. Use após qualquer implementação e antes da avaliação final."
 ---
 
 # Adversarial Critique — Tente Quebrar Antes da Produção

@@ -1,6 +1,6 @@
 ---
 name: mcp-server-dev
-description: "Desenvolvimento de servidores MCP: tools com schema Zod, resources, prompts, transportes STDIO/HTTP e sanitização contra path-traversal e command injection. Use ao criar ou estender servidores MCP."
+description: "Desenvolvimento de servidores MCP. Use ao criar ou estender servidores MCP."
 ---
 
 # Model Context Protocol (MCP) Server Development

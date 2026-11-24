@@ -43,6 +43,7 @@ skills:
   - "confidence-estimator"
   - "economia-tokens"
   - "memoria-projeto"
+  - "task-playbook"
 optionalSkills:
   - "code-auditor"
   - "self-critique"

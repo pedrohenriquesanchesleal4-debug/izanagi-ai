@@ -1,6 +1,6 @@
 ---
 name: emil-kowalski
-description: "Design Engineering e física de interfaces ('Agents with Taste' de Emil Kowalski — Vercel/Linear/Sonner/Vaul): micro-interações rápidas (140-220ms), curvas ease-out físicas, proibição de scale(0), transform-origin contextual, bordas semitransparentes hairline, quando NÃO animar e escolha de primitivos acessíveis. Use em toda implementação ou revisão de UI e animações."
+description: "Design Engineering e física de interfaces ('Agents with Taste' de Emil Kowalski — Vercel/Linear/Sonner/Vaul). Use em toda implementação ou revisão de UI e animações."
 ---
 
 # Emil Kowalski — Agents with Taste & Design Engineering

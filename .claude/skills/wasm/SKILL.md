@@ -1,6 +1,6 @@
 ---
 name: wasm
-description: "Compila código para WebAssembly (Rust/AssemblyScript) e integra com JS para performance quase nativa no browser. Use ao implementar processamento pesado no client (imagem, áudio, cálculos, compressão)."
+description: "Compila código para WebAssembly (Rust/AssemblyScript) e integra com JS para performance quase nativa no browser. Use ao implementar processamento pesado no client…"
 ---
 
 # Skill WebAssembly — Izanagi

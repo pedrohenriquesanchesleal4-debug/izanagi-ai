@@ -25,7 +25,9 @@
     "wasm",
     "tradeoff-analyzer",
     "alternative-solution-generator",
-    "er-diagram-builder"
+    "er-diagram-builder",
+    "grilling",
+    "plan-cold-review"
   ],
   "chains": {
     "design_system": [

@@ -16,7 +16,8 @@
     "technical-debt-analyzer",
     "caveman",
     "cto-advisor",
-    "risk-analyzer"
+    "risk-analyzer",
+    "grilling"
   ],
   "chains": {
     "plan": [

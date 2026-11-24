@@ -1,6 +1,6 @@
 ---
 name: react-next-practices
-description: "Padrões avançados e arquitetura moderna para React 19 e Next.js App Router (Vercel Agent Skills): Server Components, streaming com Suspense, Server Actions, rotas paralelas e otimização de performance."
+description: "Padrões avançados e arquitetura moderna para React 19 e Next.js App Router (Vercel Agent Skills): Server Components, streaming com Suspense, Server Actions, rotas…"
 ---
 
 # React & Next.js Best Practices — App Router & React 19

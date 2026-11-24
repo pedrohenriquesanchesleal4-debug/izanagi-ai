@@ -1,6 +1,6 @@
 ---
 name: bug-prevention
-description: "Analisa código antes de bugs acontecerem: tipagem estrita, análise estática, testes e checklist de revisão para classes inteiras de bugs. Use ao revisar código para prevenir bugs recorrentes."
+description: "Analisa código antes de bugs acontecerem. Use ao revisar código para prevenir bugs recorrentes."
 ---
 
 # Skill: Bug Prevention

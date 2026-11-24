@@ -10,7 +10,7 @@
 |---|------|-------------|
 | 1 | **Architecture First** | Never write code without a plan. Architecture → Plan → Code → Review. |
 | 2 | **Study-First (Estudo Antes de Codar)** | Antes de QUALQUER implementação: (1) carregue `.agents/memoria/contexto.md` (sempre: é pequeno) e SÓ `decisoes.md` / `erros-corrigidos.md` / `learnings.md` quando o domínio da tarefa bater com o que já está registrado neles (não releia os quatro por hábito: cada agente nativo já aponta pra sua fatia relevante); (2) consulte `references/` e/ou `deep-research` quando a tarefa exigir informação externa (stack, referências visuais/técnicas, preços). Relatórios de auditoria pontuais (ex: `auditoria-completa-*.md`) nunca são carregamento automático: só sob consulta explícita. Proibido programar no escuro, mas também proibido reler contexto irrelevante por medo. |
-| 3 | **Skill Composition Obrigatória** | Skills nunca são usadas isoladas. Cada skill ativada puxa a cadeia do seu domínio (`core/skill-composer.md` + `compositions` em `core/skill-resolver.json`). Output de uma alimenta o input da próxima. Skill "de enfeite" sem cadeia = violação. |
+| 3 | **Skill Composition sob Demanda** | Por tarefa: 1 skill primária (como fazer) + no máximo 2 de verificação (como provar), escolhidas com `find-skills` e lidas de verdade. A cadeia do domínio (`core/skill-composer.md` + `compositions` em `core/skill-resolver.json`) é cardápio: puxe dela só o que a tarefa pede. Skill citada e não lida = violação; ler a cadeia inteira para mudança pequena também. |
 | 4 | **Anti-Repetição (Never Repeat Mistakes)** | Antes de entregar, triagem obrigatória: (a) esse problema já foi resolvido/corrigido antes? (b) essa armadilha está registrada no `.agents/memoria/learnings.md`? (c) há decisão prévia que contradiz o plano? Se um erro se repetir 3+, registre reincidência com destaque ⚠️ e aplique a correção definitiva: nunca re-percorra o mesmo caminho de debug. |
 | 5 | **One File Per Response** | Each output produces exactly one complete file. No exceptions. |
 | 6 | **Consistency** | Every new file must be compatible with every existing file. No breaking changes. |
@@ -140,7 +140,7 @@ Skills são ativadas pelo resolver a partir da classificação da tarefa, com te
 
 ### 3.4 Skill Composition (Como as Skills se Conversam)
 
-Skills NUNCA atuam isoladas: cada ativação dispara a cadeia de composição do seu domínio, definida em `core/skill-composer.md` e `compositions` do `core/skill-resolver.json`:
+Skills se compõem pela necessidade da tarefa, não por obrigação: a cadeia de composição do domínio (`core/skill-composer.md` e `compositions` do `core/skill-resolver.json`) diz a ordem certa quando a tarefa realmente atravessa várias etapas (projeto novo, feature completa). Para mudança pontual, 1 a 3 skills bastam. Teto padrão: 3 skills por tarefa; acima disso, quebre a tarefa.
 
 1. **Output→Input Chaining**: o artefato de cada skill alimenta a próxima (ex: `ui-ux-pro-max` gera design system → `frontend` consome os tokens → `motion-design` aplica micro-interações → `animation-web` cria o scrollytelling → `web-perf-seo` valida vitals).
 2. **Domínios principais**: `web_cinematic`, `webgl_experience`, `api_backend`, `data_system`, `security_audit`, `devops_delivery`, `debug_session`, `refactor_safe`, `new_project_discovery`, `fullstack_crud`, `mobile_app`, `ai_ml_feature`.

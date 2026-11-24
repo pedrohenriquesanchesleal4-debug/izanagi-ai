@@ -35,7 +35,12 @@
     "economia-tokens",
     "cto-advisor",
     "caveman",
-    "failure-patterns"
+    "failure-patterns",
+    "find-skills",
+    "grilling",
+    "plan-cold-review",
+    "codebase-map",
+    "task-playbook"
   ],
   "chains": {
     "default_pipeline": [

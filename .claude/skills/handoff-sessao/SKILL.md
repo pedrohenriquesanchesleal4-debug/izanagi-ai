@@ -1,6 +1,6 @@
 ---
 name: handoff-sessao
-description: "Grava um resumo curto do estado da tarefa em andamento para retomar na próxima sessão sem perder contexto. Use quando o usuário disser 'pausa'/'continuo depois' ou a conversa estiver perto do limite de contexto."
+description: "Grava um resumo curto do estado da tarefa em andamento para retomar na próxima…. Use quando o usuário disser 'pausa'/'continuo depois' ou a conversa estiver perto…"
 ---
 
 # Handoff de Sessão

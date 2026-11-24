@@ -52,6 +52,7 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/caveman/SKILL.md`
 - `skills/cto-advisor/SKILL.md` (+ `references.md`)
 - `skills/risk-analyzer/SKILL.md` (+ `references.md`)
+- `skills/grilling/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

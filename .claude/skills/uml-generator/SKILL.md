@@ -1,6 +1,6 @@
 ---
 name: uml-generator
-description: "Gera diagramas UML (classes, componentes, casos de uso, sequência) em PlantUML ou Mermaid a partir de uma descrição de arquitetura. Use ao documentar ou comunicar o design de um sistema."
+description: "Gera diagramas UML (classes, componentes, casos de uso, sequência) em PlantUML ou Mermaid a partir de uma…. Use ao documentar ou comunicar o design de um sistema."
 ---
 
 # Skill: UML Generator

@@ -1,6 +1,6 @@
 ---
 name: chaos-engineering
-description: "Planeja e executa experimentos de resiliência (pod kill, latência de rede, stress de CPU/memória) com hipótese, blast radius controlado e game days. Use antes de validar a resiliência do sistema em produção."
+description: "Planeja e executa experimentos de resiliência (pod kill, latência de rede, stress de CPU/memória) com…. Use antes de validar a resiliência do sistema em produção."
 ---
 
 # Skill Chaos Engineering — Izanagi

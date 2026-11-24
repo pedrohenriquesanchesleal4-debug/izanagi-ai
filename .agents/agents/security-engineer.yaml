@@ -35,6 +35,7 @@ skills:
   - "dependency-analyzer"
   - "reverse-engineering"
   - "risk-analyzer"
+  - "security-swarm-audit"
 optionalSkills: []
 chains:
   full_audit:

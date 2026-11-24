@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: "Pesquisa multi-fonte na web: plano de busca, execução de queries, síntese e relatório com fontes citadas e nível de confiança. Use antes de decidir stack, referências visuais, preços ou concorrentes."
+description: "Pesquisa multi-fonte na web. Use antes de decidir stack, referências visuais, preços ou concorrentes."
 ---
 
 # Deep Research — Pesquisa Multi-Fonte com Síntese

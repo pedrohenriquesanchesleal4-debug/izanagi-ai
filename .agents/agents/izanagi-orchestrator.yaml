@@ -51,6 +51,11 @@ skills:
   - "cto-advisor"
   - "caveman"
   - "failure-patterns"
+  - "find-skills"
+  - "grilling"
+  - "plan-cold-review"
+  - "codebase-map"
+  - "task-playbook"
 optionalSkills: []
 chains:
   default_pipeline:

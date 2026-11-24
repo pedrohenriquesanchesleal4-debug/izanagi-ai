@@ -57,6 +57,9 @@ Skills da sua especialidade:
 - performance-optimizer
 - feature-flags
 - serverless-edge
+- find-skills
+- codebase-map
+- site-launch-checklist
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.

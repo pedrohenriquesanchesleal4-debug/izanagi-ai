@@ -1,6 +1,6 @@
 ---
 name: dependency-analyzer
-description: "Audita dependências por vulnerabilidades conhecidas (CVE), versões desatualizadas, conflitos e compliance de licença, com plano de ação priorizado. Use antes de atualizar pacotes ou revisar segurança de terceiros."
+description: "Audita dependências por vulnerabilidades conhecidas (CVE), versões desatualizadas, conflitos e…. Use antes de atualizar pacotes ou revisar segurança de terceiros."
 ---
 
 # Skill: Dependency Analyzer

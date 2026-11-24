@@ -1,6 +1,6 @@
 ---
 name: memoria-projeto
-description: "Mantém memória persistente do projeto entre sessões (decisões, padrões, erros resolvidos). Use no início de uma tarefa para ler o histórico e no final para registrar o que foi aprendido."
+description: "Mantém memória persistente do projeto entre sessões…. Use no início de uma tarefa para ler o histórico e no final para registrar o que…"
 ---
 
 # Memória do projeto

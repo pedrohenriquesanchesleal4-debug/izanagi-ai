@@ -39,6 +39,7 @@ skills:
   - "root-cause-analyzer"
   - "failure-patterns"
   - "reverse-engineering"
+  - "codebase-map"
 optionalSkills:
   - "continuous-improvement"
 chains:

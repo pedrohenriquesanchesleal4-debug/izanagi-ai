@@ -1,6 +1,6 @@
 ---
 name: bug-hunter
-description: "Investiga bugs com protocolo disciplinado: reproduzir, isolar, entender a causa raiz, corrigir e verificar com teste de regressão. Use ao investigar erros, exceções ou comportamento inesperado."
+description: "Investiga bugs com protocolo disciplinado. Use ao investigar erros, exceções ou comportamento inesperado."
 ---
 
 # Skill: Bug Hunter

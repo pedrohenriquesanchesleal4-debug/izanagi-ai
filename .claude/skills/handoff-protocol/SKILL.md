@@ -1,6 +1,6 @@
 ---
 name: handoff-protocol
-description: "Protocolo de handoff estruturado entre agentes (motivo, contexto mínimo, artefatos, decisões, questões em aberto). Use em toda transição de agente dentro de um execution graph ou swarm."
+description: "Protocolo de handoff estruturado entre agentes (motivo, contexto mínimo, artefatos, decisões,…. Use em toda transição de agente dentro de um execution graph ou swarm."
 ---
 
 # Handoff Protocol — Transição Estruturada Entre Agentes

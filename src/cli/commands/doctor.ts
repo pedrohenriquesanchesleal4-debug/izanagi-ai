@@ -55,7 +55,10 @@ export function doctorCommand(baseDir: string, args: string[] = [], stateDir = b
   let warnings = 0;
 
   if (target) {
-    const targetResult = checkTargetEnvironment(target, baseDir, projectRoot, baseDir);
+    // Em projeto consumidor baseDir aponta para `.agents/` (assets); os adapters das CLIs
+    // (.agents/agents, .agents/rules, GEMINI.md...) são relativos à raiz do projeto.
+    const targetCwd = path.basename(baseDir) === '.agents' ? path.dirname(baseDir) : baseDir;
+    const targetResult = checkTargetEnvironment(target, targetCwd, projectRoot, baseDir);
     errors += targetResult.errors;
     warnings += targetResult.warnings;
   }
@@ -327,16 +330,37 @@ export function checkTargetEnvironment(
         warnings++;
       }
 
-      // 3. Agentes Especializados para Antigravity
-      let agentSkillsFound = 0;
-      if (fs.existsSync(agentsSkillsDir)) {
-        agentSkillsFound = fs.readdirSync(agentsSkillsDir).filter((d) => d.startsWith('izanagi-')).length;
-      }
-      if (agentSkillsFound > 0) {
-        console.log(` \x1b[32m✔\x1b[0m ${agentSkillsFound} agentes disponíveis como skills invocáveis no Antigravity (ex: izanagi-architect)`);
+      // 3. Agentes nativos (.agents/agents/*.md): o agy só descobre agentes ali
+      //    (ou em plugin/agents). Pastas `subagents/` e `.gemini/agents/` não são lidas.
+      const agyAgentsDir = path.join(cwd, '.agents', 'agents');
+      const agyAgentFiles = fs.existsSync(agyAgentsDir)
+        ? fs.readdirSync(agyAgentsDir).filter((f) => f.endsWith('.md') && f !== 'INDEX.md')
+        : [];
+      if (agyAgentFiles.includes('orchestrator.md')) {
+        console.log(` \x1b[32m✔\x1b[0m ${agyAgentFiles.length} agentes nativos em .agents/agents/ (orchestrator + ${agyAgentFiles.length - 1} subagentes)`);
       } else {
-        console.log(` \x1b[33m⚠\x1b[0m Agentes não exportados como skills para o Antigravity.`);
-        console.log(`   \x1b[33mRemediação:\x1b[0m Execute \`npx izanagi export --cli antigravity\` para expor os 23 especialistas.`);
+        console.log(` \x1b[33m⚠\x1b[0m Agentes nativos do Antigravity ausentes em .agents/agents/.`);
+        console.log(`   \x1b[33mRemediação:\x1b[0m Execute \`npx izanagi export --cli antigravity\` para gerar o orchestrator e os especialistas.`);
+        warnings++;
+      }
+      // Ferramentas que o agy não conhece são descartadas em silêncio (agente perde escrita).
+      const AGY_KNOWN_TOOLS = new Set([
+        'read_file', 'write_file', 'edit_file', 'run_command', 'manage_task', 'search_web', 'ask_question',
+        'define_subagent', 'invoke_subagent', 'manage_subagents', 'send_message', 'schedule', 'run_workflow',
+        'swarm', 'exit_plan_mode', 'read_url_content',
+      ]);
+      for (const f of agyAgentFiles) {
+        const head = fs.readFileSync(path.join(agyAgentsDir, f), 'utf-8').split(/^---\s*$/m)[1] ?? '';
+        const m = head.match(/^tools:\s*\[([^\]]*)\]/m);
+        if (!m) continue;
+        const unknown = m[1].split(',').map((t) => t.trim()).filter((t) => t && !AGY_KNOWN_TOOLS.has(t) && !t.startsWith('mcp'));
+        if (unknown.length > 0) {
+          console.log(` \x1b[33m⚠\x1b[0m .agents/agents/${f}: ferramentas desconhecidas pelo agy: ${unknown.join(', ')}`);
+          warnings++;
+        }
+      }
+      if (fs.existsSync(coreRule) && !/^trigger:\s*(always_on|model_decision|glob|manual)\s*$/m.test(fs.readFileSync(coreRule, 'utf-8'))) {
+        console.log(` \x1b[33m⚠\x1b[0m .agents/rules/izanagi-core.md sem \`trigger:\` no frontmatter: o agy descarta a regra em silêncio.`);
         warnings++;
       }
 

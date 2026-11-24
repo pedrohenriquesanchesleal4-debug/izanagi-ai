@@ -1,6 +1,6 @@
 ---
 name: debug-specialist
-description: "Protocolo de primeira resposta a erros: captura contexto, reproduz, isola a causa e descarta causas comuns (cache, config, ambiente) antes de escalar. Use ao investigar um erro, stack trace ou bug reportado."
+description: "Protocolo de primeira resposta a erros. Use ao investigar um erro, stack trace ou bug reportado."
 ---
 
 # Skill: Debug Specialist

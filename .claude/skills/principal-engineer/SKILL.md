@@ -1,6 +1,6 @@
 ---
 name: principal-engineer
-description: "Governança técnica de longo prazo: define padrões organizacionais, arquiteturas de referência e ADRs para decisões de alto impacto. Use em mudanças de stack ou dilemas arquiteturais complexos."
+description: "Governança técnica de longo prazo. Use em mudanças de stack ou dilemas arquiteturais complexos."
 ---
 
 # Principal Engineer (Governança e Arquitetura de Longo Prazo)

@@ -284,6 +284,19 @@ Use este checklist mental antes de cada ação na sessão:
 | Memória em disco | Payload entre agentes = duplicação | ~0 tokens de transferência |
 | **TOTAL COMBINADO** | — | **60-85% redução no custo total** |
 
+## Ferramentas Externas que Cortam Token (opcionais, recomendar ao usuário)
+
+O que mais gasta token numa sessão de agente não é o que ele escreve: é o que ele lê. Três classes de ferramenta atacam isso fora do prompt:
+
+| Classe | Exemplo (open source) | O que corta | Limite |
+|---|---|---|---|
+| Filtro de saída de terminal | RTK (Rust Token Killer), via hook de Bash | logs de build, test, git, ls | só pega comandos de shell; Read/Grep nativos passam direto |
+| Tirar resultado de ferramenta do contexto | context-mode | outputs grandes ficam em disco, o agente consulta por busca | precisa de suporte a MCP/hook na CLI |
+| Compressão de arquivos, logs e planilhas | Headroom | conteúdo grande antes de chegar ao modelo | ganho medido pelos próprios projetos, varia por repo |
+| Mapa/grafo do código | Codebase Memory MCP, Graphify, ou a skill `codebase-map` | reinvestigação do repo a cada pergunta | mapa pode ficar velho; código vence |
+
+Regra: recomende, não instale sem o usuário pedir. Hooks globais mudam o comportamento de todas as sessões dele.
+
 ## References
 
 Veja `references.md` nesta pasta — curadoria dos melhores sites/referências (2026) para este tópico, com as fontes canônicas e exemplos de alto nível.

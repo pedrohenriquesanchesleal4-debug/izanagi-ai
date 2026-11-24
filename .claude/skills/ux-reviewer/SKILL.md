@@ -1,6 +1,6 @@
 ---
 name: ux-reviewer
-description: "Avalia usabilidade de fluxos e telas pelas 10 heurísticas de Nielsen, classificando achados por severidade. Use ao revisar telas de conversão ou interfaces antes do release."
+description: "Avalia usabilidade de fluxos e telas pelas 10 heurísticas de Nielsen, classificando achados por…. Use ao revisar telas de conversão ou interfaces antes do release."
 ---
 
 # UX Reviewer (Heurísticas de Nielsen & Usabilidade)

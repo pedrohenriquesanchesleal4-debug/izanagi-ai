@@ -1,6 +1,6 @@
 ---
 name: image-to-code
-description: "Conversão rigorosa de mockups, screenshots, wireframes e referências visuais em código de interface limpo, semântico, responsivo e testável (HTML/CSS, Tailwind, React, Next.js)."
+description: "Conversão rigorosa de mockups, screenshots, wireframes e referências visuais em código de interface limpo, semântico, responsivo e testável…"
 ---
 
 # Image to Code — Reconstrução de Interfaces a partir de Referências Visuais

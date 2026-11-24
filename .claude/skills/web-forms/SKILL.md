@@ -1,6 +1,6 @@
 ---
 name: web-forms
-description: "Formulários de alto craft com Zod + React Hook Form: validação inline, wizards multi-step, auto-save e acessibilidade WCAG. Use ao construir checkouts, onboarding ou formulários complexos."
+description: "Formulários de alto craft com Zod + React Hook Form. Use ao construir checkouts, onboarding ou formulários complexos."
 ---
 
 # Web Forms & High-Craft Form Engineering

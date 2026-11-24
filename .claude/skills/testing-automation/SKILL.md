@@ -1,6 +1,6 @@
 ---
 name: testing-automation
-description: "Define testes de automação com pytest: unitários, integração com mock, E2E Playwright, dry-run e retomada por checkpoint. Use ao implementar qualquer automação, antes de rodar em produção."
+description: "Define testes de automação com pytest. Use ao implementar qualquer automação, antes de rodar em produção."
 ---
 
 # Testing Automation — Automatize, Mas Teste Primeiro

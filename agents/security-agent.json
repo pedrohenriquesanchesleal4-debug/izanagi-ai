@@ -16,7 +16,8 @@
     "memoria-projeto",
     "dependency-analyzer",
     "reverse-engineering",
-    "risk-analyzer"
+    "risk-analyzer",
+    "security-swarm-audit"
   ],
   "chains": {
     "full_audit": [

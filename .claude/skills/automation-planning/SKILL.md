@@ -1,6 +1,6 @@
 ---
 name: automation-planning
-description: "Planeja automações antes de codar: escopo, entradas/saídas, critérios de sucesso mensuráveis e riscos em 1 página. Use no início de qualquer tarefa de automação, antes de escrever código."
+description: "Planeja automações antes de codar. Use no início de qualquer tarefa de automação, antes de escrever código."
 ---
 
 # Automation Planning

@@ -1,6 +1,6 @@
 ---
 name: data-validation
-description: "Valida dados antes de enviar a qualquer destino (API, banco, planilha): schemas, formatos, duplicados e relatório de qualidade por erro. Use antes de importar ou sincronizar dados para evitar lote inválido."
+description: "Valida dados antes de enviar a qualquer destino (API, banco, planilha). Use antes de importar ou sincronizar dados para evitar lote inválido."
 ---
 
 # Data Validation

@@ -14,7 +14,9 @@
     "tdd",
     "qa",
     "memoria-projeto",
-    "economia-tokens"
+    "economia-tokens",
+    "find-skills",
+    "codebase-map"
   ],
   "chains": {
     "feature_llm": [

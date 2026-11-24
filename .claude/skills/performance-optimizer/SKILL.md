@@ -1,6 +1,6 @@
 ---
 name: performance-optimizer
-description: "Identifica gargalos de performance (DB, app, rede, frontend), mede antes/depois e aplica otimizações direcionadas. Use ao investigar lentidão ou antes de deploy para checar regressões."
+description: "Identifica gargalos de performance (DB, app, rede, frontend), mede antes/depois e aplica…. Use ao investigar lentidão ou antes de deploy para checar regressões."
 ---
 
 # Skill: Performance Optimizer

@@ -1,6 +1,6 @@
 ---
 name: professor-modo
-description: "Depois de alterar código, explica em poucas linhas o que foi feito e ensina um conceito relacionado, nível dev júnior. Use quando pedirem para explicar/ensinar ou o modo professor estiver ativo."
+description: "Depois de alterar código, explica em poucas linhas o que foi feito e ensina um conceito…. Use quando pedirem para explicar/ensinar ou o modo professor estiver ativo."
 ---
 
 # Modo professor

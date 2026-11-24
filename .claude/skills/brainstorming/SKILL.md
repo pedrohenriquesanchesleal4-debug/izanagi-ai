@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "Transforma uma ideia bruta em design aprovado por entrevista dirigida (~15 perguntas), referências e blueprint de arquitetura. Use antes de criar features ou componentes — hard-gate até o design ser aprovado."
+description: "Transforma uma ideia bruta em design aprovado por entrevista dirigida…. Use antes de criar features ou componentes — hard-gate até o design ser aprovado."
 ---
 
 # Brainstorming — Da Ideia ao Design Aprovado

@@ -51,6 +51,8 @@ skills:
   - "tradeoff-analyzer"
   - "alternative-solution-generator"
   - "er-diagram-builder"
+  - "grilling"
+  - "plan-cold-review"
 optionalSkills:
   - "code-auditor"
 chains:

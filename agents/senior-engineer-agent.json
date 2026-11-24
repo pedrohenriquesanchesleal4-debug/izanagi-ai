@@ -40,7 +40,10 @@
     "mobile-dev",
     "performance-optimizer",
     "feature-flags",
-    "serverless-edge"
+    "serverless-edge",
+    "find-skills",
+    "codebase-map",
+    "site-launch-checklist"
   ],
   "chains": {
     "fullstack": [

@@ -79,6 +79,9 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/performance-optimizer/SKILL.md` (+ `references.md`)
 - `skills/feature-flags/SKILL.md` (+ `references.md`)
 - `skills/serverless-edge/SKILL.md` (+ `references.md`)
+- `skills/find-skills/SKILL.md`
+- `skills/codebase-map/SKILL.md`
+- `skills/site-launch-checklist/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

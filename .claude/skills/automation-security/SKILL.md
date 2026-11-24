@@ -1,6 +1,6 @@
 ---
 name: automation-security
-description: "Protege credenciais e dados sensíveis em automações: .env fora do Git, secret managers, menor privilégio e sanitização de logs (LGPD/GDPR). Use em toda automação que toque credenciais, APIs ou dados pessoais."
+description: "Protege credenciais e dados sensíveis em automações. Use em toda automação que toque credenciais, APIs ou dados pessoais."
 ---
 
 # Automation Security — Credenciais e Dados Protegidos

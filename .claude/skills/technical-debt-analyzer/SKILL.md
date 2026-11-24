@@ -1,6 +1,6 @@
 ---
 name: technical-debt-analyzer
-description: "Identifica, quantifica e prioriza dívida técnica (código, design, testes, docs, infra, segurança) em um backlog priorizado por custo e impacto. Use ao planejar refatorações ou avaliar saúde técnica do projeto."
+description: "Identifica, quantifica e prioriza dívida técnica (código, design, testes, docs, infra, segurança) em…. Use ao planejar refatorações ou avaliar saúde técnica do projeto."
 ---
 
 # Skill: Technical Debt Analyzer

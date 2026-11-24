@@ -1,6 +1,6 @@
 ---
 name: automation-documentation
-description: "Gera README de automações: instalação, configuração (.env), execução com dry-run, testes, limitações e troubleshooting. Use em toda automação entregue, para que outra pessoa consiga executar e manter."
+description: "Gera README de automações. Use em toda automação entregue, para que outra pessoa consiga executar e manter."
 ---
 
 # Automation Documentation

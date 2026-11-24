@@ -1,6 +1,6 @@
 ---
 name: impeccable
-description: "Direção de arte e vocabulário de design de alta precisão (inspirado no Impeccable de Paul Bakaus): 4 modos intencionais (Persuade, Operate, Read, Experience), sistema de cores OKLCH com neutros tonalizados, raios concêntricos, ritmo vertical e comandos de refinamento ('make it quieter', 'distill', 'polish', 'overdrive'). Use ao projetar, estilizar ou refinar qualquer interface web."
+description: "Direção de arte e vocabulário de design de alta precisão (inspirado no Impeccable de Paul Bakaus). Use ao projetar, estilizar ou refinar qualquer interface web."
 ---
 
 # Impeccable — Design Engineering & Vocabulário de Direção de Arte

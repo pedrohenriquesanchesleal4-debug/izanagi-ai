@@ -13,7 +13,8 @@
     "deep-research",
     "economia-tokens",
     "evaluation",
-    "memoria-projeto"
+    "memoria-projeto",
+    "find-skills"
   ],
   "chains": {
     "criar_skill": [

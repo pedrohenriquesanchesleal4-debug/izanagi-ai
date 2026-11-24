@@ -1,6 +1,6 @@
 ---
 name: continuous-improvement
-description: "Reflete sobre um ciclo de trabalho concluído, extrai aprendizados e atualiza a memória persistente do projeto (.agents/memoria/). Use ao encerrar sprints, marcos ou após resolver bugs complexos."
+description: "Reflete sobre um ciclo de trabalho concluído, extrai aprendizados e atualiza a memória persistente do…. Use ao encerrar sprints, marcos ou após resolver bugs complexos."
 ---
 
 # Continuous Improvement (Evolução Contínua e Aprendizado)

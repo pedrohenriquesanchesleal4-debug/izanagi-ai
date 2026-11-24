@@ -1,6 +1,6 @@
 ---
 name: automation-engineer
-description: "Projeta sistemas de automação confiáveis: decompõe o processo, escolhe a stack, implementa com validação, idempotência, retries e testes. Use para automatizar planilhas, APIs, browser, ETL ou integrações."
+description: "Projeta sistemas de automação confiáveis. Use para automatizar planilhas, APIs, browser, ETL ou integrações."
 ---
 
 # Automation Engineer — Engenharia de Automações Profissionais

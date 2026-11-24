@@ -21,7 +21,8 @@
     "chaos-engineering",
     "adversarial-critique",
     "impeccable",
-    "emil-kowalski"
+    "emil-kowalski",
+    "site-launch-checklist"
   ],
   "chains": {
     "unit": [

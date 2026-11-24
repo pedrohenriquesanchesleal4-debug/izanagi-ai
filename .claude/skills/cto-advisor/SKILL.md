@@ -1,6 +1,6 @@
 ---
 name: cto-advisor
-description: "Aconselha decisões técnicas estratégicas (build vs buy, roadmap, estrutura de times, risco, orçamento) traduzindo trade-offs técnicos para stakeholders de negócio. Use em decisões de nível executivo."
+description: "Aconselha decisões técnicas estratégicas (build vs buy, roadmap, estrutura de times, risco, orçamento) traduzindo trade-offs…. Use em decisões de nível executivo."
 ---
 
 # Skill: CTO Advisor

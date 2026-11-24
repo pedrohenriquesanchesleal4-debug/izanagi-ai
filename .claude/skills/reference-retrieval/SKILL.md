@@ -1,6 +1,6 @@
 ---
 name: reference-retrieval
-description: "Recupera exemplos, contratos e documentação verificáveis antes de implementar integrações. Prioriza MCP, repositório local e fontes oficiais, com fallback honesto quando browser ou MCP não estiver disponível."
+description: "Recupera exemplos, contratos e documentação verificáveis antes de implementar integrações. Prioriza MCP, repositório local e fontes oficiais, com fallback honesto…"
 ---
 
 # Reference Retrieval · Agent-first grounding

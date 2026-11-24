@@ -1,6 +1,6 @@
 ---
 name: defense-in-depth
-description: "Projeta segurança em camadas independentes (rate limit, validação de entrada, autorização, persistência segura) para que a falha de uma não comprometa o sistema. Use em auth, APIs públicas ou dados sensíveis."
+description: "Projeta segurança em camadas independentes (rate limit, validação de entrada, autorização, persistência segura) para…. Use em auth, APIs públicas ou dados sensíveis."
 ---
 
 # Defense in Depth (Segurança e Robustez em Camadas)

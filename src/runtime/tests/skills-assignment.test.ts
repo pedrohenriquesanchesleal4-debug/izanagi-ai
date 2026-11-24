@@ -82,12 +82,13 @@ test('CLI Adapters: exportações incluem cláusulas de uso obrigatório de skil
   assert.match(claudeContent, /## Skills Obrigatórias \(Mandatory Skills - Uso Estrito\)/);
   assert.match(claudeContent, /CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS/);
 
-  // 3. Antigravity
-  const agSkillFile = path.join('.agents', 'skills', 'izanagi-senior-engineer', 'SKILL.md');
-  assert.ok(fs.existsSync(agSkillFile), 'Antigravity izanagi-senior-engineer SKILL.md deve existir');
-  const agContent = fs.readFileSync(agSkillFile, 'utf-8');
-  assert.match(agContent, /## Skills Obrigatórias \(Mandatory Skills\)/);
-  assert.match(agContent, /DIRETRIZ DE USO MANDATÓRIO/);
+  // 3. Antigravity: especialista é subagente nativo em .agents/agents/ e lê skills pelo caminho
+  //    (a lista de skills da sessão pode vir cortada pelo budget de contexto do agy).
+  const agAgentFile = path.join('.agents', 'agents', 'senior-engineer.md');
+  assert.ok(fs.existsSync(agAgentFile), 'Antigravity .agents/agents/senior-engineer.md deve existir');
+  const agContent = fs.readFileSync(agAgentFile, 'utf-8');
+  assert.match(agContent, /## Suas skills/);
+  assert.match(agContent, /leia com `read_file` a sua skill primária/);
 });
 
 test('Token Economy: selectRelevantSkills carrega cirurgicamente apenas as skills relevantes para a tarefa', async () => {

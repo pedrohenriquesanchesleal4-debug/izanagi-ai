@@ -1,6 +1,6 @@
 ---
 name: design-directions
-description: "Apresenta 3-5 direções de design distintas e bespoke por nicho (paleta, tipografia, layout e motion signature) antes de qualquer código visual. Use ao iniciar um site, landing, dashboard ou produto visual novo."
+description: "Apresenta 3-5 direções de design distintas e bespoke por nicho…. Use ao iniciar um site, landing, dashboard ou produto visual novo."
 ---
 
 # Design Directions (Style Selector por Indústria)

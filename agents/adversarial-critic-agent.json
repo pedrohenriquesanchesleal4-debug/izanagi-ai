@@ -15,7 +15,9 @@
     "adversarial-critique",
     "reverse-engineering",
     "impeccable",
-    "emil-kowalski"
+    "emil-kowalski",
+    "plan-cold-review",
+    "security-swarm-audit"
   ],
   "chains": {
     "critique_code": [

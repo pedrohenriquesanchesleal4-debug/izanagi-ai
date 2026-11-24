@@ -14,7 +14,8 @@
     "task-planner",
     "memoria-projeto",
     "alternative-solution-generator",
-    "tradeoff-analyzer"
+    "tradeoff-analyzer",
+    "grilling"
   ],
   "chains": {
     "entendimento_produto": [

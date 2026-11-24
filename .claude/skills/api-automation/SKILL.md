@@ -1,6 +1,6 @@
 ---
 name: api-automation
-description: "Integração via API REST/HTTP: autenticação, paginação, rate limits, retries com backoff e validação de schema com httpx/pydantic. Use para integrar sistemas via API de forma confiável e idempotente."
+description: "Integração via API REST/HTTP. Use para integrar sistemas via API de forma confiável e idempotente."
 ---
 
 # API Automation

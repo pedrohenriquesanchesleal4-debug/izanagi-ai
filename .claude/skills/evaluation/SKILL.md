@@ -1,6 +1,6 @@
 ---
 name: evaluation
-description: "Avalia entregas de agentes por métricas ponderadas (corretude, cobertura, testes, arquitetura, segurança) com veredito PASS/FAIL, regressões e recomendações. Use antes de declarar qualquer entrega concluída."
+description: "Avalia entregas de agentes por métricas ponderadas (corretude, cobertura, testes, arquitetura, segurança) com…. Use antes de declarar qualquer entrega concluída."
 ---
 
 # Evaluation Skill — Avaliação Estruturada

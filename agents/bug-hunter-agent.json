@@ -18,7 +18,8 @@
     "debug-specialist",
     "root-cause-analyzer",
     "failure-patterns",
-    "reverse-engineering"
+    "reverse-engineering",
+    "codebase-map"
   ],
   "chains": {
     "bug_debug": [

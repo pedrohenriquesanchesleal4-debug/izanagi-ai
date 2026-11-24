@@ -1,6 +1,6 @@
 ---
 name: design-taste
-description: "Direção de design de alto nível e estética anti-genérica. Use ao projetar ou implementar interfaces para definir tipografia expressiva, paleta intencional, ritmo visual, espaçamento refinado e eliminar padrões repetitivos de IA."
+description: "Direção de design de alto nível e estética anti-genérica. Use ao projetar ou implementar interfaces para definir tipografia expressiva,…"
 ---
 
 # Design Taste & Anti-Generic Frontend Engine

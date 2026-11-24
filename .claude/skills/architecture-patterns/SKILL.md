@@ -1,6 +1,6 @@
 ---
 name: architecture-patterns
-description: "Padrões arquiteturais (Clean Architecture, Hexagonal, DDD, CQRS, Event-Driven, Microservices) com matriz de decisão, trade-offs e template de ADR. Use ao projetar ou refatorar a arquitetura do sistema."
+description: "Padrões arquiteturais (Clean Architecture, Hexagonal, DDD, CQRS, Event-Driven, Microservices) com matriz de…. Use ao projetar ou refatorar a arquitetura do sistema."
 ---
 
 # Architecture Patterns — Manual Operacional

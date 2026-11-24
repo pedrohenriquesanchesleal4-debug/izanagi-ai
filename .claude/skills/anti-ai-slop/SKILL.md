@@ -1,6 +1,6 @@
 ---
 name: anti-ai-slop
-description: "Detecta e corrige design 'cara de IA' (Inter default, gradiente roxo-azul, hero + 3 cards, glassmorphism genérico) com tipografia, cor e layout intencionais. Use ao revisar qualquer UI antes de entregar."
+description: "Detecta e corrige design 'cara de IA' (Inter default, gradiente roxo-azul, hero + 3 cards, glassmorphism genérico) com…. Use ao revisar qualquer UI antes de entregar."
 ---
 
 # Anti AI-Slop (Zero "Cara de IA")

@@ -1,6 +1,6 @@
 ---
 name: editorial-layout
-description: "Layout editorial/revista para web: grid quebrado com propósito, tipografia com peso assimétrico, espaço em branco estrutural, composição não-card. Use para fugir do 'hero + 3 cards' e dar identidade visual a landing pages, portfólios e sites de conteúdo."
+description: "Layout editorial/revista para web. Use para fugir do 'hero + 3 cards' e dar identidade visual a landing pages,…"
 ---
 
 # Skill Editorial Layout — Izanagi

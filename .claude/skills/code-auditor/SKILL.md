@@ -1,6 +1,6 @@
 ---
 name: code-auditor
-description: "Audita código contra OWASP Top 10, segredos hardcoded, leaks de recursos e concorrência insegura, com relatório por severidade, arquivo+linha e fix antes/depois. Use antes de merge/deploy."
+description: "Audita código contra OWASP Top 10, segredos hardcoded, leaks de recursos e concorrência insegura, com relatório por severidade,…. Use antes de merge/deploy."
 ---
 
 # Code Auditor & Vulnerability Scanner

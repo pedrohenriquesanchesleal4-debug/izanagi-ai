@@ -1,6 +1,6 @@
 ---
 name: remotion-video
-description: "Criação de vídeos programáticos, animações baseadas em código e motion design renderizável em React com Remotion (Compositions, Sequences, useCurrentFrame, springs, áudio sincronizado e renderização MP4/WebM)."
+description: "Criação de vídeos programáticos, animações baseadas em código e motion design renderizável em React com Remotion…"
 ---
 
 # Remotion Video — Vídeo Programático & Motion Graphics em React

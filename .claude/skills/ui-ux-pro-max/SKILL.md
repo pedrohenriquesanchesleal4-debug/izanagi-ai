@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "Motor de busca local (BM25) com estilos, paletas, tipografia, guidelines de UX e presets por stack para decisões de design. Use ao projetar páginas, componentes, cores, tipografia ou revisar UI."
+description: "Motor de busca local (BM25) com estilos, paletas, tipografia, guidelines de UX e presets por…. Use ao projetar páginas, componentes, cores, tipografia ou revisar UI."
 ---
 
 # UI/UX Pro Max — Design Intelligence

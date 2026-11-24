@@ -1,6 +1,6 @@
 ---
 name: failure-patterns
-description: "Registra padrões de falhas recorrentes (sintoma, causa raiz, solução, confiança) para aplicar correção guiada. Use ao encontrar um erro novo, resolver um bug difícil ou detectar recorrência."
+description: "Registra padrões de falhas recorrentes (sintoma, causa raiz, solução, confiança) para…. Use ao encontrar um erro novo, resolver um bug difícil ou detectar recorrência."
 ---
 
 # Failure Patterns — Transforme Falhas em Aprendizado Reutilizável

@@ -1,6 +1,6 @@
 ---
 name: reverse-engineering
-description: "Engenharia reversa autorizada e compreensão profunda de código legado. Use para mapear dependências, identificar entrypoints, traçar fluxos de execução, reconstruir contratos de API e interfaces a partir de referências existentes."
+description: "Engenharia reversa autorizada e compreensão profunda de código legado. Use para mapear dependências, identificar entrypoints, traçar fluxos de execução,…"
 ---
 
 # Reverse Engineering Autorizada & Análise Arquitetural

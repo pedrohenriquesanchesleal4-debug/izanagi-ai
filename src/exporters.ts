@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
 
@@ -384,10 +385,30 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 `;
 }
 
+/**
+ * Descrição curta para a listagem de skills da CLI. Claude Code e Antigravity
+ * colocam nome+descrição de TODA skill no contexto sob um orçamento fixo; acima
+ * dele, as últimas skills aparecem só com o nome e o modelo não consegue
+ * escolhê-las. 117 descrições de ~205 chars estouravam esse orçamento. Mantém a
+ * frase inicial (o quê) e a frase "Use ..." (quando), que é o que roteia.
+ */
+export function compactSkillDescription(desc: string, max = 170): string {
+  const t = desc.replace(/\s+/g, ' ').replace(/\s*Gatilhos de ativa[çc][ãa]o:.*$/i, '').trim();
+  if (t.length <= max) return t;
+  const useIdx = t.search(/\bUse (ao|quando|em|antes|para|sempre|no|na|após|apos|depois|se|com)\b/);
+  if (useIdx > 0) {
+    const use = truncate(t.slice(useIdx), Math.floor(max * 0.5));
+    const headEnd = t.search(/[.:](\s|$)/);
+    const head = t.slice(0, headEnd > 0 && headEnd < useIdx ? headEnd : useIdx).trim();
+    return `${truncate(head, max - use.length - 2).replace(/[.,;:]$/, '')}. ${use}`;
+  }
+  return truncate(t, max);
+}
+
 function claudeSkillTemplate(s: SkillSummary): string {
   return `---
 name: ${s.name}
-description: "${s.description}"
+description: ${JSON.stringify(compactSkillDescription(s.description))}
 ---
 
 ${s.body}
@@ -477,13 +498,13 @@ ${CLAUDE_ORCHESTRATOR_DISPATCH_POLICY}
 
 ## Agentes nativos (Agent tool)
 
-Os ${agents.length} agentes em \`.claude/agents/*.md\` são **subagents nativos do Claude Code** (Agent tool). **Regra de despacho: delegar é o padrão, responder direto como generalista é a exceção.** Para qualquer tarefa não-trivial que bata com uma linha da tabela abaixo, use o Agent tool com aquele agente antes de escrever a resposta você mesmo: não absorva o trabalho do especialista. Chame também por \`/<slug>\` em \`.claude/commands/\` quando quiser forçar um agente específico.
+Os ${agents.length} agentes em \`.claude/agents/*.md\` são **subagents nativos do Claude Code** (Agent tool). **Regra de despacho: delegue quando o especialista agrega, faça você mesmo quando é pequeno.** Cada subagente começa com contexto vazio e relê o projeto: isso custa token. Delegue frentes especializadas (segurança, banco, animação, debug difícil), frentes paralelas independentes e trabalho de vários arquivos; edição pequena e clara (1 ou 2 arquivos, intenção óbvia) você faz direto, aplicando a skill certa. Chame também por \`/<slug>\` em \`.claude/commands/\` quando quiser forçar um agente específico.
 
 | Agente | Quando usar |
 |---|---|
 ${agentTable}
 
-**Depois de despachar, o agente não usa 1 skill isolada:** cada \`.claude/agents/<slug>.md\` termina com uma seção **Chains** (ex: \`fullstack\`, \`bug\`, \`refactor\`, \`review\`) que já define a sequência de 3 a 9 skills daquele domínio, na ordem em que uma alimenta a próxima. Identifique qual chain bate com o pedido e siga a sequência completa: acionar 1 skill e ignorar o resto da chain é a violação que a Regra 3 do \`RULES.md\` (Skill Composition Obrigatória) proíbe.
+**Skills se leem, não se listam, e são poucas por tarefa:** escolha 1 skill primária (o como fazer) e no máximo 2 de verificação (o como provar) com a skill \`find-skills\`, leia o \`SKILL.md\` de cada uma e declare numa linha o que vai aplicar. A seção **Chains** de cada \`.claude/agents/<slug>.md\` é o cardápio do domínio, não uma sequência obrigatória: pegue da chain só o que a tarefa pede. Ler 9 skills para mudar 1 arquivo é desperdício, não rigor.
 
 **Mapa rápido tarefa → agente(s) → chain:**
 - Ideia vaga / ainda não sabe o que construir → \`discovery\` (entrevista + pesquisa) → \`product-reasoner\` (requisitos/BDD) → \`architect\`.
@@ -1155,344 +1176,373 @@ export function exportToOpencode(baseDir: string): string[] {
 /* Antigravity (Google / AGY)                                         */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Contrato do Antigravity CLI (`agy`), conferido empiricamente no agy 1.5.12:
+ *
+ * - Agentes só são descobertos em `.agents/agents/<nome>.md` (workspace), em
+ *   `~/.gemini/config/agents/` (global) e em `<plugin>/agents/`. `.gemini/agents/`
+ *   e qualquer pasta `subagents/` NÃO são lidas: especialista lá é invisível
+ *   para `invoke_subagent`, e o orquestrador acaba fazendo tudo sozinho.
+ * - `tools:` é allowlist. Nome inexistente é descartado em silêncio (ou trava o
+ *   subagente). Os nomes reais são os de AGY_TOOLS abaixo; `grep_search` e
+ *   `find_by_name` não existem no agy (busca é via `run_command`).
+ * - `mainAgent: false` esconde o especialista do seletor `/agents` sem impedir
+ *   que o orquestrador o invoque (`subagent: true`).
+ * - `preloadSkills: [nome]` injeta o corpo da skill no contexto do agente. É o
+ *   único jeito confiável de garantir uma skill: com muitos plugins globais a
+ *   lista de skills estoura o budget e as excedentes ficam só com o nome.
+ * - Regras em `.agents/rules/*.md` sem `trigger:` no frontmatter são descartadas
+ *   em silêncio.
+ * - `EnableWriteTools` não existe: escrita vem da allowlist `tools:`.
+ */
+const AGY_TOOLS_WORKER = ['read_file', 'write_file', 'edit_file', 'run_command', 'manage_task', 'search_web'];
+const AGY_TOOLS_ORCHESTRATOR = [
+  ...AGY_TOOLS_WORKER,
+  'ask_question',
+  'define_subagent',
+  'invoke_subagent',
+  'manage_subagents',
+  'send_message',
+];
+
+/** Skill primária pré-carregada por especialista: a que define o "como fazer" do papel. */
+const AGY_PRIMARY_SKILL: Record<string, string> = {
+  orchestrator: 'find-skills',
+  'senior-engineer': 'agentic-coding',
+  'bug-hunter': 'systematic-debugging',
+  security: 'security-swarm-audit',
+  qa: 'testing-automation',
+  architect: 'software-architect',
+  'form-engineer': 'web-forms',
+  animation: 'emil-kowalski',
+  database: 'data-engineering',
+  devops: 'cloud-infra',
+  docs: 'technical-writer',
+  researcher: 'deep-research',
+  discovery: 'brainstorming',
+  'product-reasoner': 'grilling',
+  pm: 'project-manager',
+  evaluator: 'evaluation',
+  techlead: 'senior-code-reviewer',
+  'adversarial-critic': 'adversarial-critique',
+  professor: 'professor-modo',
+  'ai-engineer': 'ai-agent',
+  'automation-engineer': 'automation-engineer',
+  'skill-architect': 'find-skills',
+  'agent-architect': 'task-playbook',
+};
+
+/** Arquivos que versões anteriores do export geravam em lugares que o agy não lê. */
+const AGY_LEGACY_GENERATED = [
+  '.gemini/agents',
+  '.gemini/subagents',
+  '.gemini/commands/agents.toml',
+  '.gemini/commands/orchestrator.toml',
+  'commands/agents.toml',
+  'commands/orchestrator.toml',
+  '.agents/skills/orchestrator/SKILL.md',
+  '.agents/plugins/izanagi/subagents',
+  '.agents/plugins/izanagi/commands/agents.toml',
+  '.agents/plugins/izanagi/commands/orchestrator.toml',
+  '.agents/plugins/izanagi/skills/orchestrator/SKILL.md',
+];
+
+/** Remove um arquivo (ou os .md/.toml de uma pasta) SOMENTE se carregar o marcador de gerado. */
+function removeGeneratedLegacy(baseDir: string, rel: string): string[] {
+  const removed: string[] = [];
+  const abs = path.join(baseDir, rel);
+  if (!fs.existsSync(abs)) return removed;
+  const tryRemove = (file: string, relFile: string): void => {
+    try {
+      if (fs.readFileSync(file, 'utf-8').includes(GENERATED_MARKER)) {
+        fs.unlinkSync(file);
+        removed.push(relFile);
+      }
+    } catch { /* arquivo do usuário ou ilegível: preserva */ }
+  };
+  const stat = fs.statSync(abs);
+  if (stat.isFile()) {
+    tryRemove(abs, rel);
+  } else if (stat.isDirectory()) {
+    for (const f of fs.readdirSync(abs)) {
+      if (f.endsWith('.md') || f.endsWith('.toml')) tryRemove(path.join(abs, f), `${rel}/${f}`);
+    }
+  }
+  // Remove a pasta (e pais vazios dentro do legado) se ficou vazia.
+  let dir = stat.isFile() ? path.dirname(abs) : abs;
+  while (dir.startsWith(baseDir) && dir !== baseDir) {
+    try {
+      if (fs.readdirSync(dir).length > 0) break;
+      fs.rmdirSync(dir);
+    } catch { break; }
+    dir = path.dirname(dir);
+  }
+  return removed;
+}
+
+function skillExists(sourceDir: string, name: string): boolean {
+  return (
+    fs.existsSync(path.join(sourceDir, '.skills', name, 'SKILL.md')) ||
+    fs.existsSync(path.join(sourceDir, 'skills', name, 'SKILL.md'))
+  );
+}
+
+function agyPreload(sourceDir: string, a: IzanagiAgentInfo): string[] {
+  const out: string[] = [];
+  const primary = AGY_PRIMARY_SKILL[a.slug];
+  if (primary && skillExists(sourceDir, primary)) out.push(primary);
+  if (out.length === 0) {
+    const first = a.skills.find((s) => skillExists(sourceDir, s));
+    if (first) out.push(first);
+  }
+  return out;
+}
+
+/** Extrai o corpo de uma seção `## <heading>` de uma skill da fonte (uma fonte da verdade só). */
+function skillSection(sourceDir: string, name: string, heading: string): string {
+  for (const dir of ['.skills', 'skills']) {
+    const file = path.join(sourceDir, dir, name, 'SKILL.md');
+    if (!fs.existsSync(file)) continue;
+    const text = fs.readFileSync(file, 'utf-8').replace(/\r\n/g, '\n');
+    const start = text.indexOf(`## ${heading}`);
+    if (start < 0) return '';
+    const after = text.indexOf('\n## ', start + 3);
+    return text.slice(text.indexOf('\n', start) + 1, after < 0 ? undefined : after).trim();
+  }
+  return '';
+}
+
+function yamlList(items: string[]): string {
+  return `[${items.join(', ')}]`;
+}
+
 function antigravityCoreRuleTemplate(): string {
-  return `# Izanagi AI: Antigravity Core Rules
-
-> Fonte da verdade: \`AGENTS.md\` (carregado nativamente pelo Antigravity).
-
-## Princípios de Alta Engenharia
-
-- **Orquestração e Execução Direta (/agents)**: O Izanagi Orchestrator é o ponto de entrada principal. Na IDE com Antigravity (\`agy\`) standalone, o Orchestrator **DEVE executar o trabalho e escrever o código diretamente na sessão principal** usando \`read_file\`, \`write_file\`, \`edit_file\` e \`run_command\`. NUNCA fique parado ou travado esperando uma fila sequencial de subagentes em background.
-- **Autorização Total de Escrita e Execução na IDE**: O Orchestrator e todos os agentes possuem autorização irrestrita para ler, criar, editar e alterar qualquer arquivo no repositório (\`write_file\`, \`edit_file\`), bem como executar comandos e testes (\`run_command\`). É estritamente proibido agir como um chatbot passivo que só responde texto no chat sem modificar os arquivos reais.
-- **Bloqueio Total do Maestri (Zero Maestri)**: Este ambiente roda no Antigravity CLI (\`agy\`) puro, SEM Maestri e SEM terminais auxiliares. É terminantemente **PROIBIDO** ler, ativar ou chamar qualquer skill da família \`maestri\` (\`maestri\`, \`maestri-manager\`, \`maestri-chat\`, \`maestri-portal\`, \`maestri-routines\`, \`maestri-workspace\`).
-- **Delegação com Permissão de Escrita (\`EnableWriteTools: true\`)**: Use \`invoke_subagent\` apenas para frentes genuinamente paralelas. Sempre que definir um subagente via \`define_subagent\`, passe obrigatoriamente \`EnableWriteTools: true\` para que ele possa criar/editar arquivos na IDE.
-- **Ativação Real e Obrigatória de Skills por Demanda**: As skills em \`.skills/<nome>/SKILL.md\` e \`skills/<nome>/SKILL.md\` não são decorativas. Antes de implementar qualquer código, você **DEVE usar \`read_file\` para ler o \`SKILL.md\` das skills pertinentes à demanda do usuário** (ex.: \`impeccable\`, \`emil-kowalski\`, \`react-next-practices\`, \`frontend\`, \`ui-ux-pro-max\`, \`anti-ai-slop\` para frontend; \`software-architect\`, \`tdd\`, \`security-privacy\` para backend) e aplicar suas regras e checklists no código.
-- **High-Craft & Anti-Generic**: Toda interface deve ser intencional, moderna e sem visual genérico de IA (aplicar \`impeccable\`, \`emil-kowalski\` e \`anti-ai-slop\`).
-- **Zero Stubs / Zero Lazy Code**: Todo código entregue deve ser funcional, completo, tipado e com tratamento real de erros. Proibido \`// TODO: implement later\`.
-- **Token Economy**: Contexto seletivo, progressive disclosure lendo apenas as skills do domínio da tarefa atual.
-- **TDD & Qualidade**: Validar comportamento com build e testes automatizados (\`run_command\`) e evidências reais de execução.
-- **Memória Persistente**: Registrar decisões arquiteturais e soluções de erros em \`.agents/memoria/\`.
-
+  return `---
+trigger: always_on
 ---
+
+# Izanagi AI: regras do workspace
+
+- **Você executa.** Pedido de implementação termina com arquivos alterados (\`write_file\`/\`edit_file\`) e verificação rodada (\`run_command\`), não com explicação no chat.
+- **Skills se leem, não se listam.** Antes de tarefa não trivial, escolha 1 a 3 skills (skill \`find-skills\`), leia o \`SKILL.md\` de cada uma em \`.skills/<nome>/\` ou \`.agents/skills/<nome>/\`, e declare numa linha o que vai aplicar.
+- **Especialistas são subagentes reais.** Estão em \`.agents/agents/\`. Delegue com \`invoke_subagent\` quando a frente for especializada ou paralela; faça você mesmo quando for pequena.
+- **Plano antes de código grande.** Mais de 3 arquivos ou decisão estrutural: \`grilling\` e \`plan-cold-review\` antes de codar.
+- **Zero stub.** Sem \`TODO: implement\`, sem mock fingindo implementação.
+- **Economia de contexto.** Leia por busca (\`run_command\` com \`rg\`/\`grep\`), não arquivo inteiro sem motivo; consulte \`.agents/memoria/mapa.md\` se existir.
+- **Anti-genérico.** UI com identidade própria; rode \`anti-ai-slop\` antes de entregar.
+- **Segurança.** Sem segredo no código; ação com dinheiro, cliente ou deleção pede confirmação.
+
 ${provenanceFooter('antigravity')}
 `;
 }
 
-function antigravityAgentSkillTemplate(a: IzanagiAgentInfo): string {
-  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas especializadas de ${(a.role || a.name).toLowerCase()}.`;
-  return `---
-name: izanagi-${a.slug}
-description: >-
-  Ativa a persona e diretrizes especializadas do agente ${a.name} (${a.role}).
-  ${trigger}
----
-
-# Izanagi Agent: ${a.name}
-
-**Papel:** ${a.role}
-
-${a.identity || a.role}
-
-## Autorização e Escrita Direta na IDE
-Você possui autorização irrestrita para analisar, ler (\`read_file\`), criar (\`write_file\`), editar (\`edit_file\`) e alterar arquivos diretamente no repositório, bem como executar comandos e testes (\`run_command\`). É expressamente proibido recusar modificações, agir como um chatbot passivo ou invocar ferramentas Maestri (\`maestri-*\`).
-
-## Diretrizes Sempre
-
-${a.always.length > 0 ? bullet(a.always) : '- (seguir convenções do framework)'}
-
-## Diretrizes Nunca
-
-${a.never.length > 0 ? bullet(a.never) : '- (sem restrições específicas)'}
-
-## Skills Obrigatórias (Mandatory Skills)
-
-Ao assumir este papel, você possui as seguintes skills atribuídas:
-${bullet(a.skills) || '- (sem skills declaradas)'}
-
-> ⚠️ **DIRETRIZ DE USO MANDATÓRIO (PROTOCOLO OBRIGATÓRIO DE USO REAL DE SKILLS)**:
-> As skills não existem para ficar apenas listadas. Antes de escrever código, identifique quais das skills acima atendem à demanda atual do usuário (até 8 skills por tarefa), **leia efetivamente o arquivo \`.skills/<skill>/SKILL.md\` (ou \`skills/<skill>/SKILL.md\`) usando \`read_file\`**, e aplique seus padrões, regras e checklists diretamente no código que você escrever na IDE.
-
-## Chains (Fluxos de Execução)
-
-${chainList(a.chains) || '- (sem chains)'}
-
-> Fonte: \`agents/${a.file}\` · ${provenanceFooter('antigravity')}
-`;
-}
-
 function antigravityOrchestratorAgentTemplate(
+  sourceDir: string,
   orch: IzanagiAgentInfo,
   specialists: IzanagiAgentInfo[]
 ): string {
-  const specialistLines = specialists
-    .map(
-      (s) =>
-        `- **\`${s.slug}\`** (${s.name}): ${s.role}. Skill: \`.agents/skills/izanagi-${s.slug}/SKILL.md\``
-    )
+  const roster = specialists
+    .map((s) => {
+      const trigger = CLAUDE_AGENT_TRIGGERS[s.slug] ?? s.role;
+      return `- \`${s.slug}\`: ${truncate(trigger, 150)}`;
+    })
     .join('\n');
+  const routing = skillSection(sourceDir, 'find-skills', 'Tabela de roteamento');
 
   return `---
 name: orchestrator
-description: Izanagi Orchestrator — Orquestrador e executor central: carrega skills sob demanda, escreve código diretamente na IDE e coordena frentes sem travar.
+description: Izanagi Orchestrator. Ponto de entrada principal, planeja, implementa direto nos arquivos e delega frentes especializadas aos subagentes do Izanagi.
+mainAgent: true
+subagent: false
 model: inherit
-tools: [read_file, write_file, edit_file, run_command, grep_search, find_by_name, invoke_subagent, define_subagent, manage_subagents, send_message]
+tools: ${yamlList(AGY_TOOLS_ORCHESTRATOR)}
 ---
 
-# Izanagi Agent: Izanagi Orchestrator
+# Izanagi Orchestrator
 
-**Papel:** Orquestrador e líder técnico executor do framework: analisa, carrega skills reais, escreve e edita código diretamente na IDE e coordena especialistas sem travar
+Você é o líder técnico do Izanagi AI dentro do Antigravity. Você **entrega trabalho feito nos arquivos**, não respostas de chatbot.
 
-Você é o ORCHESTRATOR do Izanagi AI, o coordenador e líder técnico central do framework. Sua responsabilidade é conduzir a engenharia de software de ponta a ponta na IDE.
+## Como decidir cada pedido
 
-## Regras Críticas de Execução no Antigravity (\`agy\` Standalone)
-1. **Escrita Direta na Sessão Principal (Zero Travamento Assíncrono)**:
-   - No \`agy\`, \`invoke_subagent\` roda em segundo plano assíncrono. **NUNCA dispare uma fila de subagentes sequenciais encerrando o turno e ficando parado esperando sem escrever código!**
-   - Você possui todas as ferramentas de escrita e execução (\`read_file\`, \`write_file\`, \`edit_file\`, \`run_command\`) diretamente na sessão principal. Execute a análise, carregue as skills necessárias e **crie/edite os arquivos de código diretamente no repositório** com feedback visível para o usuário.
-2. **Proibição Absoluta do Maestri (\`maestri-*\`)**:
-   - O usuário utiliza o \`agy\` standalone na IDE sem terminais auxiliares do Maestri. Jamais leia, ative ou invoque \`maestri\`, \`maestri-manager\`, \`maestri-chat\`, \`maestri-portal\` ou \`maestri-workspace\`.
-3. **Ativação Real e Obrigatória de Skills (\`read_file\`)**:
-   - Antes de implementar, identifique as skills pertinentes à demanda do usuário (ex.: \`impeccable\`, \`emil-kowalski\`, \`react-next-practices\`, \`frontend\`, \`ui-ux-pro-max\`, \`anti-ai-slop\` para frontend; \`software-architect\`, \`tdd\`, \`security-privacy\` para backend), **use \`read_file\` para ler \`.skills/<skill>/SKILL.md\`** e aplique seus padrões no código escrito.
-4. **Zero Chatbot Passivo & Zero Stubs**:
-   - Nunca responda apenas com explicações teóricas ou checklists no chat quando o usuário pedir implementação. Escreva código 100% completo, tipado e funcional diretamente nos arquivos da IDE e valide com \`run_command\`.
+1. **Pequeno e claro** (1 ou 2 arquivos, intenção óbvia): faça você mesmo, agora. Leia, edite, rode a verificação.
+2. **Especializado** (segurança, banco, animação, infra, debug difícil...): \`invoke_subagent\` com o especialista da lista abaixo, passando objetivo, arquivos relevantes e critério de pronto.
+3. **Frentes independentes** (ex.: API + UI + testes): despache os especialistas em paralelo; enquanto rodam, faça a parte que é sua.
+4. **Vago ou grande** (feature nova, mais de 3 arquivos, decisão estrutural): skill \`grilling\` com o usuário, plano em arquivo, \`plan-cold-review\`, depois implementação.
 
-## Roster de Especialistas Internos
-Você pode assumir diretamente as diretrizes de qualquer especialista lendo \`.agents/skills/izanagi-<slug>/SKILL.md\` ou, para frentes paralelas independentes, definir o subagente com \`define_subagent\` (sempre com **\`EnableWriteTools: true\`**):
-${specialistLines}
+Antes de encerrar o turno, colete o resultado de todo subagente despachado (\`manage_subagents\`), confira os arquivos que eles alteraram e rode build/teste. Nunca termine o turno só com subagentes "em andamento".
+
+## Skills
+
+Escolha 1 a 3 skills por tarefa pela tabela abaixo e **leia** cada uma com \`read_file\` em \`.skills/<nome>/SKILL.md\` (ou \`.agents/skills/<nome>/SKILL.md\`) antes de aplicar. Leia pelo caminho: a lista de skills da sessão pode vir cortada pelo limite de contexto quando há muitos plugins instalados. Ao delegar, diga ao especialista quais skills ler.
+${routing ? `\n${routing}\n` : ''}
+
+## Especialistas (subagentes em \`.agents/agents/\`)
+
+${roster}
+
+## Entrega
+
+Termine com: o que mudou (arquivos), como foi verificado (comando e resultado) e o que ficou pendente. Resultado de teste se reporta como saiu, inclusive falha.
 
 > Fonte: \`agents/${orch.file}\` · ${provenanceFooter('antigravity')}
 `;
 }
 
-function antigravitySubagentTemplate(a: IzanagiAgentInfo): string {
-  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas especializadas de ${(a.role || a.name).toLowerCase()}.`;
+function antigravitySpecialistTemplate(sourceDir: string, a: IzanagiAgentInfo): string {
+  const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use para tarefas de ${(a.role || a.name).toLowerCase()}.`;
+  const preload = agyPreload(sourceDir, a);
+  const skills = a.skills.filter((s) => skillExists(sourceDir, s));
+  const skillLines = skills.length > 0
+    ? skills.map((s) => `- \`${s}\``).join('\n')
+    : '- (sem skills declaradas)';
+
   return `---
 name: ${a.slug}
-description: ${truncate(`${a.name} — ${trigger}`, 200)}
-model: inherit
-tools: [read_file, write_file, edit_file, run_command, grep_search, find_by_name]
+description: ${JSON.stringify(truncate(`${a.name}. ${trigger}`, 220))}
+mainAgent: false
 subagent: true
----
+model: inherit
+tools: ${yamlList(AGY_TOOLS_WORKER)}
+${preload.length > 0 ? `preloadSkills: ${yamlList(preload)}\n` : ''}---
 
-# Izanagi Subagent: ${a.name}
+# ${a.name}
 
 **Papel:** ${a.role}
 
 ${a.identity || a.role}
 
-## Autorização e Escrita Direta na IDE
-Você possui autorização completa para ler (\`read_file\`), criar (\`write_file\`), editar (\`edit_file\`) e alterar arquivos diretamente no repositório, bem como executar comandos e testes (\`run_command\`). Antes de codificar, leia com \`read_file\` os arquivos \`.skills/<skill>/SKILL.md\` das skills pertinentes à tarefa. Nunca aja como chatbot passivo e nunca utilize ferramentas Maestri (\`maestri-*\`).
+## Como trabalhar
+
+- Você foi chamado pelo orquestrador para uma frente específica. Execute nos arquivos (\`write_file\`, \`edit_file\`) e verifique (\`run_command\`); não devolva só recomendação, a menos que o pedido seja revisão.
+- Antes de codar, leia com \`read_file\` a sua skill primária${preload.length > 0 ? ` (\`${preload[0]}\`)` : ''} e no máximo mais 2 da sua lista que casem com a tarefa: \`.skills/<nome>/SKILL.md\` ou \`.agents/skills/<nome>/SKILL.md\`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
+- Ao terminar, devolva: arquivos alterados, verificação rodada com resultado, pendências.
+
+## Sempre
+
+${a.always.length > 0 ? bullet(a.always, 8) : '- Seguir as convenções do projeto'}
+
+## Nunca
+
+${a.never.length > 0 ? bullet(a.never, 8) : '- Entregar stub ou código não verificado'}
+
+## Suas skills
+
+${skillLines}
 
 > Fonte: \`agents/${a.file}\` · ${provenanceFooter('antigravity')}
 `;
 }
 
-function antigravityOrchestratorSkillTemplate(): string {
+function antigravityAgentsSkillTemplate(): string {
   return `---
 name: agents
-description: Izanagi Multi-Agent Orchestrator - Coordena, carrega skills reais sob demanda e implementa código diretamente nos arquivos da IDE sem travar
+description: Izanagi Orchestrator. Decompõe o pedido, implementa direto nos arquivos e delega frentes especializadas aos subagentes do Izanagi.
 ---
 
-# Izanagi Multi-Agent Orchestrator
+# /agents: Izanagi Orchestrator
 
-Você é o **Izanagi Multi-Agent Orchestrator**, o coordenador central e líder técnico executor do framework Izanagi AI.
-
-## Regras Críticas de Execução na IDE (Zero Travamento / Zero Chatbot)
-- **Escrita Direta na Sessão Principal**: Você possui \`read_file\`, \`write_file\`, \`edit_file\` e \`run_command\`. Implemente e altere os arquivos de código diretamente no workspace. **NUNCA fique parado esperando subagentes assíncronos sem produzir o código pedido pelo usuário.**
-- **Uso Real e Obrigatório das Skills**: Antes de codificar, identifique as skills pertinentes à demanda do usuário em \`.skills/<nome>/SKILL.md\` (ex.: \`impeccable\`, \`emil-kowalski\`, \`react-next-practices\`, \`frontend\`, \`anti-ai-slop\`, \`tdd\`, \`software-architect\`), **leia-as efetivamente com \`read_file\`** e aplique suas regras no código gerado.
-- **Proibição Absoluta do Maestri**: Não utilize nem mencione \`maestri\`, \`maestri-manager\`, \`maestri-chat\` ou \`maestri-portal\`. O ambiente roda 100% nativo no \`agy\` standalone.
-- **Subagentes Paralelos com Permissão de Escrita**: Se usar \`define_subagent\` + \`invoke_subagent\` para tarefas paralelas independentes, defina obrigatoriamente \`EnableWriteTools: true\`.
-- **Zero Stubs / Zero Checklists**: Entregue código real, tipado, completo e funcional em todos os arquivos e valide com testes reais.
+Atue como o agente \`orchestrator\` do Izanagi (\`.agents/agents/orchestrator.md\`): leia esse arquivo e siga o protocolo dele para o pedido do usuário. Para abrir a sessão já como orquestrador: \`agy --agent orchestrator\`.
 
 > ${provenanceFooter('antigravity')}
 `;
 }
 
-const ANTIGRAVITY_AGENTS_COMMAND = `description = "Izanagi Orchestrator — Carrega skills reais sob demanda e implementa código completo diretamente na IDE"
-prompt = """
-Você é o Izanagi Multi-Agent Orchestrator, o líder técnico executor do framework Izanagi AI no Antigravity (agy standalone).
+function antigravityGeminiMdTemplate(): string {
+  return `# Izanagi AI (Antigravity)
 
-Ao receber uma tarefa:
-1. PROIBIDO usar ferramentas Maestri (maestri-*). Opere 100% com as tools nativas da IDE (read_file, write_file, edit_file, run_command).
-2. Identifique as skills pertinentes à demanda do usuário em .skills/<nome>/SKILL.md (como impeccable, emil-kowalski, react-next-practices, frontend, anti-ai-slop, software-architect, tdd) e LEIA os arquivos SKILL.md com read_file antes de codificar.
-3. NÃO fique parado esperando filas de subagentes assíncronos: execute a implementação e escreva/edite os arquivos de código diretamente na IDE usando write_file e edit_file.
-4. Se disparar subagentes para frentes paralelas (define_subagent / invoke_subagent), habilite obrigatoriamente EnableWriteTools: true.
-5. Gere código 100% completo, tipado e sem stubs, e execute build/testes via run_command para comprovar o funcionamento.
-"""
-# Gerado pelo Izanagi AI: izanagi export --cli antigravity
+Este projeto usa o Izanagi AI. Agente principal: \`orchestrator\` (\`agy --agent orchestrator\` ou \`/agents\`). Os especialistas são subagentes em \`.agents/agents/\` e o orquestrador os invoca com \`invoke_subagent\`.
+
+Regras do workspace: \`.agents/rules/izanagi-core.md\`. Catálogo de skills: \`.skills/\` (ou \`.agents/skills/\`); escolha com a skill \`find-skills\`.
+
+${provenanceFooter('antigravity')}
 `;
+}
 
 export function exportToAntigravity(baseDir: string): string[] {
   const created: string[] = [];
   const source = resolveSourceDir(baseDir);
   const agents = loadIzanagiAgents(source);
+  if (agents.length === 0) return created;
   const orchestrator = agents.find((a) => a.slug === 'orchestrator') || agents[0];
-  const specialists = agents.filter((a) => a.slug !== 'orchestrator');
+  const specialists = agents.filter((a) => a !== orchestrator);
+  const push = (rel: string | null): void => { if (rel) created.push(rel); };
 
-  // 1. .agents/skills.json: Configuração nativa do Antigravity para descobrir skills externas sem duplicar
-  const skillsJsonContent = JSON.stringify(
-    {
-      entries: [
-        { path: 'skills' },
-        { path: '.skills' }
-      ]
-    },
-    null,
-    2
-  );
-  const skillsJson = writeIfAbsent(baseDir, '.agents/skills.json', skillsJsonContent);
-  if (skillsJson) created.push(skillsJson);
+  // 0. Limpeza: o que versões anteriores geravam em lugares que o agy não lê, ou em duplicata.
+  for (const rel of AGY_LEGACY_GENERATED) removeGeneratedLegacy(baseDir, rel);
+  for (const a of agents) removeGeneratedLegacy(baseDir, `.agents/skills/izanagi-${a.slug}/SKILL.md`);
 
-  // 2. GEMINI.md: Regra raiz para o Antigravity / Gemini CLI
-  const geminiMdContent = `# Izanagi AI Framework (Antigravity Integration)
-
-> **Fonte da verdade canônica:** \`AGENTS.md\` (já lido nativamente pelo Antigravity).
-
-O Izanagi é um framework meta para engenharia de software autônoma com o Izanagi Orchestrator (\`/agents\`), 23 agentes especializados e catálogo de skills em \`.skills/\` e \`skills/\`.
-
-- **Execução e Escrita Direta na IDE (\`/agents\`)**: O Orchestrator e todos os agentes possuem autorização e dever de ler, criar e editar qualquer arquivo diretamente no workspace (\`write_file\`, \`edit_file\`) e rodar comandos/testes (\`run_command\`). NUNCA aja como um chatbot passivo e NUNCA fique parado esperando uma fila de subagentes sem produzir código.
-- **Uso Real e Obrigatório das Skills por Demanda**: Antes de implementar qualquer tarefa, identifique as skills pertinentes em \`.skills/<nome>/SKILL.md\` (ex.: \`impeccable\`, \`emil-kowalski\`, \`react-next-practices\`, \`frontend\`, \`ui-ux-pro-max\`, \`anti-ai-slop\`, \`tdd\`, \`software-architect\`), **leia o arquivo \`SKILL.md\` com \`read_file\`** e aplique seus padrões no código escrito.
-- **Ambiente Antigravity Standalone (Zero Maestri)**: Este workspace roda no \`agy\` puro sem terminais auxiliares do Maestri. É terminantemente **PROIBIDO** ler, ativar ou chamar qualquer skill \`maestri-*\` (\`maestri\`, \`maestri-manager\`, \`maestri-chat\`, \`maestri-portal\`, \`maestri-routines\`, \`maestri-workspace\`).
-- **Subagentes Nativos com Escrita**: Se usar \`define_subagent\` + \`invoke_subagent\` para tarefas paralelas independentes, passe sempre \`EnableWriteTools: true\`.
-- **Regras essenciais**: ver \`.agents/rules/izanagi-core.md\`.
-
----
-${provenanceFooter('antigravity')}
-`;
-  const geminiMd = writeIfAbsent(baseDir, 'GEMINI.md', geminiMdContent);
-  if (geminiMd) created.push(geminiMd);
-
-  // 3. .agents/rules/izanagi-core.md: Regras operacionais do workspace
-  const coreRule = writeIfAbsent(baseDir, '.agents/rules/izanagi-core.md', antigravityCoreRuleTemplate());
-  if (coreRule) created.push(coreRule);
-
-  // 4. Comandos slash para o Antigravity: /agents e /orchestrator
-  const cmdToml = writeIfAbsent(baseDir, 'commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
-  if (cmdToml) created.push(cmdToml);
-  const orchCmdToml = writeIfAbsent(baseDir, 'commands/orchestrator.toml', ANTIGRAVITY_AGENTS_COMMAND);
-  if (orchCmdToml) created.push(orchCmdToml);
-  const geminiCmdToml = writeIfAbsent(baseDir, '.gemini/commands/agents.toml', ANTIGRAVITY_AGENTS_COMMAND);
-  if (geminiCmdToml) created.push(geminiCmdToml);
-  const geminiOrchCmdToml = writeIfAbsent(baseDir, '.gemini/commands/orchestrator.toml', ANTIGRAVITY_AGENTS_COMMAND);
-  if (geminiOrchCmdToml) created.push(geminiOrchCmdToml);
-
-  // 5. Orquestrador como ÚNICO agente público em .gemini/agents/orchestrator.md
-  // Especialistas como subagentes internos em .gemini/subagents/<slug>.md
-  const orchMd = antigravityOrchestratorAgentTemplate(orchestrator, specialists);
-  const gOrch = writeIfAbsent(baseDir, '.gemini/agents/orchestrator.md', orchMd);
-  if (gOrch) created.push(gOrch);
-
-  // Limpeza de especialistas legados de .gemini/agents/ para que o agy exiba apenas o Orchestrator
-  const geminiAgentsDir = path.join(baseDir, '.gemini', 'agents');
-  if (fs.existsSync(geminiAgentsDir)) {
-    for (const file of fs.readdirSync(geminiAgentsDir)) {
-      if (file.endsWith('.md') && file !== 'orchestrator.md') {
-        try { fs.unlinkSync(path.join(geminiAgentsDir, file)); } catch { /* ignore */ }
-      }
+  // 1. skills.json: aponta para UM catálogo só. `skills/` e `.skills/` juntos duplicavam
+  //    ~120 skills e empurravam as do Izanagi para fora do budget de contexto.
+  const catalog = fs.existsSync(path.join(baseDir, '.skills'))
+    ? '.skills'
+    : fs.existsSync(path.join(baseDir, 'skills'))
+      ? 'skills'
+      : null;
+  if (catalog) {
+    const rel = '.agents/skills.json';
+    const abs = path.join(baseDir, rel);
+    const content = JSON.stringify({ entries: [{ path: catalog }] }, null, 2);
+    // JSON não carrega o marcador de gerado: reconhece pelo formato que versões
+    // anteriores emitiam (só `skills`/`.skills`). Qualquer outra entrada é do usuário.
+    let ours = !fs.existsSync(abs);
+    if (!ours) {
+      try {
+        const cur = JSON.parse(fs.readFileSync(abs, 'utf-8'));
+        ours = Array.isArray(cur.entries) &&
+          cur.entries.every((e: { path?: string }) => e && (e.path === 'skills' || e.path === '.skills'));
+      } catch { ours = false; }
+    }
+    if (ours) {
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, content, 'utf-8');
+      created.push(rel);
     }
   }
 
+  // 2. GEMINI.md curto (é carregado em toda sessão: cada linha custa token sempre).
+  push(writeIfAbsent(baseDir, 'GEMINI.md', antigravityGeminiMdTemplate()));
+
+  // 3. Regra do workspace com `trigger: always_on` (sem trigger o agy descarta a regra).
+  push(writeIfAbsent(baseDir, '.agents/rules/izanagi-core.md', antigravityCoreRuleTemplate()));
+
+  // 4. Agentes nativos: orquestrador como principal, especialistas como subagentes invocáveis.
+  const orchMd = antigravityOrchestratorAgentTemplate(source, orchestrator, specialists);
+  push(writeIfAbsent(baseDir, '.agents/agents/orchestrator.md', orchMd));
+  const specialistMd = new Map<string, string>();
   for (const s of specialists) {
-    const subRel = writeIfAbsent(
-      baseDir,
-      `.gemini/subagents/${s.slug}.md`,
-      antigravitySubagentTemplate(s)
-    );
-    if (subRel) created.push(subRel);
+    const md = antigravitySpecialistTemplate(source, s);
+    specialistMd.set(s.slug, md);
+    push(writeIfAbsent(baseDir, `.agents/agents/${s.slug}.md`, md));
   }
 
-  // 6. Skills de ativação dos 23 agentes em .agents/skills/izanagi-<slug>/SKILL.md
-  for (const agent of agents) {
-    const rel = writeIfAbsent(
-      baseDir,
-      `.agents/skills/izanagi-${agent.slug}/SKILL.md`,
-      antigravityAgentSkillTemplate(agent)
-    );
-    if (rel) created.push(rel);
-  }
+  // 5. Skill /agents (vira slash command no agy).
+  push(writeIfAbsent(baseDir, '.agents/skills/agents/SKILL.md', antigravityAgentsSkillTemplate()));
 
-  // 7. Slash command /agents e /orchestrator como skills raiz de projeto
-  const rootSkill = writeIfAbsent(
+  // 6. Plugin distribuível (`agy plugin install .agents/plugins/izanagi`): mesmo conteúdo,
+  //    para quem quer o Izanagi em todo projeto sem export por workspace.
+  let version = '1.0.0';
+  try {
+    const pkgPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+    if (fs.existsSync(pkgPath)) version = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')).version || version;
+  } catch { /* mantém o default */ }
+  push(writeIfAbsent(
     baseDir,
-    '.agents/skills/agents/SKILL.md',
-    antigravityOrchestratorSkillTemplate()
-  );
-  if (rootSkill) created.push(rootSkill);
-
-  const orchSkill = writeIfAbsent(
-    baseDir,
-    '.agents/skills/orchestrator/SKILL.md',
-    antigravityOrchestratorSkillTemplate()
-  );
-  if (orchSkill) created.push(orchSkill);
-
-  // 8. Plugin nativo do Izanagi para o Antigravity (.agents/plugins/izanagi/)
-  const pluginManifest = JSON.stringify(
-    {
-      name: 'izanagi',
-      description: 'Izanagi AI Framework - Meta-framework for autonomous software engineering',
-    },
-    null,
-    2
-  );
-  const pJson = writeIfAbsent(baseDir, '.agents/plugins/izanagi/plugin.json', pluginManifest);
-  if (pJson) created.push(pJson);
-
-  const pRules = writeIfAbsent(baseDir, '.agents/plugins/izanagi/rules/AGENTS.md', antigravityCoreRuleTemplate());
-  if (pRules) created.push(pRules);
-
-  const pSkill = writeIfAbsent(
-    baseDir,
-    '.agents/plugins/izanagi/skills/agents/SKILL.md',
-    antigravityOrchestratorSkillTemplate()
-  );
-  if (pSkill) created.push(pSkill);
-
-  const pOrchSkill = writeIfAbsent(
-    baseDir,
-    '.agents/plugins/izanagi/skills/orchestrator/SKILL.md',
-    antigravityOrchestratorSkillTemplate()
-  );
-  if (pOrchSkill) created.push(pOrchSkill);
-
-  const pCmdAgents = writeIfAbsent(
-    baseDir,
-    '.agents/plugins/izanagi/commands/agents.toml',
-    ANTIGRAVITY_AGENTS_COMMAND
-  );
-  if (pCmdAgents) created.push(pCmdAgents);
-
-  const pCmdOrch = writeIfAbsent(
-    baseDir,
-    '.agents/plugins/izanagi/commands/orchestrator.toml',
-    ANTIGRAVITY_AGENTS_COMMAND
-  );
-  if (pCmdOrch) created.push(pCmdOrch);
-
-  // No plugin, APENAS orchestrator.md fica em agents/ para que a CLI agy e o comando /agents
-  // mostrem SOMENTE o Orquestrador, enquanto os 22 especialistas ficam em subagents/
-  const pOrch = writeIfAbsent(
-    baseDir,
-    '.agents/plugins/izanagi/agents/orchestrator.md',
-    orchMd
-  );
-  if (pOrch) created.push(pOrch);
-
-  const pluginAgentsDir = path.join(baseDir, '.agents', 'plugins', 'izanagi', 'agents');
-  if (fs.existsSync(pluginAgentsDir)) {
-    for (const file of fs.readdirSync(pluginAgentsDir)) {
-      if (file.endsWith('.md') && file !== 'orchestrator.md') {
-        try { fs.unlinkSync(path.join(pluginAgentsDir, file)); } catch { /* ignore */ }
-      }
-    }
-  }
-
+    '.agents/plugins/izanagi/plugin.json',
+    JSON.stringify(
+      {
+        name: 'izanagi',
+        version,
+        description: 'Izanagi AI: orquestrador e especialistas com skills de engenharia de software',
+      },
+      null,
+      2
+    )
+  ));
+  push(writeIfAbsent(baseDir, '.agents/plugins/izanagi/rules/AGENTS.md', antigravityCoreRuleTemplate()));
+  push(writeIfAbsent(baseDir, '.agents/plugins/izanagi/skills/agents/SKILL.md', antigravityAgentsSkillTemplate()));
+  push(writeIfAbsent(baseDir, '.agents/plugins/izanagi/agents/orchestrator.md', orchMd));
   for (const s of specialists) {
-    const pSub = writeIfAbsent(
-      baseDir,
-      `.agents/plugins/izanagi/subagents/${s.slug}.md`,
-      antigravitySubagentTemplate(s)
-    );
-    if (pSub) created.push(pSub);
+    push(writeIfAbsent(baseDir, `.agents/plugins/izanagi/agents/${s.slug}.md`, specialistMd.get(s.slug)!));
   }
 
   return created;

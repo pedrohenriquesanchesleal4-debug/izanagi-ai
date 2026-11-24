@@ -1,6 +1,6 @@
 ---
 name: conversion-copywriting
-description: "Copywriting persuasivo e específico para headline, CTA e microcopy: benefício mensurável, prova concreta, verbo de ação, sem clichê de IA. Use ao escrever qualquer texto voltado a conversão (landing, pricing, onboarding, email transacional)."
+description: "Copywriting persuasivo e específico para headline, CTA e microcopy. Use ao escrever qualquer texto voltado a conversão…"
 ---
 
 # Skill Conversion Copywriting — Izanagi

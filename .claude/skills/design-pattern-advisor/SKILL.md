@@ -1,6 +1,6 @@
 ---
 name: design-pattern-advisor
-description: "Recomenda o padrão de projeto certo para um problema (Factory, Strategy, Decorator, Repository...) com trade-offs e alerta contra over-engineering. Use ao decidir como estruturar uma solução de código."
+description: "Recomenda o padrão de projeto certo para um problema (Factory, Strategy, Decorator, Repository...) com…. Use ao decidir como estruturar uma solução de código."
 ---
 
 # Skill: Design Pattern Advisor

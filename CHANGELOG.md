@@ -4,6 +4,21 @@
 
 ---
 
+## [Unreleased]: 2026-11-24
+
+### Fixed
+- **Antigravity (`agy`) não usava os especialistas nem as skills**: o export gravava os 22 especialistas em `.gemini/subagents/` e `.agents/plugins/izanagi/subagents/`, pastas que o agy não lê, então `invoke_subagent` não os encontrava e o orquestrador virava chatbot. Agora orquestrador e especialistas são agentes nativos em `.agents/agents/*.md` (especialistas com `mainAgent: false`, `subagent: true`), conferido no agy 1.5.12 com um run real: o orquestrador delegou ao `qa`, ambos leram skills, escreveram arquivos e rodaram o teste.
+- **Tools inválidas no agy**: `grep_search` e `find_by_name` não existem no agy e eram descartadas em silêncio; a allowlist usa só nomes reais. Removido o parâmetro inventado `EnableWriteTools`.
+- **Regra do workspace descartada**: `.agents/rules/izanagi-core.md` não tinha `trigger:` e o agy a ignorava. Agora `trigger: always_on`.
+- **Skills fora do budget de contexto**: `skills.json` apontava para `skills/` e `.skills/` (o mesmo catálogo duas vezes) e as skills do Izanagi caíam na lista "excluded due to context budget". Agora aponta para um catálogo só; o orquestrador traz a tabela de roteamento embutida e manda ler skill pelo caminho.
+- **Claude Code: descrições de skill estouravam o budget de listagem** (117 descrições, ~24k chars): as últimas apareciam só com o nome. `compactSkillDescription` mantém "o quê" + "Use quando" (~157 chars em média). Corpo da skill segue fiel.
+- **`izanagi doctor --target antigravity` em projeto consumidor** procurava os adapters dentro de `.agents/.agents/`. Agora checa `.agents/agents/`, nomes de tool desconhecidos e `trigger:` da regra.
+- **Gasto de token por política**: "delegar é o padrão" e "seguir a chain completa de 3 a 9 skills" viraram "delegar quando o especialista agrega" e "1 skill primária + até 2 de verificação" (RULES.md regra 3 e CLAUDE.md gerado).
+
+### Added
+- Skills `find-skills` (roteador de 1 a 3 skills por tarefa), `grilling` (interrogatório de plano), `plan-cold-review` (revisão por agente sem contexto), `security-swarm-audit` (caça + refutação, 5 portas de app feito com IA), `site-launch-checklist` (entrega, SEO em 3 blocos, buscadores de IA), `codebase-map` (mapa persistente do repo) e `task-playbook` (processo, caixa e prova).
+- `economia-tokens`: seção de ferramentas externas (filtro de terminal, context-mode, compressão, grafo do código).
+
 ## [3.24.15]: 2026-10-21
 
 ### Added

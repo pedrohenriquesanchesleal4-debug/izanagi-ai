@@ -61,6 +61,11 @@ Skills da sua especialidade:
 - cto-advisor
 - caveman
 - failure-patterns
+- find-skills
+- grilling
+- plan-cold-review
+- codebase-map
+- task-playbook
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.

@@ -39,62 +39,77 @@ async function capture(fn: () => void | Promise<void>): Promise<{ logs: string[]
   return { logs, errors, exitCode };
 }
 
-test('Antigravity export: cria .agents/skills.json, GEMINI.md, rules e agent-skills', async () => {
+test('Antigravity export: agentes nativos em .agents/agents com tools reais do agy', async () => {
   const dir = tmpDir();
   try {
-    // Cria um agente mock em agents/
     const agentsDir = path.join(dir, 'agents');
     fs.mkdirSync(agentsDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(agentsDir, 'architect-agent.json'),
-      JSON.stringify({
-        name: 'architect',
-        version: '3.0.0',
-        purpose: 'System design and software architecture',
-        capabilities: ['system-design', 'adr', 'clean-arch'],
-        identity: 'Izanagi Architect Specialist',
-        permissions: ['fs:read'],
-      }),
-      'utf-8',
-    );
+    for (const name of ['orchestrator', 'architect']) {
+      fs.writeFileSync(
+        path.join(agentsDir, `${name}-agent.json`),
+        JSON.stringify({
+          name,
+          version: '3.0.0',
+          purpose: name === 'architect' ? 'System design and software architecture' : 'Coordena',
+          capabilities: ['x'],
+          identity: `Izanagi ${name}`,
+          skills: ['find-skills'],
+          permissions: ['fs:read'],
+        }),
+        'utf-8',
+      );
+    }
+    fs.mkdirSync(path.join(dir, '.skills', 'find-skills'), { recursive: true });
+    const skillMd = ['---', 'name: find-skills', 'description: x', '---', ''].join('\n');
+    fs.writeFileSync(path.join(dir, '.skills', 'find-skills', 'SKILL.md'), skillMd, 'utf-8');
+    fs.mkdirSync(path.join(dir, 'skills', 'find-skills'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'skills', 'find-skills', 'SKILL.md'), skillMd, 'utf-8');
 
-    const generated = exportToAntigravity(dir);
-    assert.ok(generated.length >= 4, 'gerou skills.json, GEMINI.md, rule e agent-skill');
+    // Legado gerado por versões antigas: deve sumir. Arquivo do usuário sem marcador: deve ficar.
+    fs.mkdirSync(path.join(dir, '.gemini', 'subagents'), { recursive: true });
+    fs.writeFileSync(path.join(dir, '.gemini', 'subagents', 'architect.md'), 'x\nGerado pelo Izanagi AI: `izanagi export --cli antigravity`\n');
+    fs.mkdirSync(path.join(dir, '.gemini', 'agents'), { recursive: true });
+    fs.writeFileSync(path.join(dir, '.gemini', 'agents', 'meu-agente.md'), 'agente do usuário\n');
 
-    // 1. skills.json
-    const skillsJsonPath = path.join(dir, '.agents', 'skills.json');
-    assert.ok(fs.existsSync(skillsJsonPath), '.agents/skills.json existe');
-    const skillsJson = JSON.parse(fs.readFileSync(skillsJsonPath, 'utf-8'));
-    assert.ok(Array.isArray(skillsJson.entries), 'entries é um array');
-    assert.ok(skillsJson.entries.some((e: { path: string }) => e.path === 'skills'));
-    assert.ok(skillsJson.entries.some((e: { path: string }) => e.path === '.skills'));
+    exportToAntigravity(dir);
 
-    // 2. GEMINI.md
-    const geminiMdPath = path.join(dir, 'GEMINI.md');
-    assert.ok(fs.existsSync(geminiMdPath), 'GEMINI.md existe');
-    const geminiMd = fs.readFileSync(geminiMdPath, 'utf-8');
-    assert.match(geminiMd, /Izanagi AI Framework/);
-    assert.match(geminiMd, /Antigravity/);
+    // skills.json aponta para UM catálogo (sem duplicar skills/ e .skills/)
+    const skillsJson = JSON.parse(fs.readFileSync(path.join(dir, '.agents', 'skills.json'), 'utf-8'));
+    assert.deepEqual(skillsJson.entries, [{ path: '.skills' }]);
 
-    // 3. Rule
-    const rulePath = path.join(dir, '.agents', 'rules', 'izanagi-core.md');
-    assert.ok(fs.existsSync(rulePath), '.agents/rules/izanagi-core.md existe');
-    const ruleContent = fs.readFileSync(rulePath, 'utf-8');
-    assert.match(ruleContent, /High-Craft & Anti-Generic/);
+    // Regra com trigger (sem trigger o agy descarta)
+    const rule = fs.readFileSync(path.join(dir, '.agents', 'rules', 'izanagi-core.md'), 'utf-8');
+    assert.match(rule, /^---\ntrigger: always_on\n---/);
+    assert.ok(!rule.includes('EnableWriteTools'), 'parâmetro inexistente no agy');
 
-    // 4. Agent skill
-    const agentSkillPath = path.join(dir, '.agents', 'skills', 'izanagi-architect', 'SKILL.md');
-    assert.ok(fs.existsSync(agentSkillPath), 'agent skill SKILL.md existe');
-    const agentSkillContent = fs.readFileSync(agentSkillPath, 'utf-8');
-    assert.match(agentSkillContent, /name: izanagi-architect/);
-    assert.match(agentSkillContent, /System design and software architecture/);
+    // Orquestrador principal, especialista como subagente oculto do seletor
+    const orch = fs.readFileSync(path.join(dir, '.agents', 'agents', 'orchestrator.md'), 'utf-8');
+    assert.match(orch, /mainAgent: true/);
+    assert.match(orch, /invoke_subagent/);
+    assert.ok(!orch.includes('preloadSkills'), 'orquestrador não depende de preload (budget de skills)');
+    const arch = fs.readFileSync(path.join(dir, '.agents', 'agents', 'architect.md'), 'utf-8');
+    assert.match(arch, /mainAgent: false/);
+    assert.match(arch, /subagent: true/);
+    for (const content of [orch, arch]) {
+      const tools = content.match(/^tools: \[([^\]]*)\]/m)![1].split(', ');
+      assert.ok(tools.includes('write_file') && tools.includes('edit_file') && tools.includes('run_command'));
+      assert.ok(!tools.includes('grep_search') && !tools.includes('find_by_name'), 'nomes inexistentes no agy');
+    }
 
-    // 5. Plugin Antigravity expõe APENAS o orchestrator em agents/ e especialistas em subagents/
-    const pluginAgentsDir = path.join(dir, '.agents', 'plugins', 'izanagi', 'agents');
-    assert.ok(fs.existsSync(path.join(pluginAgentsDir, 'orchestrator.md')), 'orchestrator.md existe no plugin');
-    const agentFiles = fs.readdirSync(pluginAgentsDir).filter((f) => f.endsWith('.md'));
-    assert.deepEqual(agentFiles, ['orchestrator.md'], 'apenas orchestrator.md deve estar exposto em agents/');
-    assert.ok(fs.existsSync(path.join(dir, '.agents', 'plugins', 'izanagi', 'subagents', 'architect.md')), 'especialistas residem em subagents/');
+    // Plugin distribuível espelha os agentes em agents/ (subagents/ não é lido pelo agy)
+    const pluginAgents = fs.readdirSync(path.join(dir, '.agents', 'plugins', 'izanagi', 'agents')).sort();
+    assert.deepEqual(pluginAgents, ['architect.md', 'orchestrator.md']);
+    assert.ok(!fs.existsSync(path.join(dir, '.agents', 'plugins', 'izanagi', 'subagents')));
+    assert.ok(JSON.parse(fs.readFileSync(path.join(dir, '.agents', 'plugins', 'izanagi', 'plugin.json'), 'utf-8')).version);
+
+    // Limpeza segura do legado
+    assert.ok(!fs.existsSync(path.join(dir, '.gemini', 'subagents')), 'legado gerado removido');
+    assert.ok(fs.existsSync(path.join(dir, '.gemini', 'agents', 'meu-agente.md')), 'arquivo do usuário preservado');
+
+    // Idempotente
+    const again = exportToAntigravity(dir);
+    assert.ok(again.length > 0);
+    assert.equal(fs.readFileSync(path.join(dir, '.agents', 'agents', 'orchestrator.md'), 'utf-8'), orch);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -135,8 +150,8 @@ test('Doctor --target antigravity: diagnostica descoberta e sugere correção qu
       doctorCommand(dir, ['--target', 'antigravity']);
     });
     const out2 = res2.logs.join('\n');
-    assert.match(out2, /Antigravity skills\.json configurado/);
-    assert.match(out2, /agentes disponíveis como skills invocáveis no Antigravity/);
+    assert.match(out2, /Antigravity (skills\.json configurado|pasta \.agents\/skills detectada)/);
+    assert.match(out2, /agentes nativos em \.agents\/agents\//);
     assert.ok(!out2.includes('Antigravity não descobre as skills'));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

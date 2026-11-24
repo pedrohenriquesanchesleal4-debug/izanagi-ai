@@ -1,6 +1,6 @@
 ---
 name: refero-styles
-description: "Padrões de design de interfaces extraídos de produtos reais de alto nível (Refero Styles, Mobbin e Real-world SaaS/DevTools/FinTech) para fundamentar decisões de frontend, fluxos complexos, paletas tonais e arquitetura de componentes."
+description: "Padrões de design de interfaces extraídos de produtos reais de alto nível (Refero Styles, Mobbin e Real-world SaaS/DevTools/FinTech) para fundamentar decisões de…"
 ---
 
 # Refero Styles — Padrões Visuais & Componentes de Produtos Reais

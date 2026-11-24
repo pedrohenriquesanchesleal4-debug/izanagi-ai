@@ -1,6 +1,6 @@
 ---
 name: automation-optimization
-description: "Identifica e corrige gargalos de I/O, browser, processamento e memória em automações, com métricas antes/depois. Use quando uma automação demorar demais, estourar rate limits ou custar caro."
+description: "Identifica e corrige gargalos de I/O, browser, processamento e memória em automações,…. Use quando uma automação demorar demais, estourar rate limits ou custar caro."
 ---
 
 # Automation Optimization — Rápido Sem Quebrar

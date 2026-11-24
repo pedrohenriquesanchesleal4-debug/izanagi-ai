@@ -13,7 +13,8 @@
     "hallucination-detection",
     "confidence-estimator",
     "economia-tokens",
-    "memoria-projeto"
+    "memoria-projeto",
+    "task-playbook"
   ],
   "chains": {
     "projetar_agente": [

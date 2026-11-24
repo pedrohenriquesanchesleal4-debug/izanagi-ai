@@ -1,6 +1,6 @@
 ---
 name: frontend
-description: "Design tokens do Tailwind e padrões de UI de alto craft do projeto, com boas práticas de Next.js. Use ao criar ou editar componentes visuais para manter consistência com o design system."
+description: "Design tokens do Tailwind e padrões de UI de alto craft do projeto, com boas…. Use ao criar ou editar componentes visuais para manter consistência com o design…"
 ---
 
 # Skill Frontend — Izanagi

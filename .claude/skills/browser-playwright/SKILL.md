@@ -1,6 +1,6 @@
 ---
 name: browser-playwright
-description: "Automação e testes de navegador ponta a ponta com Playwright CLI. Use para validar interfaces reais, inspecionar elementos, capturar screenshots, verificar console errors e testar fluxos com máxima economia de tokens."
+description: "Automação e testes de navegador ponta a ponta com Playwright CLI. Use para validar interfaces reais, inspecionar elementos, capturar screenshots,…"
 ---
 
 # Browser Automation & Testing com Playwright CLI

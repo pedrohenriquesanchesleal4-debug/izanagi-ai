@@ -62,6 +62,9 @@ skills:
   - "performance-optimizer"
   - "feature-flags"
   - "serverless-edge"
+  - "find-skills"
+  - "codebase-map"
+  - "site-launch-checklist"
 optionalSkills:
   - "architect"
   - "db"

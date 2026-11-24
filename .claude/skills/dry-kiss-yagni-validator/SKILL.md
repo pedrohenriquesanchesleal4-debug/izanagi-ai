@@ -1,6 +1,6 @@
 ---
 name: dry-kiss-yagni-validator
-description: "Verifica código contra DRY, KISS e YAGNI: duplicação, over-engineering e abstrações/parâmetros não usados, com exemplos de antes/depois. Use ao revisar ou refatorar código para simplicidade."
+description: "Verifica código contra DRY, KISS e YAGNI. Use ao revisar ou refatorar código para simplicidade."
 ---
 
 # Skill: DRY / KISS / YAGNI Validator

@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: "Depuração em 6 fases (reproduzir, isolar, hipótese, corrigir, verificar, prevenir) com causa raiz comprovada por evidência, nunca por chute. Use em qualquer erro, crash ou teste falhando, antes de qualquer correção."
+description: "Depuração em 6 fases (reproduzir, isolar, hipótese, corrigir, verificar, prevenir) com…. Use em qualquer erro, crash ou teste falhando, antes de qualquer correção."
 ---
 
 # Systematic Debugging — Manual Operacional

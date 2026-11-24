@@ -1,6 +1,6 @@
 ---
 name: web-design-guidelines
-description: "Diretrizes essenciais de web design e interface de usuário moderna (Vercel Web Design Guidelines e Awesome Design) com foco em tipografia intencional, ritmo visual, espaçamento de 4px/8px, acessibilidade WCAG 2.2 AA e eliminação de AI-slop."
+description: "Diretrizes essenciais de web design e interface de usuário moderna (Vercel Web Design Guidelines e Awesome Design) com foco em tipografia intencional, ritmo visual,…"
 ---
 
 # Web Design Guidelines — Interfaces Modernas & Anti-Generic

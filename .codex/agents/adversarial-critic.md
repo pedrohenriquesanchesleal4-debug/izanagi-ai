@@ -42,6 +42,8 @@ Skills da sua especialidade:
 - reverse-engineering
 - impeccable
 - emil-kowalski
+- plan-cold-review
+- security-swarm-audit
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.

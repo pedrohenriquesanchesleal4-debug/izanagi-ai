@@ -32,6 +32,7 @@ Skills da sua especialidade:
 - caveman
 - cto-advisor
 - risk-analyzer
+- grilling
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
