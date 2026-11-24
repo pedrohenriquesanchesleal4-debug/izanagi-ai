@@ -1,6 +1,6 @@
 ---
 name: hallucination-detection
-description: "Detecta alucinações técnicas em código gerado — APIs inexistentes, imports inventados, versões…. Use ao revisar código gerado por IA ou depurar erros misteriosos."
+description: "Detecta alucinações técnicas em código gerado — APIs inexistentes, imports inventados, versões… Use ao revisar código gerado por IA ou depurar erros misteriosos."
 ---
 
 # Hallucination Detection (Detecção de Falsidades Técnicas)

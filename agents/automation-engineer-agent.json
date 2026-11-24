@@ -19,7 +19,8 @@
     "automation-security",
     "automation-optimization",
     "automation-documentation",
-    "browser-playwright"
+    "browser-playwright",
+    "obsidian-vault-ops"
   ],
   "chains": {
     "automacao": [

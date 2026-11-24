@@ -4,7 +4,17 @@
 
 ---
 
-## [Unreleased]: 2026-11-24
+## [3.24.21]: 2026-11-24
+
+### Added (2ª rodada, a partir dos vídeos salvos)
+- Skills `web-design-vocabulary` (efeitos de scroll, 8 arquétipos de hero, fontes de componentes como 21st.dev e React Bits), `design-md` (design system em DESIGN.md), `obsidian-vault-ops` (cofre com FILA/GERADOS, briefings e revisão semanal), `setup-recommender` (setup mínimo e auditoria de budget de contexto) e `lead-finder` (prospecção por intenção pública, humano envia).
+- `grilling` no formato grill-me: rodadas, resposta sugerida em toda pergunta, veredito vale/não vale. `plan-cold-review` no padrão elefante e peixinhos (2 a 3 revisores frios em paralelo, comentário por passo).
+- `anti-ai-slop`: placar dos 20 sinais de app genérico. `continuous-improvement`: lições só com evidência (propor, sondar, compor). `prompt-engineering`: pirâmide objetivo, pesquisa, entrevista, exemplo. `security-swarm-audit`: SSTI (`{{7*7}}`) e credencial de banco em container.
+- Briefing padrão ao delegar (objetivo, onde olhar, decidido, exemplo, skills, o que devolver) no orquestrador do Claude Code e do Antigravity.
+- Plugin do Antigravity carrega o catálogo inteiro em `library/` (fora da listagem, custo zero de contexto); fora de projeto com Izanagi os agentes leem as skills de lá. Conferido: orquestrador global leu `impeccable` e `anti-ai-slop` da biblioteca num diretório vazio.
+
+### Fixed (2ª rodada)
+- `plugin.json` e `skills.json` nunca eram atualizados pelo export (JSON não carrega o marcador de gerado). `writeJsonIfOurs` reconhece o conteúdo gerado e reescreve; arquivo do usuário segue preservado.
 
 ### Fixed
 - **Antigravity (`agy`) não usava os especialistas nem as skills**: o export gravava os 22 especialistas em `.gemini/subagents/` e `.agents/plugins/izanagi/subagents/`, pastas que o agy não lê, então `invoke_subagent` não os encontrava e o orquestrador virava chatbot. Agora orquestrador e especialistas são agentes nativos em `.agents/agents/*.md` (especialistas com `mainAgent: false`, `subagent: true`), conferido no agy 1.5.12 com um run real: o orquestrador delegou ao `qa`, ambos leram skills, escreveram arquivos e rodaram o teste.

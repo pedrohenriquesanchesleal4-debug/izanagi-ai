@@ -1,6 +1,6 @@
 ---
 name: "prompt-engineering"
-description: "Use ao projetar ou revisar prompts de sistema, few-shot, formato de saída estrito e proteção contra prompt injection. Gatilhos de ativação: prompt engineering & system design; quando usar; estrutura de prompt de alta performance (5 blocos); proteção contra prompt injection."
+description: "Use ao projetar ou revisar prompts de sistema, few-shot, formato de saída estrito e proteção contra prompt injection. Gatilhos de ativação: prompt engineering & system design; quando usar; estrutura de prompt de alta performance (5 blocos); pirâmide de briefing (para pedir trabalho a um agente)."
 version: 2.0.0
 category: ai
 tools:
@@ -22,7 +22,7 @@ references:
 - **Resumo:** Use ao projetar ou revisar prompts de sistema, few-shot, formato de saída estrito e proteção contra prompt injection.
 - **Ativar quando:** Use ao projetar ou revisar prompts de sistema, few-shot, formato de saída estrito e proteção contra prompt injection.
 - **Escopo canônico:** Prompt Engineering & System Design
-- **Seções do corpo original:** Quando usar · Estrutura de Prompt de Alta Performance (5 blocos) · Proteção contra Prompt Injection · Economia de tokens (sem perder qualidade) · Checklist de qualidade (antes de entregar)
+- **Seções do corpo original:** Quando usar · Estrutura de Prompt de Alta Performance (5 blocos) · Pirâmide de briefing (para pedir trabalho a um agente) · Proteção contra Prompt Injection · Economia de tokens (sem perder qualidade)
 - **Ferramentas MCP esperadas:** mcp:fs_read, mcp:fs_write, mcp:execute_command
 
 ## Step-by-Step Workflow
@@ -150,6 +150,17 @@ Exemplifique **caso normal E caso de borda** — o few-shot define o comportamen
 BOM: {"severidade":"alta","arquivo":"auth.ts","linha":12,"achado":"Token em query string","fix":"Mover para header Authorization"}
 RUIM: {"severidade":"alta","arquivo":"auth.ts","linha":12,"achado":"coisa errada aí"}
 ```
+
+## Pirâmide de briefing (para pedir trabalho a um agente)
+
+Modelos atuais rendem mais com briefing curto e estruturado do que com prompt longo cheio de regra. Quatro camadas, de baixo para cima:
+
+1. **Objetivo**: o resultado e como saber que ficou pronto. Uma ou duas frases.
+2. **Pesquisa**: o agente investiga antes de começar (código existente, docs, referências) em vez de você despejar contexto.
+3. **Entrevista**: o agente pergunta o que falta (tom, público, restrições), uma pergunta por vez, antes de produzir.
+4. **Exemplo**: um caso de "como é bom" (arquivo, print, trecho aprovado). Vale mais que um parágrafo de adjetivos.
+
+Use o mesmo formato ao delegar para subagente: objetivo + critério de pronto, onde pesquisar, perguntas já respondidas, exemplo do padrão esperado.
 
 ## Proteção contra Prompt Injection
 

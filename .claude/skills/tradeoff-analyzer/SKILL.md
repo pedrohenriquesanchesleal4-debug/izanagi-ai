@@ -1,6 +1,6 @@
 ---
 name: tradeoff-analyzer
-description: "Compara abordagens técnicas por critérios ponderados…. Use ao decidir entre arquiteturas, libs ou padrões concorrentes."
+description: "Compara abordagens técnicas por critérios ponderados… Use ao decidir entre arquiteturas, libs ou padrões concorrentes."
 ---
 
 # Skill: Trade-off Analyzer

@@ -1,6 +1,6 @@
 ---
 name: webgl-3d
-description: "Cenas 3D no navegador com Three.js/React Three Fiber, shaders GLSL, partículas, GLTF e…. Use quando o pedido envolver 3D, WebGL, shader ou experiência imersiva."
+description: "Cenas 3D no navegador com Three.js/React Three Fiber, shaders GLSL, partículas, GLTF e… Use quando o pedido envolver 3D, WebGL, shader ou experiência imersiva."
 ---
 
 > **Ver também**: `core/skill-composer.md` — chain `webgl_experience` já resolve quando combinar esta skill com `animation-web` (scrollytelling) e `motion-design` (timing/easing).

@@ -1,6 +1,6 @@
 ---
 name: legacy-migration
-description: "Estratégias de migração de sistemas legados (strangler fig, big bang, parallel run) e extração de dados de…. Use ao migrar funcionalidades para uma nova plataforma."
+description: "Estratégias de migração de sistemas legados (strangler fig, big bang, parallel run) e extração de dados de… Use ao migrar funcionalidades para uma nova plataforma."
 ---
 
 # Skill Legacy Migration — Izanagi

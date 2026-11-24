@@ -45,6 +45,7 @@ Skills da sua especialidade:
 - impeccable
 - emil-kowalski
 - plan-cold-review
+- design-md
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.

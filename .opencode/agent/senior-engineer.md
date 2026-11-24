@@ -93,6 +93,8 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - find-skills
 - codebase-map
 - site-launch-checklist
+- web-design-vocabulary
+- design-md
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.

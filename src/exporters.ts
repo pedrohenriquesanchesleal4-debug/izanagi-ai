@@ -330,11 +330,29 @@ const ORCHESTRATOR_HARD_GATES = `
 - **Gate final**: security, QA e evaluator precisam emitir evidência independente. Falha crítica ou requisito órfão bloqueia a entrega.
 `;
 
+/**
+ * Formato de briefing ao delegar (pirâmide objetivo → pesquisa → perguntas → exemplo).
+ * Subagente começa sem contexto: briefing ruim vira releitura do projeto inteiro (token)
+ * ou entrega fora do alvo (retrabalho). Compartilhado entre Claude Code e Antigravity.
+ */
+const SUBAGENT_BRIEF_FORMAT = `### Briefing ao delegar (o subagente começa sem contexto)
+
+\`\`\`
+Objetivo: <resultado em 1 a 2 frases> · Pronto quando: <teste/comando/critério verificável>
+Onde olhar: <arquivos e pastas exatos; o que já se sabe para ele não reinvestigar>
+Decidido: <respostas que o usuário já deu; o que NÃO mudar>
+Exemplo do padrão: <arquivo ou trecho que mostra como é bom>
+Skills: <1 a 3 nomes para ler antes de codar>
+Devolva: arquivos alterados, verificação rodada com resultado, pendências
+\`\`\`
+`;
+
 const CLAUDE_ORCHESTRATOR_DISPATCH_POLICY = `
 ## Política de execução do Orquestrador
 
 O Orchestrator é o coordenador central e possui acesso total a ferramentas de leitura, escrita, edição e execução (\`Read\`, \`Grep\`, \`Glob\`, \`Edit\`, \`Write\`, \`Bash\`, \`Agent\`). Ele analisa o contexto, delega frentes especializadas via Agent tool quando apropriado e implementa ou refatora código diretamente para garantir que a demanda seja atendida por completo.
-`;
+
+${SUBAGENT_BRIEF_FORMAT}`;
 
 const CODEX_ORCHESTRATOR_LIMITATION = `
 ## Execução no Codex
@@ -400,7 +418,8 @@ export function compactSkillDescription(desc: string, max = 170): string {
     const use = truncate(t.slice(useIdx), Math.floor(max * 0.5));
     const headEnd = t.search(/[.:](\s|$)/);
     const head = t.slice(0, headEnd > 0 && headEnd < useIdx ? headEnd : useIdx).trim();
-    return `${truncate(head, max - use.length - 2).replace(/[.,;:]$/, '')}. ${use}`;
+    const h = truncate(head, max - use.length - 2).replace(/[.,;:]$/, '');
+    return `${h}${h.endsWith('…') ? '' : '.'} ${use}`;
   }
   return truncate(t, max);
 }
@@ -1298,6 +1317,30 @@ function agyPreload(sourceDir: string, a: IzanagiAgentInfo): string[] {
   return out;
 }
 
+/**
+ * JSON não comporta o marcador de gerado, então `writeIfAbsent` nunca o atualizaria.
+ * Escreve se o arquivo não existe ou se `isOurs` reconhece o conteúdo atual como
+ * gerado pelo Izanagi; JSON inválido ou de outro dono é preservado.
+ */
+function writeJsonIfOurs(
+  baseDir: string,
+  rel: string,
+  value: unknown,
+  isOurs: (current: unknown) => boolean
+): string | null {
+  const abs = path.join(baseDir, rel);
+  if (fs.existsSync(abs)) {
+    try {
+      if (!isOurs(JSON.parse(fs.readFileSync(abs, 'utf-8')))) return null;
+    } catch {
+      return null;
+    }
+  }
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, JSON.stringify(value, null, 2), 'utf-8');
+  return rel;
+}
+
 /** Extrai o corpo de uma seção `## <heading>` de uma skill da fonte (uma fonte da verdade só). */
 function skillSection(sourceDir: string, name: string, heading: string): string {
   for (const dir of ['.skills', 'skills']) {
@@ -1324,7 +1367,7 @@ trigger: always_on
 # Izanagi AI: regras do workspace
 
 - **Você executa.** Pedido de implementação termina com arquivos alterados (\`write_file\`/\`edit_file\`) e verificação rodada (\`run_command\`), não com explicação no chat.
-- **Skills se leem, não se listam.** Antes de tarefa não trivial, escolha 1 a 3 skills (skill \`find-skills\`), leia o \`SKILL.md\` de cada uma em \`.skills/<nome>/\` ou \`.agents/skills/<nome>/\`, e declare numa linha o que vai aplicar.
+- **Skills se leem, não se listam.** Antes de tarefa não trivial, escolha 1 a 3 skills (skill \`find-skills\`), leia o \`SKILL.md\` de cada uma em \`.skills/<nome>/\`, \`.agents/skills/<nome>/\` ou \`~/.gemini/config/plugins/izanagi/library/<nome>/\`, e declare numa linha o que vai aplicar.
 - **Especialistas são subagentes reais.** Estão em \`.agents/agents/\`. Delegue com \`invoke_subagent\` quando a frente for especializada ou paralela; faça você mesmo quando for pequena.
 - **Plano antes de código grande.** Mais de 3 arquivos ou decisão estrutural: \`grilling\` e \`plan-cold-review\` antes de codar.
 - **Zero stub.** Sem \`TODO: implement\`, sem mock fingindo implementação.
@@ -1371,9 +1414,11 @@ Você é o líder técnico do Izanagi AI dentro do Antigravity. Você **entrega 
 
 Antes de encerrar o turno, colete o resultado de todo subagente despachado (\`manage_subagents\`), confira os arquivos que eles alteraram e rode build/teste. Nunca termine o turno só com subagentes "em andamento".
 
+${SUBAGENT_BRIEF_FORMAT}
+
 ## Skills
 
-Escolha 1 a 3 skills por tarefa pela tabela abaixo e **leia** cada uma com \`read_file\` em \`.skills/<nome>/SKILL.md\` (ou \`.agents/skills/<nome>/SKILL.md\`) antes de aplicar. Leia pelo caminho: a lista de skills da sessão pode vir cortada pelo limite de contexto quando há muitos plugins instalados. Ao delegar, diga ao especialista quais skills ler.
+Escolha 1 a 3 skills por tarefa pela tabela abaixo e **leia** cada uma com \`read_file\` no primeiro caminho que existir: \`.skills/<nome>/SKILL.md\`, \`.agents/skills/<nome>/SKILL.md\` ou, fora de projeto com Izanagi, \`~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md\`. Leia antes de aplicar. Leia pelo caminho: a lista de skills da sessão pode vir cortada pelo limite de contexto quando há muitos plugins instalados. Ao delegar, diga ao especialista quais skills ler.
 ${routing ? `\n${routing}\n` : ''}
 
 ## Especialistas (subagentes em \`.agents/agents/\`)
@@ -1414,7 +1459,7 @@ ${a.identity || a.role}
 ## Como trabalhar
 
 - Você foi chamado pelo orquestrador para uma frente específica. Execute nos arquivos (\`write_file\`, \`edit_file\`) e verifique (\`run_command\`); não devolva só recomendação, a menos que o pedido seja revisão.
-- Antes de codar, leia com \`read_file\` a sua skill primária${preload.length > 0 ? ` (\`${preload[0]}\`)` : ''} e no máximo mais 2 da sua lista que casem com a tarefa: \`.skills/<nome>/SKILL.md\` ou \`.agents/skills/<nome>/SKILL.md\`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
+- Antes de codar, leia com \`read_file\` a sua skill primária${preload.length > 0 ? ` (\`${preload[0]}\`)` : ''} e no máximo mais 2 da sua lista que casem com a tarefa, no primeiro caminho que existir: \`.skills/<nome>/SKILL.md\`, \`.agents/skills/<nome>/SKILL.md\` ou \`~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md\`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
 - Ao terminar, devolva: arquivos alterados, verificação rodada com resultado, pendências.
 
 ## Sempre
@@ -1479,24 +1524,12 @@ export function exportToAntigravity(baseDir: string): string[] {
       ? 'skills'
       : null;
   if (catalog) {
-    const rel = '.agents/skills.json';
-    const abs = path.join(baseDir, rel);
-    const content = JSON.stringify({ entries: [{ path: catalog }] }, null, 2);
-    // JSON não carrega o marcador de gerado: reconhece pelo formato que versões
-    // anteriores emitiam (só `skills`/`.skills`). Qualquer outra entrada é do usuário.
-    let ours = !fs.existsSync(abs);
-    if (!ours) {
-      try {
-        const cur = JSON.parse(fs.readFileSync(abs, 'utf-8'));
-        ours = Array.isArray(cur.entries) &&
-          cur.entries.every((e: { path?: string }) => e && (e.path === 'skills' || e.path === '.skills'));
-      } catch { ours = false; }
-    }
-    if (ours) {
-      fs.mkdirSync(path.dirname(abs), { recursive: true });
-      fs.writeFileSync(abs, content, 'utf-8');
-      created.push(rel);
-    }
+    // Reconhece o formato que versões anteriores emitiam (só `skills`/`.skills`).
+    // Qualquer outra entrada é do usuário e preserva o arquivo.
+    push(writeJsonIfOurs(baseDir, '.agents/skills.json', { entries: [{ path: catalog }] }, (cur) => {
+      const entries = (cur as { entries?: Array<{ path?: string }> }).entries;
+      return Array.isArray(entries) && entries.every((e) => e && (e.path === 'skills' || e.path === '.skills'));
+    }));
   }
 
   // 2. GEMINI.md curto (é carregado em toda sessão: cada linha custa token sempre).
@@ -1525,19 +1558,27 @@ export function exportToAntigravity(baseDir: string): string[] {
     const pkgPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
     if (fs.existsSync(pkgPath)) version = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')).version || version;
   } catch { /* mantém o default */ }
-  push(writeIfAbsent(
+  push(writeJsonIfOurs(
     baseDir,
     '.agents/plugins/izanagi/plugin.json',
-    JSON.stringify(
-      {
-        name: 'izanagi',
-        version,
-        description: 'Izanagi AI: orquestrador e especialistas com skills de engenharia de software',
-      },
-      null,
-      2
-    )
+    {
+      name: 'izanagi',
+      version,
+      description: 'Izanagi AI: orquestrador e especialistas com skills de engenharia de software',
+    },
+    (cur) => (cur as { name?: string }).name === 'izanagi'
   ));
+  // Biblioteca de skills dentro do plugin, FORA de `skills/`: o agy copia a pasta na
+  // instalação mas não a lista no contexto (custo zero de budget). Os agentes leem por
+  // caminho quando o projeto não tem `.skills/` nem `.agents/skills/`. Só a fonte do
+  // framework gera a biblioteca; projeto consumidor já tem o catálogo em `.agents/skills/`.
+  const catalogDir = path.join(baseDir, '.skills');
+  if (fs.existsSync(catalogDir) && fs.existsSync(path.join(baseDir, 'agents'))) {
+    const libRoot = path.join(baseDir, '.agents', 'plugins', 'izanagi', 'library');
+    fs.rmSync(libRoot, { recursive: true, force: true });
+    fs.cpSync(catalogDir, libRoot, { recursive: true });
+    created.push('.agents/plugins/izanagi/library/');
+  }
   push(writeIfAbsent(baseDir, '.agents/plugins/izanagi/rules/AGENTS.md', antigravityCoreRuleTemplate()));
   push(writeIfAbsent(baseDir, '.agents/plugins/izanagi/skills/agents/SKILL.md', antigravityAgentsSkillTemplate()));
   push(writeIfAbsent(baseDir, '.agents/plugins/izanagi/agents/orchestrator.md', orchMd));

@@ -1,6 +1,6 @@
 ---
 name: websocket-realtime
-description: "Comunicação em tempo real via WebSocket, SSE, Socket.IO e WebRTC, com padrões de canais,…. Use ao implementar chat, notificações push ou streaming ao vivo."
+description: "Comunicação em tempo real via WebSocket, SSE, Socket.IO e WebRTC, com padrões de canais,… Use ao implementar chat, notificações push ou streaming ao vivo."
 ---
 
 # Skill WebSocket & Real-Time — Izanagi

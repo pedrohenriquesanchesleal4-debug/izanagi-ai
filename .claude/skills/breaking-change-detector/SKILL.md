@@ -1,6 +1,6 @@
 ---
 name: breaking-change-detector
-description: "Detecta breaking changes em APIs e migrações de banco, classificando por semver…. Use antes de publicar mudanças em contratos de API ou schema de banco."
+description: "Detecta breaking changes em APIs e migrações de banco, classificando por semver… Use antes de publicar mudanças em contratos de API ou schema de banco."
 ---
 
 # Skill: Breaking Change Detector

@@ -1,4 +1,5 @@
 {
   "name": "izanagi",
-  "description": "Izanagi AI Framework - Meta-framework for autonomous software engineering"
+  "version": "3.24.21",
+  "description": "Izanagi AI: orquestrador e especialistas com skills de engenharia de software"
 }

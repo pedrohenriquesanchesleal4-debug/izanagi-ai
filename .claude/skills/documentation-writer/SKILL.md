@@ -1,6 +1,6 @@
 ---
 name: documentation-writer
-description: "Gera documentação de projeto — README, docs de API, guias de setup, arquitetura e…. Use ao documentar um projeto novo ou atualizar sua documentação existente."
+description: "Gera documentação de projeto — README, docs de API, guias de setup, arquitetura e… Use ao documentar um projeto novo ou atualizar sua documentação existente."
 ---
 
 # Skill: Documentation Writer

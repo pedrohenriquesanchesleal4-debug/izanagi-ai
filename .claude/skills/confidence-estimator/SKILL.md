@@ -1,6 +1,6 @@
 ---
 name: confidence-estimator
-description: "Calibra o grau de certeza (alto/médio/baixo) em recomendações e código, sinalizando suposições para evitar…. Use em decisões arquiteturais ou respostas ambíguas."
+description: "Calibra o grau de certeza (alto/médio/baixo) em recomendações e código, sinalizando suposições para evitar… Use em decisões arquiteturais ou respostas ambíguas."
 ---
 
 # Confidence Estimator (Calibração de Certeza)

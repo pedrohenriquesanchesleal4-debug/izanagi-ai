@@ -1,6 +1,6 @@
 ---
 name: logging-expert
-description: "Define logging estruturado em JSON com contexto, sem vazar dados sensíveis, e o que registrar em cada nível…. Use ao implementar ou revisar logging de uma aplicação."
+description: "Define logging estruturado em JSON com contexto, sem vazar dados sensíveis, e o que registrar em cada nível… Use ao implementar ou revisar logging de uma aplicação."
 ---
 
 # Skill: Logging Expert

@@ -34,27 +34,31 @@ Inspirada no desenho público do `cloudflare/security-audit-skill` (MIT): quem a
 
 **Pule** para scripts locais sem rede, sem dado de usuário e sem segredo.
 
-### Passo 3 — Liste em arquivo (.agents/security/surface.md):
+### Passo 3 — Dois testes baratos que pegam muita coisa:
+
+Dois testes baratos que pegam muita coisa:
+
+### Passo 4 — Liste em arquivo (.agents/security/surface.md):
 
 Liste em arquivo (`.agents/security/surface.md`): rotas e handlers, pontos de autenticação, acesso a banco, chamadas externas, uploads, webhooks, pontos onde texto de usuário chega a um LLM. Uma linha por item com `arquivo:linha`.
 
-### Passo 4 — Um agente por superfície, cada um recebe só o mapa e o seu foco:
+### Passo 5 — Um agente por superfície, cada um recebe só o mapa e o seu foco:
 
 Um agente por superfície, cada um recebe só o mapa e o seu foco:
 
-### Passo 5 — Cada achado sai no formato:
+### Passo 6 — Cada achado sai no formato:
 
 Cada achado sai no formato: `id, superfície, arquivo:linha, hipótese de exploração, severidade estimada`.
 
-### Passo 6 — Cada achado vai para um agente novo com a instrução:
+### Passo 7 — Cada achado vai para um agente novo com a instrução:
 
 Cada achado vai para um agente **novo** com a instrução: *"Prove que este bug não existe. Procure validação a montante, middleware, policy, tipo que impeça a entrada. Se não conseguir refutar, descreva o caminho exato de exploração."*
 
-### Passo 7 — Resultado por achado:
+### Passo 8 — Resultado por achado:
 
 Resultado por achado: `REFUTADO` (com o motivo), `CONFIRMADO` (com caminho de exploração) ou `PRECISA VALIDAÇÃO` (não dá para provar estático; diga qual teste rodar).
 
-### Passo 8 — .agents/security/report.md com apenas CONFIRMADO e PRECISA VALIDAÇÃO, ordenados por sev...
+### Passo 9 — .agents/security/report.md com apenas CONFIRMADO e PRECISA VALIDAÇÃO, ordenados por sev...
 
 `.agents/security/report.md` com apenas CONFIRMADO e PRECISA VALIDAÇÃO, ordenados por severidade. Para cada um: arquivo:linha, exploração em 2 linhas, correção com diff sugerido, teste que prova a correção.
 
@@ -114,6 +118,11 @@ Inspirada no desenho público do `cloudflare/security-audit-skill` (MIT): quem a
 | 3 | IDOR: recurso de outro cliente a um ID de distância | Trocar `/orders/123` por `/orders/124` com outro usuário logado deve dar 403/404 |
 | 4 | Webhook de pagamento sem assinatura conferida | Handler valida assinatura (`stripe.webhooks.constructEvent` ou equivalente) e é idempotente |
 | 5 | O resto | Dependências com CVE (`npm audit`/`pip-audit`), login sem rate limit, sem proteção a bots, sem WAF com regras OWASP |
+
+Dois testes baratos que pegam muita coisa:
+
+- **SSTI / injeção de template:** em todo campo que volta renderizado (nome no e-mail de boas-vindas, título de página, PDF), envie `{{7*7}}` e `${7*7}`. Se aparecer `49`, o servidor está executando entrada do usuário como template. Correção: nunca montar template a partir de string do usuário; passar como variável escapada.
+- **Container comprometido = banco comprometido?** Verifique se a credencial do banco está em variável de ambiente legível pelo processo web e se a role/IAM do container pode mais do que a aplicação precisa. Correção: segredo buscado em runtime de um secret manager, usuário de banco com permissão mínima por serviço, sem `*` em policy.
 
 ## Fase 1: mapa da superfície
 

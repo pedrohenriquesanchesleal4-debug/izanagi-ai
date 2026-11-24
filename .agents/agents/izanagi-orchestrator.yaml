@@ -56,6 +56,9 @@ skills:
   - "plan-cold-review"
   - "codebase-map"
   - "task-playbook"
+  - "setup-recommender"
+  - "lead-finder"
+  - "obsidian-vault-ops"
 optionalSkills: []
 chains:
   default_pipeline:

@@ -1,6 +1,6 @@
 ---
 name: cloud-infra
-description: "Guia de infraestrutura cloud (AWS/GCP/Azure), Terraform/IaC, Docker, Kubernetes e CI/CD com boas…. Use para projetar, implantar ou revisar infraestrutura cloud."
+description: "Guia de infraestrutura cloud (AWS/GCP/Azure), Terraform/IaC, Docker, Kubernetes e CI/CD com boas… Use para projetar, implantar ou revisar infraestrutura cloud."
 ---
 
 # Skill Cloud Infrastructure — Izanagi

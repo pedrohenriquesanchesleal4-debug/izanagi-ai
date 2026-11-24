@@ -23,7 +23,8 @@
     "clean-code-validator",
     "impeccable",
     "emil-kowalski",
-    "plan-cold-review"
+    "plan-cold-review",
+    "design-md"
   ],
   "chains": {
     "review_teach": [

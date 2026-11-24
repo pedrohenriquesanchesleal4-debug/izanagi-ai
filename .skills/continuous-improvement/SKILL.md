@@ -1,6 +1,6 @@
 ---
 name: "continuous-improvement"
-description: "Reflete sobre um ciclo de trabalho concluído, extrai aprendizados e atualiza a memória persistente do projeto (.agents/memoria/). Use ao encerrar sprints, marcos ou após resolver bugs complexos. Gatilhos de ativação: continuous improvement (evolução contínua e aprendizado); quando usar; workflow de melhoria contínua (4 passos); checklist de qualidade (antes de encerrar)."
+description: "Reflete sobre um ciclo de trabalho concluído, extrai aprendizados e atualiza a memória persistente do projeto (.agents/memoria/). Use ao encerrar sprints, marcos ou após resolver bugs complexos. Gatilhos de ativação: continuous improvement (evolução contínua e aprendizado); quando usar; workflow de melhoria contínua (4 passos); lição só entra com evidência (recursão em 2 níveis)."
 version: 2.0.0
 category: engineering
 tools:
@@ -21,7 +21,7 @@ references:
 - **Resumo:** Reflete sobre um ciclo de trabalho concluído, extrai aprendizados e atualiza a memória persistente do projeto (.agents/memoria/).
 - **Ativar quando:** Use ao encerrar sprints, marcos ou após resolver bugs complexos.
 - **Escopo canônico:** Continuous Improvement (Evolução Contínua e Aprendizado)
-- **Seções do corpo original:** Quando usar · Workflow de Melhoria Contínua (4 passos) · Checklist de qualidade (antes de encerrar) · Anti-padrões (proibido) · Composição com outras skills
+- **Seções do corpo original:** Quando usar · Workflow de Melhoria Contínua (4 passos) · Lição só entra com evidência (recursão em 2 níveis) · Checklist de qualidade (antes de encerrar) · Anti-padrões (proibido)
 - **Ferramentas MCP esperadas:** mcp:fs_write, mcp:execute_command
 
 ## Step-by-Step Workflow
@@ -106,6 +106,25 @@ Escreva o aprendizado no arquivo correspondente em `.agents/memoria/`:
 
 ### 4. Proposta de evolução de skill
 Se o aprendizado for genérico o bastante, sugira a atualização de uma skill ou regra do framework para beneficiar futuros projetos.
+
+## Lição só entra com evidência (recursão em 2 níveis)
+
+Padrão de harness recursivo (ex.: Harness², ReasoningBank): o agente melhora o próprio processo sem retreinar o modelo, mas só guarda o que tem prova.
+
+**Dentro da tarefa (propor, sondar, compor):**
+1. *Propor*: uma mudança no processo (prompt, ordem de passos, skill usada).
+2. *Sondar*: rodar as duas versões no mesmo caso, ou comparar com a execução anterior.
+3. *Compor*: ficar com a versão que teve resultado observável melhor (teste passou, menos retrabalho, menos tokens).
+
+**Entre tarefas (lições com prova):** cada entrada em `learnings.md` segue o formato
+
+```
+- [AAAA-MM-DD] <regra em 1 frase>
+  Evidência: <o que foi medido ou observado, com arquivo/comando>
+  Escopo: <quando vale> · Status: candidata | adotada (após 2 usos confirmados) | descartada
+```
+
+Lição sem evidência fica como `candidata` e não vira regra. Lição que falhou na reutilização vira `descartada` com o motivo (isso também é conhecimento).
 
 ## Checklist de qualidade (antes de encerrar)
 - [ ] Lição principal extraída e documentada em 1-2 frases claras

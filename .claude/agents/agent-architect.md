@@ -60,6 +60,7 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/economia-tokens/SKILL.md` (+ `references.md`)
 - `skills/memoria-projeto/SKILL.md` (+ `references.md`)
 - `skills/task-playbook/SKILL.md`
+- `skills/setup-recommender/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

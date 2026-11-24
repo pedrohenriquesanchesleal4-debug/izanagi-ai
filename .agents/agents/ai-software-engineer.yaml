@@ -39,6 +39,7 @@ skills:
   - "economia-tokens"
   - "find-skills"
   - "codebase-map"
+  - "setup-recommender"
 optionalSkills:
   - "systematic-debugging"
 chains:

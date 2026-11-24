@@ -1,6 +1,6 @@
 ---
 name: complexity-analyzer
-description: "Mede complexidade ciclomática (McCabe) e cognitiva do código, sinaliza funções acima do limite e recomenda…. Use ao revisar funções grandes ou muito aninhadas."
+description: "Mede complexidade ciclomática (McCabe) e cognitiva do código, sinaliza funções acima do limite e recomenda… Use ao revisar funções grandes ou muito aninhadas."
 ---
 
 # Skill: Complexity Analyzer

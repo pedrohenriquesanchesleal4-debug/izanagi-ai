@@ -1,6 +1,6 @@
 ---
 name: agentic-coding
-description: "Loop de codificação autônoma (planejar, codar, testar, corrigir) com verificação empírica obrigatória e…. Use ao implementar features ou corrigir falhas de build/teste."
+description: "Loop de codificação autônoma (planejar, codar, testar, corrigir) com verificação empírica obrigatória e… Use ao implementar features ou corrigir falhas de build/teste."
 ---
 
 # Agentic Coding (Codificação Autônoma em Loop)

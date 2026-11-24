@@ -51,6 +51,9 @@ Skills da sua especialidade:
 - impeccable
 - emil-kowalski
 - grilling
+- design-md
+- web-design-vocabulary
+- lead-finder
 
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.

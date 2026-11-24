@@ -1,6 +1,6 @@
 ---
 name: data-engineering
-description: "Guia de modelagem de dados, NoSQL, message queues, streaming e pipelines ETL com boas práticas de…. Use para projetar pipelines de dados ou sistemas de armazenamento."
+description: "Guia de modelagem de dados, NoSQL, message queues, streaming e pipelines ETL com boas práticas de… Use para projetar pipelines de dados ou sistemas de armazenamento."
 ---
 
 # Skill Data Engineering — Izanagi

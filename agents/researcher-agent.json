@@ -10,7 +10,8 @@
     "confidence-estimator",
     "hallucination-detection",
     "documentation-writer",
-    "memoria-projeto"
+    "memoria-projeto",
+    "lead-finder"
   ],
   "chains": {
     "research_stack": [

@@ -1,6 +1,6 @@
 ---
 name: clean-code-validator
-description: "Revisa código contra princípios de clean code — nomes, funções pequenas, efeitos colaterais, tratamento de erro — e gera…. Use após escrever ou refatorar código."
+description: "Revisa código contra princípios de clean code — nomes, funções pequenas, efeitos colaterais, tratamento de erro — e gera… Use após escrever ou refatorar código."
 ---
 
 # Skill: Clean Code Validator

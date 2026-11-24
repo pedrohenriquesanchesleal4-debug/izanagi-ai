@@ -1,6 +1,6 @@
 ---
 name: motion-design
-description: "Escolha e uso de bibliotecas de animação web (GSAP, Motion, Anime.js, Lottie, CSS…. Use ao implementar micro-interações, scroll animations ou motion design de UI."
+description: "Escolha e uso de bibliotecas de animação web (GSAP, Motion, Anime.js, Lottie, CSS… Use ao implementar micro-interações, scroll animations ou motion design de UI."
 ---
 
 > **Ver também**: `core/skill-composer.md` — chains `web_cinematic`/`webgl_experience` já resolvem quando combinar esta skill com `animation-web` (scrollytelling) e `webgl-3d` (3D).

@@ -14,7 +14,8 @@
     "confidence-estimator",
     "economia-tokens",
     "memoria-projeto",
-    "task-playbook"
+    "task-playbook",
+    "setup-recommender"
   ],
   "chains": {
     "projetar_agente": [

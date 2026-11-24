@@ -305,7 +305,25 @@
     "repo-map": "skills/codebase-map/SKILL",
     "mapa-codigo": "skills/codebase-map/SKILL",
     "task-playbook": "skills/task-playbook/SKILL",
-    "playbook": "skills/task-playbook/SKILL"
+    "playbook": "skills/task-playbook/SKILL",
+    "web-design-vocabulary": "skills/web-design-vocabulary/SKILL",
+    "design-vocabulary": "skills/web-design-vocabulary/SKILL",
+    "termos-webdesign": "skills/web-design-vocabulary/SKILL",
+    "hero-archetypes": "skills/web-design-vocabulary/SKILL",
+    "design-md": "skills/design-md/SKILL",
+    "design.md": "skills/design-md/SKILL",
+    "design-system-md": "skills/design-md/SKILL",
+    "obsidian-vault-ops": "skills/obsidian-vault-ops/SKILL",
+    "obsidian": "skills/obsidian-vault-ops/SKILL",
+    "segundo-cerebro": "skills/obsidian-vault-ops/SKILL",
+    "second-brain": "skills/obsidian-vault-ops/SKILL",
+    "setup-recommender": "skills/setup-recommender/SKILL",
+    "automation-recommender": "skills/setup-recommender/SKILL",
+    "recomendar-setup": "skills/setup-recommender/SKILL",
+    "lead-finder": "skills/lead-finder/SKILL",
+    "prospeccao": "skills/lead-finder/SKILL",
+    "achar-clientes": "skills/lead-finder/SKILL",
+    "leads": "skills/lead-finder/SKILL"
   },
   "compositions": {
     "web_cinematic": {

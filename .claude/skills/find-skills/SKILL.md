@@ -28,6 +28,8 @@ O catálogo tem mais de 100 skills. Ler todas custa caro e não ajuda; não ler 
 | Feature / bugfix de código | `agentic-coding` ou `tdd` | `self-critique` |
 | Bug difícil ou reincidente | `systematic-debugging` | `tdd` (teste de regressão) |
 | UI, landing, site | `impeccable` ou `design-taste` | `anti-ai-slop`, `site-launch-checklist` |
+| Design system / marca de referência | `design-md` | `anti-ai-slop` |
+| Pedido visual vago, efeito de scroll, hero | `web-design-vocabulary` | `animation-web` |
 | Motion, animação | `emil-kowalski` ou `motion-design` | `web-perf-seo` |
 | Arquitetura / decisão estrutural | `software-architect` | `tradeoff-analyzer` |
 | Plano antes de codar | `grilling` | `plan-cold-review` |
@@ -39,6 +41,9 @@ O catálogo tem mais de 100 skills. Ler todas custa caro e não ajuda; não ler 
 | Repo grande ou desconhecido | `codebase-map` | `economia-tokens` |
 | Trabalho repetitivo de um ofício | `task-playbook` | `evaluation` |
 | Deploy, CI/CD, infra | `cloud-infra` | `sre-reliability` |
+| Setup do agente, custo alto, skills ignoradas | `setup-recommender` | `economia-tokens` |
+| Achar clientes, validar demanda | `lead-finder` | `grilling` |
+| Segundo cérebro, notas, rotinas sobre arquivos | `obsidian-vault-ops` | `task-playbook` |
 
 Se nada na tabela casar, procure por nome: liste `.skills/` e escolha pelo nome da pasta. Não leia descrições de 100 skills uma a uma.
 

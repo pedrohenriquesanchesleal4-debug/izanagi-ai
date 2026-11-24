@@ -40,7 +40,10 @@
     "grilling",
     "plan-cold-review",
     "codebase-map",
-    "task-playbook"
+    "task-playbook",
+    "setup-recommender",
+    "lead-finder",
+    "obsidian-vault-ops"
   ],
   "chains": {
     "default_pipeline": [

@@ -1,6 +1,6 @@
 ---
 name: er-diagram-builder
-description: "Gera diagramas entidade-relacionamento (PlantUML, Mermaid) a partir de definições de schema ou…. Use ao documentar ou revisar a modelagem de um banco de dados."
+description: "Gera diagramas entidade-relacionamento (PlantUML, Mermaid) a partir de definições de schema ou… Use ao documentar ou revisar a modelagem de um banco de dados."
 ---
 
 # Skill: ER Diagram Builder

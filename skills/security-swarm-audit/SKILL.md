@@ -34,6 +34,11 @@ Inspirada no desenho público do `cloudflare/security-audit-skill` (MIT): quem a
 | 4 | Webhook de pagamento sem assinatura conferida | Handler valida assinatura (`stripe.webhooks.constructEvent` ou equivalente) e é idempotente |
 | 5 | O resto | Dependências com CVE (`npm audit`/`pip-audit`), login sem rate limit, sem proteção a bots, sem WAF com regras OWASP |
 
+Dois testes baratos que pegam muita coisa:
+
+- **SSTI / injeção de template:** em todo campo que volta renderizado (nome no e-mail de boas-vindas, título de página, PDF), envie `{{7*7}}` e `${7*7}`. Se aparecer `49`, o servidor está executando entrada do usuário como template. Correção: nunca montar template a partir de string do usuário; passar como variável escapada.
+- **Container comprometido = banco comprometido?** Verifique se a credencial do banco está em variável de ambiente legível pelo processo web e se a role/IAM do container pode mais do que a aplicação precisa. Correção: segredo buscado em runtime de um secret manager, usuário de banco com permissão mínima por serviço, sem `*` em policy.
+
 ## Fase 1: mapa da superfície
 
 Liste em arquivo (`.agents/security/surface.md`): rotas e handlers, pontos de autenticação, acesso a banco, chamadas externas, uploads, webhooks, pontos onde texto de usuário chega a um LLM. Uma linha por item com `arquivo:linha`.

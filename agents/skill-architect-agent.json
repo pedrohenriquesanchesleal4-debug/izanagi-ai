@@ -14,7 +14,8 @@
     "economia-tokens",
     "evaluation",
     "memoria-projeto",
-    "find-skills"
+    "find-skills",
+    "setup-recommender"
   ],
   "chains": {
     "criar_skill": [

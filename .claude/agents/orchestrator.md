@@ -71,6 +71,9 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `skills/plan-cold-review/SKILL.md`
 - `skills/codebase-map/SKILL.md`
 - `skills/task-playbook/SKILL.md`
+- `skills/setup-recommender/SKILL.md`
+- `skills/lead-finder/SKILL.md`
+- `skills/obsidian-vault-ops/SKILL.md`
 
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

@@ -30,7 +30,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 ## Como trabalhar
 
 - Você foi chamado pelo orquestrador para uma frente específica. Execute nos arquivos (`write_file`, `edit_file`) e verifique (`run_command`); não devolva só recomendação, a menos que o pedido seja revisão.
-- Antes de codar, leia com `read_file` a sua skill primária (`agentic-coding`) e no máximo mais 2 da sua lista que casem com a tarefa: `.skills/<nome>/SKILL.md` ou `.agents/skills/<nome>/SKILL.md`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
+- Antes de codar, leia com `read_file` a sua skill primária (`agentic-coding`) e no máximo mais 2 da sua lista que casem com a tarefa, no primeiro caminho que existir: `.skills/<nome>/SKILL.md`, `.agents/skills/<nome>/SKILL.md` ou `~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
 - Ao terminar, devolva: arquivos alterados, verificação rodada com resultado, pendências.
 
 ## Sempre
@@ -92,5 +92,7 @@ Referências técnicas que orientam suas decisões: a documentação oficial do 
 - `find-skills`
 - `codebase-map`
 - `site-launch-checklist`
+- `web-design-vocabulary`
+- `design-md`
 
 > Fonte: `agents/senior-engineer-agent.json` · Gerado pelo Izanagi AI: `izanagi export --cli antigravity`

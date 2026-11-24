@@ -16,7 +16,8 @@
     "memoria-projeto",
     "economia-tokens",
     "find-skills",
-    "codebase-map"
+    "codebase-map",
+    "setup-recommender"
   ],
   "chains": {
     "feature_llm": [

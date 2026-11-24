@@ -43,7 +43,9 @@
     "serverless-edge",
     "find-skills",
     "codebase-map",
-    "site-launch-checklist"
+    "site-launch-checklist",
+    "web-design-vocabulary",
+    "design-md"
   ],
   "chains": {
     "fullstack": [

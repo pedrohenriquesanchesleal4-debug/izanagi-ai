@@ -1,6 +1,6 @@
 ---
 name: feature-flags
-description: "Estratégias de feature flags, rollout gradual, canary releases e A/B testing…. Use ao implementar entregas graduais ou experimentos A/B."
+description: "Estratégias de feature flags, rollout gradual, canary releases e A/B testing… Use ao implementar entregas graduais ou experimentos A/B."
 ---
 
 # Skill Feature Flags — Izanagi

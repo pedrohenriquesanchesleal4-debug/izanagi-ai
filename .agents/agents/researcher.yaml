@@ -40,6 +40,7 @@ skills:
   - "hallucination-detection"
   - "documentation-writer"
   - "memoria-projeto"
+  - "lead-finder"
 optionalSkills: []
 chains:
   research_stack:

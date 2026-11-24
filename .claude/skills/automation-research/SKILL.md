@@ -1,6 +1,6 @@
 ---
 name: automation-research
-description: "Pesquisa documentação oficial, bibliotecas e projetos similares antes de implementar uma…. Use antes de codar integrações, ETL, scraping ou automação de browser."
+description: "Pesquisa documentação oficial, bibliotecas e projetos similares antes de implementar uma… Use antes de codar integrações, ETL, scraping ou automação de browser."
 ---
 
 # Automation Research — Pesquisar Antes de Reinventar

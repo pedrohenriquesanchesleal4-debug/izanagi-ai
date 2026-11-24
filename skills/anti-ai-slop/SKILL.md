@@ -81,6 +81,35 @@ codificar. Variar apenas cores, fonte ou raio não conta. Compare as opções pe
 memorabilidade, acessibilidade e custo de manutenção. Registre a direção escolhida e a razão no
 artefato de discovery.
 
+## Placar dos 20 sinais (triagem rápida)
+
+Antes do catálogo detalhado, conte quantos destes a tela tem. Nenhum é proibido sozinho; o problema é o acúmulo sem intenção.
+
+| # | Sinal | Troca |
+|---|---|---|
+| 1 | Degradê roxo para azul | Paleta da marca |
+| 2 | Título em degradê | Hierarquia por tamanho e peso |
+| 3 | Emoji no meio do título | Emoji, se houver, no corpo |
+| 4 | Mesma fonte em tudo (Inter no site inteiro) | Display com personalidade + texto legível |
+| 5 | Card com borda neon | Borda neutra; cor só onde é informação |
+| 6 | Glassmorphism em tudo | Superfície sólida; vidro só com motivo |
+| 7 | Dark mode lavado (cinza sobre cinza) | Contraste real (checar WCAG) |
+| 8 | 3 ícones de feature em fileira | Prova concreta, número, print do produto |
+| 9 | Bolas de blur colorido no fundo | Layout com estrutura |
+| 10 | Pacote de ícones colado sem adaptar | Ícones com peso e tamanho do sistema |
+| 11 | Depoimento fake ("Maria S., CEO") | Depoimento real ou nenhum |
+| 12 | Fade-in de tudo na rolagem | Animação só onde orienta |
+| 13 | Luz seguindo o mouse | Remover |
+| 14 | Hover lento (transição > 200ms) | 120 a 180ms |
+| 15 | Espaçamento no chute | Escala fixa (4, 8, 16, 24, 32...) |
+| 16 | Parágrafo longo centralizado | Alinhar à esquerda |
+| 17 | Frase bonita que não diz o que o produto faz | O que é, para quem, resultado |
+| 18 | Buzzword ("revolucione seu fluxo com IA") | Benefício mensurável |
+| 19 | Space Grotesk + Instrument Serif | Par escolhido para o nicho |
+| 20 | Granulado sobre degradê | Textura só se for da marca |
+
+**Leitura do placar:** 0 a 4 ok · 5 a 9 revisar os itens marcados · 10 ou mais: a tela é template, refaça a direção visual (`design-directions`) antes de polir.
+
 ## Processo
 
 ### Modo detect (auditar existente)
