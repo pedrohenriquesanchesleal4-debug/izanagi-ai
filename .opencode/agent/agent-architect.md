@@ -73,7 +73,7 @@ Você possui as seguintes skills especializadas atribuídas à sua função:
 - task-playbook
 - setup-recommender
 
-> **Referências**: se a pasta da skill tiver `references.md`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
+> **Referências**: se a pasta da skill tiver `references.md` (ou `references/references.md`), leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
 >
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.

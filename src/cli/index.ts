@@ -10,6 +10,7 @@ import { runCommand } from './commands/run.js';
 import { createCommand } from './commands/create.js';
 import { chatCommand } from './commands/chat.js';
 import { exportCommand } from './commands/export.js';
+import { setupGlobal } from '../global-setup.js';
 import { agentCommand } from './commands/agent.js';
 import { skillCommand } from './commands/skill.js';
 import { workflowCommand } from './commands/workflow.js';
@@ -216,6 +217,16 @@ export async function runCLI(args: string[]): Promise<void> {
       exportCommand(rest);
       break;
 
+    case 'setup': {
+      // Escopo do usuário: toda CLI instalada fica pronta em qualquer projeto.
+      const only = rest.find((a) => a.startsWith('--cli='))?.slice(6).split(',').filter(Boolean);
+      console.log('\n\x1b[36m=== Izanagi AI: setup global (todas as CLIs desta máquina) ===\x1b[0m\n');
+      const res = setupGlobal({ ...(only ? { clis: only } : {}), log: (l) => console.log(`  \x1b[32m✔\x1b[0m ${l}`) });
+      for (const [cli, why] of Object.entries(res.skipped)) console.log(`  \x1b[33m•\x1b[0m ${cli}: ${why}`);
+      console.log(`\n\x1b[32m[Izanagi AI] v${res.version} pronto. Abra qualquer projeto em qualquer CLI: o orquestrador já é o agente padrão.\x1b[0m\n`);
+      break;
+    }
+
     case 'version':
     case '-v':
     case '--version':
@@ -243,6 +254,7 @@ function showHelp(): void {
   izanagi <command> [options]
 
   \x1b[1mCommands:\x1b[0m
+  \x1b[32msetup [--cli=a,b]\x1b[0m              Global: toda CLI instalada (claude, antigravity, opencode, codex) pronta em qualquer projeto. Roda sozinho no npm i -g.
   \x1b[32minit [dir] [--packs a,b,c]\x1b[0m      Creates a project with selectable skill packs (.agents).
   \x1b[32mchat / repl\x1b[0m                   Launches interactive CLI shell (REPL mode).
   \x1b[32mrun [agent] --task "<task>"\x1b[0m     Adaptive Runtime: Commander + graph + roteamento por papel + verificação + trace + healing.

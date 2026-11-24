@@ -121,4 +121,62 @@ Regras de escolha (falhas vistas em teste real):
 
 GSAP + ScrollTrigger (CDN), Lenis para scroll suave, nada de framework obrigatório. `prefers-reduced-motion` desliga pin/scrub e mostra o estado final de cada peça.
 
+---
+
+# Biblioteca de efeitos em formato de receita-prompt
+
+Bibliotecas comerciais (ex.: integrasites, com 600+ componentes e páginas vendidos por créditos, cada um com um prompt "copiar e integrar" para Claude Code, Codex ou Cursor) mostram o formato que funciona: **cada efeito é uma especificação completa**, não um adjetivo. O agente não inventa; executa a receita e adapta ao conceito. Abaixo, receitas próprias do Izanagi no mesmo formato. Use uma como momento de assinatura e no máximo duas de apoio.
+
+Formato de cada receita: **Efeito** · **Quando usar** · **Técnica** · **Parâmetros** · **Fallback** (sem WebGL / `prefers-reduced-motion`) · **Prova** (o que o screenshot/quadro precisa mostrar).
+
+## E1 · Objeto 3D de produto que reage ao scroll
+- Quando: produto físico de alto valor (relógio, tênis, garrafa, joia, eletrônico).
+- Técnica: Three.js + GLTF (ou geometria procedural se não houver modelo), `MeshPhysicalMaterial` (metal: `metalness 1, roughness .15`; vidro: `transmission 1, thickness .6, ior 1.45`), HDRI de estúdio escuro, rotação Y ligada ao progresso do scroll da seção pinada, zoom de câmera em 2 a 3 detalhes com legenda.
+- Parâmetros: `pin` 200 a 300vh; 3 paradas de câmera; DPR máx. 1.75; carregar após o LCP.
+- Fallback: sequência de 3 imagens WebP do mesmo ângulo com crossfade.
+- Prova: 3 quadros com o objeto em ângulos diferentes e a legenda de cada detalhe.
+
+## E2 · Matéria orgânica com granulado (shader)
+- Quando: marcas de bem-estar, arte, tecnologia "tátil"; fundo vivo atrás do herói.
+- Técnica: plano fullscreen com fragment shader de ruído (simplex/FBM) deslocando cor entre 2 tons da marca + grão (`fract(sin(dot(uv, vec2(12.9898,78.233)))*43758.5453)` a 6% de opacidade), reagindo levemente ao ponteiro.
+- Parâmetros: velocidade 0.05 a 0.12; resolução do canvas a 0.5x e escalada por CSS.
+- Fallback: gradiente estático com textura de ruído em PNG.
+- Prova: 2 quadros com 2s de diferença mostrando a forma mudando.
+
+## E3 · Tipografia cinética gigante (palavra que se forma)
+- Quando: manifesto, marca com nome forte, lançamento.
+- Técnica: título em fonte variável condensada ocupando 90vw; letras entram por máscara (`clip-path: inset(100% 0 0 0)` → `inset(0)`) com stagger 40ms; eixo `wght`/`wdth` ligado ao scroll; troca de palavra por blur 12px → 0.
+- Parâmetros: no máximo 2 palavras por tela; 1 palavra em outro alfabeto/ideograma só se tiver sentido para a marca.
+- Fallback: título estático no estado final.
+- Prova: 3 quadros com a palavra em formação, formada e trocando.
+
+## E4 · Ladrilhos diagonais na rolagem
+- Quando: portfólio, catálogo, galeria de casos.
+- Técnica: grade rotacionada -12° com 3 a 4 colunas; cada coluna com `translateY` em velocidade diferente pelo scroll (0.6x, 1x, 1.4x); hover amplia o card e revela título.
+- Parâmetros: imagens reais 4:5, `object-fit: cover`; máscara de fade nas bordas.
+- Fallback: grade reta estática.
+- Prova: 2 quadros com as colunas visivelmente deslocadas entre si.
+
+## E5 · Orbe de elementos (teclas, ícones, produtos)
+- Quando: tecnologia, ferramentas, catálogo com muitos itens.
+- Técnica: N elementos distribuídos numa esfera (Fibonacci sphere) em Three.js ou CSS 3D (`transform-style: preserve-3d`), rotação por arraste com inércia; clique foca o item.
+- Parâmetros: 24 a 60 itens; profundidade com escala e opacidade.
+- Fallback: grade de ícones.
+- Prova: 2 quadros com a esfera em rotações diferentes.
+
+## E6 · Retrato com mapa técnico que se desenha
+- Quando: saúde estética, estética, fitness, consultoria sobre o corpo/rosto (provado na landing de masterclass).
+- Técnica: foto real recortada; SVG por cima com pontos e um path que liga os pontos, `strokeDashoffset` pelo scroll da seção pinada; numeral em odômetro; etapa ativa acende na lista ao lado.
+- Parâmetros: 4 a 6 pontos; path em ouro com glow.
+- Fallback: mapa completo estático com todos os pontos acesos.
+- Prova: quadros no ponto 1, 3 e final.
+
+## Como pedir (formato que o agente executa)
+```
+Seção: <hero|processo|galeria|oferta> · Efeito: E<n> · Conceito: <frase do negócio>
+Conteúdo: <textos reais> · Mídia: <fotos/modelo 3D disponíveis>
+Paleta e tipografia: <do DESIGN.md> · Restrições: <performance, mobile, acessibilidade>
+Prova exigida: <quadros conforme a receita>
+```
+
 > Gerado pelo Izanagi AI: cópia fiel de `skills/signature-experience/references.md` (fonte da verdade).

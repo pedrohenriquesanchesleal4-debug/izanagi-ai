@@ -47,7 +47,7 @@ Referências técnicas que orientam suas decisões: a skill `ai-agent` deste fra
 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
-Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
+Você possui as seguintes skills especializadas atribuídas (lidas sob demanda). Caminhos relativos ao projeto; na instalação global (`izanagi setup`) estão em `~/.claude/skills/` e em `~/.izanagi/skills/`:
 - `.claude/skills/ai-agent/SKILL.md` (+ `references.md`)
 - `.claude/skills/reference-retrieval/SKILL.md` (+ `references.md`)
 - `.claude/skills/prompt-engineering/SKILL.md` (+ `references.md`)
@@ -61,7 +61,7 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `.claude/skills/codebase-map/SKILL.md`
 - `.claude/skills/setup-recommender/SKILL.md`
 
-> **Referências**: se a pasta da skill tiver `references.md`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
+> **Referências**: se a pasta da skill tiver `references.md` (ou `references/references.md`), leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
 >
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

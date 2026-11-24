@@ -46,7 +46,7 @@ Referências técnicas que orientam suas decisões: o livro Clean Architecture d
 
 ## Skills Obrigatórias (Mandatory Skills - Uso Estrito)
 
-Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
+Você possui as seguintes skills especializadas atribuídas (lidas sob demanda). Caminhos relativos ao projeto; na instalação global (`izanagi setup`) estão em `~/.claude/skills/` e em `~/.izanagi/skills/`:
 - `.claude/skills/architecture-patterns/SKILL.md` (+ `references.md`)
 - `.claude/skills/principal-engineer/SKILL.md` (+ `references.md`)
 - `.claude/skills/requirement-analyzer/SKILL.md` (+ `references.md`)
@@ -70,7 +70,7 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `.claude/skills/grilling/SKILL.md`
 - `.claude/skills/plan-cold-review/SKILL.md`
 
-> **Referências**: se a pasta da skill tiver `references.md`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
+> **Referências**: se a pasta da skill tiver `references.md` (ou `references/references.md`), leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
 >
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getPackageDir, installToProject, PACKS } from '../installer.js';
+import { setupGlobal } from '../global-setup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,19 @@ const __dirname = path.dirname(__filename);
  * Nunca falha o `npm install` do consumidor: qualquer erro aqui é engolido.
  */
 function main(): void {
+  // `npm i -g izanagi-ai`: configura todas as CLIs da máquina no escopo do usuário.
+  // Sem este ramo, INIT_CWD (pasta de onde o comando foi digitado, muitas vezes a
+  // home) seria tratada como "projeto" e receberia uma instalação por projeto.
+  if (process.env.npm_config_global === 'true' && process.env.IZANAGI_SKIP_GLOBAL_SETUP !== '1') {
+    try {
+      const res = setupGlobal();
+      const clis = Object.keys(res.configured).filter((k) => k !== 'catalog');
+      console.log(`\x1b[36m[Izanagi AI]\x1b[0m v${res.version} pronto em: ${clis.join(', ') || 'nenhuma CLI detectada'}. Abra qualquer projeto em qualquer CLI. (Repetir: \`izanagi setup\`)`);
+    } catch {
+      // Nunca quebra o npm install global.
+    }
+    return;
+  }
   try {
     const packageDir = getPackageDir();
     const isRealDependencyInstall = path.basename(path.dirname(packageDir)) === 'node_modules';

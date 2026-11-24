@@ -42,7 +42,7 @@ Skills da sua especialidade:
 - find-skills
 - setup-recommender
 
-> **Referências**: se a pasta da skill tiver `references.md`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
+> **Referências**: se a pasta da skill tiver `references.md` (ou `references/references.md`), leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
 >
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
 > Ative apenas as skills estritamente relevantes (1 a 3 por tarefa, escolhidas com `find-skills`) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.

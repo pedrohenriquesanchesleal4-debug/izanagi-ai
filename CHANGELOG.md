@@ -4,6 +4,22 @@
 
 ---
 
+## [3.24.24]: 2026-11-24
+
+### Added: instalação global, pronto em qualquer projeto e qualquer CLI
+- **`npm i -g izanagi-ai` configura a máquina sozinho** (postinstall global) e `izanagi setup` refaz quando quiser. Sem `izanagi init` por projeto:
+  - Claude Code: `~/.claude/{agents,skills,commands}` + `~/.claude/settings.json` com `agent: orchestrator` (mesclado, hooks e modelo do usuário preservados) + bloco marcado no `~/.claude/CLAUDE.md`.
+  - Antigravity: plugin `izanagi` instalado (via `agy plugin install` ou cópia + `config.json`) com a biblioteca de skills + bloco no `~/.gemini/GEMINI.md`.
+  - OpenCode: `~/.config/opencode/agent/*.md` + `default_agent: orchestrator` + bloco no `~/.config/opencode/AGENTS.md`.
+  - Codex: `~/.codex/AGENTS.md` + `~/.codex/agents/`.
+  - Catálogo único em `~/.izanagi/skills` (com `references.md` na raiz de cada skill).
+  - Cursor, Copilot e Kimi não têm arquivo de configuração global documentado: continuam por projeto (`izanagi init`).
+- Conferido nesta máquina num diretório sem nenhum arquivo do Izanagi: Claude Code abre como `orchestrator` e acha o catálogo global; OpenCode lista `default_agent: orchestrator` e os especialistas como subagentes.
+- `signature-experience`: biblioteca de receitas de efeito E1 a E6 (objeto 3D de produto, matéria com granulado, tipografia cinética, ladrilhos diagonais, orbe de elementos, retrato com mapa técnico), no formato "copiar e integrar" das bibliotecas comerciais de prompts.
+
+### Fixed
+- Catálogo v2 guarda referências em `references/references.md`, mas as skills dizem "references.md nesta pasta": biblioteca do plugin e catálogo global ganham a cópia na raiz (`flattenReferences`), e os agentes aceitam os dois caminhos.
+
 ## [3.24.23]: 2026-11-24
 
 ### Changed: orquestrador por padrão em qualquer CLI

@@ -6,9 +6,9 @@ trigger: always_on
 
 - **Você executa.** Pedido de implementação termina com arquivos alterados (`write_file`/`edit_file`) e verificação rodada (`run_command`), não com explicação no chat.
 - **Skills se leem, não se listam.** Antes de tarefa não trivial, escolha 1 a 3 skills (skill `find-skills`), leia o `SKILL.md` de cada uma em `.skills/<nome>/`, `.agents/skills/<nome>/` ou `~/.gemini/config/plugins/izanagi/library/<nome>/`, e declare numa linha o que vai aplicar.
-- **Você é o Orquestrador do Izanagi por padrão.** O agy não tem configuração de agente padrão, então esta regra vale para qualquer sessão, com ou sem `--agent orchestrator`: siga o protocolo de `.agents/agents/orchestrator.md` (leia-o no primeiro pedido da sessão).
+- **Você é o Orquestrador do Izanagi por padrão.** O agy não tem configuração de agente padrão, então esta regra vale para qualquer sessão, com ou sem `--agent orchestrator`: siga o protocolo do agente `orchestrator` (leia no primeiro pedido da sessão o primeiro que existir: `.agents/agents/orchestrator.md` no projeto ou `~/.gemini/config/plugins/izanagi/agents/orchestrator.md` na instalação global).
 - **Especialistas são subagentes reais.** Estão em `.agents/agents/`. Delegue com `invoke_subagent` quando a frente for especializada ou paralela; faça você mesmo quando for pequena.
-- **Referências das skills.** Se a pasta da skill tiver `references.md`, leia quando a skill citar ou precisar de exemplo, receita ou direção visual. Landing/site: `signature-experience/references.md` é obrigatório.
+- **Referências das skills.** Se a pasta da skill tiver `references.md` (ou `references/references.md`), leia quando a skill citar ou precisar de exemplo, receita ou direção visual. Landing/site: `signature-experience/references.md` é obrigatório.
 - **Plano antes de código grande.** Mais de 3 arquivos ou decisão estrutural: `grilling` e `plan-cold-review` antes de codar.
 - **Zero stub.** Sem `TODO: implement`, sem mock fingindo implementação.
 - **Economia de contexto.** Leia por busca (`run_command` com `rg`/`grep`), não arquivo inteiro sem motivo; consulte `.agents/memoria/mapa.md` se existir.
