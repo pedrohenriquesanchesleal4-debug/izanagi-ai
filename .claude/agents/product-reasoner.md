@@ -57,9 +57,11 @@ Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 - `.claude/skills/tradeoff-analyzer/SKILL.md` (+ `references.md`)
 - `.claude/skills/grilling/SKILL.md`
 
+> **Referências**: se a pasta da skill tiver `references.md`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, `signature-experience/references.md` é leitura obrigatória antes de codar.
+>
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
-> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS as skills necessárias** (até no máximo 8 skills ao mesmo tempo) para a etapa atual.
+> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS as skills necessárias** (1 a 3 por tarefa, escolhidas com `find-skills`) para a etapa atual.
 > 3. **Rigor Técnico**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill. Proibido atuar sem invocar seus padrões.
 
 ## Chains (fluxos de execução)

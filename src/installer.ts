@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, exportToAntigravity, GENERATED_MARKER } from './exporters.js';
+import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, exportToAntigravity, GENERATED_MARKER, DEFAULT_ORCHESTRATOR_MODE } from './exporters.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -276,6 +276,33 @@ function stripSourceOnly(markdown: string): string {
 }
 
 /** O que a fonte não pode saber sobre o projeto de destino. */
+/**
+ * CLIs de agente instaladas, pelo PATH (sem executar nada). Nome do adaptador →
+ * binários possíveis. `IZANAGI_SKIP_CLI_DETECTION=1` desliga (testes determinísticos).
+ */
+export function detectInstalledClis(envPath = process.env.PATH ?? ''): string[] {
+  if (process.env.IZANAGI_SKIP_CLI_DETECTION === '1') return [];
+  const bins: Record<string, string[]> = {
+    claude: ['claude'],
+    antigravity: ['agy'],
+    opencode: ['opencode'],
+    codex: ['codex'],
+    cursor: ['cursor-agent', 'cursor'],
+    kimi: ['kimi'],
+    copilot: ['copilot'],
+  };
+  const exts = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : [''];
+  const dirs = envPath.split(path.delimiter).filter(Boolean);
+  const found: string[] = [];
+  for (const [cli, names] of Object.entries(bins)) {
+    const hit = names.some((n) => dirs.some((d) => exts.some((e) => {
+      try { return fs.statSync(path.join(d, n + e)).isFile(); } catch { return false; }
+    })));
+    if (hit) found.push(cli);
+  }
+  return found;
+}
+
 function consumerShapeSection(version: string): string {
   return `## 0. A forma deste projeto
 
@@ -292,8 +319,12 @@ npx izanagi export --cli <claude|codex|cursor|copilot|kimi|opencode>
 npx izanagi run "<objetivo>"       # executa o runtime sobre um objetivo
 \`\`\`
 
-Os assets do framework (agentes, skills, engines) vivem em \`.agents/\`, e é de lá que todo comando os lê. Regra que precisa valer para todas as CLIs muda em \`.agents/\` e depois num \`izanagi export\`, nunca direto num adapter gerado.`;
+Os assets do framework (agentes, skills, engines) vivem em \`.agents/\`, e é de lá que todo comando os lê. Regra que precisa valer para todas as CLIs muda em \`.agents/\` e depois num \`izanagi export\`, nunca direto num adapter gerado.
+
+${DEFAULT_ORCHESTRATOR_MODE}`;
 }
+
+
 
 /**
  * Espelha os documentos de raiz, sem afirmar sobre o projeto o que é do framework.
@@ -434,6 +465,7 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
   }
 
   // Determina qual CLI/adaptador gerar para não poluir o projeto com arquivos desnecessários
+  const autoDetected = !(cliTarget || '').trim();
   let targetCli = (cliTarget || '').toLowerCase().trim();
   if (!targetCli) {
     // Auto-detecção primária: a própria CLI expõe uma env var quando está
@@ -479,12 +511,20 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
       }
     }
   } else if (adapterMap[targetCli]) {
-    try {
-      const created = adapterMap[targetCli]();
-      console.log(`  \x1b[32m✔\x1b[0m Generated adapter for CLI: \x1b[1m${targetCli}\x1b[0m (${created.length} files)`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.log(`  \x1b[33m⚠\x1b[0m Adapter ${targetCli} skipped: ${msg}`);
+    // Sem --cli explícito: além da CLI detectada, gera para toda CLI instalada na
+    // máquina. Antes só uma recebia adaptador, e abrir o mesmo projeto em outra CLI
+    // caía num agente genérico sem orquestrador, sem especialistas e sem skills.
+    const targets = autoDetected
+      ? [...new Set([targetCli, ...detectInstalledClis().filter((c) => adapterMap[c])])]
+      : [targetCli];
+    for (const cli of targets) {
+      try {
+        const created = adapterMap[cli]();
+        console.log(`  \x1b[32m✔\x1b[0m Generated adapter for CLI: \x1b[1m${cli}\x1b[0m (${created.length} files)`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.log(`  \x1b[33m⚠\x1b[0m Adapter ${cli} skipped: ${msg}`);
+      }
     }
   }
 

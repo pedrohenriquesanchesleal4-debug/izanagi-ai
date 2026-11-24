@@ -33,7 +33,7 @@ Referências técnicas que orientam suas decisões: o modelo de qualidade de sof
 ## Como trabalhar
 
 - Você foi chamado pelo orquestrador para uma frente específica. Execute nos arquivos (`write_file`, `edit_file`) e verifique (`run_command`); não devolva só recomendação, a menos que o pedido seja revisão.
-- Antes de codar, leia com `read_file` a sua skill primária (`evaluation`) e no máximo mais 2 da sua lista que casem com a tarefa, no primeiro caminho que existir: `.skills/<nome>/SKILL.md`, `.agents/skills/<nome>/SKILL.md` ou `~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
+- Antes de codar, leia com `read_file` a sua skill primária (`evaluation`) e no máximo mais 2 da sua lista que casem com a tarefa, no primeiro caminho que existir: `.skills/<nome>/SKILL.md`, `.agents/skills/<nome>/SKILL.md` ou `~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto). Se a pasta da skill tiver `references.md`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual.
 - Ao terminar, devolva: arquivos alterados, verificação rodada com resultado, pendências.
 
 ## Sempre

@@ -4,6 +4,15 @@
 
 ---
 
+## [3.24.23]: 2026-11-24
+
+### Changed: orquestrador por padrão em qualquer CLI
+- **`izanagi init` gera adaptador para toda CLI instalada**, não só a primeira detectada (`detectInstalledClis` lê o PATH sem executar nada; `IZANAGI_SKIP_CLI_DETECTION=1` desliga). Antes, instalar de dentro do Claude Code deixava o projeto sem nada para Antigravity e OpenCode.
+- **Claude Code:** `.claude/settings.json` recebe `"agent": "orchestrator"` (mesclado, sem apagar chaves do usuário nem trocar um agente já escolhido). Conferido com `claude -p` sem `--agent` num projeto novo: entrou como orchestrator, delegou ao `qa` e leu `signature-experience` + `references.md`.
+- **OpenCode:** `opencode.json` recebe `"default_agent": "orchestrator"`.
+- **Antigravity, Codex, Cursor, Copilot, Kimi** (sem configuração de agente padrão): seção "Modo padrão: Orquestrador do Izanagi" no documento sempre carregado de cada um (`GEMINI.md`, regra `always_on`, `.codex/instructions.md`, `.cursor/rules`, `copilot-instructions.md`, `kimi.md`) e no `AGENTS.md` do projeto.
+- **Referências:** todos os agentes e o modo padrão mandam ler o `references.md` da skill quando ela citar ou quando precisar de exemplo/receita/direção visual; para landing, o de `signature-experience` é obrigatório. O limite "até 8 skills" nos agentes virou "1 a 3 por tarefa".
+
 ## [3.24.22]: 2026-11-24
 
 ### Fixed (design genérico)

@@ -331,6 +331,21 @@ const ORCHESTRATOR_HARD_GATES = `
 `;
 
 /**
+ * Modo padrão em qualquer CLI: o usuário não precisa escolher agente nem digitar
+ * /agents. Claude Code e OpenCode também recebem isso por configuração
+ * (\`.claude/settings.json\` \`agent\`, \`opencode.json\` \`default_agent\`); nas CLIs sem
+ * configuração de agente padrão (Antigravity, Codex, Cursor, Copilot, Kimi) este
+ * texto, sempre carregado, é o que liga o comportamento.
+ */
+export const DEFAULT_ORCHESTRATOR_MODE = `## Modo padrão: Orquestrador do Izanagi
+
+Todo pedido neste projeto é atendido pelo **Orquestrador do Izanagi**, em qualquer CLI, sem o usuário precisar escolher agente:
+
+1. **Classifique o pedido.** Pequeno e claro (1 ou 2 arquivos): faça direto. Especializado (segurança, banco, design/landing, animação, infra, debug difícil) ou com frentes paralelas: **delegue ao especialista** do Izanagi (subagente nativo da CLI: \`.claude/agents/\`, \`.agents/agents/\`, \`.opencode/agent/\`, \`.codex/agents/\`). Vago ou grande: \`grilling\` antes de codar.
+2. **Skills de verdade.** Escolha 1 a 3 skills com \`find-skills\` e leia cada \`SKILL.md\`. **Se a pasta da skill tiver \`references.md\`, leia também quando a skill citar ou quando precisar de exemplo, receita ou direção visual** (para landing/site, o \`references.md\` de \`signature-experience\` é obrigatório).
+3. **Entrega verificada.** Arquivos alterados, verificação rodada (teste, build, screenshot para UI) e pendências. Nunca encerre com subagente ainda rodando.`;
+
+/**
  * Formato de briefing ao delegar (pirâmide objetivo → pesquisa → perguntas → exemplo).
  * Subagente começa sem contexto: briefing ruim vira releitura do projeto inteiro (token)
  * ou entrega fora do alvo (retrabalho). Compartilhado entre Claude Code e Antigravity.
@@ -384,9 +399,11 @@ ${a.identity || a.role}
 Você possui as seguintes skills especializadas atribuídas à sua especialidade:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
+> **Referências**: se a pasta da skill tiver \`references.md\`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, \`signature-experience/references.md\` é leitura obrigatória antes de codar.
+>
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico**: Para economizar tokens e não sobrecarregar o contexto, NUNCA carregue todas as skills de uma vez.
-> 2. **Ativação por Demanda**: Identifique a necessidade imediata e ative **APENAS as skills estritamente relevantes** (até no máximo 8 skills ao mesmo tempo) necessárias para o trabalho atual.
+> 2. **Ativação por Demanda**: Identifique a necessidade imediata e ative **APENAS as skills estritamente relevantes** (1 a 3 por tarefa, escolhidas com \`find-skills\`) necessárias para o trabalho atual.
 > 3. **Conformidade Técnica**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill.
 
 ## Chains (fluxos de execução)
@@ -477,9 +494,11 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 Você possui as seguintes skills especializadas atribuídas (lidas sob demanda):
 ${skillLines}
 
+> **Referências**: se a pasta da skill tiver \`references.md\`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, \`signature-experience/references.md\` é leitura obrigatória antes de codar.
+>
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **Carregamento Cirúrgico Sob Demanda**: Para economizar tokens e manter o contexto enxuto, NUNCA carregue todas as skills de uma vez.
-> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS as skills necessárias** (até no máximo 8 skills ao mesmo tempo) para a etapa atual.
+> 2. **Ativação Específica**: Analise o objetivo da tarefa e ative **APENAS as skills necessárias** (1 a 3 por tarefa, escolhidas com \`find-skills\`) para a etapa atual.
 > 3. **Rigor Técnico**: Para o domínio ativado, aplique rigorosamente os procedimentos e checklists técnicos da respectiva skill. Proibido atuar sem invocar seus padrões.
 
 ## Chains (fluxos de execução)
@@ -652,7 +671,7 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
 
   // CLAUDE.md na raiz (fonte da verdade + regras essenciais inline)
   if (opts.rootDoc !== false) {
-    const main = writeIfAbsent(baseDir, 'CLAUDE.md', claudeMainTemplate(agents, skills));
+    const main = writeIfAbsent(baseDir, 'CLAUDE.md', withDefaultMode(claudeMainTemplate(agents, skills)));
     if (main) created.push(main);
   }
 
@@ -703,6 +722,18 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
     }
   }
 
+  // Orquestrador como agente padrão da sessão: `claude` puro (sem --agent) já entra
+  // nele. Conferido no Claude Code com `claude -p` em projeto consumidor. Preserva as
+  // demais chaves e não troca um agente que o usuário já escolheu.
+  if (agents.some((a) => a.slug === 'orchestrator')) {
+    const settings = mergeJsonConfig(baseDir, '.claude/settings.json', (c) => {
+      if (c.agent) return false;
+      c.agent = 'orchestrator';
+      return true;
+    });
+    if (settings) created.push(settings);
+  }
+
   return created;
 }
 
@@ -726,8 +757,10 @@ ${hardGates}
 Skills da sua especialidade:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
+> **Referências**: se a pasta da skill tiver \`references.md\`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, \`signature-experience/references.md\` é leitura obrigatória antes de codar.
+>
 > ⚠️ **REGRA DE ECONOMIA DE TOKENS & QUALIDADE**:
-> Ative apenas as skills estritamente relevantes (até no máximo 8 skills ao mesmo tempo) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
+> Ative apenas as skills estritamente relevantes (1 a 3 por tarefa, escolhidas com \`find-skills\`) para a tarefa atual para poupar tokens. Siga rigorosamente os padrões das skills ativadas na entrega.
 
 ## Chains
 
@@ -785,7 +818,7 @@ export function exportToCodex(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
 
-  const instr = writeIfAbsent(baseDir, '.codex/instructions.md', codexInstructionsTemplate(agents));
+  const instr = writeIfAbsent(baseDir, '.codex/instructions.md', withDefaultMode(codexInstructionsTemplate(agents)));
   if (instr) created.push(instr);
 
   for (const agent of agents) {
@@ -919,7 +952,7 @@ export function exportToCursor(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
 
-  const core = writeIfAbsent(baseDir, '.cursor/rules/izanagi-core.mdc', cursorCoreTemplate());
+  const core = writeIfAbsent(baseDir, '.cursor/rules/izanagi-core.mdc', withDefaultMode(cursorCoreTemplate()));
   if (core) created.push(core);
 
   const ag = writeIfAbsent(baseDir, '.cursor/rules/izanagi-agents.mdc', cursorAgentsTemplate(agents));
@@ -983,7 +1016,7 @@ ${provenanceFooter('copilot')}
 export function exportToCopilot(baseDir: string): string[] {
   const created: string[] = [];
   const agents = loadIzanagiAgents(baseDir);
-  const rel = writeIfAbsent(baseDir, '.github/copilot-instructions.md', copilotInstructionsTemplate(agents));
+  const rel = writeIfAbsent(baseDir, '.github/copilot-instructions.md', withDefaultMode(copilotInstructionsTemplate(agents)));
   if (rel) created.push(rel);
   return created;
 }
@@ -1050,7 +1083,7 @@ export function exportToKimi(baseDir: string): string[] {
   const readme = writeIfAbsent(baseDir, '.kimi/README.md', kimiReadmeTemplate());
   if (readme) created.push(readme);
 
-  const root = writeIfAbsent(baseDir, 'kimi.md', kimiRootTemplate());
+  const root = writeIfAbsent(baseDir, 'kimi.md', withDefaultMode(kimiRootTemplate()));
   if (root) created.push(root);
 
   return created;
@@ -1121,9 +1154,11 @@ ${a.never.length > 0 ? bullet(a.never) : '- (sem regras nunca)'}
 Você possui as seguintes skills especializadas atribuídas à sua função:
 ${bullet(a.skills) || '- (sem skills declaradas)'}
 
+> **Referências**: se a pasta da skill tiver \`references.md\`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual. Para landing, site ou portfólio, \`signature-experience/references.md\` é leitura obrigatória antes de codar.
+>
 > ⚠️ **CLÁUSULA DE USO OBRIGATÓRIO DE SKILLS & ECONOMIA DE TOKENS**:
 > 1. **NUNCA carregue todas as skills de uma vez**: carregar o catálogo inteiro simultaneamente estoura o orçamento de tokens e polui o contexto.
-> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS as skills necessárias** (até no máximo 8 skills ao mesmo tempo) para o trabalho atual.
+> 2. **Ativação Cirúrgica por Demanda**: Para cada tarefa ou sub-tarefa, ative e consulte **APENAS as skills necessárias** (1 a 3 por tarefa, escolhidas com \`find-skills\`) para o trabalho atual.
 > 3. **Conformidade Técnica**: É expressamente proibido atuar de forma genérica sem aplicar os padrões e checklists da skill relevante para o que estiver construindo. Toda entrega deve evidenciar a aplicação dela.
 
 ## Chains (Fluxos de Execução)
@@ -1196,6 +1231,18 @@ export function exportToOpencode(baseDir: string): string[] {
 
   const orchestrator = writeIfAbsent(baseDir, '.opencode/agent/agents.md', opencodeOrchestratorTemplate(agents));
   if (orchestrator) created.push(orchestrator);
+
+  // Orquestrador como agente padrão: `opencode` puro já entra nele. Só define se o
+  // usuário não escolheu outro default.
+  if (agents.some((a) => a.slug === 'orchestrator')) {
+    const cfg = mergeJsonConfig(baseDir, 'opencode.json', (c) => {
+      let changed = false;
+      if (!c.$schema) { c.$schema = 'https://opencode.ai/config.json'; changed = true; }
+      if (!c.default_agent) { c.default_agent = 'orchestrator'; changed = true; }
+      return changed;
+    });
+    if (cfg) created.push(cfg);
+  }
 
   for (const agent of agents) {
     const rel = writeIfAbsent(baseDir, `.opencode/agent/${agent.slug}.md`, opencodeAgentTemplate(agent));
@@ -1355,6 +1402,43 @@ function writeJsonIfOurs(
   return rel;
 }
 
+/**
+ * Injeta o modo padrão (orquestrador + skills + references) no documento sempre
+ * carregado de cada CLI, antes do rodapé de proveniência quando houver um.
+ */
+function withDefaultMode(doc: string): string {
+  if (doc.includes('## Modo padrão: Orquestrador do Izanagi')) return doc;
+  const lines = doc.trimEnd().split('\n');
+  const footerIdx = lines.map((l, i) => (l.includes(GENERATED_MARKER) ? i : -1)).filter((i) => i >= 0).pop();
+  if (footerIdx === undefined) return `${doc.trimEnd()}\n\n${DEFAULT_ORCHESTRATOR_MODE}\n`;
+  const before = lines.slice(0, footerIdx).join('\n').trimEnd();
+  const after = lines.slice(footerIdx).join('\n');
+  return `${before}\n\n${DEFAULT_ORCHESTRATOR_MODE}\n\n${after}\n`;
+}
+
+/**
+ * Mescla chaves num JSON de configuração da CLI sem apagar as do usuário.
+ * `apply` recebe o objeto atual e devolve true se mudou algo. JSON inválido é
+ * preservado (nunca sobrescreve configuração que não consegue ler).
+ */
+function mergeJsonConfig(baseDir: string, rel: string, apply: (cfg: Record<string, unknown>) => boolean): string | null {
+  const abs = path.join(baseDir, rel);
+  let cfg: Record<string, unknown> = {};
+  if (fs.existsSync(abs)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(abs, 'utf-8'));
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+      cfg = parsed;
+    } catch {
+      return null;
+    }
+  }
+  if (!apply(cfg)) return null;
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, `${JSON.stringify(cfg, null, 2)}\n`, 'utf-8');
+  return rel;
+}
+
 /** Extrai o corpo de uma seção `## <heading>` de uma skill da fonte (uma fonte da verdade só). */
 function skillSection(sourceDir: string, name: string, heading: string): string {
   for (const dir of ['.skills', 'skills']) {
@@ -1382,7 +1466,9 @@ trigger: always_on
 
 - **Você executa.** Pedido de implementação termina com arquivos alterados (\`write_file\`/\`edit_file\`) e verificação rodada (\`run_command\`), não com explicação no chat.
 - **Skills se leem, não se listam.** Antes de tarefa não trivial, escolha 1 a 3 skills (skill \`find-skills\`), leia o \`SKILL.md\` de cada uma em \`.skills/<nome>/\`, \`.agents/skills/<nome>/\` ou \`~/.gemini/config/plugins/izanagi/library/<nome>/\`, e declare numa linha o que vai aplicar.
+- **Você é o Orquestrador do Izanagi por padrão.** O agy não tem configuração de agente padrão, então esta regra vale para qualquer sessão, com ou sem \`--agent orchestrator\`: siga o protocolo de \`.agents/agents/orchestrator.md\` (leia-o no primeiro pedido da sessão).
 - **Especialistas são subagentes reais.** Estão em \`.agents/agents/\`. Delegue com \`invoke_subagent\` quando a frente for especializada ou paralela; faça você mesmo quando for pequena.
+- **Referências das skills.** Se a pasta da skill tiver \`references.md\`, leia quando a skill citar ou precisar de exemplo, receita ou direção visual. Landing/site: \`signature-experience/references.md\` é obrigatório.
 - **Plano antes de código grande.** Mais de 3 arquivos ou decisão estrutural: \`grilling\` e \`plan-cold-review\` antes de codar.
 - **Zero stub.** Sem \`TODO: implement\`, sem mock fingindo implementação.
 - **Economia de contexto.** Leia por busca (\`run_command\` com \`rg\`/\`grep\`), não arquivo inteiro sem motivo; consulte \`.agents/memoria/mapa.md\` se existir.
@@ -1473,7 +1559,7 @@ ${a.identity || a.role}
 ## Como trabalhar
 
 - Você foi chamado pelo orquestrador para uma frente específica. Execute nos arquivos (\`write_file\`, \`edit_file\`) e verifique (\`run_command\`); não devolva só recomendação, a menos que o pedido seja revisão.
-- Antes de codar, leia com \`read_file\` a sua skill primária${preload.length > 0 ? ` (\`${preload[0]}\`)` : ''} e no máximo mais 2 da sua lista que casem com a tarefa, no primeiro caminho que existir: \`.skills/<nome>/SKILL.md\`, \`.agents/skills/<nome>/SKILL.md\` ou \`~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md\`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto).
+- Antes de codar, leia com \`read_file\` a sua skill primária${preload.length > 0 ? ` (\`${preload[0]}\`)` : ''} e no máximo mais 2 da sua lista que casem com a tarefa, no primeiro caminho que existir: \`.skills/<nome>/SKILL.md\`, \`.agents/skills/<nome>/SKILL.md\` ou \`~/.gemini/config/plugins/izanagi/library/<nome>/SKILL.md\`. Leia pelo caminho mesmo que a skill não apareça na sua lista de skills (ela pode ter sido cortada pelo limite de contexto). Se a pasta da skill tiver \`references.md\`, leia-o quando a skill citar ou quando precisar de exemplo, receita de código ou direção visual.
 - Ao terminar, devolva: arquivos alterados, verificação rodada com resultado, pendências.
 
 ## Sempre
@@ -1547,7 +1633,7 @@ export function exportToAntigravity(baseDir: string): string[] {
   }
 
   // 2. GEMINI.md curto (é carregado em toda sessão: cada linha custa token sempre).
-  push(writeIfAbsent(baseDir, 'GEMINI.md', antigravityGeminiMdTemplate()));
+  push(writeIfAbsent(baseDir, 'GEMINI.md', withDefaultMode(antigravityGeminiMdTemplate())));
 
   // 3. Regra do workspace com `trigger: always_on` (sem trigger o agy descarta a regra).
   push(writeIfAbsent(baseDir, '.agents/rules/izanagi-core.md', antigravityCoreRuleTemplate()));
