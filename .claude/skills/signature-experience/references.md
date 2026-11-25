@@ -256,6 +256,35 @@ Formato de cada receita: **Efeito** · **Quando usar** · **Técnica** · **Par�
 - Fallback: degradê da marca animado por CSS.
 - Prova: 2 quadros, repouso e hover.
 
+## E10 · Frase partida ao redor de um objeto que acende
+- Quando: manifesto, "quem somos", virada de capítulo; qualquer negócio com um símbolo forte (lâmpada, chave, forno, bússola).
+- Técnica: o objeto fica no centro (SVG ou PNG recortado); a frase é dividida em duas metades, uma de cada lado ("The last one out | turns off the light"); ao rolar (`scrub`) o fundo escurece e o objeto acende (`filter: brightness` com `fromTo`, mais um halo radial que cresce) e uma segunda linha pequena aparece embaixo.
+- Parâmetros: seção pinada de 120 a 180vh; texto sempre legível sem JS (estado final no HTML).
+- Fallback: objeto já aceso e as duas metades visíveis.
+- Prova: 3 quadros, apagado, acendendo, aceso.
+
+## E11 · Título atrás do recorte do sujeito
+- Quando: portfólio, marca pessoal, retrato; qualquer foto de pessoa ou produto recortável.
+- Técnica: 3 camadas empilhadas: título gigante (z 1), recorte do sujeito com fundo transparente (z 2), texto de apoio (z 3). O título se desloca mais devagar que o recorte no scroll e no mouse (profundidade da A2). Sem o recorte pronto, use `mask-image` com a silhueta ou peça a imagem já recortada.
+- Parâmetros: título em 18 a 28vw, peso fino ou serifa leve, 8 a 12% de opacidade a menos que o sujeito; o rosto nunca coberto pelo texto.
+- Fallback: foto inteira com o título acima, sem sobreposição.
+- Prova: 2 quadros, repouso e com o mouse deslocado.
+
+## E12 · Abertura com a marca e anotações no objeto
+- Quando: loja, produto físico, lançamento.
+- Técnica: tela de abertura de 1,2 a 2s com o logo se desenhando (SVG `stroke-dashoffset`) sobre fundo da marca, que sobe e revela o herói; no objeto 3D (ou foto do produto), 3 a 4 marcadores com linha e rótulo curto ("isolamento térmico", "zíper vedado") que aparecem em sequência conforme o scroll.
+- Parâmetros: a abertura só roda na primeira visita da sessão (`sessionStorage`) e pula com qualquer tecla ou clique; nunca bloqueia o conteúdo mais de 2s.
+- Fallback: sem abertura, marcadores já visíveis.
+- Prova: 2 quadros, a abertura e o produto anotado.
+
+## Limite de movimento (o contrapeso)
+
+Um comentário numa análise de antes/depois de site resumiu a crítica certa: "de um site funcional para um site desfuncional", "exagero desnecessário", "ai slop". Movimento que prejudica o uso é pior que página parada. Antes de entregar, confirme:
+- quem chega entende o que a empresa faz e acha o botão principal em até 5s, sem rolar nem esperar animação;
+- nenhuma informação decisiva (preço, prazo, contato, endereço) fica atrás de pin, scrub ou abertura;
+- no máximo 1 peça pinada e 1 abertura por página; o resto responde ao clique ou ao mouse, não ao scroll;
+- o que se move serve ao conceito do negócio; se a animação pudesse trocar de site sem mudar nada, corte.
+
 # Briefing de página em 1 parágrafo (o formato que gera sites extraordinários)
 
 Antes de codar uma landing, escreva (e mostre ao usuário) um parágrafo neste molde. É o formato dos prompts das bibliotecas comerciais, e um parágrafo assim com 3 ou 4 interações nomeadas produz mais identidade do que 3 páginas de regras:
