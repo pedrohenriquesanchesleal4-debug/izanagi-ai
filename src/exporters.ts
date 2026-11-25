@@ -35,28 +35,50 @@ export interface IzanagiAgentInfo {
 export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
   orchestrator: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'Agent'],
   'adversarial-critic': ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
-  'agent-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit'],
+  'agent-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash'],
   animation: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   architect: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
   'automation-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'bug-hunter': ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   database: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
   devops: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
-  discovery: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
-  docs: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
+  discovery: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
+  docs: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch'],
   evaluator: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
   'form-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
-  pm: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
-  'product-reasoner': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch', 'WebSearch'],
-  professor: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'WebFetch', 'WebSearch'],
+  pm: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch'],
+  'product-reasoner': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
+  professor: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch', 'WebSearch'],
   qa: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
-  researcher: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  researcher: ['Read', 'Grep', 'Glob', 'Bash', 'WebFetch', 'WebSearch'],
   security: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write', 'WebFetch'],
   'ai-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
   'senior-engineer': ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash', 'WebFetch'],
-  'skill-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'WebFetch'],
+  'skill-architect': ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebFetch'],
   techlead: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write']
 };
+
+/**
+ * Comandos que subagentes podem rodar sem pedir confirmação. Subagente em segundo plano não consegue
+ * responder a um pedido de permissão: o Claude Code nega a chamada e o agente fica "sem poder rodar
+ * comandos", mesmo com `Bash` no `tools:`. Só entram leitura do git e os scripts de verificação
+ * (teste, tipos, lint, build). Nada de `rm`, `git push`, `git reset`, `npm install` nem `npx`.
+ */
+export const CLAUDE_SAFE_BASH_ALLOW = [
+  'Bash(git status*)',
+  'Bash(git diff*)',
+  'Bash(git log*)',
+  'Bash(git show*)',
+  'Bash(ls*)',
+  'Bash(pwd)',
+  'Bash(npm test*)',
+  'Bash(npm run test*)',
+  'Bash(npm run typecheck*)',
+  'Bash(npm run lint*)',
+  'Bash(npm run build*)',
+  'Bash(npm run verify*)',
+  'Bash(izanagi *)'
+];
 
 /**
  * Ferramentas do Claude in Chrome. Subagent com `tools:` explícito NÃO enxerga MCP nem ToolSearch,
@@ -780,6 +802,21 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
     });
     if (settings) created.push(settings);
   }
+
+  // Permissões seguras para subagentes rodarem verificação sem pedir confirmação. Só acrescenta o que
+  // falta em `permissions.allow`: nunca remove, reordena nem toca em `deny`/`ask` do usuário.
+  const perms = mergeJsonConfig(baseDir, '.claude/settings.json', (c) => {
+    const current = c.permissions;
+    const p: Record<string, unknown> =
+      current && typeof current === 'object' && !Array.isArray(current) ? (current as Record<string, unknown>) : {};
+    const allow = Array.isArray(p.allow) ? p.allow.map(String) : [];
+    const missing = CLAUDE_SAFE_BASH_ALLOW.filter((r) => !allow.includes(r));
+    if (missing.length === 0) return false;
+    p.allow = [...allow, ...missing];
+    c.permissions = p;
+    return true;
+  });
+  if (perms && !created.includes(perms)) created.push(perms);
 
   return created;
 }

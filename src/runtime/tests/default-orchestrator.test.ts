@@ -27,7 +27,9 @@ test('Claude Code: orquestrador vira o agente padrão sem apagar settings do usu
     exportToClaude(dir);
     const s = JSON.parse(fs.readFileSync(path.join(dir, '.claude', 'settings.json'), 'utf-8'));
     assert.equal(s.agent, 'orchestrator');
-    assert.deepEqual(s.permissions, { allow: ['Bash(npm test)'] });
+    // A regra do usuário continua e fica na frente; só se acrescenta o que falta
+    assert.equal(s.permissions.allow[0], 'Bash(npm test)');
+    assert.ok(s.permissions.allow.includes('Bash(git status*)'));
 
     // Escolha explícita do usuário é respeitada
     fs.writeFileSync(path.join(dir, '.claude', 'settings.json'), JSON.stringify({ agent: 'meu-agente' }));
@@ -38,6 +40,41 @@ test('Claude Code: orquestrador vira o agente padrão sem apagar settings do usu
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('Claude Code: subagentes podem rodar comandos (Bash no tools) e a verificação segura vem pré-aprovada', () => {
+  const dir = projectWithAgents();
+  try {
+    fs.mkdirSync(path.join(dir, '.claude'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, '.claude', 'settings.json'),
+      JSON.stringify({ permissions: { allow: ['Bash(npm test)'], deny: ['Bash(rm *)'] } }),
+    );
+    exportToClaude(dir);
+    exportToClaude(dir); // idempotente: a segunda passada não duplica nada
+    const s = JSON.parse(fs.readFileSync(path.join(dir, '.claude', 'settings.json'), 'utf-8'));
+
+    assert.deepEqual(s.permissions.deny, ['Bash(rm *)'], 'deny do usuário nunca é tocado');
+    assert.equal(new Set(s.permissions.allow).size, s.permissions.allow.length, 'sem regras duplicadas');
+    for (const rule of s.permissions.allow as string[]) {
+      assert.ok(!/push|reset|rm |install|npx/.test(rule), `regra perigosa pré-aprovada: ${rule}`);
+    }
+
+    for (const slug of ['architect', 'orchestrator']) {
+      const md = fs.readFileSync(path.join(dir, '.claude', 'agents', `${slug}.md`), 'utf-8');
+      assert.match(md.match(/^tools: (.*)$/m)![1], /\bBash\b/, `${slug} precisa de Bash`);
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Claude Code: nenhum agente do catálogo fica sem Bash por engano', async () => {
+  const { CLAUDE_AGENT_TOOLS } = await import('../../exporters.js');
+  const semBash = Object.entries(CLAUDE_AGENT_TOOLS)
+    .filter(([, tools]) => !tools.includes('Bash'))
+    .map(([slug]) => slug);
+  assert.deepEqual(semBash, []);
 });
 
 test('OpenCode: default_agent aponta para o orquestrador e preserva instructions', () => {
