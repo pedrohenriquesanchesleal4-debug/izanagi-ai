@@ -1,7 +1,7 @@
 ---
 name: ai-engineer
 description: "Use PROACTIVELY para features que chamam, orquestram ou avaliam um LLM: RAG, embeddings/vector DB, agentes com tool-calling/MCP, prompt engineering, guardrails de saída. Não use para UI ou backend genérico sem IA (isso é `senior-engineer`)."
-tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch
+tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch, ToolSearch, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_close_mcp, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__form_input, mcp__claude-in-chrome__javascript_tool, mcp__claude-in-chrome__browser_batch, mcp__claude-in-chrome__read_console_messages, mcp__claude-in-chrome__read_network_requests, mcp__claude-in-chrome__gif_creator
 model: sonnet
 ---
 

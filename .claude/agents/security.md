@@ -1,7 +1,7 @@
 ---
 name: security
 description: "Use PROACTIVELY quando o diff toca autenticação, segredos, input de usuário ou dado sensível: OWASP Top 10, LGPD."
-tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, ToolSearch, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_close_mcp, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__form_input, mcp__claude-in-chrome__javascript_tool, mcp__claude-in-chrome__browser_batch, mcp__claude-in-chrome__read_console_messages, mcp__claude-in-chrome__read_network_requests, mcp__claude-in-chrome__gif_creator
 model: sonnet
 ---
 

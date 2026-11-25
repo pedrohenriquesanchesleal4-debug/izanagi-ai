@@ -118,13 +118,19 @@ Regras de escolha (falhas vistas em teste real):
 - Não invente ID de foto "de memória": busque no banco pelo tema, confira que a URL responde 200 e descreva em 1 linha o que a foto mostra antes de usar.
 - Mesma luz e paleta entre as fotos (quente, lateral, fundo escuro); se uma destoar, aplique o mesmo tratamento (duotone dourado, escurecer, recorte) ou troque.
 
+## Outras direções ao lado do Noir & Gold
+
+Noir & Gold não é o default de tudo. Vistas nos salvos, duas direções distintas:
+- **Editorial claro P&B** (loja de moda, produto): fundo branco ou off-white, tipografia grotesca grande em caixa alta, recorte do modelo em preto e branco como protagonista, 3 produtos por fileira; receita E15. Sem ouro.
+- **Serifa de alta-costura** (marca de prestígio, mentoria high ticket): fundo azul-petróleo quase preto, dourado queimado, serifa fina e alta com máscara por linha no título, indicador de capítulo (01/10) nas bordas; receitas E13 e E14. Custo de performance alto: um pin só.
+
 ## Stack
 
 GSAP + ScrollTrigger (CDN), Lenis para scroll suave, nada de framework obrigatório. `prefers-reduced-motion` desliga pin/scrub e mostra o estado final de cada peça.
 
 ## Camada de acabamento (o "falta alguma coisa")
 
-Uma página pode ter todas as peças acima e ainda parecer plana: correta, mas parada como um template. Isso foi visto em teste real (landing de harmonização com paleta, fotos e scroll certos, e o usuário disse "está legal, mas falta algo"). O que faltava não era mais uma seção, eram estas 7 camadas. Aplique **todas** antes de entregar; cada uma custa poucas linhas.
+Uma página pode ter todas as peças acima e ainda parecer plana: correta, mas parada como um template. Isso foi visto em teste real (landing de harmonização com paleta, fotos e scroll certos, e o usuário disse "está legal, mas falta algo"). O que faltava não era mais uma seção, eram estas camadas (A1 a A10). Aplique **todas** antes de entregar; cada uma custa poucas linhas.
 
 | # | Camada | Sem ela | Receita |
 |---|---|---|---|
@@ -135,6 +141,9 @@ Uma página pode ter todas as peças acima e ainda parecer plana: correta, mas p
 | A5 | **Microinteração no que se clica** | botão só muda de cor | brilho que atravessa o botão no hover, botão magnético (ponteiro fino), luz que segue o cursor dentro dos cards |
 | A6 | **Costura entre seções** | cortes secos de uma seção para outra | fio de luz dourado que se desenha sob cada título; herói que recua e escurece ao sair |
 | A7 | **Toda imagem serve ao conceito** | foto de banco "bonita" sem relação (piscina, consultório odontológico, produto de marca) | troque por painel tipográfico ou SVG do próprio método (lista numerada em ouro, diagrama, papel de anotação inclinado); painel desenhado vence foto genérica |
+| A8 | **Nav em pílula flutuante** | barra de topo colada e larga que compete com o herói | pílula central `position: fixed` com `backdrop-filter`, CTA de cor cheia à direita; encolhe e ganha sombra ao rolar |
+| A9 | **Frase em 2 tons** | frase-tese toda do mesmo peso, sem hierarquia | metade da frase em cinza, a palavra-chave em cor cheia; cada palavra acende no scroll (`scrub`), sem ouro nem sublinhado |
+| A10 | **Wordmark gigante cortado no rodapé** | rodapé de links sem identidade | nome da marca em 20vw com `overflow: hidden`, cortado pela base, em gradiente metálico, `translateY` ligado ao scroll |
 
 ```css
 /* A3 grão + vinheta */
@@ -276,6 +285,34 @@ Formato de cada receita: **Efeito** · **Quando usar** · **Técnica** · **Par�
 - Parâmetros: a abertura só roda na primeira visita da sessão (`sessionStorage`) e pula com qualquer tecla ou clique; nunca bloqueia o conteúdo mais de 2s.
 - Fallback: sem abertura, marcadores já visíveis.
 - Prova: 2 quadros, a abertura e o produto anotado.
+
+## E13 · Capítulos de tela cheia, um objeto por serviço
+- Quando: agência, consultoria, estúdio com 3 a 5 serviços que precisam de peso próprio.
+- Técnica: 1 seção pinada de 500 a 700vh; cada serviço é um capítulo com objeto único (3D, SVG ou foto recortada), título e contador de capítulo ("01/05") nas bordas. A troca é por apagão: o capítulo escurece até o preto, um ponto de luz permanece, e o próximo acende (`gsap.timeline` com `scrub`).
+- Parâmetros: 1 pin só na página; um objeto por capítulo, nunca vários; setas laterais clicáveis levam ao capítulo sem rolar.
+- Fallback: capítulos empilhados em fluxo normal, um objeto por bloco, sem pin.
+- Prova: 3 quadros, capítulo 1, apagão, capítulo 2.
+
+## E14 · Palavras em órbita que formam a frase
+- Quando: manifesto, abertura de marca com símbolo forte (animal, objeto, pessoa).
+- Técnica: a frase é dividida em letras ou palavras posicionadas em `absolute` em órbita ao redor do sujeito central (posições iniciais em círculo, com rotação lenta); ao rolar (`scrub`) elas voltam à posição final e a frase se lê inteira. Variação da E3.
+- Parâmetros: até 60 nós; `will-change: transform` só durante a animação; o estado final já está no HTML.
+- Fallback: frase estática legível ao lado do sujeito.
+- Prova: 2 quadros, em órbita e formada.
+
+## E15 · Recorte do sujeito invadindo a grade de produtos
+- Quando: loja de moda ou de produto com modelo recortável; direção Editorial claro P&B.
+- Técnica: grade de cards de produto; um recorte maior do modelo (fundo transparente) fica com `z-index` acima da fileira de cima e atravessa o limite dos cards; parallax leve no scroll (recorte a 0,85x da velocidade da grade).
+- Parâmetros: o recorte nunca cobre preço, nome ou botão de compra; no mobile vira imagem entre as fileiras.
+- Fallback: recorte dentro do hero, sem sobreposição.
+- Prova: 2 quadros, grade em repouso e com o recorte sobreposto.
+
+## E16 · Mapa de módulos com fio de luz
+- Quando: SaaS, automação, plataforma com 4 a 8 módulos que precisam parecer um sistema.
+- Técnica: painéis em grade ligados a um nó central por `<path>` SVG com `stroke-dashoffset` animado em sequência; cada módulo tem cor de acento própria, halo radial atrás e pílula numerada ("01 VENDAS"); contadores sobem de 0 quando o painel entra.
+- Parâmetros: no máximo 8 painéis; cores com contraste conferido; linhas desligam com `prefers-reduced-motion`.
+- Fallback: grade de cards numerados, sem linhas.
+- Prova: 2 quadros, antes e depois das linhas se desenharem.
 
 ## Limite de movimento (o contrapeso)
 

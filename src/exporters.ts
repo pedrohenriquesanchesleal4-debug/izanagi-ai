@@ -58,6 +58,29 @@ export const CLAUDE_AGENT_TOOLS: Record<string, string[]> = {
   techlead: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write']
 };
 
+/**
+ * Ferramentas do Claude in Chrome. Subagent com `tools:` explícito NÃO enxerga MCP nem ToolSearch,
+ * então sem isto o agente não consegue abrir o navegador (visto em teste real: o orchestrator
+ * não carregava a extensão e só um agente com tools `*` conseguia). Nome inexistente é ignorado
+ * em silêncio, então é seguro mesmo sem a extensão instalada.
+ */
+export const CLAUDE_CHROME_TOOLS = [
+  'ToolSearch',
+  'mcp__claude-in-chrome__tabs_context_mcp',
+  'mcp__claude-in-chrome__tabs_create_mcp',
+  'mcp__claude-in-chrome__tabs_close_mcp',
+  'mcp__claude-in-chrome__navigate',
+  'mcp__claude-in-chrome__computer',
+  'mcp__claude-in-chrome__read_page',
+  'mcp__claude-in-chrome__find',
+  'mcp__claude-in-chrome__form_input',
+  'mcp__claude-in-chrome__javascript_tool',
+  'mcp__claude-in-chrome__browser_batch',
+  'mcp__claude-in-chrome__read_console_messages',
+  'mcp__claude-in-chrome__read_network_requests',
+  'mcp__claude-in-chrome__gif_creator'
+];
+
 /** Fallback de tools pra agentes sem entrada em CLAUDE_AGENT_TOOLS (ex.: gerados sob demanda). */
 export const CLAUDE_AGENT_TOOLS_DEFAULT = ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'];
 
@@ -464,7 +487,7 @@ function hasReferences(baseDir: string, name: string): boolean {
 
 function claudeAgentTemplate(baseDir: string, a: IzanagiAgentInfo): string {
   const trigger = CLAUDE_AGENT_TRIGGERS[a.slug] ?? `Use PROACTIVELY para tarefas de ${a.role.toLowerCase()}.`;
-  const tools = (CLAUDE_AGENT_TOOLS[a.slug] ?? CLAUDE_AGENT_TOOLS_DEFAULT).join(', ');
+  const tools = [...(CLAUDE_AGENT_TOOLS[a.slug] ?? CLAUDE_AGENT_TOOLS_DEFAULT), ...CLAUDE_CHROME_TOOLS].join(', ');
   const modelLine = a.model ? `model: ${a.model}\n` : '';
   const description = truncate(trigger, 260);
   const skillLines = a.skills.length > 0
