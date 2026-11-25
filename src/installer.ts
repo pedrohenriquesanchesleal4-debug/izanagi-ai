@@ -371,6 +371,77 @@ function writeRootDocs(destinationRoot: string, packageDir: string): { written: 
 const ESCAPE_CYAN = '\x1b[36m';
 const ESCAPE_RESET = '\x1b[0m';
 
+export const GITIGNORE_BEGIN = '# >>> izanagi (gerado por `izanagi init`; edite fora deste bloco)';
+export const GITIGNORE_END = '# <<< izanagi';
+
+/** Segredos que nunca entram num commit, em qualquer projeto. */
+const SECRET_IGNORES = [
+  '.env',
+  '.env.*',
+  '!.env.example',
+  '!.env.sample',
+  '*.pem',
+  '*.key',
+  '*.p12',
+  '*.pfx',
+  'credentials.json',
+  'service-account*.json',
+  '.npmrc',
+  '.claude/settings.local.json'
+];
+
+/**
+ * Artefatos que o Izanagi e os adaptadores de CLI escrevem no projeto. Pastas
+ * entram sempre que existirem; arquivos soltos só quando são nossos (têm o
+ * GENERATED_MARKER ou são a config que o próprio init criou), para nunca
+ * esconder um AGENTS.md ou CLAUDE.md escrito pelo usuário.
+ */
+const FRAMEWORK_DIRS = ['.agents/', '.izanagi/', '.claude/agents/', '.claude/commands/', '.claude/skills/', '.opencode/', '.codex/', '.kimi/'];
+const FRAMEWORK_FILES = ['AGENTS.md', 'SYSTEM.md', 'RULES.md', 'CLAUDE.md', 'GEMINI.md', 'kimi.md', '.github/copilot-instructions.md'];
+
+/**
+ * Garante o bloco do Izanagi no `.gitignore` do projeto: segredos e artefatos do
+ * framework. Idempotente (reescreve só o bloco entre os marcadores) e não mexe
+ * em nada fora dele. Arquivo já rastreado pelo git não é afetado por ignore:
+ * por isso a regra "Commit limpo" do modo padrão também manda `git rm --cached`.
+ */
+export function ensureGitignore(projectRoot: string, ownConfigs: string[] = []): string[] {
+  const root = path.resolve(projectRoot);
+  if (isFrameworkRepo(root)) return [];
+  const exists = (rel: string) => fs.existsSync(path.join(root, rel));
+  const isOurs = (rel: string) => {
+    try {
+      return fs.readFileSync(path.join(root, rel), 'utf-8').includes(GENERATED_MARKER);
+    } catch {
+      return false;
+    }
+  };
+  const framework = [
+    ...FRAMEWORK_DIRS.filter((d) => exists(d)),
+    ...(exists('.cursor/rules') && fs.readdirSync(path.join(root, '.cursor/rules')).some((f) => f.startsWith('izanagi-')) ? ['.cursor/rules/izanagi-*'] : []),
+    ...FRAMEWORK_FILES.filter((f) => exists(f) && isOurs(f)),
+    ...ownConfigs.filter((f) => exists(f))
+  ];
+  const body = [
+    GITIGNORE_BEGIN,
+    '# segredos: nunca commitar',
+    ...SECRET_IGNORES,
+    ...(framework.length ? ['# artefatos do framework Izanagi e adaptadores de CLI (regenerados por `izanagi init`)', ...framework] : []),
+    GITIGNORE_END
+  ].join('\n');
+
+  const file = path.join(root, '.gitignore');
+  const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : '';
+  const start = current.indexOf(GITIGNORE_BEGIN);
+  const end = current.indexOf(GITIGNORE_END);
+  const next =
+    start >= 0 && end > start
+      ? current.slice(0, start) + body + current.slice(end + GITIGNORE_END.length)
+      : `${current.trimEnd() ? `${current.trimEnd()}\n\n` : ''}${body}\n`;
+  if (next !== current) fs.writeFileSync(file, next, 'utf-8');
+  return framework;
+}
+
 export function installToProject(targetDir: string, selectedPackIds: string[], cliTarget?: string): void {
   const destinationRoot = path.resolve(targetDir);
   const packageDir = getPackageDir();
@@ -451,6 +522,10 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
   fs.writeFileSync(path.join(izanagiFolder, 'izanagi.config.json'), JSON.stringify(config, null, 2));
   console.log('  \x1b[32m✔\x1b[0m Config created (.izanagi/izanagi.config.json)');
 
+  // Configs que só entram no ignore se nascerem deste init (as do usuário ficam).
+  const ownConfigCandidates = ['opencode.json', '.claude/settings.json'];
+  const preexistingConfigs = new Set(ownConfigCandidates.filter((f) => fs.existsSync(path.join(destinationRoot, f))));
+
   // opencode.json para auto-carregar o framework ao abrir o opencode no projeto
   const opencodePath = path.join(destinationRoot, 'opencode.json');
   if (!fs.existsSync(opencodePath)) {
@@ -527,6 +602,10 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
       }
     }
   }
+
+  // Commit limpo: segredos e artefatos do framework fora do git desde o init.
+  const ignored = ensureGitignore(destinationRoot, ownConfigCandidates.filter((f) => !preexistingConfigs.has(f)));
+  console.log(`  \x1b[32m✔\x1b[0m .gitignore: segredos (.env e afins) e ${ignored.length} artefato(s) do framework fora do commit`);
 
   console.log(`\n\x1b[32m[Izanagi AI] Success! ${copiedItems} files copied to .agents (${packs.length} packs).\x1b[0m`);
   console.log('Next steps:');

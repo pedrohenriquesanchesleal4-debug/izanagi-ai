@@ -211,6 +211,14 @@ Every task must trigger:
 - Always use proper authentication and authorization.
 - Never roll your own cryptography.
 
+### 6.1 Commit limpo (vale para todo agente que commita)
+
+1. Antes do commit, crie ou complete o `.gitignore`: segredos (`.env`, `.env.*` menos `.env.example`, `*.pem`, `*.key`, `credentials.json`, `.claude/settings.local.json`) e artefatos do Izanagi e das CLIs de agente (`.agents/`, `.izanagi/`, `.claude/agents/`, `.claude/skills/`, `.claude/commands/`, `.opencode/`, `.codex/`, `.kimi/`, `.cursor/rules/izanagi-*` e os documentos de raiz gerados pelo framework). `izanagi init` já grava esse bloco entre `# >>> izanagi` e `# <<< izanagi`.
+2. `git status`: arquivo desses que já estiver rastreado sai com `git rm --cached <arquivo>` (ignore não afeta arquivo rastreado).
+3. Adicione pelo nome; nunca `git add -A` ou `git add .` às cegas. Confira `git diff --cached --name-only` antes de `git commit`.
+4. Segredo que já foi commitado: pare e avise o usuário. Remover do índice não apaga do histórico; a credencial precisa ser rotacionada.
+5. Exceção: no repositório-fonte do próprio Izanagi os artefatos do framework são o produto e entram no commit.
+
 ---
 
 ## 7. Progression Rules

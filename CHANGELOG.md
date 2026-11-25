@@ -4,6 +4,15 @@
 
 ---
 
+## [Unreleased]
+
+### Added
+- Commit limpo: `izanagi init` (e o `postinstall`) grava no `.gitignore` do projeto um bloco marcado com segredos (`.env`, `.env.*` menos `.env.example`, chaves, credenciais) e com os artefatos do Izanagi e dos adaptadores de CLI que existem no projeto. Idempotente, preserva o que o usuário escreveu e nunca ignora `AGENTS.md`/`CLAUDE.md` autorais. O modo padrão do orquestrador (projeto e instalação global) e o `RULES.md` 6.1 ganharam a regra: `.gitignore` antes do commit, `git rm --cached` no que já estiver rastreado, `git add` pelo nome.
+- `signature-experience`: camada de acabamento A1 a A7 (entrada coreografada, herói em 3 planos, grão e luz no cursor, palavra-chave em metal, microinteração, costura entre seções, toda imagem servindo ao conceito), com receitas e a prova em 3 quadros.
+
+### Fixed
+- `signature-experience`: a receita de cards empilhados usava `gsap.to` com `filter`, que parte de `none` e é interpolado como `brightness(0)`: o card ficava preto no meio do scroll. Agora usa `fromTo`.
+
 ## [3.24.25]: 2026-11-24
 
 ### Added

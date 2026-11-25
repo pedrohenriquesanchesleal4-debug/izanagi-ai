@@ -89,7 +89,8 @@ document.querySelectorAll('[data-count-to]').forEach(el=>{
 ```
 ```js
 gsap.utils.toArray('.stack .card').forEach((c,i,all)=>{ if(i===all.length-1) return;
-  gsap.to(c,{scale:.94,filter:'brightness(.6)',scrollTrigger:{trigger:all[i+1],start:'top bottom',end:'top 12vh',scrub:true}}); });
+  // fromTo obrigatório: com gsap.to, o filtro parte de "none" e o GSAP interpola como brightness(0): o card fica PRETO (visto em render real).
+  gsap.fromTo(c,{scale:1,filter:'brightness(1)'},{scale:.94,filter:'brightness(.75)',ease:'none',scrollTrigger:{trigger:all[i+1],start:'top bottom',end:'top 12vh',scrub:true}}); });
 ```
 
 ### Antes/depois
@@ -120,6 +121,69 @@ Regras de escolha (falhas vistas em teste real):
 ## Stack
 
 GSAP + ScrollTrigger (CDN), Lenis para scroll suave, nada de framework obrigatório. `prefers-reduced-motion` desliga pin/scrub e mostra o estado final de cada peça.
+
+## Camada de acabamento (o "falta alguma coisa")
+
+Uma página pode ter todas as peças acima e ainda parecer plana: correta, mas parada como um template. Isso foi visto em teste real (landing de harmonização com paleta, fotos e scroll certos, e o usuário disse "está legal, mas falta algo"). O que faltava não era mais uma seção, eram estas 7 camadas. Aplique **todas** antes de entregar; cada uma custa poucas linhas.
+
+| # | Camada | Sem ela | Receita |
+|---|---|---|---|
+| A1 | **Entrada coreografada** | tudo aparece junto ou com o mesmo fade | uma timeline só, ~1,6s: foto abre por máscara, título sobe linha a linha, o resto acompanha, selos por último |
+| A2 | **Herói em 3 planos** | texto à esquerda, foto à direita, nada atrás e nada na frente | plano de fundo (número/palavra gigante em contorno dourado), plano médio (foto), plano da frente (chips); cada um com `data-depth` diferente no mouse e no scroll |
+| A3 | **Matéria** | preto chapado de tela | grão animado em `overlay` (opacidade .06 a .08) + vinheta radial; luz dourada que segue o cursor no herói |
+| A4 | **Palavra-chave em metal** | ouro só no botão | a frase que é a tese do título em `.gold-text`, uma por página no herói e uma na oferta |
+| A5 | **Microinteração no que se clica** | botão só muda de cor | brilho que atravessa o botão no hover, botão magnético (ponteiro fino), luz que segue o cursor dentro dos cards |
+| A6 | **Costura entre seções** | cortes secos de uma seção para outra | fio de luz dourado que se desenha sob cada título; herói que recua e escurece ao sair |
+| A7 | **Toda imagem serve ao conceito** | foto de banco "bonita" sem relação (piscina, consultório odontológico, produto de marca) | troque por painel tipográfico ou SVG do próprio método (lista numerada em ouro, diagrama, papel de anotação inclinado); painel desenhado vence foto genérica |
+
+```css
+/* A3 grão + vinheta */
+.grain{position:fixed;inset:-50%;z-index:90;pointer-events:none;opacity:.07;mix-blend-mode:overlay;animation:grain 1.2s steps(4) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes grain{25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-1%,-2%)}}
+.vignette{position:fixed;inset:0;z-index:89;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 60%,#000a)}
+.hero .spot{position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(520px circle at var(--mx,70%) var(--my,40%),#E9C77B1f,transparent 60%)}
+/* A2 plano de fundo: some no mobile, onde cobriria o texto */
+.ghost{position:absolute;right:-3%;top:52%;translate:0 -50%;z-index:-1;font:800 clamp(6rem,24vw,24rem)/.8 var(--display);color:transparent;-webkit-text-stroke:1.5px #C9973F70;pointer-events:none}
+@media(max-width:959px){.ghost{display:none}}
+/* A1 título por linhas: o h1 leva aria-label com a frase inteira, as linhas ficam aria-hidden */
+.line{display:block;overflow:hidden;padding-bottom:.1em;margin-bottom:-.1em}.line>span{display:inline-block}
+/* A5 brilho no botão */
+.btn{position:relative;overflow:hidden;isolation:isolate}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 35%,#FFFBEA 50%,transparent 65%);translate:-120% 0;transition:translate .9s cubic-bezier(.22,1,.36,1)}
+.btn:hover::before{translate:120% 0}
+/* A6 fio de luz sob o título */
+.h-rule{display:block;height:1px;width:min(240px,40%);margin-top:20px;background:linear-gradient(90deg,#FFF1C9,#C9973F 40%,transparent);transform-origin:left;box-shadow:0 0 12px #E9C77B88}
+.js .h-rule{transform:scaleX(0)}.js .h-rule.in{transform:scaleX(1);transition:transform 1.2s cubic-bezier(.22,1,.36,1) .2s}
+@media(prefers-reduced-motion:reduce){.grain{display:none}.js .h-rule{transform:none}}
+```
+
+```js
+// A1 entrada coreografada (pule tudo se prefers-reduced-motion)
+gsap.timeline({defaults:{ease:'expo.out'}})
+  .fromTo('.hero .portrait',{clipPath:'inset(100% 0 0 0 round 24px)'},{clipPath:'inset(0% 0 0 0 round 24px)',duration:1.4,ease:'expo.inOut'},0)
+  .from('.hero .portrait img',{scale:1.25,duration:1.8},.2)
+  .from('.hero h1 .line>span',{yPercent:110,duration:1.1,stagger:.09},.25)
+  .from('.hero .lead,.hero .cta-row',{y:20,opacity:0,duration:.9,stagger:.08},.7)
+  .from('.hero .chip',{scale:.6,opacity:0,duration:.9,ease:'back.out(1.8)',stagger:.12},1.1);
+// A2 + A3 profundidade e luz no mouse (só ponteiro fino)
+const hero=document.querySelector('.hero');
+if(matchMedia('(pointer:fine)').matches){
+  const L=[...hero.querySelectorAll('[data-depth]')].map(l=>({d:+l.dataset.depth,x:gsap.quickTo(l,'x',{duration:.9}),y:gsap.quickTo(l,'y',{duration:.9})}));
+  hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5;
+    hero.style.setProperty('--mx',(nx+.5)*100+'%');hero.style.setProperty('--my',(ny+.5)*100+'%');L.forEach(s=>{s.x(nx*28*s.d);s.y(ny*20*s.d)})});
+}
+gsap.to('.ghost',{yPercent:-30,ease:'none',scrollTrigger:{trigger:hero,start:'top top',end:'bottom top',scrub:true}});
+gsap.to('.hero-grid',{yPercent:8,opacity:.35,ease:'none',scrollTrigger:{trigger:hero,start:'center top',end:'bottom top',scrub:true}});
+// A5 botão magnético
+document.querySelectorAll('[data-mag]').forEach(b=>{const x=gsap.quickTo(b,'x',{duration:.4}),y=gsap.quickTo(b,'y',{duration:.4});
+  b.addEventListener('pointermove',e=>{const r=b.getBoundingClientRect();x((e.clientX-r.left-r.width/2)*.25);y((e.clientY-r.top-r.height/2)*.35)});
+  b.addEventListener('pointerleave',()=>{x(0);y(0)})});
+```
+
+Armadilhas vistas no render: o número gigante do plano de fundo cruzando o parágrafo (posicione atrás da foto, nunca atrás do texto, e esconda no mobile); `filter` animado com `gsap.to` partindo de `none` (vira preto, use `fromTo`); `::before` de check (`.card li::before`) vazando para listas numeradas dentro do card (zere `position`, `border` e `transform` na lista nova).
+
+**Prova da camada:** screenshot do herói em repouso, um quadro no meio da entrada (~0,6s) e um quadro com o mouse sobre a foto. Se os 3 quadros forem iguais, a camada não existe.
 
 ---
 

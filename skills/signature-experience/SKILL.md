@@ -54,7 +54,7 @@ Bibliotecas: GSAP (ScrollTrigger, SplitText; gratuito), Lenis (scroll suave), OG
 
 ## Direção pronta para landing de conversão: Premium Noir & Gold
 
-Para landing de serviço premium, saúde estética, consultoria, infoproduto ou evento ao vivo, comece pela direção **Premium Noir & Gold** em `references.md` (nesta pasta): fundo preto quente, ouro metálico com brilho, luz dourada, foto real recortada com sobreposição técnica, ícones 3D dourados e peças de scroll que contam a história (caminho que se desenha, linha do tempo que acende, contador ligado ao scroll, cards empilháveis, antes/depois, contagem regressiva, faixa diagonal). Tem receitas de código prontas. Adapte o conceito ao negócio; a gramática visual vem pronta.
+Para landing de serviço premium, saúde estética, consultoria, infoproduto ou evento ao vivo, comece pela direção **Premium Noir & Gold** em `references.md` (nesta pasta): fundo preto quente, ouro metálico com brilho, luz dourada, foto real recortada com sobreposição técnica, ícones 3D dourados e peças de scroll que contam a história (caminho que se desenha, linha do tempo que acende, contador ligado ao scroll, cards empilháveis, antes/depois, contagem regressiva, faixa diagonal). Tem receitas de código prontas. Adapte o conceito ao negócio; a gramática visual vem pronta. **Depois das peças, aplique a camada de acabamento A1 a A7** (entrada coreografada, herói em 3 planos, grão e luz no cursor, palavra-chave em metal, microinteração, costura entre seções, toda imagem servindo ao conceito): é ela que tira a página do "está legal, mas falta algo".
 
 ## Passo 3: direção visual que serve ao conceito
 
@@ -81,6 +81,7 @@ npx -y playwright screenshot --full-page --wait-for-timeout=2500 index.html shot
 Para quadros do scroll: um script `page.evaluate(() => scrollTo(0, Y))` + `page.screenshot()` em 4 alturas, e o scanner do `anti-ai-slop` via `page.evaluate`.
 
 1. Screenshot da primeira dobra e de 3 pontos do scroll; **olhe as imagens** antes de reportar.
+2. Quadros da camada de acabamento: herói em repouso, no meio da entrada (~0,6s) e com o mouse sobre a foto; se forem iguais, a camada não existe.
 2. Quadros do momento de assinatura em 4 instantes (comprova que ele existe e se move).
 3. Rodar o scanner do `anti-ai-slop` (Geração 1 e 2) com a página rolada até o meio: **0 a 2 sinais**.
 4. Teste da lembrança: descreva o site em uma frase sem citar cor ou fonte. Se a frase for "uma landing limpa e elegante", volte ao passo 1.
