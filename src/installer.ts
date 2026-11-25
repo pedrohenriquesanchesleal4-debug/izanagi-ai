@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import { exportToClaude, exportToCodex, exportToCursor, exportToCopilot, exportToKimi, exportToOpencode, exportToAntigravity, GENERATED_MARKER, DEFAULT_ORCHESTRATOR_MODE } from './exporters.js';
 
@@ -566,7 +567,7 @@ export function installToProject(targetDir: string, selectedPackIds: string[], c
 
   const adapterMap: Record<string, () => string[]> = {
     antigravity: () => exportToAntigravity(destinationRoot),
-    claude: () => exportToClaude(destinationRoot),
+    claude: () => exportToClaude(destinationRoot, { globalHome: os.homedir() }),
     cursor: () => exportToCursor(destinationRoot),
     codex: () => exportToCodex(destinationRoot),
     copilot: () => exportToCopilot(destinationRoot),

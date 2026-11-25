@@ -73,3 +73,26 @@ test('modo padrão traz a regra de commit limpo sem carregar o marcador de arqui
   // tratado como gerado e reescrito pelo próximo export.
   assert.ok(!DEFAULT_ORCHESTRATOR_MODE.includes(GENERATED_MARKER));
 });
+
+test('exportToClaude: com instalação global presente, o projeto não duplica agentes, skills nem comandos', async () => {
+  const { exportToClaude, hasGlobalClaudeInstall } = await import('../../exporters.js');
+  const { getPackageDir } = await import('../../installer.js');
+  const home = tmpProject();
+  assert.equal(hasGlobalClaudeInstall(home), false);
+  fs.mkdirSync(path.join(home, '.claude', 'agents'), { recursive: true });
+  fs.mkdirSync(path.join(home, '.claude', 'skills', 'find-skills'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.claude', 'agents', 'orchestrator.md'), `x\n> ${GENERATED_MARKER}\n`);
+  fs.writeFileSync(path.join(home, '.claude', 'skills', 'find-skills', 'SKILL.md'), 'x');
+  assert.equal(hasGlobalClaudeInstall(home), true);
+
+  const slim = tmpProject();
+  exportToClaude(slim, { sourceDir: getPackageDir(), globalHome: home });
+  assert.ok(!fs.existsSync(path.join(slim, '.claude', 'agents')));
+  assert.ok(!fs.existsSync(path.join(slim, '.claude', 'skills')));
+  assert.ok(fs.existsSync(path.join(slim, 'CLAUDE.md')));
+
+  const full = tmpProject();
+  exportToClaude(full, { sourceDir: getPackageDir() });
+  assert.ok(fs.existsSync(path.join(full, '.claude', 'agents', 'orchestrator.md')));
+  assert.ok(fs.statSync(path.join(slim, 'CLAUDE.md')).size < fs.statSync(path.join(full, 'CLAUDE.md')).size);
+});

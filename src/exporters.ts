@@ -514,10 +514,11 @@ ${a.handoffs && a.handoffs.length > 0 ? bullet(a.handoffs.map((h) => `\`${h.to}\
 `;
 }
 
-function claudeMainTemplate(agents: IzanagiAgentInfo[], skills: SkillSummary[]): string {
-  const agentTable = agents
-    .map((a) => `| \`${a.slug}\` | ${truncate(a.role, 140)} |`)
-    .join('\n');
+function claudeMainTemplate(agents: IzanagiAgentInfo[], skills: SkillSummary[], slim = false): string {
+  // slim: o Claude Code já lista nome e descrição de cada agente; repetir a tabela custa ~4 KB em toda sessão.
+  const agentTable = slim
+    ? '| (todos) | Descobertos pelo Claude Code; use o mapa de tarefa para agente abaixo |'
+    : agents.map((a) => `| \`${a.slug}\` | ${truncate(a.role, 140)} |`).join('\n');
 
   return `# Izanagi AI: Claude Code Integration
 
@@ -649,6 +650,14 @@ export interface ClaudeExportOptions {
    */
   rootDoc?: boolean;
   /**
+   * Home onde procurar a instalação global (`izanagi setup`). Quando o orquestrador
+   * e as skills já estão em `<home>/.claude/`, o projeto NÃO recebe cópia deles:
+   * o Claude Code lê os dois escopos e a lista de 130 skills + 23 agentes passaria
+   * a custar o dobro de contexto em toda sessão, por arquivos que o `.gitignore`
+   * do init já deixa fora do commit. Omitido: sempre exporta (comportamento antigo).
+   */
+  globalHome?: string;
+  /**
    * De onde LER os agentes e as skills, quando isso não é o destino.
    *
    * Fonte e destino sempre foram o mesmo `baseDir`, e para o export por
@@ -662,6 +671,16 @@ export interface ClaudeExportOptions {
   sourceDir?: string;
 }
 
+/** Orquestrador e catálogo de skills do Izanagi já instalados em `<home>/.claude/` por `izanagi setup`. */
+export function hasGlobalClaudeInstall(home: string): boolean {
+  try {
+    const orch = fs.readFileSync(path.join(home, '.claude', 'agents', 'orchestrator.md'), 'utf-8');
+    return orch.includes(GENERATED_MARKER) && fs.existsSync(path.join(home, '.claude', 'skills', 'find-skills', 'SKILL.md'));
+  } catch {
+    return false;
+  }
+}
+
 export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}): string[] {
   const created: string[] = [];
   const source = opts.sourceDir ?? baseDir;
@@ -672,12 +691,14 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
 
   // CLAUDE.md na raiz (fonte da verdade + regras essenciais inline)
   if (opts.rootDoc !== false) {
-    const main = writeIfAbsent(baseDir, 'CLAUDE.md', withDefaultMode(claudeMainTemplate(agents, skills)));
+    const main = writeIfAbsent(baseDir, 'CLAUDE.md', withDefaultMode(claudeMainTemplate(agents, skills, opts.globalHome ? hasGlobalClaudeInstall(opts.globalHome) : false)));
     if (main) created.push(main);
   }
 
+  const sharedGlobal = opts.globalHome ? hasGlobalClaudeInstall(opts.globalHome) : false;
+
   // subagents nativos em .claude/agents/<slug>.md: aparecem no Agent tool e são auto-selecionados
-  for (const agent of agents) {
+  for (const agent of sharedGlobal ? [] : agents) {
     const rel = writeIfAbsent(baseDir, `.claude/agents/${agent.slug}.md`, claudeAgentTemplate(source, agent));
     if (rel) created.push(rel);
   }
@@ -701,13 +722,15 @@ export function exportToClaude(baseDir: string, opts: ClaudeExportOptions = {}):
 
   // orquestrador /agents e /orchestrator: ÚNICOS comandos slash expostos ao usuário!
   // Os especialistas continuam existindo em .claude/agents/ para o orquestrador delegar via Agent tool.
-  const orchestrator = writeIfAbsent(baseDir, '.claude/commands/agents.md', claudeOrchestratorCommandTemplate(agents));
-  if (orchestrator) created.push(orchestrator);
-  const orchestratorAlias = writeIfAbsent(baseDir, '.claude/commands/orchestrator.md', claudeOrchestratorCommandTemplate(agents));
-  if (orchestratorAlias) created.push(orchestratorAlias);
+  if (!sharedGlobal) {
+    const orchestrator = writeIfAbsent(baseDir, '.claude/commands/agents.md', claudeOrchestratorCommandTemplate(agents));
+    if (orchestrator) created.push(orchestrator);
+    const orchestratorAlias = writeIfAbsent(baseDir, '.claude/commands/orchestrator.md', claudeOrchestratorCommandTemplate(agents));
+    if (orchestratorAlias) created.push(orchestratorAlias);
+  }
 
   // skills universais em .claude/skills/<name>/SKILL.md: corpo fiel ao original, nunca resumido
-  for (const s of skills) {
+  for (const s of sharedGlobal ? [] : skills) {
     const rel = writeIfAbsent(baseDir, `.claude/skills/${s.name}/SKILL.md`, claudeSkillTemplate(s));
     if (rel) created.push(rel);
     // O corpo das skills cita "references.md nesta pasta": sem a cópia, o link fica quebrado.
